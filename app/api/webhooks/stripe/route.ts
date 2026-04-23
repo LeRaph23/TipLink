@@ -76,23 +76,22 @@ async function handleEvent(
   supabase: ReturnType<typeof createServiceClient>
 ) {
   switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const transactionId = session.metadata?.transaction_id;
+    case 'payment_intent.succeeded': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const transactionId = intent.metadata?.transaction_id;
 
       if (!transactionId) {
-        throw new Error(`Missing transaction_id in checkout.session metadata: ${session.id}`);
+        throw new Error(`Missing transaction_id in payment_intent metadata: ${intent.id}`);
       }
+
+      // Defensive: only flip to succeeded if Stripe confirms the PI is fully paid.
+      if (intent.status !== 'succeeded') break;
 
       await supabase
         .from('transactions')
         .update({
           status: 'succeeded',
-          stripe_session_id: session.id,
-          stripe_payment_intent_id:
-            typeof session.payment_intent === 'string'
-              ? session.payment_intent
-              : (session.payment_intent?.id ?? null),
+          stripe_payment_intent_id: intent.id,
         })
         .eq('id', transactionId)
         .eq('status', 'pending');
@@ -100,16 +99,36 @@ async function handleEvent(
       break;
     }
 
-    case 'checkout.session.expired': {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const transactionId = session.metadata?.transaction_id;
-      if (transactionId) {
-        await supabase
-          .from('transactions')
-          .update({ status: 'failed' })
-          .eq('id', transactionId)
-          .eq('status', 'pending');
-      }
+    case 'payment_intent.payment_failed': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const transactionId = intent.metadata?.transaction_id;
+      if (!transactionId) break;
+
+      await supabase
+        .from('transactions')
+        .update({
+          status: 'failed',
+          stripe_payment_intent_id: intent.id,
+        })
+        .eq('id', transactionId)
+        .eq('status', 'pending');
+      break;
+    }
+
+    case 'charge.refunded': {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntentId =
+        typeof charge.payment_intent === 'string'
+          ? charge.payment_intent
+          : charge.payment_intent?.id;
+
+      if (!paymentIntentId) break;
+
+      await supabase
+        .from('transactions')
+        .update({ status: 'refunded' })
+        .eq('stripe_payment_intent_id', paymentIntentId)
+        .eq('status', 'succeeded');
       break;
     }
 
@@ -121,6 +140,74 @@ async function handleEvent(
           .update({ onboarding_status: 'complete' })
           .eq('stripe_account_id', account.id);
       }
+      break;
+    }
+
+    // ============================================================
+    // SmartTag pack orders (one-shot hardware purchase, mode=payment)
+    // ============================================================
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      // Legacy subscription sessions are ignored; everything is one-shot now.
+      if (session.mode !== 'payment') break;
+
+      const groupId = session.metadata?.group_id;
+      const pack = session.metadata?.pack as 's' | 'm' | 'l' | undefined;
+      if (!groupId || !pack) {
+        // Not a pack checkout (e.g. other future one-off products).
+        break;
+      }
+
+      const customerId = typeof session.customer === 'string'
+        ? session.customer
+        : session.customer?.id;
+
+      const shipping = session.collected_information?.shipping_details ?? null;
+
+      await supabase
+        .from('groups')
+        .update({
+          stripe_customer_id: customerId ?? undefined,
+          ...(shipping
+            ? {
+                shipping_address: {
+                  name: shipping.name,
+                  ...shipping.address,
+                } as unknown as import('@/types/database').Json,
+              }
+            : {}),
+        })
+        .eq('id', groupId);
+
+      const quantity = Number(session.metadata?.quantity ?? 0) || null;
+      await supabase
+        .from('smarttag_orders')
+        .upsert(
+          {
+            group_id: groupId,
+            pack,
+            quantity: quantity ?? (pack === 's' ? 15 : pack === 'm' ? 30 : 60),
+            stripe_checkout_session_id: session.id,
+            status: 'pending_fulfillment',
+            shipping_address: shipping
+              ? ({
+                  name: shipping.name,
+                  ...shipping.address,
+                } as unknown as import('@/types/database').Json)
+              : null,
+          },
+          { onConflict: 'stripe_checkout_session_id' }
+        );
+      break;
+    }
+
+    // Legacy subscription events — kept as no-ops so historical customers
+    // on the old model don't trigger webhook errors. Safe to remove once
+    // all legacy subs are canceled.
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+    case 'invoice.payment_failed':
+    case 'invoice.paid': {
       break;
     }
 

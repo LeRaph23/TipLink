@@ -5,7 +5,13 @@
  * Run: npm test -- __tests__/middleware/nfc_redirect.test.ts
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+
+// Mock next-intl/middleware to avoid ESM resolution issues under vitest.
+// NFC paths short-circuit before intl runs, so a passthrough mock is fine.
+vi.mock('next-intl/middleware', () => ({
+  default: () => () => NextResponse.next(),
+}));
 
 const mockFetch = vi.fn();
 
@@ -20,28 +26,13 @@ describe('NFC Redirect Middleware', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.resetAllMocks();
-    // Reset module cache so middleware picks up fresh env vars
     vi.resetModules();
   });
 
-  it('redirects to /pay/[staffId] when sticker has staff_id', async () => {
+  it('redirects to /pay/group/[estId] when sticker is found', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ staff_id: 'staff-uuid-123', establishment_id: null }],
-    });
-
-    const { middleware } = await import('@/middleware');
-    const request = new NextRequest('https://tipl.ink/s/ABC12345');
-    const response = await middleware(request);
-
-    expect(response.status).toBe(302);
-    expect(response.headers.get('location')).toBe('https://tipl.ink/pay/staff-uuid-123');
-  });
-
-  it('redirects to /pay/group/[estId] when sticker has only establishment_id', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [{ staff_id: null, establishment_id: 'est-uuid-456' }],
+      json: async () => [{ establishment_id: 'est-uuid-456' }],
     });
 
     const { middleware } = await import('@/middleware');
@@ -65,6 +56,19 @@ describe('NFC Redirect Middleware', () => {
     expect(response.headers.get('location')).toContain('/not-found');
   });
 
+  it('redirects to /not-found when establishment_id is null', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ establishment_id: null }],
+    });
+
+    const { middleware } = await import('@/middleware');
+    const request = new NextRequest('https://tipl.ink/s/ORPHAN01');
+    const response = await middleware(request);
+
+    expect(response.headers.get('location')).toContain('/not-found');
+  });
+
   it('redirects to /not-found when PostgREST returns error', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -81,7 +85,7 @@ describe('NFC Redirect Middleware', () => {
   it('uses service role key in Authorization header', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ staff_id: 'staff-uuid-123', establishment_id: null }],
+      json: async () => [{ establishment_id: 'est-uuid-456' }],
     });
 
     const { middleware } = await import('@/middleware');
@@ -94,7 +98,7 @@ describe('NFC Redirect Middleware', () => {
   it('passes short_id as URL-encoded query parameter', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ staff_id: 'staff-uuid-123', establishment_id: null }],
+      json: async () => [{ establishment_id: 'est-uuid-456' }],
     });
 
     const { middleware } = await import('@/middleware');

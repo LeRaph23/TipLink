@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js';
 import {
   ConnectComponentsProvider,
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function StripeConnectEmbed({ hasAccount, isComplete, showManagement = false }: Props) {
+  const t = useTranslations('dashboard.onboarding');
   const [connectInstance, setConnectInstance] = useState<StripeConnectInstance | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,44 +49,61 @@ export function StripeConnectEmbed({ hasAccount, isComplete, showManagement = fa
         appearance: {
           overlays: 'dialog',
           variables: {
-            borderRadius: '12px',
+            borderRadius: '10px',
             spacingUnit: '4px',
+            colorPrimary: '#6366f1',
+            colorBackground: '#17171d',
+            colorText: '#f2f2f5',
+            colorSecondaryText: '#9898a8',
+            colorBorder: '#2e2e38',
           },
         },
       });
 
       setConnectInstance(instance);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Initialization failed');
+      setError(err instanceof Error ? err.message : t('initFailed'));
     } finally {
       setIsInitializing(false);
     }
-  }, [hasAccount]);
+  }, [hasAccount, t]);
 
   if (isComplete && !showManagement) {
     return (
-      <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-sm">
-        Your payout account is set up and ready to receive tips.
+      <div style={{
+        padding: '14px 18px', borderRadius: 'var(--radius)',
+        background: 'var(--success-bg)',
+        border: '1px solid color-mix(in oklch, var(--success) 30%, transparent)',
+        color: 'var(--success)', fontSize: 13.5, fontWeight: 500,
+      }}>
+        {t('ready')}
       </div>
     );
   }
 
   if (!connectInstance) {
     return (
-      <div className="space-y-3">
+      <div>
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p style={{ fontSize: 12.5, color: 'var(--error)', marginBottom: 10 }}>{error}</p>
         )}
         <button
+          type="button"
           onClick={initialize}
           disabled={isInitializing}
-          className="w-full py-4 rounded-xl bg-foreground text-background font-semibold disabled:opacity-50"
+          style={{
+            width: '100%', padding: '13px 18px', borderRadius: 'var(--radius)',
+            background: 'var(--accent)', color: 'var(--accent-fg)',
+            fontSize: 14, fontWeight: 700, border: 'none',
+            cursor: isInitializing ? 'not-allowed' : 'pointer',
+            opacity: isInitializing ? 0.6 : 1, fontFamily: 'var(--font)',
+          }}
         >
           {isInitializing
-            ? 'Setting up...'
+            ? t('initializing')
             : isComplete
-              ? 'Manage Payout Account'
-              : 'Set Up Payouts'}
+              ? t('continue')
+              : t('start')}
         </button>
       </div>
     );
@@ -94,14 +113,13 @@ export function StripeConnectEmbed({ hasAccount, isComplete, showManagement = fa
     <ConnectComponentsProvider connectInstance={connectInstance}>
       <ConnectNotificationBanner />
       {isComplete && showManagement ? (
-        <div className="space-y-4 mt-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
           <ConnectBalances />
           <ConnectPayouts />
         </div>
       ) : (
         <ConnectAccountOnboarding
           onExit={() => {
-            // Reload to re-check onboarding_status from DB after Stripe webhook fires
             window.location.reload();
           }}
         />

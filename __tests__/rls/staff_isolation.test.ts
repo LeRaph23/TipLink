@@ -30,6 +30,8 @@ describe.skipIf(skipIfNoLocal)('Staff Transaction RLS Isolation', () => {
   let transactionBId: string;
   let userAId: string;
   let userBId: string;
+  let emailA: string;
+  let emailB: string;
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -55,9 +57,8 @@ describe.skipIf(skipIfNoLocal)('Staff Transaction RLS Isolation', () => {
       .single();
     establishmentId = est!.id;
 
-    // Create auth users for staff A and B
-    const emailA = `staff-a-${ts}@test.local`;
-    const emailB = `staff-b-${ts}@test.local`;
+    emailA = `staff-a-${ts}@test.local`;
+    emailB = `staff-b-${ts}@test.local`;
 
     const { data: { user: userA } } = await serviceClient.auth.admin.createUser({
       email: emailA,
@@ -146,12 +147,18 @@ describe.skipIf(skipIfNoLocal)('Staff Transaction RLS Isolation', () => {
     }
   });
 
-  it('Staff A can see their own transaction', async () => {
+  async function signInAs(email: string) {
     const client = createClient(SUPABASE_URL, ANON_KEY);
-    await client.auth.signInWithPassword({
-      email: `staff-a-${Date.now()}@test.local`,
+    const { error } = await client.auth.signInWithPassword({
+      email,
       password: 'test-staff-password',
     });
+    if (error) throw new Error(`signIn failed for ${email}: ${error.message}`);
+    return client;
+  }
+
+  it('Staff A can see their own transaction', async () => {
+    const client = await signInAs(emailA);
     const { data } = await client
       .from('transactions')
       .select('id')
@@ -160,11 +167,7 @@ describe.skipIf(skipIfNoLocal)('Staff Transaction RLS Isolation', () => {
   });
 
   it('Staff A cannot see Staff B transaction', async () => {
-    const client = createClient(SUPABASE_URL, ANON_KEY);
-    await client.auth.signInWithPassword({
-      email: `staff-a-${Date.now()}@test.local`,
-      password: 'test-staff-password',
-    });
+    const client = await signInAs(emailA);
     const { data } = await client
       .from('transactions')
       .select('id')
@@ -173,11 +176,7 @@ describe.skipIf(skipIfNoLocal)('Staff Transaction RLS Isolation', () => {
   });
 
   it('Staff B cannot see Staff A transaction', async () => {
-    const client = createClient(SUPABASE_URL, ANON_KEY);
-    await client.auth.signInWithPassword({
-      email: `staff-b-${Date.now()}@test.local`,
-      password: 'test-staff-password',
-    });
+    const client = await signInAs(emailB);
     const { data } = await client
       .from('transactions')
       .select('id')
@@ -186,11 +185,7 @@ describe.skipIf(skipIfNoLocal)('Staff Transaction RLS Isolation', () => {
   });
 
   it('Authenticated users cannot INSERT transactions directly', async () => {
-    const client = createClient(SUPABASE_URL, ANON_KEY);
-    await client.auth.signInWithPassword({
-      email: `staff-a-${Date.now()}@test.local`,
-      password: 'test-staff-password',
-    });
+    const client = await signInAs(emailA);
     const { error } = await client.from('transactions').insert({
       amount: 999,
       currency: 'EUR',
@@ -199,6 +194,6 @@ describe.skipIf(skipIfNoLocal)('Staff Transaction RLS Isolation', () => {
       status: 'pending',
       idempotency_key: `rls-test-direct-insert-${Date.now()}`,
     });
-    expect(error).not.toBeNull(); // RLS should block this
+    expect(error).not.toBeNull();
   });
 });

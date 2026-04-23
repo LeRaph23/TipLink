@@ -1,17 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { routing } from '@/i18n/routing';
+
+const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact'];
+
+function sanitizeNext(raw: string | null): string {
+  if (!raw) return '/dashboard';
+  // Reject absolute URLs and protocol-relative URLs.
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) {
+    return '/dashboard';
+  }
+  // Only allow whitelisted top-level or locale-prefixed paths.
+  for (const prefix of ALLOWED_NEXT_PREFIXES) {
+    if (raw === prefix || raw.startsWith(`${prefix}/`) || raw.startsWith(`${prefix}?`)) {
+      return raw;
+    }
+    for (const loc of routing.locales) {
+      const locPrefix: string = `/${loc}${prefix}`;
+      if (raw === locPrefix || raw.startsWith(`${locPrefix}/`) || raw.startsWith(`${locPrefix}?`)) {
+        return raw;
+      }
+    }
+  }
+  return '/dashboard';
+}
+
+function resolveLocale(request: NextRequest, cookieStore: Awaited<ReturnType<typeof cookies>>): string {
+  const qp = new URL(request.url).searchParams.get('locale');
+  if (qp && (routing.locales as readonly string[]).includes(qp)) return qp;
+  const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value;
+  if (cookieLocale && (routing.locales as readonly string[]).includes(cookieLocale)) return cookieLocale;
+  return routing.defaultLocale;
+}
+
+function withLocale(target: string, locale: string): string {
+  // If already locale-prefixed, keep as is.
+  for (const loc of routing.locales) {
+    if (target === `/${loc}` || target.startsWith(`/${loc}/`) || target.startsWith(`/${loc}?`)) {
+      return target;
+    }
+  }
+  if (target === '/') return `/${locale}`;
+  return `/${locale}${target}`;
+}
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next') ?? '/dashboard';
+  const cookieStore = await cookies();
+  const locale = resolveLocale(request, cookieStore);
+
+  const rawNext = requestUrl.searchParams.get('next');
+  const safeNext = sanitizeNext(rawNext);
+  const nextWithLocale = withLocale(safeNext, locale);
 
   if (!code) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }
-
-  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,8 +79,8 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(new URL('/login?error=auth_callback_failed', request.url));
+    return NextResponse.redirect(new URL(`/${locale}/login?error=auth_callback_failed`, request.url));
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  return NextResponse.redirect(new URL(nextWithLocale, request.url));
 }

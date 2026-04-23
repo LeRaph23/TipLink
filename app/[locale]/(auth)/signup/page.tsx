@@ -1,0 +1,70 @@
+import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
+import { createClient } from '@/lib/supabase/server';
+import { Link } from '@/i18n/navigation';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SignupForm } from './SignupForm';
+
+export default async function SignupPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ pack?: string }>;
+}) {
+  const { locale } = await params;
+  const { pack } = await searchParams;
+
+  // Legacy link support: /signup?pack=X → /order/X wizard
+  if (pack === 's' || pack === 'm' || pack === 'l') {
+    redirect(`/${locale}/order/${pack}`);
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect(`/${locale}/dashboard`);
+
+  const t = await getTranslations('auth');
+
+  return (
+    <main style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg)', padding: '24px', position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{ position: 'fixed', top: '-20%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div style={{ position: 'absolute', top: 16, right: 20, zIndex: 2 }}>
+        <LanguageSwitcher compact />
+      </div>
+
+      <div className="fade-up" style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <rect width="24" height="24" rx="7" fill="var(--accent)" />
+              <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
+              <circle cx="12" cy="12" r="1.8" fill="white" />
+            </svg>
+          </div>
+          <h1 style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 5 }}>{t('signupTitle')}</h1>
+          <p style={{ fontSize: 13.5, color: 'var(--text-3)' }}>{t('signupSubtitle')}</p>
+        </div>
+
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)', padding: 28,
+          boxShadow: 'var(--shadow), 0 0 0 1px rgba(255,255,255,0.02)',
+        }}>
+          <SignupForm />
+        </div>
+
+        <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-3)', marginTop: 18 }}>
+          {t('hasAccount')}{' '}
+          <Link href="/login" style={{ color: 'var(--accent)' }}>{t('loginTitle')}</Link>
+        </p>
+      </div>
+    </main>
+  );
+}

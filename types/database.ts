@@ -14,6 +14,15 @@ export type Database = {
           settings: Json;
           created_at: string;
           deleted_at: string | null;
+          legal_name: string | null;
+          vat_number: string | null;
+          billing_address: Json | null;
+          shipping_address: Json | null;
+          stripe_customer_id: string | null;
+          subscription_id: string | null;
+          subscription_status: string | null;
+          subscription_pack: 's' | 'm' | 'l' | null;
+          platform_fee_bps: number;
         };
         Insert: {
           id?: string;
@@ -22,6 +31,15 @@ export type Database = {
           settings?: Json;
           created_at?: string;
           deleted_at?: string | null;
+          legal_name?: string | null;
+          vat_number?: string | null;
+          billing_address?: Json | null;
+          shipping_address?: Json | null;
+          stripe_customer_id?: string | null;
+          subscription_id?: string | null;
+          subscription_status?: string | null;
+          subscription_pack?: 's' | 'm' | 'l' | null;
+          platform_fee_bps?: number;
         };
         Update: {
           id?: string;
@@ -30,6 +48,146 @@ export type Database = {
           settings?: Json;
           created_at?: string;
           deleted_at?: string | null;
+          legal_name?: string | null;
+          vat_number?: string | null;
+          billing_address?: Json | null;
+          shipping_address?: Json | null;
+          stripe_customer_id?: string | null;
+          subscription_id?: string | null;
+          subscription_status?: string | null;
+          subscription_pack?: 's' | 'm' | 'l' | null;
+          platform_fee_bps?: number;
+        };
+        Relationships: [];
+      };
+      smarttag_orders: {
+        Row: {
+          id: string;
+          group_id: string;
+          pack: 's' | 'm' | 'l';
+          quantity: number;
+          stripe_checkout_session_id: string | null;
+          stripe_invoice_id: string | null;
+          status: 'pending_payment' | 'pending_fulfillment' | 'encoding' | 'ready_to_ship' | 'shipped' | 'delivered' | 'canceled';
+          shipping_address: Json | null;
+          tracking_number: string | null;
+          shipped_at: string | null;
+          delivered_at: string | null;
+          tags_encoded_count: number;
+          fulfilled_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          pack: 's' | 'm' | 'l';
+          quantity: number;
+          stripe_checkout_session_id?: string | null;
+          stripe_invoice_id?: string | null;
+          status?: 'pending_payment' | 'pending_fulfillment' | 'encoding' | 'ready_to_ship' | 'shipped' | 'delivered' | 'canceled';
+          shipping_address?: Json | null;
+          tracking_number?: string | null;
+          shipped_at?: string | null;
+          delivered_at?: string | null;
+          tags_encoded_count?: number;
+          fulfilled_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          group_id?: string;
+          pack?: 's' | 'm' | 'l';
+          quantity?: number;
+          stripe_checkout_session_id?: string | null;
+          stripe_invoice_id?: string | null;
+          status?: 'pending_payment' | 'pending_fulfillment' | 'encoding' | 'ready_to_ship' | 'shipped' | 'delivered' | 'canceled';
+          shipping_address?: Json | null;
+          tracking_number?: string | null;
+          shipped_at?: string | null;
+          delivered_at?: string | null;
+          tags_encoded_count?: number;
+          fulfilled_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'smarttag_orders_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      smarttag_order_tags: {
+        Row: {
+          order_id: string;
+          sticker_id: string;
+          encoded_at: string;
+        };
+        Insert: {
+          order_id: string;
+          sticker_id: string;
+          encoded_at?: string;
+        };
+        Update: {
+          order_id?: string;
+          sticker_id?: string;
+          encoded_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'smarttag_order_tags_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'smarttag_orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'smarttag_order_tags_sticker_id_fkey';
+            columns: ['sticker_id'];
+            isOneToOne: false;
+            referencedRelation: 'nfc_stickers';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      contact_requests: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          phone: string | null;
+          company: string | null;
+          team_size: string | null;
+          message: string;
+          locale: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          phone?: string | null;
+          company?: string | null;
+          team_size?: string | null;
+          message: string;
+          locale?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          phone?: string | null;
+          company?: string | null;
+          team_size?: string | null;
+          message?: string;
+          locale?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -134,35 +292,31 @@ export type Database = {
         Row: {
           id: string;
           short_id: string;
-          staff_id: string | null;
           establishment_id: string | null;
+          generated_at: string;
+          batch_label: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           short_id: string;
-          staff_id?: string | null;
           establishment_id?: string | null;
+          generated_at?: string;
+          batch_label?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           short_id?: string;
-          staff_id?: string | null;
           establishment_id?: string | null;
+          generated_at?: string;
+          batch_label?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: 'nfc_stickers_staff_id_fkey';
-            columns: ['staff_id'];
-            isOneToOne: false;
-            referencedRelation: 'staff_profiles';
-            referencedColumns: ['id'];
-          },
           {
             foreignKeyName: 'nfc_stickers_establishment_id_fkey';
             columns: ['establishment_id'];

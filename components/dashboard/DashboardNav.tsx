@@ -1,23 +1,105 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import type { Database } from '@/types/database';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
 
 interface Props {
   userRoles: Pick<UserRole, 'role' | 'group_id' | 'establishment_id'>[];
   userEmail: string;
+  userName: string;
 }
 
-export function DashboardNav({ userRoles, userEmail }: Props) {
+function LogoMark({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="7" fill="var(--accent)" />
+      <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="1.8" fill="white" />
+    </svg>
+  );
+}
+
+function HomeIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 01-1 1H3a1 1 0 01-1-1V6.5z" /><path d="M6 15V9h4v6" /></svg>;
+}
+function TxIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 5h12M2 8h8M2 11h5" /><path d="M11 10l2 2 2-2" /><path d="M13 12V7" /></svg>;
+}
+function PayoutIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><circle cx="5" cy="11" r="1" fill="currentColor" stroke="none" /></svg>;
+}
+function StaffIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="5" r="3" /><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" /></svg>;
+}
+function NfcIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M5 5.5C3.8 6.7 3.8 9.3 5 10.5M11 5.5c1.2 1.2 1.2 3.8 0 5M2.5 3C.5 5 .5 11 2.5 13M13.5 3C15.5 5 15.5 11 13.5 13" /></svg>;
+}
+function EstIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 15V6l6-4 6 4v9" /><path d="M6 15v-4h4v4" /><path d="M2 6h12" /></svg>;
+}
+function GroupIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="5" r="2.5" /><circle cx="11" cy="5" r="2.5" /><path d="M0 13.5c0-2.485 2.239-4 5-4" /><path d="M11 9.5c2.761 0 5 1.515 5 4" /><path d="M8 14c0-2.485 1.343-4 3-4s3 1.515 3 4" /></svg>;
+}
+
+function NavLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <Link
+      href={href}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 9,
+        padding: '7px 10px', borderRadius: 8, textDecoration: 'none',
+        background: active ? 'var(--accent-muted)' : hov ? 'var(--surface-2)' : 'transparent',
+        color: active ? 'var(--accent)' : hov ? 'var(--text)' : 'var(--text-2)',
+        fontSize: 13.5, fontWeight: active ? 600 : 500,
+        letterSpacing: '-0.01em', width: '100%',
+        transition: 'all 120ms',
+      }}
+    >
+      <span style={{ color: active ? 'var(--accent)' : 'currentColor', flexShrink: 0 }}>{icon}</span>
+      {label}
+    </Link>
+  );
+}
+
+function Avatar({ name, size = 28 }: { name: string; size?: number }) {
+  const palette = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
+  const idx = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length;
+  const initials = name.trim().split(/\s+/).map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: palette[idx], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.38, fontWeight: 700, color: '#fff', flexShrink: 0, letterSpacing: '-0.02em', userSelect: 'none' }}>
+      {initials}
+    </div>
+  );
+}
+
+export function DashboardNav({ userRoles, userEmail, userName }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const tn = useTranslations('dashboard.nav');
+  const td = useTranslations('dashboard');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const hasRole = (role: UserRole['role']) => userRoles.some((r) => r.role === role);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  const hasRole = (role: UserRole['role']) => userRoles.some(r => r.role === role);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -26,52 +108,120 @@ export function DashboardNav({ userRoles, userEmail }: Props) {
     router.refresh();
   };
 
+  const ta = useTranslations('dashboard.admin.nav');
+
   const links = [
-    { href: '/dashboard', label: 'Home', always: true },
-    { href: '/dashboard/transactions', label: 'Transactions', always: true },
-    { href: '/dashboard/onboarding', label: 'Payouts', roles: ['staff'] as UserRole['role'][] },
-    { href: '/dashboard/staff', label: 'Staff', roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
-    { href: '/dashboard/stickers', label: 'NFC Stickers', roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
-    { href: '/dashboard/establishments', label: 'Establishments', roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
-    { href: '/dashboard/groups', label: 'Groups', roles: ['super_admin'] as UserRole['role'][] },
+    { href: '/dashboard',               label: tn('overview'),     icon: <HomeIcon />,   always: true },
+    { href: '/dashboard/transactions',  label: tn('transactions'), icon: <TxIcon />,     always: true },
+    { href: '/dashboard/billing',       label: tn('billing'),      icon: <PayoutIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/onboarding',    label: td('payouts'),      icon: <PayoutIcon />, roles: ['staff'] as UserRole['role'][] },
+    { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/stickers',      label: tn('stickers'),     icon: <NfcIcon />,    roles: ['manager', 'group_admin'] as UserRole['role'][] },
+    { href: '/dashboard/analytics',     label: td('analytics.nav'),icon: <TxIcon />,     roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/settings',      label: tn('settings'),     icon: <StaffIcon />,  roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
   ];
 
-  const visibleLinks = links.filter(
-    (l) => l.always || (l.roles && l.roles.some((r) => hasRole(r)))
-  );
+  const adminLinks = [
+    { href: '/dashboard/admin',                 label: ta('overview'),     icon: <HomeIcon /> },
+    { href: '/dashboard/admin/smarttags',       label: ta('smarttags'),    icon: <NfcIcon /> },
+    { href: '/dashboard/admin/orders',          label: ta('orders'),       icon: <PayoutIcon /> },
+    { href: '/dashboard/admin/transactions',    label: ta('transactions'), icon: <TxIcon /> },
+    { href: '/dashboard/admin/establishments',  label: ta('establishments'), icon: <EstIcon /> },
+    { href: '/dashboard/admin/groups',          label: ta('groups'),       icon: <GroupIcon /> },
+  ];
+
+  const visibleLinks = links.filter(l => l.always || (l.roles && l.roles.some(r => hasRole(r))));
+  const isSuperAdmin = hasRole('super_admin');
+
+  const displayName = userName || userEmail;
+  const topRole = userRoles[0]?.role?.replace('_', ' ') ?? 'staff';
 
   return (
-    <nav className="border-b bg-background sticky top-0 z-40">
-      <div className="container mx-auto px-4 max-w-5xl flex items-center gap-6 h-14">
-        <Link href="/dashboard" className="font-bold text-lg">
-          TipLink
-        </Link>
-        <div className="flex items-center gap-4 text-sm flex-1">
-          {visibleLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={[
-                'transition-colors',
-                pathname === l.href
-                  ? 'text-foreground font-medium'
-                  : 'text-muted-foreground hover:text-foreground',
-              ].join(' ')}
-            >
-              {l.label}
-            </Link>
-          ))}
+    <aside style={{
+      width: 'var(--sidebar-w)', flexShrink: 0, height: '100vh',
+      background: 'var(--bg-subtle)', borderRight: '1px solid var(--border-subtle)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      position: 'sticky', top: 0,
+    }}>
+      {/* Logo */}
+      <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <LogoMark size={26} />
+          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>TipLink</span>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-muted-foreground hidden sm:inline">{userEmail}</span>
-          <button
-            onClick={handleSignOut}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Sign out
-          </button>
-        </div>
+        <LanguageSwitcher compact />
       </div>
-    </nav>
+
+      {/* Nav links */}
+      <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto' }}>
+        {visibleLinks.map(l => (
+          <NavLink
+            key={l.href} href={l.href} icon={l.icon} label={l.label}
+            active={l.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(l.href)}
+          />
+        ))}
+
+        {isSuperAdmin && (
+          <>
+            <div style={{
+              margin: '14px 10px 6px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}>
+              {ta('sectionTitle')}
+            </div>
+            {adminLinks.map(l => (
+              <NavLink
+                key={l.href} href={l.href} icon={l.icon} label={l.label}
+                active={l.href === '/dashboard/admin' ? pathname === '/dashboard/admin' : pathname.startsWith(l.href)}
+              />
+            ))}
+          </>
+        )}
+      </nav>
+
+      {/* User footer */}
+      <div style={{ padding: 8, borderTop: '1px solid var(--border-subtle)', position: 'relative' }} ref={menuRef}>
+        <button
+          onClick={() => setMenuOpen(o => !o)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 9,
+            padding: '8px 10px', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer',
+            background: menuOpen ? 'var(--surface-2)' : 'transparent', textAlign: 'left',
+            transition: 'background 120ms',
+          }}
+          onMouseEnter={e => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-2)'; }}
+          onMouseLeave={e => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+        >
+          <Avatar name={displayName} size={28} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'capitalize' }}>{topRole}</div>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--text-3)" strokeWidth="1.7" strokeLinecap="round" style={{ transform: menuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 180ms', flexShrink: 0 }}>
+            <path d="M2 4l4 4 4-4" />
+          </svg>
+        </button>
+
+        {menuOpen && (
+          <div className="scale-in" style={{
+            position: 'absolute', bottom: '100%', left: 8, right: 8, marginBottom: 4,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)', padding: 6,
+            boxShadow: 'var(--shadow-lg)', zIndex: 50,
+          }}>
+            <button
+              onClick={handleSignOut}
+              style={{
+                display: 'block', width: '100%', padding: '7px 8px', borderRadius: 6,
+                background: 'transparent', color: 'var(--error)', border: 'none',
+                cursor: 'pointer', textAlign: 'left', fontSize: 13, fontFamily: 'var(--font)',
+              }}
+            >
+              {tn('signOut')}
+            </button>
+          </div>
+        )}
+      </div>
+    </aside>
   );
 }

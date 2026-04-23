@@ -1,18 +1,28 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
 
-// Combined middleware: NFC redirect (no auth) + Supabase session refresh (auth routes)
+const intlMiddleware = createIntlMiddleware(routing);
+
+// Combined middleware: NFC redirect (no auth, no locale) + next-intl (locale routing)
+// + Supabase session refresh (for auth-protected pages).
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ── NFC redirect: /s/[shortId] ──────────────────────────────────────────────
-  // Runs before any routing. Uses raw PostgREST fetch (not SDK) for Edge compat.
-  // The Supabase SDK pulls Node.js-incompatible paths; raw fetch is 100% Edge-safe.
+  // 1) NFC redirect: /s/[shortId] — short-circuits everything else.
+  //    Uses raw PostgREST fetch (Edge-safe, no Supabase SDK).
   if (pathname.startsWith('/s/')) {
-    const shortId = pathname.slice(3); // strip "/s/"
+    const shortId = pathname.slice(3);
+
+    const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
+    const acceptLang = request.headers.get('accept-language') ?? '';
+    const preferredLocale =
+      (cookieLocale && (routing.locales as readonly string[]).includes(cookieLocale) && cookieLocale) ||
+      (acceptLang.toLowerCase().startsWith('fr') ? 'fr' : routing.defaultLocale);
 
     if (!shortId || shortId.length < 4) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL(`/${preferredLocale}`, request.url));
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -21,7 +31,7 @@ export async function middleware(request: NextRequest) {
     let res: Response;
     try {
       res = await fetch(
-        `${supabaseUrl}/rest/v1/nfc_stickers?short_id=eq.${encodeURIComponent(shortId)}&select=staff_id,establishment_id&limit=1`,
+        `${supabaseUrl}/rest/v1/nfc_stickers?short_id=eq.${encodeURIComponent(shortId)}&select=establishment_id&limit=1`,
         {
           headers: {
             apikey: serviceKey,
@@ -32,31 +42,35 @@ export async function middleware(request: NextRequest) {
         }
       );
     } catch {
-      return NextResponse.redirect(new URL('/not-found', request.url));
+      return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
     }
 
     if (!res.ok) {
-      return NextResponse.redirect(new URL('/not-found', request.url));
+      return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
     }
 
-    const rows: Array<{ staff_id: string | null; establishment_id: string | null }> =
-      await res.json();
+    const rows: Array<{ establishment_id: string | null }> = await res.json();
 
-    if (!rows.length || (!rows[0].staff_id && !rows[0].establishment_id)) {
-      return NextResponse.redirect(new URL('/not-found', request.url));
+    if (!rows.length || !rows[0].establishment_id) {
+      return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
     }
 
-    const { staff_id, establishment_id } = rows[0];
-    const destination = staff_id
-      ? `/pay/${staff_id}`
-      : `/pay/group/${establishment_id}`;
-
+    const destination = `/${preferredLocale}/pay/group/${rows[0].establishment_id}`;
     return NextResponse.redirect(new URL(destination, request.url), 302);
   }
 
-  // ── Supabase session refresh for all other routes ───────────────────────────
-  // Required so auth cookies are refreshed before SSR rendering.
-  let response = NextResponse.next({ request });
+  // 2) next-intl middleware: handles locale prefix detection/redirect.
+  //    This produces the response we'll augment with Supabase cookie handling.
+  const intlResponse = intlMiddleware(request);
+
+  // If intl redirected (e.g. `/` → `/en`), return immediately.
+  if (intlResponse.status === 307 || intlResponse.status === 308) {
+    return intlResponse;
+  }
+
+  // 3) Supabase session refresh: only for locale-prefixed routes.
+  //    We create a response that carries intl headers and attaches Supabase cookies.
+  let response = intlResponse;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -70,7 +84,9 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          response = NextResponse.next({ request });
+          // Re-run intl middleware to produce a fresh response carrying its headers,
+          // then copy the new Supabase cookies onto it.
+          response = intlMiddleware(request);
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
@@ -79,17 +95,24 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session (needed to keep tokens alive)
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Strip locale prefix for route-matching logic
+  const localePrefix = routing.locales.find(
+    (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`)
+  );
+  const bare = localePrefix ? pathname.slice(`/${localePrefix}`.length) || '/' : pathname;
+
   // Protect dashboard routes
-  if (pathname.startsWith('/dashboard') && !user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  if (bare.startsWith('/dashboard') && !user) {
+    const loginUrl = new URL(`/${localePrefix ?? routing.defaultLocale}/login`, request.url);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Redirect authenticated users away from auth pages
-  if ((pathname === '/login' || pathname === '/signup') && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  if ((bare === '/login' || bare === '/signup') && user) {
+    const dashUrl = new URL(`/${localePrefix ?? routing.defaultLocale}/dashboard`, request.url);
+    return NextResponse.redirect(dashUrl);
   }
 
   return response;
@@ -97,9 +120,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // NFC redirect paths
+    // NFC redirect
     '/s/:path*',
-    // Auth-protected paths (excludes _next, static, public files)
-    '/((?!_next/static|_next/image|favicon.ico|public|pay/).*)',
+    // All pages except: api, auth (Supabase callback), static assets.
+    // next-intl matches /, /en, /fr, /en/*, /fr/*, /something (and redirects to default).
+    '/((?!_next/static|_next/image|favicon.ico|public|api/|auth/|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|avif)$).*)',
   ],
 };

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckoutForm } from './CheckoutForm';
+import { TipCheckout } from './TipCheckout';
 
 interface Props {
   staffId: string;
@@ -11,50 +11,96 @@ interface Props {
 
 export function AmountSelector({ staffId, currency, thresholds }: Props) {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
-  // One nonce per page load — used as part of idempotency key
-  const [nonce] = useState(() => crypto.randomUUID());
+  const [custom, setCustom] = useState('');
+  const [customFocus, setCustomFocus] = useState(false);
 
-  const formatter = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
+  const effectiveAmount = custom
+    ? Math.round((parseFloat(custom) || 0) * 100)
+    : selectedAmount;
+
+  const hasAmount = effectiveAmount !== null && effectiveAmount >= 50;
+
+  const fmt = new Intl.NumberFormat(undefined, {
+    style: 'currency', currency, minimumFractionDigits: 0,
   });
 
   return (
-    <div className="space-y-6">
-      <p className="text-center text-sm text-muted-foreground font-medium uppercase tracking-wide">
-        Select a tip amount
-      </p>
-
-      <div className="grid grid-cols-4 gap-2">
-        {thresholds.map((amount) => {
-          const amountInCents = amount * 100;
-          const isSelected = selectedAmount === amountInCents;
-          return (
-            <button
-              key={amount}
-              onClick={() => setSelectedAmount(amountInCents)}
-              className={[
-                'p-4 rounded-xl border-2 font-semibold text-sm transition-all',
-                isSelected
-                  ? 'border-foreground bg-foreground text-background'
-                  : 'border-border hover:border-foreground/50',
-              ].join(' ')}
-            >
-              {formatter.format(amount)}
-            </button>
-          );
-        })}
+    <>
+      {/* Amount selector card */}
+      <div style={{
+        padding: 20, borderRadius: 20, marginBottom: 12,
+        background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+      }}>
+        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.09em', textAlign: 'center', marginBottom: 12 }}>
+          Choose an amount
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+          {thresholds.map(amt => {
+            const cents = amt * 100;
+            const active = !custom && selectedAmount === cents;
+            return (
+              <button
+                key={amt}
+                onClick={() => { setSelectedAmount(cents); setCustom(''); }}
+                style={{
+                  padding: '14px 6px', borderRadius: 12,
+                  border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                  background: active ? 'var(--accent-muted)' : 'var(--surface-2)',
+                  color: active ? 'var(--accent)' : 'var(--text)',
+                  fontFamily: 'var(--font)', fontSize: 20, fontWeight: 800, cursor: 'pointer',
+                  letterSpacing: '-0.03em',
+                  boxShadow: active ? '0 0 0 3px var(--accent-muted)' : 'none',
+                  transition: 'all 130ms cubic-bezier(.34,1.3,.64,1)',
+                  transform: active ? 'scale(1.05)' : 'scale(1)',
+                }}
+              >
+                {fmt.format(amt)}
+              </button>
+            );
+          })}
+        </div>
+        {/* Custom amount */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <span style={{ position: 'absolute', left: 11, fontSize: 14, color: 'var(--text-3)', pointerEvents: 'none', zIndex: 1 }}>
+            {currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '$'}
+          </span>
+          <input
+            type="number" placeholder="Other amount" value={custom}
+            onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
+            onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
+            style={{
+              width: '100%', background: 'var(--surface-2)',
+              border: `1.5px solid ${customFocus ? 'var(--accent)' : 'var(--border)'}`,
+              borderRadius: 'var(--radius-sm)', padding: '9px 12px 9px 28px',
+              color: 'var(--text)', fontSize: 13.5, outline: 'none',
+              boxShadow: customFocus ? '0 0 0 3px var(--accent-muted)' : 'none',
+              fontFamily: 'var(--font)',
+            }}
+          />
+        </div>
       </div>
 
-      {selectedAmount !== null && (
-        <CheckoutForm
+      {/* Checkout card — only shown once a valid amount is chosen.
+          Remounting via `key={effectiveAmount}` is intentional: it forces
+          Stripe Elements to recompute payment methods for the new amount. */}
+      {hasAmount && effectiveAmount && (
+        <TipCheckout
+          key={effectiveAmount}
           staffId={staffId}
-          amount={selectedAmount}
+          amount={effectiveAmount}
           currency={currency}
-          nonce={nonce}
         />
       )}
-    </div>
+
+      {!hasAmount && (
+        <div style={{
+          padding: 20, borderRadius: 20,
+          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+          textAlign: 'center', color: 'var(--text-3)', fontSize: 13,
+        }}>
+          Select an amount to continue
+        </div>
+      )}
+    </>
   );
 }

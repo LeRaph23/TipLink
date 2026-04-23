@@ -31,6 +31,7 @@ describe.skipIf(skipIfNoLocal)('Group RLS Isolation', () => {
   let groupBId: string;
   let establishmentBId: string;
   let adminAUserId: string;
+  let adminAEmail: string;
 
   beforeAll(async () => {
     const { data: groupA } = await serviceClient
@@ -61,9 +62,9 @@ describe.skipIf(skipIfNoLocal)('Group RLS Isolation', () => {
       .single();
     establishmentBId = estB!.id;
 
-    const testEmail = `rls-admin-a-${Date.now()}@test.local`;
+    adminAEmail = `rls-admin-a-${Date.now()}@test.local`;
     const { data: { user } } = await serviceClient.auth.admin.createUser({
-      email: testEmail,
+      email: adminAEmail,
       password: 'test-password-rls-123',
       email_confirm: true,
     });
@@ -86,10 +87,11 @@ describe.skipIf(skipIfNoLocal)('Group RLS Isolation', () => {
 
   async function clientAsAdminA() {
     const client = createClient(SUPABASE_URL, ANON_KEY);
-    await client.auth.signInWithPassword({
-      email: `rls-admin-a-${Date.now()}@test.local`,
+    const { error } = await client.auth.signInWithPassword({
+      email: adminAEmail,
       password: 'test-password-rls-123',
     });
+    if (error) throw new Error(`signIn failed: ${error.message}`);
     return client;
   }
 
