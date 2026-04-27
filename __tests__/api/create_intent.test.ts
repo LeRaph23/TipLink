@@ -34,6 +34,7 @@ function supabaseMock(opts: {
   staff?: { stripe_account_id: string; onboarding_status: string; establishment_id: string } | null;
   insertError?: { code: string } | null;
   existingTxnId?: string | null;
+  platformFeeBps?: number;
 }) {
   const staffChain = {
     select: vi.fn().mockReturnThis(),
@@ -46,13 +47,37 @@ function supabaseMock(opts: {
     }),
   };
 
-  let call = 0;
+  // Platform fee defaults to 0 so tests that check application_fee_amount
+  // is absent remain valid (fee is only added when > 0).
+  const feeBps = opts.platformFeeBps ?? 0;
+
+  let txnCall = 0;
   return {
     from: vi.fn((table: string) => {
       if (table === 'staff_profiles') return staffChain;
+      if (table === 'establishments') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: opts.staff?.establishment_id ? { group_id: 'group-1' } : null,
+            error: null,
+          }),
+        };
+      }
+      if (table === 'groups') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { platform_fee_bps: feeBps },
+            error: null,
+          }),
+        };
+      }
       if (table === 'transactions') {
-        call += 1;
-        if (call === 1) {
+        txnCall += 1;
+        if (txnCall === 1) {
           // first call = INSERT new pending txn
           return {
             insert: vi.fn().mockReturnThis(),

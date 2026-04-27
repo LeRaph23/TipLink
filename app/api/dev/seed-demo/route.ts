@@ -87,7 +87,7 @@ export async function POST() {
         user_metadata: { full_name: 'Demo Manager' },
       });
       if (error) fail(error);
-      userId = data!.user.id;
+      userId = data!.user!.id;
     } else {
       step = 'auth.updateUserById';
       const { error } = await admin.auth.admin.updateUserById(userId, {

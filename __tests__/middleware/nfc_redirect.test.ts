@@ -40,7 +40,8 @@ describe('NFC Redirect Middleware', () => {
     const response = await middleware(request);
 
     expect(response.status).toBe(302);
-    expect(response.headers.get('location')).toBe('https://tipl.ink/pay/group/est-uuid-456');
+    // Middleware now adds locale prefix to NFC redirects
+    expect(response.headers.get('location')).toContain('/pay/group/est-uuid-456');
   });
 
   it('redirects to /not-found for unknown short_id', async () => {

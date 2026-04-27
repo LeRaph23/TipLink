@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import '../globals.css';
 
@@ -63,6 +63,7 @@ export default async function LocaleLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
 
   setRequestLocale(locale);
+  const messages = await getMessages();
 
   return (
     <html
@@ -71,7 +72,7 @@ export default async function LocaleLayout({
       className={`${jakarta.variable} ${spaceGrotesk.variable} h-full`}
     >
       <body className="min-h-full flex flex-col antialiased">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>
   );

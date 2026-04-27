@@ -4,12 +4,15 @@ import { DashboardNav } from '@/components/dashboard/DashboardNav';
 
 export default async function DashboardLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) redirect(`/${locale}/login`);
 
   const [{ data: roles }, { data: staffProfile }] = await Promise.all([
     supabase.from('user_roles').select('role, group_id, establishment_id').eq('user_id', user.id),

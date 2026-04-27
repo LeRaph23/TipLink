@@ -82,15 +82,16 @@ function serviceClientMock(opts: {
 
 describe('POST /api/billing/checkout', () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.resetAllMocks();
+    // Required by lib/env.ts public schema validation (runs at module load)
     process.env.NEXT_PUBLIC_BASE_URL = 'https://test.example.com';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key-min-10-chars';
     process.env.STRIPE_SECRET_KEY = 'sk_test';
     process.env.STRIPE_PRICE_PACK_S_HARDWARE = 'price_s_hw';
-    process.env.STRIPE_PRICE_PACK_S_SUB = 'price_s_sub';
     process.env.STRIPE_PRICE_PACK_M_HARDWARE = 'price_m_hw';
-    process.env.STRIPE_PRICE_PACK_M_SUB = 'price_m_sub';
     process.env.STRIPE_PRICE_PACK_L_HARDWARE = 'price_l_hw';
-    process.env.STRIPE_PRICE_PACK_L_SUB = 'price_l_sub';
   });
 
   it('returns 400 on invalid pack', async () => {
@@ -113,7 +114,7 @@ describe('POST /api/billing/checkout', () => {
     expect(res.status).toBe(401);
   });
 
-  it('creates Stripe session with mixed line items (subscription + hardware)', async () => {
+  it('creates Stripe checkout session for one-shot hardware purchase', async () => {
     const { createClient } = await import('@/lib/supabase/server');
     const { createServiceClient } = await import('@/lib/supabase/service');
     const { stripe } = await import('@/lib/stripe/client');
@@ -154,10 +155,9 @@ describe('POST /api/billing/checkout', () => {
     expect(body.url).toBe('https://checkout.stripe.com/test');
 
     const call = vi.mocked(stripe.checkout.sessions.create).mock.calls[0][0]!;
-    expect(call.mode).toBe('subscription');
-    expect(call.line_items).toHaveLength(2);
-    expect(call.line_items![0].price).toBe('price_m_sub');
-    expect(call.line_items![1].price).toBe('price_m_hw');
+    expect(call.mode).toBe('payment');
+    expect(call.line_items).toHaveLength(1);
+    expect(call.line_items![0].price).toBe('price_m_hw');
     expect(call.automatic_tax?.enabled).toBe(true);
     expect(call.tax_id_collection?.enabled).toBe(true);
     expect(call.metadata?.group_id).toBe('grp-1');

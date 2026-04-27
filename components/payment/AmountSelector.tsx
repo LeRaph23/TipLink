@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { TipCheckout } from './TipCheckout';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function AmountSelector({ staffId, currency, thresholds }: Props) {
+  const t = useTranslations('pay');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [custom, setCustom] = useState('');
   const [customFocus, setCustomFocus] = useState(false);
@@ -32,7 +34,7 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
       }}>
         <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.09em', textAlign: 'center', marginBottom: 12 }}>
-          Choose an amount
+          {t('selectAmount')}
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
           {thresholds.map(amt => {
@@ -65,7 +67,7 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
             {currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '$'}
           </span>
           <input
-            type="number" placeholder="Other amount" value={custom}
+            type="number" placeholder={t('customAmount')} value={custom}
             onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
             onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
             style={{
@@ -98,7 +100,7 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
           background: 'var(--surface)', border: '1px solid var(--border-subtle)',
           textAlign: 'center', color: 'var(--text-3)', fontSize: 13,
         }}>
-          Select an amount to continue
+          {t('selectAmountPrompt')}
         </div>
       )}
     </>

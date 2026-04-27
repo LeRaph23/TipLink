@@ -307,6 +307,7 @@
     "tipFor": "Laissez un pourboire à",
     "selectAmount": "Choisissez un montant",
     "customAmount": "Montant personnalisé",
+    "selectAmountPrompt": "Choisissez un montant pour continuer",
     "paying": "Paiement…",
     "pay": "Payer",
     "notReady": "Ce membre de l'équipe n'est pas encore prêt à recevoir des pourboires.",

@@ -330,15 +330,14 @@ describe('Stripe Webhook Handler', () => {
   // SmartTag subscription lifecycle tests
   // ============================================================
 
-  it('checkout.session.completed updates group + creates smarttag_orders row', async () => {
+  it('checkout.session.completed (mode=payment) updates group + creates smarttag_orders row', async () => {
     const mockEvent = {
       id: 'evt_cs_done',
       type: 'checkout.session.completed',
       data: {
         object: {
           id: 'cs_test_smarttag',
-          mode: 'subscription',
-          subscription: 'sub_123',
+          mode: 'payment',
           customer: 'cus_123',
           metadata: { group_id: 'grp-1', pack: 'm', quantity: '30' },
           collected_information: {
@@ -394,13 +393,9 @@ describe('Stripe Webhook Handler', () => {
     );
 
     expect(res.status).toBe(200);
+    // Group is updated with the Stripe customer id and shipping address
     expect(groupUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        stripe_customer_id: 'cus_123',
-        subscription_id: 'sub_123',
-        subscription_status: 'active',
-        subscription_pack: 'm',
-      })
+      expect.objectContaining({ stripe_customer_id: 'cus_123' })
     );
     expect(orderUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -414,7 +409,7 @@ describe('Stripe Webhook Handler', () => {
     );
   });
 
-  it('checkout.session.completed ignores non-subscription mode', async () => {
+  it('checkout.session.completed (mode=payment, no metadata) does not create order', async () => {
     const mockEvent = {
       id: 'evt_cs_payment',
       type: 'checkout.session.completed',
@@ -452,49 +447,31 @@ describe('Stripe Webhook Handler', () => {
     expect(orderUpsert).not.toHaveBeenCalled();
   });
 
-  it('customer.subscription.updated propagates status to groups', async () => {
+  it('customer.subscription.updated is a no-op (legacy event kept for backward compat)', async () => {
     const mockEvent = {
       id: 'evt_sub_updated',
       type: 'customer.subscription.updated',
-      data: {
-        object: {
-          id: 'sub_123',
-          status: 'active',
-          customer: 'cus_123',
-          metadata: { group_id: 'grp-1' },
-        },
-      },
+      data: { object: { id: 'sub_123', status: 'active', customer: 'cus_123' } },
     };
 
     const { stripe } = await import('@/lib/stripe/client');
     vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as never);
 
     const { createServiceClient } = await import('@/lib/supabase/service');
-    const groupUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    const groupUpdate = vi.fn();
     const mockSupabase = {
-      from: vi.fn((table: string) => {
-        if (table === 'groups') {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
-            upsert: vi.fn().mockResolvedValue({ error: null }),
-            update: groupUpdate,
-          };
-        }
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          upsert: vi.fn().mockResolvedValue({ error: null }),
-          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
-        };
-      }),
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      })),
     };
     vi.mocked(createServiceClient).mockReturnValue(mockSupabase as never);
 
     const { POST } = await import('@/app/api/webhooks/stripe/route');
-    await POST(
+    const res = await POST(
       new NextRequest('https://test.example.com/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(mockEvent),
@@ -502,15 +479,12 @@ describe('Stripe Webhook Handler', () => {
       })
     );
 
-    expect(groupUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        subscription_status: 'active',
-        subscription_id: 'sub_123',
-      })
-    );
+    // Legacy subscription events are accepted but do nothing
+    expect(res.status).toBe(200);
+    expect(groupUpdate).not.toHaveBeenCalled();
   });
 
-  it('invoice.payment_failed marks group subscription as past_due', async () => {
+  it('invoice.payment_failed is a no-op (legacy event kept for backward compat)', async () => {
     const mockEvent = {
       id: 'evt_invoice_failed',
       type: 'invoice.payment_failed',
@@ -521,31 +495,20 @@ describe('Stripe Webhook Handler', () => {
     vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as never);
 
     const { createServiceClient } = await import('@/lib/supabase/service');
-    const groupUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    const groupUpdate = vi.fn();
     const mockSupabase = {
-      from: vi.fn((table: string) => {
-        if (table === 'groups') {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
-            upsert: vi.fn().mockResolvedValue({ error: null }),
-            update: groupUpdate,
-          };
-        }
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          upsert: vi.fn().mockResolvedValue({ error: null }),
-          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
-        };
-      }),
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      })),
     };
     vi.mocked(createServiceClient).mockReturnValue(mockSupabase as never);
 
     const { POST } = await import('@/app/api/webhooks/stripe/route');
-    await POST(
+    const res = await POST(
       new NextRequest('https://test.example.com/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(mockEvent),
@@ -553,8 +516,8 @@ describe('Stripe Webhook Handler', () => {
       })
     );
 
-    expect(groupUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ subscription_status: 'past_due' })
-    );
+    // Legacy invoice events are accepted but do nothing
+    expect(res.status).toBe(200);
+    expect(groupUpdate).not.toHaveBeenCalled();
   });
 });

@@ -152,7 +152,8 @@ async function handleEvent(
       if (session.mode !== 'payment') break;
 
       const groupId = session.metadata?.group_id;
-      const pack = session.metadata?.pack as 's' | 'm' | 'l' | undefined;
+      const rawPack = session.metadata?.pack;
+      const pack = (['s', 'm', 'l'] as const).find((p) => p === rawPack);
       if (!groupId || !pack) {
         // Not a pack checkout (e.g. other future one-off products).
         break;
