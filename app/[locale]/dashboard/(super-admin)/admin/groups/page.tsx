@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function GroupsPage({
@@ -14,7 +15,7 @@ export default async function GroupsPage({
 
   const { data: groups } = await supabase
     .from('groups')
-    .select('id, name, logo_url, settings, created_at')
+    .select('id, name, logo_url, settings, created_at, platform_fee_bps')
     .is('deleted_at', null)
     .order('name');
 
@@ -62,9 +63,24 @@ export default async function GroupsPage({
                 )}
                 <h2 style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{g.name}</h2>
               </div>
-              <p style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+              <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 6 }}>
                 {t('groups.createdOn')} {new Date(g.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 11.5, color: 'var(--text-2)', fontWeight: 500 }}>
+                  {t('groups.feeLabel')}: {((g.platform_fee_bps ?? 200) / 100).toFixed(2)}%
+                </span>
+                <Link
+                  href={`/dashboard/admin/groups/${g.id}`}
+                  style={{
+                    fontSize: 11.5, fontWeight: 600, color: 'var(--accent)',
+                    textDecoration: 'none', padding: '3px 8px',
+                    border: '1px solid var(--accent-muted)', borderRadius: 5,
+                  }}
+                >
+                  {t('groups.edit')}
+                </Link>
+              </div>
             </div>
           ))}
         </div>

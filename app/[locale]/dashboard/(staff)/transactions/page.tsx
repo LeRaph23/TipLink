@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { CsvExportButton } from '@/components/dashboard/CsvExportButton';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
@@ -41,11 +42,14 @@ export default async function StaffTransactionsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>{t('title')}</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          {t('totalReceived')}: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{fmt.format(total / 100)}</span>
-        </p>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>{t('title')}</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
+            {t('totalReceived')}: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{fmt.format(total / 100)}</span>
+          </p>
+        </div>
+        <CsvExportButton transactions={transactions ?? []} />
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>

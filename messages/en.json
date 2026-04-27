@@ -335,7 +335,10 @@
     "processingButton": "Processing…",
     "successStatus": "Status",
     "successReference": "Reference",
-    "successBack": "Back to TipLink"
+    "successBack": "Back to TipLink",
+    "yourEmail": "Your email (optional)",
+    "emailPlaceholder": "email@example.com",
+    "receiptNote": "A receipt will be sent to this address"
   },
   "dashboard": {
     "welcome": "Welcome back,",
@@ -458,7 +461,34 @@
         "payoutNotStarted": "Not started",
         "recentTips": "Recent tips",
         "notFound": "Staff not found."
-      }
+      },
+      "tipLink": "Your personal tip link",
+      "tipLinkCopy": "Copy",
+      "tipLinkCopied": "Copied!",
+      "stripeDashboard": "Open Stripe Dashboard",
+      "stripeLoading": "Opening…"
+    },
+    "establishments": {
+      "title": "Establishments",
+      "subtitle": "Manage your venues and their tip links.",
+      "create": "New establishment",
+      "empty": "No establishments yet. Create one to start accepting tips.",
+      "name": "Establishment name",
+      "type": "Business type",
+      "typeRestaurant": "Restaurant",
+      "typeBeauty": "Beauty & Hair",
+      "country": "Country",
+      "currency": "Currency",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "creating": "Creating…",
+      "delete": "Delete establishment",
+      "deleteConfirm": "This will permanently remove the establishment. Continue?",
+      "back": "← Back",
+      "tipLink": "Customer tip page",
+      "copyLink": "Copy link",
+      "linkCopied": "Copied!"
     },
     "stickers": {
       "title": "SmartTags",
@@ -625,7 +655,13 @@
         "title": "Groups",
         "subtitle": "All groups on the platform.",
         "empty": "No groups found.",
-        "createdOn": "Created"
+        "createdOn": "Created",
+        "feeLabel": "Commission",
+        "feeBps": "Basis points (100 = 1%)",
+        "feeSave": "Update fee",
+        "feeSaving": "Saving…",
+        "feeSaved": "Saved",
+        "edit": "Edit"
       },
       "establishments": {
         "title": "Establishments",

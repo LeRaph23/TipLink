@@ -55,3 +55,37 @@ export async function updateGroup(
   revalidatePath('/dashboard/settings');
   return { success: true };
 }
+
+export async function updateGroupPlatformFee(
+  groupId: string,
+  bps: number
+): Promise<{ success: true } | { error: string }> {
+  if (!Number.isInteger(bps) || bps < 0 || bps > 1500) {
+    return { error: 'Fee must be an integer between 0 and 1500 basis points' };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: role } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('role', 'super_admin')
+    .maybeSingle();
+
+  if (!role) return { error: 'Forbidden' };
+
+  const { createServiceClient } = await import('@/lib/supabase/service');
+  const service = createServiceClient();
+  const { error } = await service
+    .from('groups')
+    .update({ platform_fee_bps: bps })
+    .eq('id', groupId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard/admin/groups');
+  return { success: true };
+}

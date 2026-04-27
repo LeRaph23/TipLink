@@ -363,13 +363,24 @@ describe('Stripe Webhook Handler', () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+            single: vi.fn().mockResolvedValue({ data: { name: 'Acme', legal_name: 'Acme Corp' }, error: null }),
             upsert: vi.fn().mockResolvedValue({ error: null }),
             update: groupUpdate,
           };
         }
         if (table === 'smarttag_orders') {
           return { upsert: orderUpsert };
+        }
+        if (table === 'establishments') {
+          // Return existing establishment so auto-create branch is skipped
+          const chain: Record<string, unknown> = {};
+          chain.select = vi.fn().mockReturnValue(chain);
+          chain.eq = vi.fn().mockReturnValue(chain);
+          chain.is = vi.fn().mockReturnValue(chain);
+          chain.limit = vi.fn().mockReturnValue(chain);
+          chain.insert = vi.fn().mockResolvedValue({ error: null });
+          chain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 'est-1' }, error: null });
+          return chain;
         }
         // webhook_events
         return {

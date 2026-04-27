@@ -335,7 +335,10 @@
     "processingButton": "Traitement…",
     "successStatus": "Statut",
     "successReference": "Référence",
-    "successBack": "Retour à TipLink"
+    "successBack": "Retour à TipLink",
+    "yourEmail": "Votre email (optionnel)",
+    "emailPlaceholder": "email@exemple.com",
+    "receiptNote": "Un reçu sera envoyé à cette adresse"
   },
   "dashboard": {
     "welcome": "Bon retour,",
@@ -458,7 +461,34 @@
         "payoutNotStarted": "Non commencé",
         "recentTips": "Derniers pourboires",
         "notFound": "Membre introuvable."
-      }
+      },
+      "tipLink": "Votre lien de pourboire personnel",
+      "tipLinkCopy": "Copier",
+      "tipLinkCopied": "Copié !",
+      "stripeDashboard": "Ouvrir Stripe Dashboard",
+      "stripeLoading": "Ouverture…"
+    },
+    "establishments": {
+      "title": "Établissements",
+      "subtitle": "Gérez vos établissements et leurs liens de pourboire.",
+      "create": "Nouvel établissement",
+      "empty": "Aucun établissement pour l'instant. Créez-en un pour commencer à recevoir des pourboires.",
+      "name": "Nom de l'établissement",
+      "type": "Type d'activité",
+      "typeRestaurant": "Restaurant",
+      "typeBeauty": "Beauté & Coiffure",
+      "country": "Pays",
+      "currency": "Devise",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "creating": "Création…",
+      "delete": "Supprimer l'établissement",
+      "deleteConfirm": "Cela supprimera définitivement l'établissement. Continuer ?",
+      "back": "← Retour",
+      "tipLink": "Page de pourboire client",
+      "copyLink": "Copier le lien",
+      "linkCopied": "Copié !"
     },
     "stickers": {
       "title": "SmartTags",
@@ -625,7 +655,13 @@
         "title": "Groupes",
         "subtitle": "Tous les groupes de la plateforme.",
         "empty": "Aucun groupe trouvé.",
-        "createdOn": "Créé le"
+        "createdOn": "Créé le",
+        "feeLabel": "Commission",
+        "feeBps": "Points de base (100 = 1 %)",
+        "feeSave": "Mettre à jour",
+        "feeSaving": "Enregistrement…",
+        "feeSaved": "Enregistré",
+        "edit": "Modifier"
       },
       "establishments": {
         "title": "Établissements",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
+import { sendTipReceipt } from '@/lib/email';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -95,6 +96,27 @@ async function handleEvent(
         })
         .eq('id', transactionId)
         .eq('status', 'pending');
+
+      // Send receipt email if customer provided their email
+      if (intent.receipt_email) {
+        const { data: txn } = await supabase
+          .from('transactions')
+          .select('amount, currency, staff_profiles(full_name, establishments(name))')
+          .eq('id', transactionId)
+          .single();
+
+        if (txn) {
+          const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
+          await sendTipReceipt({
+            to: intent.receipt_email,
+            amount: txn.amount,
+            currency: txn.currency,
+            staffName: staff?.full_name ?? 'your server',
+            establishmentName: staff?.establishments?.name ?? '',
+            transactionId,
+          }).catch(() => {}); // email failure must never break the webhook
+        }
+      }
 
       break;
     }
@@ -199,6 +221,38 @@ async function handleEvent(
           },
           { onConflict: 'stripe_checkout_session_id' }
         );
+
+      // Auto-provision first establishment for new groups so the tip flow works immediately
+      const { data: existingEst } = await supabase
+        .from('establishments')
+        .select('id')
+        .eq('group_id', groupId)
+        .is('deleted_at', null)
+        .limit(1)
+        .maybeSingle();
+
+      if (!existingEst) {
+        const { data: grp } = await supabase
+          .from('groups')
+          .select('name, legal_name')
+          .eq('id', groupId)
+          .single();
+
+        const estName = grp?.legal_name ?? grp?.name ?? 'Mon établissement';
+        const slug = estName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const country = (shipping?.address?.country ?? 'FR').toUpperCase();
+
+        await supabase.from('establishments').insert({
+          group_id: groupId,
+          name: estName,
+          business_type: 'beauty',
+          slug,
+          country,
+          currency: 'eur',
+          onboarding_status: 'not_started',
+        });
+      }
+
       break;
     }
 

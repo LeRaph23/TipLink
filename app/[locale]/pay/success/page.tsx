@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { stripe } from '@/lib/stripe/client';
 
-export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 type RedirectStatus = 'succeeded' | 'processing' | 'requires_payment_method' | 'failed';
@@ -20,18 +20,28 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   const sp = await searchParams;
   const t = await getTranslations('pay');
 
-  const status: RedirectStatus = (() => {
+  const queryStatus: RedirectStatus = (() => {
     switch (sp.redirect_status) {
-      case 'succeeded':
-        return 'succeeded';
-      case 'processing':
-        return 'processing';
-      case 'requires_payment_method':
-        return 'requires_payment_method';
-      default:
-        return sp.redirect_status === undefined ? 'succeeded' : 'failed';
+      case 'succeeded': return 'succeeded';
+      case 'processing': return 'processing';
+      case 'requires_payment_method': return 'requires_payment_method';
+      default: return sp.redirect_status === undefined ? 'succeeded' : 'failed';
     }
   })();
+
+  // Server-side verification: don't trust the redirect_status query param alone
+  let status: RedirectStatus = queryStatus;
+  if (sp.payment_intent && sp.redirect_status === 'succeeded') {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(sp.payment_intent);
+      status =
+        pi.status === 'succeeded' ? 'succeeded' :
+        pi.status === 'processing' ? 'processing' :
+        'requires_payment_method';
+    } catch {
+      // Stripe unreachable — keep query-param as fallback
+    }
+  }
 
   const heading =
     status === 'succeeded'

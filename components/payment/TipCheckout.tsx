@@ -67,6 +67,7 @@ function InnerCheckout({ staffId, amount, currency }: Props) {
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random()}`
   );
+  const [customerEmail, setCustomerEmail] = useState('');
 
   const fmt = new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -78,7 +79,7 @@ function InnerCheckout({ staffId, amount, currency }: Props) {
     const res = await fetch('/api/stripe/create-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staffId, amount, currency, nonce }),
+      body: JSON.stringify({ staffId, amount, currency, nonce, customerEmail: customerEmail.trim() || undefined }),
     });
     const data = await res.json();
     if (!res.ok || !data.clientSecret) {
@@ -156,6 +157,26 @@ function InnerCheckout({ staffId, amount, currency }: Props) {
           {error}
         </p>
       )}
+
+      <div>
+        <input
+          type="email"
+          value={customerEmail}
+          onChange={e => setCustomerEmail(e.target.value)}
+          placeholder={t('emailPlaceholder')}
+          style={{
+            width: '100%', padding: '10px 12px', borderRadius: 10,
+            border: '1px solid var(--border)', background: 'var(--surface-2)',
+            color: 'var(--text)', fontSize: 14, fontFamily: 'inherit',
+            outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        {customerEmail && (
+          <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 5, textAlign: 'center' }}>
+            {t('receiptNote')}
+          </p>
+        )}
+      </div>
 
       {/* Real Apple Pay / Google Pay / Link buttons (if supported on this device). */}
       <ExpressCheckoutElement

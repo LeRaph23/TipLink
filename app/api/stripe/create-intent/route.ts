@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { staffId: string; amount: number; currency: string; nonce: string };
+  let body: { staffId: string; amount: number; currency: string; nonce: string; customerEmail?: string };
 
   try {
     body = await request.json();
@@ -31,7 +31,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { staffId, amount, currency, nonce } = body;
+  const { staffId, amount, currency, nonce, customerEmail } = body;
+
+  // Validate optional email
+  const validatedEmail = customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)
+    ? customerEmail
+    : undefined;
 
   if (
     !staffId ||
@@ -136,6 +141,7 @@ export async function POST(request: NextRequest) {
       on_behalf_of: staff.stripe_account_id,
       transfer_data: { destination: staff.stripe_account_id },
       ...(applicationFeeAmount > 0 ? { application_fee_amount: applicationFeeAmount } : {}),
+      ...(validatedEmail ? { receipt_email: validatedEmail } : {}),
       metadata: {
         transaction_id: transactionId,
         staff_id: staffId,

@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/i18n/navigation';
+import { TipLinkCard } from '@/components/dashboard/TipLinkCard';
+import { StripeDashboardButton } from '@/components/dashboard/StripeDashboardButton';
 
 function StatCard({
   label,
@@ -118,6 +120,15 @@ export default async function DashboardPage({
           {t('welcome')} {staffProfile?.full_name ?? user!.email}
         </p>
       </div>
+
+      {staffProfile && staffProfile.onboarding_status === 'complete' && (
+        <>
+          <TipLinkCard staffId={staffProfile.id} locale={locale} />
+          <div style={{ marginBottom: 20 }}>
+            <StripeDashboardButton />
+          </div>
+        </>
+      )}
 
       {staffProfile && staffProfile.onboarding_status !== 'complete' && (
         <div style={{
