@@ -11,6 +11,15 @@ export function formatPrice(cents: number, locale: string): string {
   }).format(cents / 100);
 }
 
+function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-2)' }}>
+      <span>{label}</span>
+      <span style={{ color: accent ? 'var(--text)' : 'var(--text-2)', fontWeight: accent ? 700 : 500 }}>{value}</span>
+    </div>
+  );
+}
+
 export function OrderSummary({
   pack,
   locale,
@@ -22,13 +31,6 @@ export function OrderSummary({
 }) {
   const t = useTranslations('order.summary');
   const def = PACKS[pack];
-
-  const Row = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-2)' }}>
-      <span>{label}</span>
-      <span style={{ color: accent ? 'var(--text)' : 'var(--text-2)', fontWeight: accent ? 700 : 500 }}>{value}</span>
-    </div>
-  );
 
   return (
     <div style={{

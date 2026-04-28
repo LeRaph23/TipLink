@@ -12,7 +12,7 @@ export default async function AnalyticsPage({
   const t = await getTranslations('dashboard.analytics');
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.auth.getUser();
 
   // Find staff ids this user manages (through group/establishment via RLS).
   const { data: staffRows } = await supabase
@@ -23,7 +23,9 @@ export default async function AnalyticsPage({
   const staffIds = staffRows?.map((s) => s.id) ?? [];
   const staffNameById = new Map((staffRows ?? []).map((s) => [s.id, s.full_name] as const));
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: txs } = await supabase
     .from('transactions')
@@ -38,7 +40,7 @@ export default async function AnalyticsPage({
   // Bucket by day.
   const byDay = new Map<string, number>();
   for (let i = 0; i < 30; i++) {
-    const d = new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000);
+    const d = new Date(now - (29 - i) * 24 * 60 * 60 * 1000);
     const key = d.toISOString().slice(0, 10);
     byDay.set(key, 0);
   }

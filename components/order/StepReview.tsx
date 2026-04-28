@@ -5,45 +5,19 @@ import { PACKS } from '@/lib/env';
 import type { OrderState, Step } from '@/lib/order-validation';
 import { formatPrice } from './OrderSummary';
 
-export function StepReview({
-  state,
-  locale,
+function Row({
+  label,
+  children,
+  step,
   onEdit,
 }: {
-  state: OrderState;
-  locale: string;
+  label: string;
+  children: React.ReactNode;
+  step: Step;
   onEdit: (s: Step) => void;
 }) {
   const t = useTranslations('order.review');
-  const def = PACKS[state.pack];
-
-  const shippingLines = [
-    state.shipping.line1,
-    state.shipping.line2,
-    `${state.shipping.postal_code} ${state.shipping.city}`,
-    state.shipping.country,
-  ].filter(Boolean);
-
-  const billingLines = state.business.billing_same
-    ? shippingLines
-    : state.business.billing
-    ? [
-        state.business.billing.line1,
-        state.business.billing.line2,
-        `${state.business.billing.postal_code} ${state.business.billing.city}`,
-        state.business.billing.country,
-      ].filter(Boolean)
-    : shippingLines;
-
-  const Row = ({
-    label,
-    children,
-    step,
-  }: {
-    label: string;
-    children: React.ReactNode;
-    step: Step;
-  }) => (
+  return (
     <div style={{
       padding: 18, borderRadius: 12,
       background: 'var(--surface)',
@@ -73,6 +47,37 @@ export function StepReview({
       </button>
     </div>
   );
+}
+
+export function StepReview({
+  state,
+  locale,
+  onEdit,
+}: {
+  state: OrderState;
+  locale: string;
+  onEdit: (s: Step) => void;
+}) {
+  const t = useTranslations('order.review');
+  const def = PACKS[state.pack];
+
+  const shippingLines = [
+    state.shipping.line1,
+    state.shipping.line2,
+    `${state.shipping.postal_code} ${state.shipping.city}`,
+    state.shipping.country,
+  ].filter(Boolean);
+
+  const billingLines = state.business.billing_same
+    ? shippingLines
+    : state.business.billing
+    ? [
+        state.business.billing.line1,
+        state.business.billing.line2,
+        `${state.business.billing.postal_code} ${state.business.billing.city}`,
+        state.business.billing.country,
+      ].filter(Boolean)
+    : shippingLines;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -115,11 +120,11 @@ export function StepReview({
         </div>
       </div>
 
-      <Row label={t('shippingTo')} step="shipping">
+      <Row label={t('shippingTo')} step="shipping" onEdit={onEdit}>
         {shippingLines.map((l, i) => <div key={i}>{l}</div>)}
       </Row>
 
-      <Row label={t('billedTo')} step="billing">
+      <Row label={t('billedTo')} step="billing" onEdit={onEdit}>
         <div style={{ fontWeight: 600, marginBottom: 2 }}>{state.business.legal_name}</div>
         {state.business.vat_number && (
           <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 4 }}>
@@ -129,7 +134,7 @@ export function StepReview({
         {billingLines.map((l, i) => <div key={i}>{l}</div>)}
       </Row>
 
-      <Row label={t('account')} step="account">
+      <Row label={t('account')} step="account" onEdit={onEdit}>
         <div style={{ fontWeight: 600, marginBottom: 2 }}>{state.account.full_name}</div>
         <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{state.account.email}</div>
       </Row>

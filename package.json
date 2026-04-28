@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "test:rls": "vitest run __tests__/rls",
     "db:types": "supabase gen types typescript --local > types/database.ts",
-    "db:migrate": "supabase db push"
+    "db:migrate": "supabase db push",
+    "setup:stripe": "npx tsx scripts/stripe-setup.ts",
+    "check:env": "npx tsx scripts/check-env.ts"
   },
   "dependencies": {
     "@stripe/connect-js": "^3.3.35",

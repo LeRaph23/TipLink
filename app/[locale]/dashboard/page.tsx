@@ -75,7 +75,9 @@ export default async function DashboardPage({
     .order('created_at', { ascending: false })
     .limit(5);
 
-  const fourteenDaysAgoIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const fourteenDaysAgoIso = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString();
   const { data: trendWindow } = await supabase
     .from('transactions')
     .select('amount, created_at, status')
@@ -90,9 +92,6 @@ export default async function DashboardPage({
     .select('amount, currency')
     .eq('staff_id', staffProfile?.id ?? '')
     .eq('status', 'succeeded');
-
-  // Transaction count this week (succeeded only).
-  const now = Date.now();
   const weekMs = 7 * 24 * 60 * 60 * 1000;
   const thisWeekTxs = trendWindow?.filter((t) => now - new Date(t.created_at).getTime() < weekMs) ?? [];
   const thisWeekTotal = thisWeekTxs.reduce((sum, t) => sum + t.amount, 0);

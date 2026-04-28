@@ -55,7 +55,8 @@ export default async function BillingPage({
   ]);
 
   // Compute commission collected over the last 30 days.
-  const sinceIso = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  // eslint-disable-next-line react-hooks/purity
+  const sinceIso = new Date(Date.now() - 30 * 24 * 3_600_000).toISOString();
   const estIds = (establishments ?? []).map((e) => e.id);
   let totalTipsCents = 0;
   let txnCount = 0;

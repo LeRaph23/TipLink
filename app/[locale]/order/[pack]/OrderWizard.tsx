@@ -27,6 +27,45 @@ import { formatPrice } from '@/components/order/OrderSummary';
 
 const STORAGE_KEY = (pack: PackId) => `tiplink.order.${pack}`;
 
+const ContinueBtn = ({ children, onClick, disabled }: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) => (
+  <button
+    type="button" onClick={onClick} disabled={disabled}
+    style={{
+      flex: 1,
+      padding: '12px 18px', borderRadius: 12,
+      background: disabled ? 'var(--surface-2)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+      color: disabled ? 'var(--text-3)' : '#fff',
+      fontSize: 14, fontWeight: 700,
+      border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
+      fontFamily: 'var(--font)',
+      letterSpacing: '-0.01em',
+      boxShadow: disabled ? 'none' : '0 6px 24px rgba(99,102,241,0.35)',
+      transition: 'transform 120ms, box-shadow 120ms',
+    }}
+  >
+    {children}
+  </button>
+);
+
+const BackBtn = ({ onBack, label }: { onBack: () => void; label: string }) => (
+  <button
+    type="button" onClick={onBack}
+    style={{
+      padding: '12px 16px', borderRadius: 12,
+      background: 'transparent', color: 'var(--text-2)',
+      border: '1px solid var(--border)',
+      fontSize: 13.5, fontWeight: 500,
+      cursor: 'pointer', fontFamily: 'var(--font)',
+    }}
+  >
+    ← {label}
+  </button>
+);
+
 type Action =
   | { type: 'hydrate'; payload: OrderState }
   | { type: 'setPack'; pack: PackId }
@@ -84,6 +123,7 @@ export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) 
     } catch {
       // ignore corrupted state
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydrated(true);
   }, [pack]);
 
@@ -263,41 +303,6 @@ export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) 
     }
   }
 
-  const ContinueBtn = ({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) => (
-    <button
-      type="button" onClick={onClick} disabled={disabled}
-      style={{
-        flex: 1,
-        padding: '12px 18px', borderRadius: 12,
-        background: disabled ? 'var(--surface-2)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-        color: disabled ? 'var(--text-3)' : '#fff',
-        fontSize: 14, fontWeight: 700,
-        border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
-        fontFamily: 'var(--font)',
-        letterSpacing: '-0.01em',
-        boxShadow: disabled ? 'none' : '0 6px 24px rgba(99,102,241,0.35)',
-        transition: 'transform 120ms, box-shadow 120ms',
-      }}
-    >
-      {children}
-    </button>
-  );
-
-  const BackBtn = () => (
-    <button
-      type="button" onClick={handleBack}
-      style={{
-        padding: '12px 16px', borderRadius: 12,
-        background: 'transparent', color: 'var(--text-2)',
-        border: '1px solid var(--border)',
-        fontSize: 13.5, fontWeight: 500,
-        cursor: 'pointer', fontFamily: 'var(--font)',
-      }}
-    >
-      ← {t('back')}
-    </button>
-  );
-
   const renderStep = () => {
     switch (currentStep) {
       case 'pack':
@@ -330,7 +335,7 @@ export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) 
         </div>
       )}
       <div style={{ display: 'flex', gap: 10 }}>
-        {currentStep !== 'pack' && <BackBtn />}
+        {currentStep !== 'pack' && <BackBtn onBack={handleBack} label={t('back')} />}
         {currentStep !== 'review' ? (
           <ContinueBtn onClick={handleContinue}>
             {t('continue')} →
