@@ -1,6 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
+import { getBaseUrl } from '@/lib/env';
+import { StaffInviteCopy } from './StaffInviteCopy';
 
 export default async function StaffListPage({
   params,
@@ -24,10 +27,35 @@ export default async function StaffListPage({
       onboarding_status,
       stripe_account_id,
       user_id,
-      establishments (name)
+      establishments (id, name)
     `)
     .is('deleted_at', null)
     .order('full_name');
+
+  const service = createServiceClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: roleRow } = user
+    ? await supabase
+        .from('user_roles')
+        .select('group_id')
+        .in('role', ['group_admin', 'super_admin'])
+        .eq('user_id', user.id)
+        .not('group_id', 'is', null)
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
+  const { data: est } = roleRow?.group_id
+    ? await service
+        .from('establishments')
+        .select('id')
+        .eq('group_id', roleRow.group_id)
+        .is('deleted_at', null)
+        .limit(1)
+        .single()
+    : { data: null };
+
+  const joinUrl = est ? `${getBaseUrl()}/join/${est.id}` : null;
 
   return (
     <div>
@@ -41,6 +69,12 @@ export default async function StaffListPage({
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
         </div>
+        {joinUrl && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text-3)', fontWeight: 500 }}>Lien d&apos;invitation coiffeurs</div>
+            <StaffInviteCopy url={joinUrl} />
+          </div>
+        )}
         <Link href="/dashboard/staff/new" style={{
           padding: '9px 16px', borderRadius: 'var(--radius)',
           background: 'var(--accent)', color: 'var(--accent-fg)',

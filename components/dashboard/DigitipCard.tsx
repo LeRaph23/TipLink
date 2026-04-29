@@ -8,7 +8,7 @@ interface Props {
   locale: string;
 }
 
-export function TipLinkCard({ staffId, locale }: Props) {
+export function DigitipCard({ staffId, locale }: Props) {
   const t = useTranslations('dashboard.staff');
   const [copied, setCopied] = useState(false);
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? '';

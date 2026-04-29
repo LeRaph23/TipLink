@@ -13,7 +13,7 @@ const required: { key: string; hint: string }[] = [
   { key: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', hint: 'Stripe publishable key (pk_...)' },
   { key: 'STRIPE_SECRET_KEY',                hint: 'Stripe secret key (sk_...)' },
   { key: 'STRIPE_WEBHOOK_SECRET',            hint: 'Stripe webhook secret (whsec_...)' },
-  { key: 'NEXT_PUBLIC_BASE_URL',             hint: 'e.g. https://tipl.ink' },
+  { key: 'NEXT_PUBLIC_BASE_URL',             hint: 'e.g. https://digitip.app' },
   { key: 'STRIPE_PRICE_PACK_S_HARDWARE',    hint: 'Run: npm run setup:stripe' },
   { key: 'STRIPE_PRICE_PACK_M_HARDWARE',    hint: 'Run: npm run setup:stripe' },
   { key: 'STRIPE_PRICE_PACK_L_HARDWARE',    hint: 'Run: npm run setup:stripe' },

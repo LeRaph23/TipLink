@@ -205,7 +205,7 @@ export default function LandingPage() {
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <LogoMark size={26} />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em', color: '#f0f0f8' }}>TipLink</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em', color: '#f0f0f8' }}>Digitip</span>
         </Link>
         <nav style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <Link href="/pricing" style={{
@@ -407,7 +407,7 @@ export default function LandingPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <LogoMark size={18} />
-          <span>TipLink · © 2026</span>
+          <span>Digitip · © 2026</span>
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.25)', textDecoration: 'none' }}>{tc('privacy')}</Link>

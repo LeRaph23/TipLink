@@ -16,7 +16,8 @@ if (!key) {
   process.exit(1);
 }
 
-const stripe = new Stripe(key, { apiVersion: '2025-04-30' as Stripe.LatestApiVersion });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const stripe = new Stripe(key, { apiVersion: '2025-04-30' as any });
 
 const PACKS = [
   { id: 'pack_s', name: 'SmartTag Pack S — 15 tags', amount: 19900, env: 'STRIPE_PRICE_PACK_S_HARDWARE' },

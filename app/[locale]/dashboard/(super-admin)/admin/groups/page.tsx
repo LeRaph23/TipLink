@@ -21,11 +21,19 @@ export default async function GroupsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {t('groups.title')}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('groups.subtitle')}</p>
+      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
+            {t('groups.title')}
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('groups.subtitle')}</p>
+        </div>
+        <Link
+          href="/dashboard/admin/groups/new"
+          style={{ padding: '9px 16px', borderRadius: 8, background: 'var(--accent)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}
+        >
+          + Nouveau salon
+        </Link>
       </div>
 
       {(!groups || groups.length === 0) ? (

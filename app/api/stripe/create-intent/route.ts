@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
   }
   // application_fee_amount is withheld from the staff's transfer and
-  // credited to the platform (TipLink). Rounded down so the staff never
+  // credited to the platform (Digitip). Rounded down so the staff never
   // comes up short by 1 cent.
   const applicationFeeAmount = Math.max(0, Math.floor((amount * platformFeeBps) / 10_000));
 
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       automatic_payment_methods: { enabled: true },
       // `on_behalf_of` makes the connected account the settlement
       // merchant (staff bears Stripe fees). `application_fee_amount`
-      // is the platform commission, routed to TipLink's balance.
+      // is the platform commission, routed to Digitip's balance.
       on_behalf_of: staff.stripe_account_id,
       transfer_data: { destination: staff.stripe_account_id },
       ...(applicationFeeAmount > 0 ? { application_fee_amount: applicationFeeAmount } : {}),

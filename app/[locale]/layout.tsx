@@ -27,7 +27,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
-    return { title: 'TipLink' };
+    return { title: 'Digitip' };
   }
   const t = await getTranslations({ locale, namespace: 'metadata' });
   return {

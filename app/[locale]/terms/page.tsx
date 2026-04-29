@@ -8,7 +8,7 @@ export async function generateMetadata({
 }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'legal.terms' });
-  return { title: `${t('title')} · TipLink` };
+  return { title: `${t('title')} · Digitip` };
 }
 
 export default async function TermsPage({

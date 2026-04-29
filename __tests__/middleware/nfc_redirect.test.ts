@@ -36,7 +36,7 @@ describe('NFC Redirect Middleware', () => {
     });
 
     const { middleware } = await import('@/middleware');
-    const request = new NextRequest('https://tipl.ink/s/XYZ98765');
+    const request = new NextRequest('https://digitip.app/s/XYZ98765');
     const response = await middleware(request);
 
     expect(response.status).toBe(302);
@@ -51,7 +51,7 @@ describe('NFC Redirect Middleware', () => {
     });
 
     const { middleware } = await import('@/middleware');
-    const request = new NextRequest('https://tipl.ink/s/UNKNOWN1');
+    const request = new NextRequest('https://digitip.app/s/UNKNOWN1');
     const response = await middleware(request);
 
     expect(response.headers.get('location')).toContain('/not-found');
@@ -64,7 +64,7 @@ describe('NFC Redirect Middleware', () => {
     });
 
     const { middleware } = await import('@/middleware');
-    const request = new NextRequest('https://tipl.ink/s/ORPHAN01');
+    const request = new NextRequest('https://digitip.app/s/ORPHAN01');
     const response = await middleware(request);
 
     expect(response.headers.get('location')).toContain('/not-found');
@@ -77,7 +77,7 @@ describe('NFC Redirect Middleware', () => {
     });
 
     const { middleware } = await import('@/middleware');
-    const request = new NextRequest('https://tipl.ink/s/ABC12345');
+    const request = new NextRequest('https://digitip.app/s/ABC12345');
     const response = await middleware(request);
 
     expect(response.headers.get('location')).toContain('/not-found');
@@ -90,7 +90,7 @@ describe('NFC Redirect Middleware', () => {
     });
 
     const { middleware } = await import('@/middleware');
-    await middleware(new NextRequest('https://tipl.ink/s/ABC12345'));
+    await middleware(new NextRequest('https://digitip.app/s/ABC12345'));
 
     const fetchCall = mockFetch.mock.calls[0];
     expect(fetchCall[1].headers['Authorization']).toContain('Bearer test-service-role-key');
@@ -103,7 +103,7 @@ describe('NFC Redirect Middleware', () => {
     });
 
     const { middleware } = await import('@/middleware');
-    await middleware(new NextRequest('https://tipl.ink/s/AB+CD'));
+    await middleware(new NextRequest('https://digitip.app/s/AB+CD'));
 
     const fetchUrl = mockFetch.mock.calls[0][0] as string;
     expect(fetchUrl).toContain('AB%2BCD');

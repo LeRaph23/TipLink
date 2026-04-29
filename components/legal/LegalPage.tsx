@@ -49,7 +49,7 @@ export function LegalPage({
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <LogoMark size={26} />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em', color: '#f0f0f8' }}>TipLink</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em', color: '#f0f0f8' }}>Digitip</span>
         </Link>
         <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <LanguageSwitcher />

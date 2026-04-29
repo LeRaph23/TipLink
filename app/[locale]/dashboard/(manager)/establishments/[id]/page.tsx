@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { EstablishmentTipLinkCopy } from '../EstablishmentTipLinkCopy';
+import { EstablishmentDigitipCopy } from '../EstablishmentDigitipCopy';
 import { EditEstablishmentForm } from './EditEstablishmentForm';
 
 export default async function EditEstablishmentPage({
@@ -69,7 +69,7 @@ export default async function EditEstablishmentPage({
           }}>
             {tipUrl}
           </code>
-          <EstablishmentTipLinkCopy
+          <EstablishmentDigitipCopy
             url={tipUrl}
             copyLabel={t('copyLink')}
             copiedLabel={t('linkCopied')}

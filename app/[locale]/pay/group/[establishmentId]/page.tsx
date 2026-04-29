@@ -110,7 +110,7 @@ export default async function GroupTipPage({
             </svg>
           )}
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '-0.02em' }}>
-            {header.establishment_name ?? 'TipLink'}
+            {header.establishment_name ?? 'Digitip'}
           </span>
         </div>
 

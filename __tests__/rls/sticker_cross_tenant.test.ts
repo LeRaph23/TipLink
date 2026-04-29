@@ -1,7 +1,7 @@
 /**
  * RLS Sticker Tests — establishment-only model
  *
- * SmartTags are provisioned exclusively by the TipLink super_admin
+ * SmartTags are provisioned exclusively by the Digitip super_admin
  * (manually, via backoffice). Managers/group_admins must not be able
  * to INSERT, UPDATE or DELETE nfc_stickers rows; they can only SELECT
  * the tags attached to their own establishments.

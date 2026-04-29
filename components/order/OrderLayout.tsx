@@ -71,7 +71,7 @@ export function OrderLayout({
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <LogoMark size={24} />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)' }}>TipLink</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)' }}>Digitip</span>
         </Link>
 
         <div style={{

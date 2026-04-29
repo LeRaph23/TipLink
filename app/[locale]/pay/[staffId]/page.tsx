@@ -163,7 +163,7 @@ export default async function StaffTipPage({
             <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
             <circle cx="12" cy="12" r="1.8" fill="white" />
           </svg>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '-0.02em' }}>TipLink</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '-0.02em' }}>Digitip</span>
         </div>
 
         {/* Staff card */}

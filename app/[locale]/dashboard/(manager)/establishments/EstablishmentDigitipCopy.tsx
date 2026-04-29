@@ -8,7 +8,7 @@ interface Props {
   copiedLabel: string;
 }
 
-export function EstablishmentTipLinkCopy({ url, copyLabel, copiedLabel }: Props) {
+export function EstablishmentDigitipCopy({ url, copyLabel, copiedLabel }: Props) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {

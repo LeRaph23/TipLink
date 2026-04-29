@@ -148,7 +148,7 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
       <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <LogoMark size={26} />
-          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>TipLink</span>
+          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>Digitip</span>
         </div>
         <LanguageSwitcher compact />
       </div>

@@ -20,7 +20,7 @@ export async function sendTipReceipt(opts: {
   const shortRef = transactionId.slice(0, 8).toUpperCase();
 
   await resend.emails.send({
-    from: 'TipLink <receipts@tipl.ink>',
+    from: 'Digitip <receipts@digitip.app>',
     to,
     subject: `Your tip receipt — ${formatted}`,
     html: `
@@ -30,7 +30,7 @@ export async function sendTipReceipt(opts: {
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:40px auto;background:#141414;border-radius:16px;border:1px solid #222;overflow:hidden">
     <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">TipLink</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
       <div style="font-size:13px;color:#666;margin-top:2px">Tip receipt</div>
     </td></tr>
     <tr><td style="padding:28px 32px">
@@ -55,11 +55,11 @@ export async function sendTipReceipt(opts: {
     </td></tr>
     <tr><td style="padding:0 32px 32px">
       <p style="font-size:12px;color:#444;margin:0;line-height:1.6">
-        Your payment went directly to ${staffName}'s bank account via Stripe Connect. TipLink never holds your funds.
+        Your payment went directly to ${staffName}'s bank account via Stripe Connect. Digitip never holds your funds.
       </p>
     </td></tr>
     <tr><td style="padding:16px 32px;border-top:1px solid #1e1e1e;text-align:center">
-      <span style="font-size:11px;color:#444">© TipLink · Cashless tips via NFC</span>
+      <span style="font-size:11px;color:#444">© Digitip · Cashless tips via NFC</span>
     </td></tr>
   </table>
 </body>

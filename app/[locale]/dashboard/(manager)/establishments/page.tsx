@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { EstablishmentTipLinkCopy } from './EstablishmentTipLinkCopy';
+import { EstablishmentDigitipCopy } from './EstablishmentDigitipCopy';
 
 export default async function EstablishmentsPage({
   params,
@@ -109,7 +109,7 @@ export default async function EstablishmentsPage({
                   <td style={{ padding: '12px 16px', color: 'var(--text-2)', textTransform: 'uppercase' }}>{est.currency}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <EstablishmentTipLinkCopy
+                      <EstablishmentDigitipCopy
                         url={`${baseUrl}/${locale}/pay/group/${est.id}`}
                         copyLabel={t('copyLink')}
                         copiedLabel={t('linkCopied')}

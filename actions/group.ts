@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 interface UpdateGroupInput {
   groupId: string;
@@ -36,9 +37,7 @@ export async function updateGroup(
     const cleaned = input.tipThresholds
       .filter((v) => typeof v === 'number' && v > 0 && v < 10000)
       .slice(0, 4);
-    if (cleaned.length !== 4) {
-      return { error: 'Four positive tip amounts required' };
-    }
+    if (cleaned.length !== 4) return { error: 'Four positive tip amounts required' };
     patch.settings = { ...currentSettings, tip_thresholds: cleaned };
   }
 
@@ -77,7 +76,6 @@ export async function updateGroupPlatformFee(
 
   if (!role) return { error: 'Forbidden' };
 
-  const { createServiceClient } = await import('@/lib/supabase/service');
   const service = createServiceClient();
   const { error } = await service
     .from('groups')
@@ -88,4 +86,57 @@ export async function updateGroupPlatformFee(
 
   revalidatePath('/dashboard/admin/groups');
   return { success: true };
+}
+
+export async function createSalon(input: {
+  name: string;
+  country: string;
+  currency: string;
+}): Promise<{ groupId: string; establishmentId: string } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: role } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('role', 'super_admin')
+    .maybeSingle();
+
+  if (!role) return { error: 'Forbidden' };
+
+  const name = input.name.trim();
+  if (!name) return { error: 'Name is required' };
+
+  const service = createServiceClient();
+
+  const { data: group, error: ge } = await service
+    .from('groups')
+    .insert({ name, settings: { tip_thresholds: [1, 2, 5, 10] } })
+    .select('id')
+    .single();
+
+  if (ge || !group) return { error: ge?.message ?? 'Failed to create group' };
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  const { data: est, error: ee } = await service
+    .from('establishments')
+    .insert({
+      group_id: group.id,
+      name,
+      business_type: 'beauty',
+      slug,
+      country: input.country.toUpperCase(),
+      currency: input.currency.toLowerCase(),
+      onboarding_status: 'not_started',
+    })
+    .select('id')
+    .single();
+
+  if (ee || !est) return { error: ee?.message ?? 'Failed to create establishment' };
+
+  revalidatePath('/dashboard/admin/groups');
+  return { groupId: group.id, establishmentId: est.id };
 }

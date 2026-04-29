@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   // block the user — the request has already been persisted above.
   const resendKey = process.env.RESEND_API_KEY;
   const to = process.env.CONTACT_NOTIFICATION_EMAIL;
-  const from = process.env.RESEND_FROM_EMAIL ?? 'TipLink <no-reply@tiplink.io>';
+  const from = process.env.RESEND_FROM_EMAIL ?? 'Digitip <no-reply@tiplink.io>';
   if (resendKey && to) {
     const text = [
       `New enterprise lead via /contact`,
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           from,
           to: [to],
           reply_to: email,
-          subject: `[TipLink] Lead — ${name}${body.company ? ` (${body.company})` : ''}`,
+          subject: `[Digitip] Lead — ${name}${body.company ? ` (${body.company})` : ''}`,
           text,
         }),
       });
