@@ -1,17 +1,31 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { DevDemoButton } from '@/components/DevDemoButton';
+import { ProductCard } from '@/components/landing/ProductCard';
+import { BuyModal } from '@/components/landing/BuyModal';
 
-const IS_DEV = process.env.NODE_ENV !== 'production';
+// ─── Light theme ──────────────────────────────────────────────────────────────
+const LIGHT: React.CSSProperties = {
+  '--lbg': '#f9f9f7',
+  '--lsurface': '#ffffff',
+  '--ltext': '#111118',
+  '--ltext-2': '#3a3b4f',
+  '--lmuted': '#74748a',
+  '--laccent': '#7c3aed',
+  '--lborder': '#e4e4ec',
+  '--lsuccess': '#16a34a',
+  '--lwarn': '#d97706',
+} as React.CSSProperties;
 
-function LogoMark({ size = 24 }: { size?: number }) {
+// ─── Utils ────────────────────────────────────────────────────────────────────
+
+function LogoMark({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="var(--accent)" />
+      <rect width="24" height="24" rx="7" fill="#7c3aed" />
       <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
       <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
       <circle cx="12" cy="12" r="1.8" fill="white" />
@@ -19,134 +33,191 @@ function LogoMark({ size = 24 }: { size?: number }) {
   );
 }
 
-function Avatar({ name, size = 36 }: { name: string; size?: number }) {
-  const palette = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
-  const idx = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length;
-  const initials = name.trim().split(/\s+/).map(n => n[0]).join('').slice(0, 2).toUpperCase();
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', background: palette[idx],
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.37, fontWeight: 700, color: '#fff',
-      flexShrink: 0, letterSpacing: '-0.02em', userSelect: 'none',
-    }}>
-      {initials}
-    </div>
-  );
-}
-
-function Reveal({ children, delay = 0, y = 28, style: extra = {} }: {
-  children: React.ReactNode;
-  delay?: number;
-  y?: number;
-  style?: React.CSSProperties;
-}) {
+function Reveal({ children, delay = 0, style: s = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [vis, setVis] = useState(false);
   useEffect(() => {
-    if (!ref.current) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold: 0.12 }
-    );
-    obs.observe(ref.current);
-    return () => obs.disconnect();
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.07 });
+    obs.observe(el); return () => obs.disconnect();
   }, []);
   return (
-    <div ref={ref} style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'none' : `translateY(${y}px)`,
-      transition: `opacity 700ms ${delay}ms cubic-bezier(.22,1,.36,1), transform 700ms ${delay}ms cubic-bezier(.22,1,.36,1)`,
-      ...extra,
-    }}>
+    <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? 'none' : 'translateY(22px)', transition: `opacity 600ms ${delay}ms cubic-bezier(.22,1,.36,1), transform 600ms ${delay}ms cubic-bezier(.22,1,.36,1)`, ...s }}>
       {children}
     </div>
   );
 }
 
-function NFCTapVisual() {
-  const [tapped, setTapped] = useState(false);
-  useEffect(() => {
-    const cycle = () => { setTapped(false); setTimeout(() => setTapped(true), 400); };
-    cycle();
-    const id = setInterval(cycle, 3200);
-    return () => clearInterval(id);
-  }, []);
-
+function Badge({ children, variant = 'accent' }: { children: React.ReactNode; variant?: 'accent' | 'success' | 'warn' }) {
+  const colors: Record<string, { bg: string; text: string; border: string }> = {
+    accent: { bg: '#f5f3ff', text: '#7c3aed', border: '#e9d5ff' },
+    success: { bg: '#f0fdf4', text: '#16a34a', border: '#bbf7d0' },
+    warn: { bg: '#fffbeb', text: '#d97706', border: '#fde68a' },
+  };
+  const c = colors[variant];
   return (
-    <div style={{ position: 'relative', width: 280, height: 280, flexShrink: 0 }}>
-      <div style={{
-        position: 'absolute', inset: '20%', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(124,111,238,0.28) 0%, transparent 70%)',
-        filter: 'blur(20px)', transition: 'opacity 400ms',
-        opacity: tapped ? 1 : 0.35,
-      }} />
-      {tapped && [0, 1, 2].map(i => (
-        <div key={i} style={{
-          position: 'absolute',
-          top: `calc(50% - ${52 + i * 26}px)`,
-          left: `calc(50% - ${52 + i * 26}px)`,
-          width: (52 + i * 26) * 2, height: (52 + i * 26) * 2,
-          borderRadius: '50%',
-          border: '1.5px solid rgba(99,102,241,0.5)',
-          animation: `ripple 800ms ${i * 140}ms ease-out both`,
-        }} />
-      ))}
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        width: 164, height: 92, borderRadius: 16,
-        background: 'linear-gradient(135deg, #1e1e2e, #2a2a3e)',
-        border: '1px solid rgba(99,102,241,0.3)',
-        boxShadow: tapped ? '0 8px 40px rgba(99,102,241,0.4)' : '0 4px 20px rgba(0,0,0,0.45)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 6, transition: 'all 400ms cubic-bezier(.34,1.2,.64,1)',
-        transform: `translate(-50%, -50%) scale(${tapped ? 1.05 : 1})`,
-      }}>
-        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>M</div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#f0f0f8', letterSpacing: '-0.02em' }}>Marco Rossi</div>
-          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>The Merchant Bar</div>
-        </div>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 100, background: c.bg, border: `1px solid ${c.border}`, fontSize: 12, fontWeight: 700, color: c.text, letterSpacing: '0.01em' }}>
+      {children}
+    </span>
+  );
+}
+
+// Exact Digifeel SmartTag placeholder (looks like a physical NFC plate)
+function SmartTagPlate({ size = 220, accent = '#7c3aed' }: { size?: number; accent?: string }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: 24, background: '#fff', border: '1.5px solid #e4e4ec', boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ width: size * 0.55, height: size * 0.55, borderRadius: 16, background: `${accent}12`, border: `1.5px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width={size * 0.28} height={size * 0.28} viewBox="0 0 56 56" fill="none">
+          <path d="M18 28c0-5.5 4.5-10 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" />
+          <path d="M38 28c0 5.5-4.5 10-10 10" stroke={accent} strokeWidth="3" strokeLinecap="round" />
+          <circle cx="28" cy="28" r="4" fill={accent} />
+          <path d="M10 28c0-9.9 8.1-18 18-18" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+          <path d="M46 28c0 9.9-8.1 18-18 18" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+        </svg>
       </div>
-      <div style={{
-        position: 'absolute',
-        top: tapped ? '18%' : '8%',
-        right: tapped ? '14%' : '4%',
-        transition: 'all 500ms cubic-bezier(.34,1.2,.64,1)',
-        width: 52, height: 88, borderRadius: 10,
-        background: 'linear-gradient(160deg, #1a1a2e, #16213e)',
-        border: '1.5px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div style={{ width: 28, height: 44, borderRadius: 5, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 2v10M4 4.5C2.8 5.7 2.8 8.3 4 9.5M10 4.5c1.2 1.2 1.2 3.8 0 5" stroke="rgba(99,102,241,0.8)" strokeWidth="1.4" strokeLinecap="round" />
-          </svg>
-        </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#111118', letterSpacing: '0.06em' }}>DIGITIP</div>
+        <div style={{ fontSize: 9, color: '#74748a', letterSpacing: '0.04em' }}>Plaque époxy NFC</div>
       </div>
     </div>
   );
 }
 
-const VENUES = ['The Merchant Bar', 'Harbour Kitchen', 'The Liffey Social', 'Saltwater Café', 'Grand Canal Hotel', 'The Porterhouse', 'Fade Street Social', 'Grogans Castle Lounge'];
-
-function Marquee() {
-  const items = [...VENUES, ...VENUES];
+// ─── PromoBanner ──────────────────────────────────────────────────────────────
+function PromoBanner({ text }: { text: string }) {
   return (
-    <div style={{
-      overflow: 'hidden',
-      borderTop: '1px solid rgba(255,255,255,0.05)',
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
-      padding: '14px 0',
-      WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
-      maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
-    }}>
-      <div style={{ display: 'flex', animation: 'marqueeScroll 30s linear infinite', width: 'max-content' }}>
-        {items.map((v, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '0 20px', whiteSpace: 'nowrap' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.02em' }}>{v}</span>
-            <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(99,102,241,0.4)', flexShrink: 0, display: 'inline-block' }} />
+    <div style={{ background: 'linear-gradient(90deg,#6d28d9,#7c3aed,#8b5cf6)', color: '#fff', textAlign: 'center', padding: '9px 16px', fontSize: 13, fontWeight: 600, letterSpacing: '0.01em', position: 'sticky', top: 0, zIndex: 300 }}>
+      {text}
+    </div>
+  );
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+function Header({ onOrderClick }: { onOrderClick: () => void }) {
+  const t = useTranslations('landing');
+  const tc = useTranslations('common');
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', h, { passive: true });
+    return () => window.removeEventListener('scroll', h);
+  }, []);
+  return (
+    <header style={{ position: 'sticky', top: 38, zIndex: 200, height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px, 4vw, 48px)', background: scrolled ? 'rgba(255,255,255,0.96)' : '#fff', backdropFilter: scrolled ? 'blur(12px)' : 'none', borderBottom: '1px solid #e4e4ec', transition: 'background 300ms' }}>
+      <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+        <LogoMark size={26} />
+        <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: '-0.03em', color: '#111118' }}>Digitip</span>
+      </Link>
+
+      <nav style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        {[
+          { key: 'packs', href: '#packs' },
+          { key: 'clients', href: '#clients' },
+          { key: 'faq', href: '#faq' },
+          { key: 'contact', href: '/contact' },
+        ].map(({ key, href }) => (
+          <a key={key} href={href} style={{ padding: '6px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13.5, fontWeight: 500, borderRadius: 7, transition: 'color 150ms' }}>
+            {t(`nav.${key}` as Parameters<typeof t>[0])}
+          </a>
+        ))}
+      </nav>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <LanguageSwitcher />
+        <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500, background: '#fff' }}>{tc('login')}</Link>
+        <button onClick={onOrderClick} style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#7c3aed', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(124,58,237,0.38)', transition: 'all 140ms' }}>
+          {t('hero.cta')} →
+        </button>
+      </div>
+    </header>
+  );
+}
+
+// ─── Hero (split layout: text left + product visual right) ───────────────────
+function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
+  const t = useTranslations('landing');
+  return (
+    <section style={{ background: '#fff', padding: 'clamp(60px,8vw,100px) clamp(16px,5vw,60px) clamp(40px,5vw,70px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 48, flexWrap: 'wrap' }}>
+
+        {/* Left: text */}
+        <div style={{ maxWidth: 580, flex: '1 1 320px' }}>
+          <div className="fade-up" style={{ marginBottom: 22 }}>
+            <Badge>{t('hero.badge')}</Badge>
+          </div>
+          <h1 className="fade-up" style={{ fontSize: 'clamp(38px, 5.5vw, 72px)', fontWeight: 900, lineHeight: 0.96, letterSpacing: '-0.04em', color: '#111118', marginBottom: 22, animationDelay: '60ms' }}>
+            {t('hero.h1a')}<br />{t('hero.h1b')}<br />
+            <span style={{ color: '#7c3aed' }}>{t('hero.h1c')}</span>
+          </h1>
+          <p className="fade-up" style={{ fontSize: 16.5, color: '#74748a', lineHeight: 1.8, maxWidth: 480, marginBottom: 32, animationDelay: '130ms' }}>
+            {t('hero.sub')}
+          </p>
+          <div className="fade-up" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 32, animationDelay: '200ms' }}>
+            <button onClick={onOrderClick} style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#7c3aed', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(124,58,237,0.42)', transition: 'all 140ms' }}>
+              {t('hero.cta')} →
+            </button>
+            <a href="#comment-ca-marche" style={{ padding: '15px 24px', borderRadius: 11, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', display: 'inline-flex', alignItems: 'center' }}>
+              {t('howItWorks.title')}
+            </a>
+          </div>
+          <div className="fade-up" style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap', animationDelay: '280ms' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ fontSize: 18, letterSpacing: 2, color: '#f59e0b' }}>★★★★★</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#111118' }}>4.8</span>
+              <span style={{ fontSize: 13, color: '#74748a' }}>/ 5</span>
+            </div>
+            <span style={{ color: '#e4e4ec' }}>·</span>
+            <span style={{ fontSize: 13.5, fontWeight: 600, color: '#74748a' }}>{t('hero.social')}</span>
+            <span style={{ color: '#e4e4ec' }}>·</span>
+            <span style={{ fontSize: 17 }}>{t('hero.countries')}</span>
+          </div>
+        </div>
+
+        {/* Right: product visual stack */}
+        <div className="fade-up" style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: '160ms' }}>
+          <div style={{ position: 'relative', width: 280, height: 340 }}>
+            {/* Back plate (slightly rotated) */}
+            <div style={{ position: 'absolute', top: 20, left: 20, transform: 'rotate(-6deg)', opacity: 0.55 }}>
+              <SmartTagPlate size={200} accent="#8b5cf6" />
+            </div>
+            {/* Front plate (main) */}
+            <div style={{ position: 'absolute', top: 0, left: 0, transform: 'rotate(3deg)' }}>
+              <SmartTagPlate size={220} accent="#7c3aed" />
+            </div>
+            {/* Phone tap indicator */}
+            <div style={{ position: 'absolute', bottom: 0, right: -10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 28px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📲</div>
+              <div>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: '#111118' }}>+5,00 €</div>
+                <div style={{ fontSize: 10, color: '#74748a' }}>→ Marco R.</div>
+              </div>
+            </div>
+            {/* Stars bubble */}
+            <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#d97706' }}>
+              ★★★★★ 4.8
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Stats strip ──────────────────────────────────────────────────────────────
+function StatsStrip() {
+  const stats = [
+    { n: '400+', label: 'équipes actives' },
+    { n: '4.8/5', label: '+150 avis vérifiés' },
+    { n: '3 sec', label: 'pour recevoir un pourboire' },
+    { n: '0 €', label: 'frais mensuel' },
+  ];
+  return (
+    <div style={{ background: '#f9f9f7', borderBottom: '1px solid #e4e4ec', padding: '0 clamp(16px,4vw,48px)' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {stats.map((s, i) => (
+          <div key={i} style={{ flex: '1 1 140px', padding: '20px 16px', textAlign: 'center', borderRight: i < stats.length - 1 ? '1px solid #e4e4ec' : 'none' }}>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{s.n}</div>
+            <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -154,267 +225,518 @@ function Marquee() {
   );
 }
 
-function FeatureCard({ icon, title, body, delay = 0 }: { icon: string; title: string; body: string; delay?: number }) {
-  const [hov, setHov] = useState(false);
+// ─── Marquee ──────────────────────────────────────────────────────────────────
+const VENUES = ['Brasserie Le Marché', 'Harbour Kitchen', 'The Liffey Social', 'Saltwater Café', 'Côté Table', 'The Porterhouse', 'Fade Street Social', 'Salon Éclat Beauté', 'Grand Canal Hotel', 'Grogans Castle Lounge', 'L\'Atelier Coiffure', 'Bistrot du Coin'];
+
+function Marquee() {
+  const items = [...VENUES, ...VENUES];
   return (
-    <Reveal delay={delay}>
-      <div
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{
-          padding: '28px 24px', borderRadius: 16,
-          background: hov ? 'var(--surface-2)' : 'var(--surface)',
-          border: `1px solid ${hov ? 'var(--border)' : 'var(--border-subtle)'}`,
-          transition: 'all 180ms ease',
-          transform: hov ? 'translateY(-3px)' : 'none',
-          boxShadow: hov ? 'var(--shadow)' : 'none',
-        }}
-      >
-        <div style={{ fontSize: 24, marginBottom: 14 }}>{icon}</div>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>{title}</h3>
-        <p style={{ fontSize: 13.5, color: 'var(--text-3)', lineHeight: 1.75 }}>{body}</p>
+    <div style={{ overflow: 'hidden', borderBottom: '1px solid #e4e4ec', padding: '13px 0', background: '#fff', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}>
+      <div style={{ display: 'flex', animation: 'marqueeScroll 32s linear infinite', width: 'max-content' }}>
+        {items.map((v, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '0 18px', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#c4c4d4', letterSpacing: '0.01em' }}>{v}</span>
+            <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#e4e4ec', flexShrink: 0, display: 'inline-block' }} />
+          </div>
+        ))}
       </div>
-    </Reveal>
+    </div>
   );
 }
 
-export default function LandingPage() {
+// ─── Claim section (doublez + 3 secondes) ─────────────────────────────────────
+function ClaimSection() {
   const t = useTranslations('landing');
-  const tc = useTranslations('common');
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
-  }, []);
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
-
-      <div style={{ position: 'fixed', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'fixed', bottom: '10%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
-
-      <header style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 48px', height: 64,
-        background: scrolled ? 'rgba(8,8,18,0.88)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(16px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
-        transition: 'all 350ms ease',
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <LogoMark size={26} />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em', color: '#f0f0f8' }}>Digitip</span>
-        </Link>
-        <nav style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <Link href="/pricing" style={{
-            padding: '7px 14px', textDecoration: 'none',
-            color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 500,
-          }}>{tc('pricing')}</Link>
-          <LanguageSwitcher />
-          {IS_DEV && <DevDemoButton />}
-          <Link href="/login" style={{
-            padding: '7px 16px', borderRadius: 8, textDecoration: 'none',
-            border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500,
-          }}>{tc('login')}</Link>
-          <Link href="/signup" style={{
-            padding: '7px 18px', borderRadius: 8, textDecoration: 'none',
-            background: 'var(--accent)', color: '#fff',
-            fontSize: 13, fontWeight: 600,
-            boxShadow: '0 0 20px rgba(99,102,241,0.35)',
-          }}>{tc('getStarted')} {tc('arrowRight')}</Link>
-        </nav>
-      </header>
-
-      <section style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center',
-        padding: '100px 48px 60px', position: 'relative', zIndex: 1,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 40, width: '100%', maxWidth: 1200, margin: '0 auto', flexWrap: 'wrap' }}>
-          <div style={{ maxWidth: 560, flex: 1, minWidth: 280 }}>
-            <div className="fade-up" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '5px 14px', borderRadius: 100, marginBottom: 32,
-              background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
-              fontSize: 12, fontWeight: 600, color: '#a5b4fc',
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818cf8', display: 'inline-block', animation: 'shimmer 2s ease infinite' }} />
-              {t('badge')}
-            </div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(40px, 5.5vw, 64px)', lineHeight: 0.97, letterSpacing: '-0.02em', color: '#f0f0f8', marginBottom: 28 }}>
-              <div className="fade-up" style={{ animationDelay: '60ms' }}>{t('h1_leave')}</div>
-              <div className="fade-up" style={{ animationDelay: '120ms', color: 'var(--accent)' }}>{t('h1_cashless')}</div>
-              <div className="fade-up" style={{ animationDelay: '180ms' }}>{t('h1_tip')}</div>
-              <div className="fade-up" style={{ animationDelay: '240ms', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                {t('h1_tap')}
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '4px 12px', borderRadius: 8, verticalAlign: 'middle',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-                  fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.35)', marginBottom: 4,
-                }}>
-                  <span>📲</span> NFC
-                </span>
-              </div>
-            </h1>
-            <p className="fade-up" style={{ animationDelay: '320ms', fontSize: 17, color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, maxWidth: 440, marginBottom: 36 }}>
-              {t('tagline')}
-            </p>
-            <div className="fade-up" style={{ animationDelay: '400ms', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link href="/signup" style={{
-                padding: '13px 28px', borderRadius: 12, textDecoration: 'none',
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                color: '#fff', fontSize: 15, fontWeight: 700,
-                boxShadow: '0 4px 28px rgba(99,102,241,0.45)',
-              }}>{t('seePricing')} {tc('arrowRight')}</Link>
-              <Link href="/pricing" style={{
-                padding: '13px 24px', borderRadius: 12, textDecoration: 'none',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 500,
-              }}>{tc('pricing')}</Link>
-            </div>
-            <div className="fade-up" style={{ animationDelay: '500ms', display: 'flex', gap: 14, marginTop: 36, alignItems: 'center' }}>
-              <div style={{ display: 'flex' }}>
-                {[
-                  { name: 'Marco Rossi', src: '/avatars/marco.png' },
-                  { name: 'Sienna Walsh', src: '/avatars/sienna.png' },
-                  { name: 'Luca Brennan', src: '/avatars/luca.png' },
-                  { name: 'Aoife Murphy', src: '/avatars/aoife.png' },
-                ].map((p, i) => (
-                  <div key={p.name} style={{ marginLeft: i === 0 ? 0 : -8, border: '2px solid var(--bg)', borderRadius: '50%', width: 26, height: 26, overflow: 'hidden', flexShrink: 0 }}>
-                    <img src={p.src} alt={p.name} width={26} height={26} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  </div>
-                ))}
-              </div>
-              <p
-                style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}
-                dangerouslySetInnerHTML={{ __html: t.raw('social_proof') as string }}
-              />
-            </div>
-          </div>
-          <div className="fade-up" style={{ animationDelay: '200ms', flexShrink: 0 }}>
-            <NFCTapVisual />
-          </div>
-        </div>
-        <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, animation: 'fadeIn 1s 1.5s both' }}>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{t('scroll')}</div>
-          <div style={{ width: 1, height: 28, background: 'linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)' }} />
-        </div>
-      </section>
-
-      <div style={{ position: 'relative', zIndex: 1 }}><Marquee /></div>
-
-      <section style={{ padding: '100px 48px', maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+    <section style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         <Reveal>
-          <div style={{ marginBottom: 64, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 24 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(99,102,241,0.8)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('howItWorksKicker')}</div>
-              <h2
-                style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3.2vw, 42px)', fontWeight: 800, color: '#f0f0f8', letterSpacing: '-0.03em', lineHeight: 1.05 }}
-                dangerouslySetInnerHTML={{ __html: t.raw('howItWorksTitle') as string }}
-              />
+          <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #7c3aed' }}>
+            <div style={{ fontSize: 56, fontWeight: 900, color: '#7c3aed', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>3s</div>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 10 }}>
+              {t('claim.title')} <span style={{ color: '#7c3aed' }}>{t('claim.titleAccent')}</span>
             </div>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', maxWidth: 260, textAlign: 'right', lineHeight: 1.7 }}>
-              {t('howItWorksSub')}
-            </p>
+            <p style={{ fontSize: 14.5, color: '#74748a', lineHeight: 1.7 }}>{t('claim.sub')}</p>
           </div>
         </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 2, position: 'relative' }}>
-          {[
-            { n: '01', title: t('step1Title'), body: t('step1Body') },
-            { n: '02', title: t('step2Title'), body: t('step2Body') },
-            { n: '03', title: t('step3Title'), body: t('step3Body') },
-          ].map((step, i) => (
+        <Reveal delay={100}>
+          <div style={{ background: '#7c3aed', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #5b21b6', color: '#fff' }}>
+            <div style={{ fontSize: 56, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12, color: '#e9d5ff' }}>×2</div>
+            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10 }}>
+              {t('claim.claim2title')} <span style={{ color: '#e9d5ff' }}>{t('claim.claim2sub')}</span>
+            </div>
+            <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.7 }}>{t('claim.sub')}</p>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// ─── Product section (Digifeel-style full e-commerce) ─────────────────────────
+function ProductSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') => void }) {
+  const t = useTranslations('landing');
+  return (
+    <section id="produit" style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+        <Reveal style={{ marginBottom: 44 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>{t('product.kicker')}</div>
+              <h2 style={{ fontSize: 'clamp(26px,3.5vw,40px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{t('product.name')}</h2>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18, color: '#f59e0b', letterSpacing: 2 }}>★★★★★</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#111118' }}>{t('product.rating')}</span>
+              <span style={{ fontSize: 13, color: '#74748a' }}>{t('product.reviewCount')}</span>
+            </div>
+          </div>
+        </Reveal>
+        <Reveal delay={60}>
+          <ProductCard onAddToCart={onOrderClick} locale="fr" />
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// ─── How it works ─────────────────────────────────────────────────────────────
+function HowItWorksSection() {
+  const t = useTranslations('landing');
+  const steps = [
+    { n: '01', title: t('howItWorks.step1t'), body: t('howItWorks.step1b'), icon: '📦' },
+    { n: '02', title: t('howItWorks.step2t'), body: t('howItWorks.step2b'), icon: '⚡' },
+    { n: '03', title: t('howItWorks.step3t'), body: t('howItWorks.step3b'), icon: '💸' },
+  ];
+  return (
+    <section id="comment-ca-marche" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('howItWorks.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('howItWorks.title')}</h2>
+            <p style={{ fontSize: 15, color: '#74748a', marginTop: 12, maxWidth: 460, margin: '12px auto 0' }}>{t('howItWorks.sub')}</p>
+          </div>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 4 }}>
+          {steps.map((s, i) => (
             <Reveal key={i} delay={i * 80}>
-              <div style={{ padding: '32px 28px 28px' }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#818cf8', marginBottom: 20 }}>
-                  {step.n}
+              <div style={{ padding: '32px 28px', position: 'relative' }}>
+                {i < steps.length - 1 && (
+                  <div style={{ position: 'absolute', top: 52, right: -2, width: 24, height: 2, background: '#e4e4ec', display: 'none' }} />
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#f5f3ff', border: '1.5px solid #e9d5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#7c3aed' }}>{s.n}</div>
                 </div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#f0f0f8', letterSpacing: '-0.03em', marginBottom: 10 }}>{step.title}</h3>
-                <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>{step.body}</p>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
+                <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.75 }}>{s.body}</p>
               </div>
             </Reveal>
           ))}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      <section style={{ padding: '80px 48px 100px', maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+// ─── Shipping ─────────────────────────────────────────────────────────────────
+function ShippingSection() {
+  const t = useTranslations('landing');
+  const items = [
+    { icon: '⚡', text: t('shipping.processing') },
+    { icon: '🚀', text: t('shipping.freeEU') },
+    { icon: '🇫🇷', text: t('shipping.timezoneFR') },
+    { icon: '🌍', text: t('shipping.timezoneEU') },
+    { icon: '📦', text: t('shipping.tracking') },
+  ];
+  return (
+    <section style={{ background: '#fff', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <Reveal style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('shipping.kicker')}</div>
+          <h2 style={{ fontSize: 'clamp(22px,2.8vw,34px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.03em' }}>{t('shipping.title')}</h2>
+        </Reveal>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+          {items.map((item, i) => (
+            <Reveal key={i} delay={i * 50}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f9f9f7', border: '1.5px solid #e4e4ec', borderRadius: 12, padding: '14px 22px', fontSize: 14, color: '#3a3b4f', fontWeight: 600 }}>
+                <span style={{ fontSize: 18 }}>{item.icon}</span>{item.text}
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Guarantee ────────────────────────────────────────────────────────────────
+function GuaranteeSection() {
+  const t = useTranslations('landing');
+  return (
+    <section style={{ background: '#f9f9f7', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <Reveal>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', background: '#fff', border: '2px solid #e9d5ff', borderRadius: 24, padding: 'clamp(32px,5vw,56px) clamp(24px,5vw,56px)' }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: '#f5f3ff', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🛡️</div>
+          <h2 style={{ fontSize: 'clamp(20px,2.5vw,28px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.03em', marginBottom: 14 }}>{t('guarantee.title')}</h2>
+          <p style={{ fontSize: 15, color: '#74748a', lineHeight: 1.8 }}>{t('guarantee.sub')}</p>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+// ─── Press ────────────────────────────────────────────────────────────────────
+function PressSection() {
+  const t = useTranslations('landing');
+  const logos = [
+    { text: t('press.p1'), emoji: '📺' },
+    { text: t('press.p2'), emoji: '📰' },
+    { text: t('press.p3'), emoji: '📰' },
+    { text: t('press.p4'), emoji: '🏨' },
+  ];
+  return (
+    <section style={{ background: '#fff', padding: 'clamp(40px,4vw,56px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: '#c4c4d4', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 24 }}>{t('press.kicker')}</p>
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+          {logos.map((l) => (
+            <div key={l.text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px', border: '1.5px solid #e4e4ec', borderRadius: 12, background: '#f9f9f7', fontSize: 14, fontWeight: 700, color: '#74748a', letterSpacing: '0.04em' }}>
+              <span>{l.emoji}</span>{l.text}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Product grid ─────────────────────────────────────────────────────────────
+function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') => void }) {
+  const t = useTranslations('landing');
+  const packs = [
+    { key: 'solo' as const, name: t('grid.packS'), tags: t('grid.packSTag'), price: t('grid.packSPrice'), full: t('grid.packSFull'), save: '22%' },
+    { key: 'duo'  as const, name: t('grid.packM'), tags: t('grid.packMTag'), price: t('grid.packMPrice'), full: t('grid.packMFull'), save: '28%', popular: true },
+  ];
+  return (
+    <section id="packs" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal>
-          <div style={{ marginBottom: 48 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(99,102,241,0.8)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('featuresKicker')}</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 3vw, 38px)', fontWeight: 800, color: '#f0f0f8', letterSpacing: '-0.03em', lineHeight: 1.05 }}>{t('featuresTitle')}</h2>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('grid.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('grid.title')}</h2>
+            <p style={{ fontSize: 15, color: '#74748a', marginTop: 10 }}>{t('grid.sub')}</p>
           </div>
         </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14 }}>
-          <FeatureCard delay={0}   icon="📲" title={t('feat1Title')} body={t('feat1Body')} />
-          <FeatureCard delay={80}  icon="⚡" title={t('feat2Title')} body={t('feat2Body')} />
-          <FeatureCard delay={160} icon="🎛️" title={t('feat3Title')} body={t('feat3Body')} />
-          <FeatureCard delay={240} icon="🌍" title={t('feat4Title')} body={t('feat4Body')} />
-          <FeatureCard delay={320} icon="🔒" title={t('feat5Title')} body={t('feat5Body')} />
-          <FeatureCard delay={400} icon="📊" title={t('feat6Title')} body={t('feat6Body')} />
-        </div>
-      </section>
-
-      <section style={{ padding: '0 48px 100px', maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-        <Reveal>
-          <div style={{
-            borderRadius: 24, padding: '48px 56px',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.08) 100%)',
-            border: '1px solid rgba(99,102,241,0.2)',
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 32,
-          }}>
-            {[
-              ['€24k+', t('statTipsProcessed')],
-              ['< 2 sec', t('statTapToPay')],
-              ['60+', t('statVenues')],
-              ['4.9 ★', t('statRating')],
-            ].map(([v, l]) => (
-              <div key={l} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: '#f0f0f8', letterSpacing: '-0.03em', marginBottom: 4 }}>{v}</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>{l}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16 }}>
+          {packs.map((p, i) => (
+            <Reveal key={p.key} delay={i * 80}>
+              <div style={{ background: '#fff', border: p.popular ? '2px solid #7c3aed' : '1.5px solid #e4e4ec', borderRadius: 18, overflow: 'hidden', boxShadow: p.popular ? '0 8px 32px rgba(124,58,237,0.14)' : '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
+                {p.popular && (
+                  <div style={{ position: 'absolute', top: 14, right: 14, background: '#7c3aed', color: '#fff', fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.04em' }}>{t('grid.popular')}</div>
+                )}
+                {/* Product image area */}
+                <div style={{ background: p.popular ? '#f5f3ff' : '#f9f9f7', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, position: 'relative' }}>
+                  <SmartTagPlate size={120} accent={p.popular ? '#7c3aed' : '#9ca3af'} />
+                  {/* Save badge — like Digifeel's ÉCONOMISEZ */}
+                  <div style={{ position: 'absolute', top: 12, left: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 800, color: '#d97706' }}>
+                    ÉCONOMISEZ {p.save}
+                  </div>
+                </div>
+                {/* Info */}
+                <div style={{ padding: '20px 22px 24px' }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 4 }}>{p.name}</h3>
+                  <p style={{ fontSize: 13, color: '#74748a', marginBottom: 14 }}>{p.tags}</p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 16 }}>
+                    <span style={{ fontSize: 24, fontWeight: 900, color: '#111118', letterSpacing: '-0.03em' }}>{p.price}</span>
+                    <span style={{ fontSize: 14, color: '#c4c4d4', textDecoration: 'line-through', fontWeight: 500 }}>{p.full}</span>
+                  </div>
+                  <button onClick={() => onOrderClick(p.key)} style={{ width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer', background: p.popular ? '#7c3aed' : '#111118', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', transition: 'all 140ms' }}>
+                    {t('grid.choose')} →
+                  </button>
+                </div>
               </div>
+            </Reveal>
+          ))}
+          {/* Custom pack */}
+          <Reveal delay={3 * 80}>
+            <div style={{ background: '#fff', border: '1.5px dashed #e4e4ec', borderRadius: 18, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ background: '#f9f9f7', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <div style={{ fontSize: 48 }}>🏢</div>
+              </div>
+              <div style={{ padding: '20px 22px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 4 }}>{t('grid.packCustom')}</h3>
+                <p style={{ fontSize: 13, color: '#74748a', flex: 1, lineHeight: 1.6, marginBottom: 14 }}>{t('grid.packCustomSub')}</p>
+                <p style={{ fontSize: 22, fontWeight: 900, color: '#111118', letterSpacing: '-0.03em', marginBottom: 16 }}>{t('grid.packCustomPrice')}</p>
+                <Link href="/contact" style={{ display: 'block', padding: '12px', borderRadius: 10, textDecoration: 'none', textAlign: 'center', background: '#f9f9f7', color: '#111118', fontSize: 14, fontWeight: 700, border: '1.5px solid #e4e4ec' }}>
+                  {t('grid.contact')}
+                </Link>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Placements ───────────────────────────────────────────────────────────────
+function PlacementsSection() {
+  const t = useTranslations('landing');
+  const items = [
+    { icon: '🍺', title: t('placements.p1'), sub: t('placements.p1sub'), bg: '#fffbeb' },
+    { icon: '🍽️', title: t('placements.p2'), sub: t('placements.p2sub'), bg: '#f0fdf4' },
+    { icon: '💇', title: t('placements.p3'), sub: t('placements.p3sub'), bg: '#fdf4ff' },
+    { icon: '🧾', title: t('placements.p4'), sub: t('placements.p4sub'), bg: '#eff6ff' },
+  ];
+  return (
+    <section style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('placements.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('placements.title')}</h2>
+          </div>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+          {items.map((item, i) => (
+            <Reveal key={i} delay={i * 70}>
+              <div style={{ borderRadius: 18, overflow: 'hidden', border: '1.5px solid #e4e4ec' }}>
+                <div style={{ background: item.bg, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>{item.icon}</div>
+                <div style={{ background: '#fff', padding: '18px 20px' }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 800, color: '#111118', marginBottom: 6, letterSpacing: '-0.01em' }}>{item.title}</h3>
+                  <p style={{ fontSize: 13, color: '#74748a', lineHeight: 1.6 }}>{item.sub}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Testimonials ─────────────────────────────────────────────────────────────
+function TestimonialsSection() {
+  const t = useTranslations('landing');
+  const cards = [
+    { name: t('testimonials.t1name'), role: t('testimonials.t1role'), quote: t('testimonials.t1quote'), accent: '#7c3aed' },
+    { name: t('testimonials.t2name'), role: t('testimonials.t2role'), quote: t('testimonials.t2quote'), accent: '#16a34a' },
+    { name: t('testimonials.t3name'), role: t('testimonials.t3role'), quote: t('testimonials.t3quote'), accent: '#d97706' },
+  ];
+  return (
+    <section id="clients" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('testimonials.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('testimonials.title')}</h2>
+          </div>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 16 }}>
+          {cards.map((c, i) => (
+            <Reveal key={i} delay={i * 80}>
+              <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 18, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: 4, background: c.accent }} />
+                <div style={{ padding: '24px 24px 28px', flex: 1 }}>
+                  <div style={{ fontSize: 18, letterSpacing: 2, color: '#f59e0b', marginBottom: 16 }}>★★★★★</div>
+                  <p style={{ fontSize: 14.5, color: '#3a3b4f', lineHeight: 1.8, fontStyle: 'italic', marginBottom: 20 }}>
+                    &ldquo;{c.quote}&rdquo;
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                      {c.name[0]}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#111118' }}>{c.name}</div>
+                      <div style={{ fontSize: 12, color: '#74748a', marginTop: 1 }}>{c.role}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Final CTA ("Pas encore convaincu?") ──────────────────────────────────────
+function FinalCTASection({ onOrderClick }: { onOrderClick: () => void }) {
+  const t = useTranslations('landing');
+  return (
+    <section style={{ background: 'linear-gradient(135deg,#5b21b6,#7c3aed,#8b5cf6)', padding: 'clamp(70px,8vw,100px) clamp(16px,4vw,48px)', textAlign: 'center' }}>
+      <Reveal>
+        <div style={{ maxWidth: 620, margin: '0 auto' }}>
+          <div style={{ fontSize: 44, marginBottom: 18 }}>🤔</div>
+          <h2 style={{ fontSize: 'clamp(28px,4.5vw,52px)', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em', lineHeight: 0.97, marginBottom: 14 }}>
+            {t('finalCta.title')}
+          </h2>
+          <p style={{ fontSize: 22, fontWeight: 700, color: '#e9d5ff', marginBottom: 18 }}>{t('finalCta.sub')}</p>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', marginBottom: 36, lineHeight: 1.7 }}>{t('finalCta.body')}</p>
+          <button onClick={onOrderClick} style={{ padding: '17px 44px', borderRadius: 13, cursor: 'pointer', background: '#fff', color: '#7c3aed', fontSize: 17, fontWeight: 900, border: 'none', boxShadow: '0 6px 28px rgba(0,0,0,0.22)', letterSpacing: '-0.01em' }}>
+            {t('finalCta.cta')} →
+          </button>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+function FAQSection() {
+  const t = useTranslations('landing');
+  const items = [
+    { q: t('faq.q1'), a: t('faq.a1') },
+    { q: t('faq.q2'), a: t('faq.a2') },
+    { q: t('faq.q3'), a: t('faq.a3') },
+    { q: t('faq.q4'), a: t('faq.a4') },
+    { q: t('faq.q5'), a: t('faq.a5') },
+    { q: t('faq.q6'), a: t('faq.a6') },
+  ];
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <section id="faq" style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('faq.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('faq.title')}</h2>
+          </div>
+        </Reveal>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {items.map((item, i) => (
+            <Reveal key={i} delay={i * 35}>
+              <div style={{ border: '1.5px solid #e4e4ec', borderRadius: 14, overflow: 'hidden', background: '#fff', transition: 'border-color 200ms', ...(open === i ? { borderColor: '#e9d5ff' } : {}) }}>
+                <button onClick={() => setOpen(open === i ? null : i)} style={{ width: '100%', padding: '18px 20px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', gap: 16 }}>
+                  <span style={{ fontSize: 15.5, fontWeight: 700, color: '#111118', lineHeight: 1.4 }}>{item.q}</span>
+                  <span style={{ fontSize: 20, color: '#7c3aed', transition: 'transform 200ms', transform: open === i ? 'rotate(45deg)' : 'none', flexShrink: 0, lineHeight: 1 }}>+</span>
+                </button>
+                {open === i && (
+                  <div style={{ padding: '0 20px 20px', fontSize: 14.5, color: '#74748a', lineHeight: 1.8, borderTop: '1px solid #f0f0f0' }}>
+                    <div style={{ paddingTop: 14 }}>{item.a}</div>
+                  </div>
+                )}
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Double guarantee ─────────────────────────────────────────────────────────
+function DoubleGuaranteeSection() {
+  const t = useTranslations('landing');
+  const items = [
+    { icon: '🛡️', title: t('doubleGuarantee.g1title'), body: t('doubleGuarantee.g1body'), accent: '#7c3aed' },
+    { icon: '🔁', title: t('doubleGuarantee.g2title'), body: t('doubleGuarantee.g2body'), accent: '#16a34a' },
+    { icon: '🚚', title: t('doubleGuarantee.g3title'), body: t('doubleGuarantee.g3body'), accent: '#2563eb' },
+    { icon: '💳', title: t('doubleGuarantee.g4title'), body: t('doubleGuarantee.g4body'), accent: '#d97706' },
+  ];
+  return (
+    <section style={{ background: '#f9f9f7', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
+        {items.map((item, i) => (
+          <Reveal key={i} delay={i * 60}>
+            <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 16, padding: '24px 22px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${item.accent}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{item.icon}</div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 800, color: '#111118', marginBottom: 6, letterSpacing: '-0.01em' }}>{item.title}</h3>
+                <p style={{ fontSize: 13, color: '#74748a', lineHeight: 1.65 }}>{item.body}</p>
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+function FooterSection() {
+  const t = useTranslations('landing');
+  const tc = useTranslations('common');
+  return (
+    <footer style={{ background: '#0d0d1a', color: 'rgba(255,255,255,0.45)', padding: 'clamp(40px,5vw,60px) clamp(16px,4vw,48px) 28px' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 32, marginBottom: 40 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <LogoMark size={24} />
+              <span style={{ fontWeight: 900, fontSize: 15, color: '#fff', letterSpacing: '-0.02em' }}>Digitip</span>
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.75, maxWidth: 180 }}>{t('footer.tagline')}</p>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.links')}</div>
+            {[
+              { label: t('grid.kicker'), href: '#packs' },
+              { label: t('howItWorks.kicker'), href: '#comment-ca-marche' },
+              { label: t('faq.kicker'), href: '#faq' },
+              { label: tc('contact'), href: '/contact' },
+            ].map((l) => (
+              <a key={l.href} href={l.href} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</a>
             ))}
           </div>
-        </Reveal>
-      </section>
-
-      <section style={{ padding: '40px 48px 120px', textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto' }}>
-        <Reveal>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(99,102,241,0.8)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{t('ctaKicker')}</div>
-          <h2
-            style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(30px, 4vw, 50px)', fontWeight: 800, color: '#f0f0f8', letterSpacing: '-0.03em', lineHeight: 1.0, marginBottom: 20 }}
-            dangerouslySetInnerHTML={{ __html: (t.raw('ctaTitle') as string).replace(/<span>/g, '<span style="color:var(--accent)">') }}
-          />
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', lineHeight: 1.75, marginBottom: 36 }}>
-            {t('ctaBody')}
-          </p>
-          <Link href="/signup" style={{
-            display: 'inline-block', padding: '16px 36px', borderRadius: 14, textDecoration: 'none',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: '#fff', fontSize: 16, fontWeight: 700,
-            boxShadow: '0 6px 36px rgba(99,102,241,0.45)',
-          }}>{t('seePricing')} {tc('arrowRight')}</Link>
-        </Reveal>
-      </section>
-
-      <footer style={{
-        borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px 48px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 16,
-        fontSize: 12.5, color: 'rgba(255,255,255,0.25)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <LogoMark size={18} />
-          <span>Digitip · © 2026</span>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.legal')}</div>
+            {[
+              { label: tc('privacy'), href: '/legal/privacy' },
+              { label: tc('terms'), href: '/legal/terms' },
+            ].map((l) => (
+              <Link key={l.href} href={l.href} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', marginBottom: 9 }}>{l.label}</Link>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.payment')}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {/* Payment method badges with card-style */}
+              {['VISA', 'MC', 'AMEX', 'Apple Pay', 'Google Pay', 'CB'].map((p) => (
+                <span key={p} style={{ padding: '5px 9px', borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.02em' }}>{p}</span>
+              ))}
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 24 }}>
-          <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.25)', textDecoration: 'none' }}>{tc('privacy')}</Link>
-          <Link href="/terms" style={{ color: 'rgba(255,255,255,0.25)', textDecoration: 'none' }}>{tc('terms')}</Link>
-          <Link href="/contact" style={{ color: 'rgba(255,255,255,0.25)', textDecoration: 'none' }}>{tc('contact')}</Link>
-        </div>
-      </footer>
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 24 }} />
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>{t('footer.copyright')}</div>
+      </div>
+    </footer>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  const t = useTranslations('landing');
+  const locale = useLocale();
+  const [cartPack, setCartPack] = useState<'solo' | 'duo' | null>(null);
+  const openCart = (pack: 'solo' | 'duo' = 'duo') => setCartPack(pack);
+
+  return (
+    <div style={{ ...LIGHT, minHeight: '100vh', fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)' }}>
+      <PromoBanner text={t('promoBanner')} />
+      <Header onOrderClick={() => openCart()} />
+      <HeroSection onOrderClick={() => openCart()} />
+      <StatsStrip />
+      <Marquee />
+      <ClaimSection />
+      <ProductSection onOrderClick={openCart} />
+      <HowItWorksSection />
+      <ShippingSection />
+      <GuaranteeSection />
+      <PressSection />
+      <ProductGridSection onOrderClick={openCart} />
+      <PlacementsSection />
+      <TestimonialsSection />
+      <FinalCTASection onOrderClick={() => openCart()} />
+      <FAQSection />
+      <DoubleGuaranteeSection />
+      <FooterSection />
+
+      {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} locale={locale} />}
     </div>
   );
 }

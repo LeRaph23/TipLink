@@ -175,9 +175,72 @@ async function handleEvent(
 
       const groupId = session.metadata?.group_id;
       const rawPack = session.metadata?.pack;
-      const pack = (['s', 'm', 'l'] as const).find((p) => p === rawPack);
+      const pack = (['solo', 'duo'] as const).find((p) => p === rawPack);
+
+      // ── Express checkout (landing page guest flow) ──────────────────────────
+      if (!groupId && session.metadata?.source === 'express' && pack) {
+        const email = session.customer_details?.email;
+        const legalName = session.customer_details?.name ?? email ?? 'Unknown';
+        const shipping = session.collected_information?.shipping_details ?? null;
+        const customerId = typeof session.customer === 'string'
+          ? session.customer
+          : (session.customer as Stripe.Customer | null)?.id ?? null;
+        const quantity = Number(session.metadata?.quantity ?? 0) || (pack === 'solo' ? 1 : 2);
+
+        const { data: newGroup, error: groupErr } = await supabase
+          .from('groups')
+          .insert({
+            name: legalName,
+            legal_name: legalName,
+            stripe_customer_id: customerId,
+            shipping_address: shipping
+              ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
+              : null,
+            settings: { tip_thresholds: [1, 2, 5, 10] },
+          })
+          .select('id')
+          .single();
+
+        if (groupErr || !newGroup) {
+          throw new Error(`Express checkout: failed to create group — ${groupErr?.message ?? 'unknown'}`);
+        }
+
+        await supabase.from('smarttag_orders').insert({
+          group_id: newGroup.id,
+          pack,
+          quantity,
+          stripe_checkout_session_id: session.id,
+          status: 'pending_fulfillment',
+          shipping_address: shipping
+            ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
+            : null,
+        });
+
+        if (email) {
+          // Check if a user account already exists for this email
+          const { data: existingUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+          const existingUser = existingUsers?.users?.find((u) => u.email === email);
+
+          if (existingUser) {
+            await supabase.from('user_roles').insert({
+              user_id: existingUser.id,
+              role: 'group_admin',
+              group_id: newGroup.id,
+            });
+          } else {
+            const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
+            await supabase.auth.admin.inviteUserByEmail(email, {
+              data: { pending_group_id: newGroup.id },
+              redirectTo: `${base}/en/auth/setup`,
+            });
+          }
+        }
+
+        break;
+      }
+
       if (!groupId || !pack) {
-        // Not a pack checkout (e.g. other future one-off products).
+        // Not a known pack checkout.
         break;
       }
 
@@ -209,7 +272,7 @@ async function handleEvent(
           {
             group_id: groupId,
             pack,
-            quantity: quantity ?? (pack === 's' ? 15 : pack === 'm' ? 30 : 60),
+            quantity: quantity ?? (pack === 'solo' ? 1 : 2),
             stripe_checkout_session_id: session.id,
             status: 'pending_fulfillment',
             shipping_address: shipping

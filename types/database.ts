@@ -21,7 +21,7 @@ export type Database = {
           stripe_customer_id: string | null;
           subscription_id: string | null;
           subscription_status: string | null;
-          subscription_pack: 's' | 'm' | 'l' | null;
+          subscription_pack: 'solo' | 'duo' | null;
           platform_fee_bps: number;
         };
         Insert: {
@@ -64,7 +64,7 @@ export type Database = {
         Row: {
           id: string;
           group_id: string;
-          pack: 's' | 'm' | 'l';
+          pack: 'solo' | 'duo';
           quantity: number;
           stripe_checkout_session_id: string | null;
           stripe_invoice_id: string | null;
@@ -81,7 +81,7 @@ export type Database = {
         Insert: {
           id?: string;
           group_id: string;
-          pack: 's' | 'm' | 'l';
+          pack: 'solo' | 'duo';
           quantity: number;
           stripe_checkout_session_id?: string | null;
           stripe_invoice_id?: string | null;

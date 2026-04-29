@@ -339,7 +339,7 @@ describe('Stripe Webhook Handler', () => {
           id: 'cs_test_smarttag',
           mode: 'payment',
           customer: 'cus_123',
-          metadata: { group_id: 'grp-1', pack: 'm', quantity: '30' },
+          metadata: { group_id: 'grp-1', pack: 'duo', quantity: '2' },
           collected_information: {
             shipping_details: {
               name: 'Acme Corp',
@@ -411,8 +411,8 @@ describe('Stripe Webhook Handler', () => {
     expect(orderUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         group_id: 'grp-1',
-        pack: 'm',
-        quantity: 30,
+        pack: 'duo',
+        quantity: 2,
         stripe_checkout_session_id: 'cs_test_smarttag',
         status: 'pending_fulfillment',
       }),

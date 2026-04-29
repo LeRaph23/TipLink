@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { GroupFeeEditor } from './GroupFeeEditor';
 
 export default async function GroupsPage({
   params,
@@ -21,19 +21,11 @@ export default async function GroupsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-            {t('groups.title')}
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('groups.subtitle')}</p>
-        </div>
-        <Link
-          href="/dashboard/admin/groups/new"
-          style={{ padding: '9px 16px', borderRadius: 8, background: 'var(--accent)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}
-        >
-          + Nouveau salon
-        </Link>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
+          {t('groups.title')}
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('groups.subtitle')}</p>
       </div>
 
       {(!groups || groups.length === 0) ? (
@@ -45,7 +37,7 @@ export default async function GroupsPage({
           {t('groups.empty')}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
           {groups.map((g) => (
             <div key={g.id} style={{
               background: 'var(--surface)', border: '1px solid var(--border-subtle)',
@@ -71,24 +63,10 @@ export default async function GroupsPage({
                 )}
                 <h2 style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{g.name}</h2>
               </div>
-              <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 6 }}>
+              <p style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
                 {t('groups.createdOn')} {new Date(g.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 11.5, color: 'var(--text-2)', fontWeight: 500 }}>
-                  {t('groups.feeLabel')}: {((g.platform_fee_bps ?? 200) / 100).toFixed(2)}%
-                </span>
-                <Link
-                  href={`/dashboard/admin/groups/${g.id}`}
-                  style={{
-                    fontSize: 11.5, fontWeight: 600, color: 'var(--accent)',
-                    textDecoration: 'none', padding: '3px 8px',
-                    border: '1px solid var(--accent-muted)', borderRadius: 5,
-                  }}
-                >
-                  {t('groups.edit')}
-                </Link>
-              </div>
+              <GroupFeeEditor groupId={g.id} initialBps={g.platform_fee_bps} />
             </div>
           ))}
         </div>

@@ -1,14 +1,12 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { PACKS } from '@/lib/env';
+import { PACKS, type PackId } from '@/lib/env';
 
-import type { PackId } from '@/lib/env';
-
-function LogoMark({ size = 24 }: { size?: number }) {
+function LogoMark({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="var(--accent)" />
+      <rect width="24" height="24" rx="7" fill="#7c3aed" />
       <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
       <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
       <circle cx="12" cy="12" r="1.8" fill="white" />
@@ -18,9 +16,22 @@ function LogoMark({ size = 24 }: { size?: number }) {
 
 function Check() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
-      <circle cx="8" cy="8" r="7" fill="rgba(99,102,241,0.15)" />
-      <path d="M5 8.5l2 2 4-4.5" stroke="#a5b4fc" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+      <circle cx="8" cy="8" r="7.5" fill="#f0fdf4" stroke="#bbf7d0" />
+      <path d="M5 8.5l2 2 4-4.5" stroke="#16a34a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
+}
+
+function PlaqueSVG({ accent = '#7c3aed', size = 80 }: { accent?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none">
+      <rect width="80" height="80" rx="14" fill={`${accent}12`} stroke={`${accent}30`} strokeWidth="1" />
+      <path d="M28 40c0-6.6 5.4-12 12-12" stroke={accent} strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M52 40c0 6.6-5.4 12-12 12" stroke={accent} strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="40" cy="40" r="3.5" fill={accent} />
+      <path d="M22 40c0-9.9 8.1-18 18-18" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.35" />
+      <path d="M58 40c0 9.9-8.1 18-18 18" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.35" />
     </svg>
   );
 }
@@ -35,164 +46,163 @@ export default async function PricingPage({
   const t = await getTranslations('pricing');
   const tc = await getTranslations('common');
 
+  const isFr = locale === 'fr';
   const formatPrice = (cents: number) =>
-    new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-IE', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
+    new Intl.NumberFormat(isFr ? 'fr-FR' : 'en-IE', {
+      style: 'currency', currency: 'EUR', minimumFractionDigits: 0,
     }).format(cents / 100);
 
-  const packs: Array<{
-    id: PackId;
-    popular?: boolean;
-  }> = [
-    { id: 'solo' },
-    { id: 'duo', popular: true },
+  const packs: Array<{ id: PackId; popular?: boolean; accent: string; save: string }> = [
+    { id: 'solo', accent: '#7c3aed', save: isFr ? 'ÉCONOMISEZ 22%' : 'SAVE 22%' },
+    { id: 'duo',  accent: '#7c3aed', save: isFr ? 'ÉCONOMISEZ 28%' : 'SAVE 28%', popular: true },
+  ];
+
+  const benefits = [
+    t('benefits.preConfigured'),
+    t('benefits.freeShipping'),
+    t('benefits.lifetimeReplacement'),
+    t('benefits.dashboard'),
+    t('benefits.app'),
+    t('benefits.vatInvoice'),
+    t('benefits.noSubscription'),
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
-      <div style={{ position: 'fixed', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'fixed', bottom: '10%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+    <div style={{ minHeight: '100vh', background: '#f9f9f7', color: '#111118', fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)' }}>
 
       {/* Nav */}
       <header style={{
+        background: '#fff', borderBottom: '1px solid #e4e4ec',
+        position: 'sticky', top: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '18px 48px', position: 'relative', zIndex: 10,
+        padding: '0 clamp(16px,4vw,48px)', height: 62,
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <LogoMark size={26} />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em', color: '#f0f0f8' }}>Digitip</span>
+          <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: '-0.03em', color: '#111118' }}>Digitip</span>
         </Link>
-        <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <nav style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <LanguageSwitcher />
-          <Link href="/login" style={{
-            padding: '7px 16px', borderRadius: 8, textDecoration: 'none',
-            color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500,
-          }}>{tc('login')}</Link>
-          <Link href="/contact" style={{
-            padding: '7px 14px', textDecoration: 'none',
-            color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500,
-          }}>{tc('contact')}</Link>
+          <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500 }}>{tc('login')}</Link>
+          <Link href="/contact" style={{ padding: '7px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13, fontWeight: 500 }}>{tc('contact')}</Link>
         </nav>
       </header>
 
       {/* Hero */}
-      <section style={{ padding: '40px 48px 20px', maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1, textAlign: 'center' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(99,102,241,0.85)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>{t('kicker')}</div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(30px, 4vw, 48px)', fontWeight: 800, color: '#f0f0f8', letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: 18 }}>
+      <section style={{ background: '#fff', padding: 'clamp(48px,6vw,80px) clamp(16px,4vw,48px) clamp(32px,4vw,56px)', borderBottom: '1px solid #e4e4ec', textAlign: 'center' }}>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>{t('kicker')}</div>
+        <h1 style={{ fontSize: 'clamp(28px,4vw,52px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1.02, marginBottom: 18 }}>
           {t('title')}
         </h1>
-        <p style={{ maxWidth: 620, margin: '0 auto', fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+        <p style={{ maxWidth: 560, margin: '0 auto', fontSize: 16, color: '#74748a', lineHeight: 1.75 }}>
           {t('subtitle')}
         </p>
       </section>
 
-      {/* Packs grid */}
-      <section style={{ padding: '40px 48px 60px', maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 18,
-        }}>
-          {packs.map(({ id, popular }) => {
+      {/* Pack grid */}
+      <section style={{ padding: 'clamp(40px,5vw,64px) clamp(16px,4vw,48px)', maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+          {packs.map(({ id, popular, save }) => {
             const def = PACKS[id];
-            const benefits: string[] = [
-              t('benefits.preConfigured'),
-              t('benefits.freeShipping'),
-              t('benefits.lifetimeReplacement'),
-              t('benefits.dashboard'),
-              t('benefits.app'),
-              t('benefits.vatInvoice'),
-              t('benefits.noSubscription'),
-            ];
+            const name = t(`packs.${id}.name` as Parameters<typeof t>[0]);
+            const tagline = t(`packs.${id}.tagline` as Parameters<typeof t>[0]);
 
             return (
               <div key={id} style={{
                 position: 'relative',
-                padding: '32px 28px',
-                borderRadius: 18,
-                background: popular
-                  ? 'linear-gradient(180deg, rgba(99,102,241,0.1) 0%, var(--surface) 80%)'
-                  : 'var(--surface)',
-                border: `1px solid ${popular ? 'rgba(99,102,241,0.4)' : 'var(--border-subtle)'}`,
-                boxShadow: popular ? '0 20px 60px rgba(99,102,241,0.15)' : 'none',
-                display: 'flex',
-                flexDirection: 'column',
+                background: '#fff',
+                border: popular ? '2px solid #7c3aed' : '1.5px solid #e4e4ec',
+                borderRadius: 20,
+                overflow: 'hidden',
+                boxShadow: popular ? '0 12px 40px rgba(124,58,237,0.14)' : '0 2px 8px rgba(0,0,0,0.04)',
+                display: 'flex', flexDirection: 'column',
               }}>
                 {popular && (
                   <div style={{
-                    position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                    padding: '4px 12px', borderRadius: 100,
-                    background: 'var(--accent)', color: '#fff',
-                    fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-                    boxShadow: '0 4px 20px rgba(99,102,241,0.45)',
+                    position: 'absolute', top: 16, right: 16,
+                    background: '#7c3aed', color: '#fff',
+                    fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20,
+                    letterSpacing: '0.04em', boxShadow: '0 2px 12px rgba(124,58,237,0.35)',
                   }}>
                     {t('mostPopular')}
                   </div>
                 )}
 
+                {/* Product visual */}
                 <div style={{
-                  display: 'inline-flex', alignSelf: 'flex-start',
-                  padding: '3px 10px', borderRadius: 6,
-                  background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
-                  fontSize: 11, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.06em', marginBottom: 18,
+                  background: popular ? '#f5f3ff' : '#f9f9f7',
+                  padding: '36px 28px 28px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+                  position: 'relative',
                 }}>
-                  {t('packs.' + id + '.name').toUpperCase()}
+                  <div style={{ position: 'absolute', top: 12, left: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '3px 10px', fontSize: 10.5, fontWeight: 800, color: '#d97706' }}>
+                    {save}
+                  </div>
+                  {def.quantity === 1 ? (
+                    <PlaqueSVG accent="#7c3aed" size={80} />
+                  ) : (
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <PlaqueSVG accent="#7c3aed" size={72} />
+                      <PlaqueSVG accent="#8b5cf6" size={72} />
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#7c3aed', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    {name}
+                  </div>
                 </div>
 
-                <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 18 }}>
-                  {t('packs.' + id + '.tagline')}
-                </p>
+                {/* Info */}
+                <div style={{ padding: '24px 28px 28px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <p style={{ fontSize: 13.5, color: '#74748a', lineHeight: 1.65, marginBottom: 20 }}>{tagline}</p>
 
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 800, color: '#f0f0f8', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                    {formatPrice(def.hardwareAmount)}
+                  {/* Pricing */}
+                  <div style={{ marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                      <span style={{ fontSize: 42, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>
+                        {formatPrice(def.hardwareAmount)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4 }}>
+                      {t('oneTime')} · {t('tagsIncluded', { count: def.quantity })}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
-                    {t('oneTime')}
-                  </div>
-                </div>
 
-                <div style={{ marginTop: 8, marginBottom: 20 }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 8 }}>
-                    {t('tagsIncluded', { count: def.quantity })}
-                  </div>
+                  {/* Commission note */}
                   <div style={{
-                    padding: '10px 12px', borderRadius: 10,
-                    background: 'rgba(99,102,241,0.08)',
-                    border: '1px solid rgba(99,102,241,0.2)',
-                    fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.4,
+                    margin: '16px 0',
+                    padding: '10px 14px', borderRadius: 10,
+                    background: popular ? 'rgba(124,58,237,0.06)' : '#f9f9f7',
+                    border: popular ? '1px solid rgba(124,58,237,0.18)' : '1px solid #e4e4ec',
+                    fontSize: 12.5, color: '#3a3b4f', lineHeight: 1.5,
                   }}>
-                    <strong style={{ color: '#a5b4fc' }}>{t('commissionLabel')}</strong> · {t('commissionBody')}
+                    <strong style={{ color: '#7c3aed' }}>{t('commissionLabel')}</strong> · {t('commissionBody')}
                   </div>
+
+                  {/* Benefits */}
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
+                    {benefits.map((b, i) => (
+                      <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5, color: '#3a3b4f', lineHeight: 1.5 }}>
+                        <Check />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href={`/order/${id}`}
+                    style={{
+                      display: 'block', textAlign: 'center',
+                      padding: '14px 20px', borderRadius: 12, textDecoration: 'none',
+                      background: popular ? '#7c3aed' : '#111118',
+                      color: '#fff',
+                      fontSize: 15, fontWeight: 800,
+                      boxShadow: popular ? '0 4px 20px rgba(124,58,237,0.38)' : '0 2px 8px rgba(0,0,0,0.12)',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    {t('choose')} →
+                  </Link>
                 </div>
-
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-                  {benefits.map((b, i) => (
-                    <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
-                      <Check />
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href={`/order/${id}`}
-                  style={{
-                    display: 'block', textAlign: 'center',
-                    padding: '12px 16px', borderRadius: 12, textDecoration: 'none',
-                    background: popular
-                      ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-                      : 'var(--surface-2)',
-                    color: popular ? '#fff' : 'var(--text)',
-                    fontSize: 14, fontWeight: 700,
-                    border: popular ? 'none' : '1px solid var(--border)',
-                    boxShadow: popular ? '0 4px 20px rgba(99,102,241,0.4)' : 'none',
-                  }}
-                >
-                  {t('choose')} {tc('arrowRight')}
-                </Link>
               </div>
             );
           })}
@@ -200,40 +210,41 @@ export default async function PricingPage({
 
         {/* Enterprise card */}
         <div style={{
-          marginTop: 18, padding: '26px 32px', borderRadius: 18,
-          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+          marginTop: 20, padding: 'clamp(22px,3vw,32px) clamp(20px,3vw,32px)',
+          background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 18,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 24, flexWrap: 'wrap',
         }}>
-          <div style={{ maxWidth: 560 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(99,102,241,0.85)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
+          <div style={{ maxWidth: 520 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
               Enterprise
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f0f0f8', letterSpacing: '-0.03em', marginBottom: 6 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 6 }}>
               {t('enterpriseTitle')}
             </div>
-            <p style={{ fontSize: 13.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.65 }}>
               {t('enterpriseBody')}
             </p>
           </div>
           <Link href="/contact" style={{
-            padding: '12px 24px', borderRadius: 12, textDecoration: 'none',
-            background: 'var(--surface-2)', color: 'var(--text)',
-            fontSize: 14, fontWeight: 600, border: '1px solid var(--border)',
+            padding: '13px 28px', borderRadius: 12, textDecoration: 'none',
+            background: '#111118', color: '#fff',
+            fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap',
           }}>
-            {t('enterpriseCta')} {tc('arrowRight')}
+            {t('enterpriseCta')} →
           </Link>
         </div>
 
         {/* Trust bar */}
         <div style={{
-          marginTop: 40, padding: 20,
-          display: 'flex', gap: 40, justifyContent: 'center', flexWrap: 'wrap',
-          fontSize: 12.5, color: 'var(--text-3)',
+          marginTop: 32, padding: '18px 0',
+          display: 'flex', gap: 32, justifyContent: 'center', flexWrap: 'wrap',
+          fontSize: 13, color: '#74748a', fontWeight: 500,
         }}>
-          <span>🔒 {t('trust1')}</span>
-          <span>🧾 {t('trust2')}</span>
-          <span>✓ {t('trust3')}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🔒 {t('trust1')}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🧾 {t('trust2')}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>✓ {t('trust3')}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🚚 Livraison gratuite Europe</span>
         </div>
       </section>
     </div>
