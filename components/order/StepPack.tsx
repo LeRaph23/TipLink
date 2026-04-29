@@ -14,14 +14,14 @@ export function StepPack({
   onChange: (p: PackId) => void;
 }) {
   const t = useTranslations('order.pack');
-  const packs: PackId[] = ['s', 'm', 'l'];
+  const packs: PackId[] = ['solo', 'duo'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {packs.map((p) => {
         const def = PACKS[p];
         const selected = p === pack;
-        const popular = p === 'm';
+        const popular = p === 'duo';
 
         return (
           <button
@@ -66,7 +66,7 @@ export function StepPack({
               </span>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-                  Pack {p.toUpperCase()}
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
                 </div>
                 <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 3 }}>
                   {t('quantity', { count: def.quantity })}

@@ -69,14 +69,14 @@ describe('address', () => {
 });
 
 describe('validatePack', () => {
-  it.each(['s', 'm', 'l'])('accepts %s', (p) => expect(validatePack(p)).toBe(true));
-  it.each(['xl', 'S', '', 'foo', null, undefined, 42])('rejects %s', (p) => {
+  it.each(['solo', 'duo'])('accepts %s', (p) => expect(validatePack(p)).toBe(true));
+  it.each(['s', 'm', 'l', 'Solo', '', 'foo', null, undefined, 42])('rejects %s', (p) => {
     expect(validatePack(p)).toBe(false);
   });
 });
 
 describe('step validators', () => {
-  const base = emptyOrder('m');
+  const base = emptyOrder('solo');
 
   it('validateShipping requires a complete address', () => {
     expect(validateShipping(base)).toBe('shipping_invalid');

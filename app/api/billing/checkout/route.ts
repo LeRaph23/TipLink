@@ -32,7 +32,7 @@ const ALLOWED_SHIPPING_COUNTRIES = [
 ] as const;
 
 function isValidPack(p: unknown): p is PackId {
-  return p === 's' || p === 'm' || p === 'l';
+  return p === 'solo' || p === 'duo';
 }
 
 export async function POST(request: NextRequest) {

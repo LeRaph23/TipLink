@@ -57,12 +57,12 @@ export function getBaseUrl(): string {
   return publicEnv.NEXT_PUBLIC_BASE_URL.replace(/\/$/, '');
 }
 
-export type PackId = 's' | 'm' | 'l';
+export type PackId = 'solo' | 'duo';
 
 export type PackDefinition = {
   id: PackId;
   quantity: number;
-  hardwareAmount: number; // cents, one-time
+  hardwareAmount: number; // cents, excl. VAT, one-time
   currency: 'eur';
 };
 
@@ -70,9 +70,8 @@ export type PackDefinition = {
 // earned via per-transaction commission (see groups.platform_fee_bps).
 // Keep amounts in sync with the Stripe Products/Prices in the dashboard.
 export const PACKS: Record<PackId, PackDefinition> = {
-  s: { id: 's', quantity: 15, hardwareAmount: 19900, currency: 'eur' },
-  m: { id: 'm', quantity: 30, hardwareAmount: 34900, currency: 'eur' },
-  l: { id: 'l', quantity: 60, hardwareAmount: 49900, currency: 'eur' },
+  solo: { id: 'solo', quantity: 1, hardwareAmount: 6900, currency: 'eur' },
+  duo:  { id: 'duo',  quantity: 2, hardwareAmount: 9900, currency: 'eur' },
 };
 
 // Default platform commission applied to every tip, in basis points.

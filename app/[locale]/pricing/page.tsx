@@ -3,7 +3,7 @@ import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS } from '@/lib/env';
 
-type PackKey = 's' | 'm' | 'l';
+import type { PackId } from '@/lib/env';
 
 function LogoMark({ size = 24 }: { size?: number }) {
   return (
@@ -43,12 +43,11 @@ export default async function PricingPage({
     }).format(cents / 100);
 
   const packs: Array<{
-    id: PackKey;
+    id: PackId;
     popular?: boolean;
   }> = [
-    { id: 's' },
-    { id: 'm', popular: true },
-    { id: 'l' },
+    { id: 'solo' },
+    { id: 'duo', popular: true },
   ];
 
   return (
@@ -101,12 +100,11 @@ export default async function PricingPage({
             const benefits: string[] = [
               t('benefits.preConfigured'),
               t('benefits.freeShipping'),
+              t('benefits.lifetimeReplacement'),
               t('benefits.dashboard'),
               t('benefits.app'),
               t('benefits.vatInvoice'),
               t('benefits.noSubscription'),
-              ...(id === 'l' ? [t('benefits.prioritySupport')] : []),
-              ...(id !== 's' ? [t('benefits.lifetimeReplacement')] : []),
             ];
 
             return (
@@ -140,7 +138,7 @@ export default async function PricingPage({
                   background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
                   fontSize: 11, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.06em', marginBottom: 18,
                 }}>
-                  {id.toUpperCase()} · {t('packs.' + id + '.name')}
+                  {t('packs.' + id + '.name').toUpperCase()}
                 </div>
 
                 <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 18 }}>

@@ -56,7 +56,7 @@ export function isValidAddress(a: Address | undefined | null): a is Address {
 }
 
 export function validatePack(pack: unknown): pack is PackId {
-  return pack === 's' || pack === 'm' || pack === 'l';
+  return pack === 'solo' || pack === 'duo';
 }
 
 export function validateShipping(state: OrderState): string | null {

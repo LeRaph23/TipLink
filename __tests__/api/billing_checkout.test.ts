@@ -89,9 +89,8 @@ describe('POST /api/billing/checkout', () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key-min-10-chars';
     process.env.STRIPE_SECRET_KEY = 'sk_test';
-    process.env.STRIPE_PRICE_PACK_S_HARDWARE = 'price_s_hw';
-    process.env.STRIPE_PRICE_PACK_M_HARDWARE = 'price_m_hw';
-    process.env.STRIPE_PRICE_PACK_L_HARDWARE = 'price_l_hw';
+    process.env.STRIPE_PRICE_PACK_SOLO_HARDWARE = 'price_solo_hw';
+    process.env.STRIPE_PRICE_PACK_DUO_HARDWARE  = 'price_duo_hw';
   });
 
   it('returns 400 on invalid pack', async () => {
@@ -110,7 +109,7 @@ describe('POST /api/billing/checkout', () => {
     vi.mocked(createClient).mockResolvedValue(serverClientMock(null) as never);
 
     const { POST } = await import('@/app/api/billing/checkout/route');
-    const res = await POST(buildRequest({ pack: 's' }));
+    const res = await POST(buildRequest({ pack: 'solo' }));
     expect(res.status).toBe(401);
   });
 
@@ -136,7 +135,7 @@ describe('POST /api/billing/checkout', () => {
     const { POST } = await import('@/app/api/billing/checkout/route');
     const res = await POST(
       buildRequest({
-        pack: 'm',
+        pack: 'duo',
         business: {
           legal_name: 'Acme',
           shipping: {
@@ -157,11 +156,11 @@ describe('POST /api/billing/checkout', () => {
     const call = vi.mocked(stripe.checkout.sessions.create).mock.calls[0][0]!;
     expect(call.mode).toBe('payment');
     expect(call.line_items).toHaveLength(1);
-    expect(call.line_items![0].price).toBe('price_m_hw');
+    expect(call.line_items![0].price).toBe('price_duo_hw');
     expect(call.automatic_tax?.enabled).toBe(true);
     expect(call.tax_id_collection?.enabled).toBe(true);
     expect(call.metadata?.group_id).toBe('grp-1');
-    expect(call.metadata?.pack).toBe('m');
+    expect(call.metadata?.pack).toBe('duo');
   });
 
   it('rate-limits after 5 requests per minute / IP', async () => {
@@ -186,10 +185,10 @@ describe('POST /api/billing/checkout', () => {
 
     const sharedIp = '9.9.9.9';
     for (let i = 0; i < 5; i++) {
-      const ok = await POST(buildRequest({ pack: 's' }, sharedIp));
+      const ok = await POST(buildRequest({ pack: 'solo' }, sharedIp));
       expect(ok.status).toBe(200);
     }
-    const limited = await POST(buildRequest({ pack: 's' }, sharedIp));
+    const limited = await POST(buildRequest({ pack: 'solo' }, sharedIp));
     expect(limited.status).toBe(429);
   });
 });

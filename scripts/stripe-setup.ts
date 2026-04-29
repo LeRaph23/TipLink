@@ -20,9 +20,8 @@ if (!key) {
 const stripe = new Stripe(key, { apiVersion: '2025-04-30' as any });
 
 const PACKS = [
-  { id: 'pack_s', name: 'SmartTag Pack S — 15 tags', amount: 19900, env: 'STRIPE_PRICE_PACK_S_HARDWARE' },
-  { id: 'pack_m', name: 'SmartTag Pack M — 30 tags', amount: 34900, env: 'STRIPE_PRICE_PACK_M_HARDWARE' },
-  { id: 'pack_l', name: 'SmartTag Pack L — 60 tags', amount: 49900, env: 'STRIPE_PRICE_PACK_L_HARDWARE' },
+  { id: 'plaque_solo', name: 'Plaque époxy NFC — Solo (1 plaque)', amount: 6900, env: 'STRIPE_PRICE_PACK_SOLO_HARDWARE' },
+  { id: 'plaque_duo',  name: 'Plaque époxy NFC — Duo (2 plaques)', amount: 9900, env: 'STRIPE_PRICE_PACK_DUO_HARDWARE' },
 ] as const;
 
 async function main() {
