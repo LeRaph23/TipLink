@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { GroupFeeEditor } from './GroupFeeEditor';
 
 export default async function GroupsPage({
   params,
@@ -14,7 +15,7 @@ export default async function GroupsPage({
 
   const { data: groups } = await supabase
     .from('groups')
-    .select('id, name, logo_url, settings, created_at')
+    .select('id, name, logo_url, settings, created_at, platform_fee_bps')
     .is('deleted_at', null)
     .order('name');
 
@@ -36,7 +37,7 @@ export default async function GroupsPage({
           {t('groups.empty')}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
           {groups.map((g) => (
             <div key={g.id} style={{
               background: 'var(--surface)', border: '1px solid var(--border-subtle)',
@@ -65,6 +66,7 @@ export default async function GroupsPage({
               <p style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
                 {t('groups.createdOn')} {new Date(g.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
+              <GroupFeeEditor groupId={g.id} initialBps={g.platform_fee_bps} />
             </div>
           ))}
         </div>
