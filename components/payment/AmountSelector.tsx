@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { TipCheckout } from './TipCheckout';
 
+const SERVICE_FEE_CENTS = 25;
+
 interface Props {
   staffId: string;
   currency: string;
@@ -16,14 +18,17 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
   const [custom, setCustom] = useState('');
   const [customFocus, setCustomFocus] = useState(false);
 
-  const effectiveAmount = custom
+  const tipAmount = custom
     ? Math.round((parseFloat(custom) || 0) * 100)
     : selectedAmount;
 
-  const hasAmount = effectiveAmount !== null && effectiveAmount >= 50;
+  const hasAmount = tipAmount !== null && tipAmount >= 50;
 
   const fmt = new Intl.NumberFormat(undefined, {
     style: 'currency', currency, minimumFractionDigits: 0,
+  });
+  const fmtCents = new Intl.NumberFormat(undefined, {
+    style: 'currency', currency, minimumFractionDigits: 2,
   });
 
   return (
@@ -40,6 +45,7 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
           {thresholds.map(amt => {
             const cents = amt * 100;
             const active = !custom && selectedAmount === cents;
+
             return (
               <button
                 key={amt}
@@ -82,14 +88,30 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
         </div>
       </div>
 
+      {/* Service fee breakdown — shown once a valid tip is selected */}
+      {hasAmount && tipAmount && (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '10px 14px', borderRadius: 10,
+          background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+          fontSize: 12.5, color: 'var(--text-3)', marginBottom: 0,
+        }}>
+          <span>{fmt.format(tipAmount / 100)} pourboire + {fmtCents.format(SERVICE_FEE_CENTS / 100)} frais de service</span>
+          <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: 13 }}>
+            = {fmtCents.format((tipAmount + SERVICE_FEE_CENTS) / 100)}
+          </span>
+        </div>
+      )}
+
       {/* Checkout card — only shown once a valid amount is chosen.
-          Remounting via `key={effectiveAmount}` is intentional: it forces
-          Stripe Elements to recompute payment methods for the new amount. */}
-      {hasAmount && effectiveAmount && (
+          Remounting via `key={tipAmount}` forces Stripe Elements to
+          recompute payment methods for the new total charge amount. */}
+      {hasAmount && tipAmount && (
         <TipCheckout
-          key={effectiveAmount}
+          key={tipAmount}
           staffId={staffId}
-          amount={effectiveAmount}
+          tipAmount={tipAmount}
+          amount={tipAmount + SERVICE_FEE_CENTS}
           currency={currency}
         />
       )}

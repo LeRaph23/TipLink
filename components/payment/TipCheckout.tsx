@@ -13,7 +13,8 @@ import {
 
 interface Props {
   staffId: string;
-  amount: number; // cents
+  amount: number;    // total charge in cents = tipAmount + service fee
+  tipAmount: number; // the tip the customer selected, in cents
   currency: string;
 }
 
@@ -27,7 +28,7 @@ function getStripe() {
   return stripePromise;
 }
 
-export function TipCheckout({ staffId, amount, currency }: Props) {
+export function TipCheckout({ staffId, amount, tipAmount, currency }: Props) {
   const options = useMemo<StripeElementsOptions>(
     () => ({
       mode: 'payment',
@@ -48,12 +49,12 @@ export function TipCheckout({ staffId, amount, currency }: Props) {
 
   return (
     <Elements stripe={getStripe()} options={options}>
-      <InnerCheckout staffId={staffId} amount={amount} currency={currency} />
+      <InnerCheckout staffId={staffId} amount={amount} tipAmount={tipAmount} currency={currency} />
     </Elements>
   );
 }
 
-function InnerCheckout({ staffId, amount, currency }: Props) {
+function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
   const stripe = useStripe();
   const elements = useElements();
   const t = useTranslations('pay');
@@ -79,7 +80,7 @@ function InnerCheckout({ staffId, amount, currency }: Props) {
     const res = await fetch('/api/stripe/create-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staffId, amount, currency, nonce, customerEmail: customerEmail.trim() || undefined }),
+      body: JSON.stringify({ staffId, amount, tipAmount, currency, nonce, customerEmail: customerEmail.trim() || undefined }),
     });
     const data = await res.json();
     if (!res.ok || !data.clientSecret) {

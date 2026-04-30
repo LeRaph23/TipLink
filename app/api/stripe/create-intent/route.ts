@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { staffId: string; amount: number; currency: string; nonce: string; customerEmail?: string };
+  let body: { staffId: string; amount: number; tipAmount: number; currency: string; nonce: string; customerEmail?: string };
 
   try {
     body = await request.json();
@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { staffId, amount, currency, nonce, customerEmail } = body;
+  const { staffId, amount, tipAmount, currency, nonce, customerEmail } = body;
+
+  const SERVICE_FEE = 25;
 
   // Validate optional email
   const validatedEmail = customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)
@@ -40,10 +42,11 @@ export async function POST(request: NextRequest) {
 
   if (
     !staffId ||
-    typeof amount !== 'number' ||
-    !Number.isFinite(amount) ||
-    amount < 50 ||
-    amount > 100_000_00 ||
+    typeof tipAmount !== 'number' ||
+    !Number.isFinite(tipAmount) ||
+    tipAmount < 50 ||
+    tipAmount > 100_000_00 ||
+    amount !== tipAmount + SERVICE_FEE ||
     !currency ||
     !nonce
   ) {
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
 
   // Resolve the platform commission rate: establishment -> group -> default.
   // The group owns the commercial relationship; the rate lives on groups.
-  let platformFeeBps = 200;
+  let platformFeeBps = 300;
   if (staff.establishment_id) {
     const { data: estab } = await supabase
       .from('establishments')
@@ -87,10 +90,10 @@ export async function POST(request: NextRequest) {
       }
     }
   }
-  // application_fee_amount is withheld from the staff's transfer and
-  // credited to the platform (Digitip). Rounded down so the staff never
-  // comes up short by 1 cent.
-  const applicationFeeAmount = Math.max(0, Math.floor((amount * platformFeeBps) / 10_000));
+  // Commission is computed on tipAmount only (not the service fee).
+  // We also add the service fee (25 cents) to the application fee so it
+  // stays with the platform and offsets Stripe's fixed per-transaction cost.
+  const applicationFeeAmount = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000)) + SERVICE_FEE;
 
   const idempotencyKey = generateIdempotencyKey({ staffId, amount, nonce });
 
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
       establishment_id: staff.establishment_id,
       status: 'pending',
       idempotency_key: idempotencyKey,
-      metadata: { source: 'nfc' },
+      metadata: { source: 'nfc', tip_amount: tipAmount, service_fee: SERVICE_FEE },
     })
     .select('id')
     .single();
@@ -145,6 +148,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         transaction_id: transactionId,
         staff_id: staffId,
+        tip_amount: String(tipAmount),
+        service_fee: String(SERVICE_FEE),
         platform_fee_bps: String(platformFeeBps),
         application_fee_amount: String(applicationFeeAmount),
       },
