@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logAdminAction } from '@/lib/admin/audit';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -92,6 +93,7 @@ export async function fulfillOrder(
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
   revalidatePath('/dashboard/admin/smarttags');
 
+  await logAdminAction('orders.fulfill', { orderId, establishmentId, stickerCount: stickerIds.length });
   return {
     ok: true,
     data: { encoded_count: newCount, total_quantity: order.quantity, status: newStatus },
@@ -118,6 +120,7 @@ export async function markOrderShipped(
 
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
+  await logAdminAction('orders.mark_shipped', { orderId });
   return { ok: true, data: null };
 }
 
@@ -134,5 +137,6 @@ export async function markOrderDelivered(orderId: string): Promise<Result<null>>
 
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
+  await logAdminAction('orders.mark_delivered', { orderId });
   return { ok: true, data: null };
 }

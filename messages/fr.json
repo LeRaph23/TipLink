@@ -176,13 +176,6 @@
       "title": "Qualité garantie à vie",
       "sub": "Nos plaques époxy sont fabriquées pour durer. En cas de casse ou défaut, on vous en envoie une nouvelle. Gratuitement. À vie."
     },
-    "press": {
-      "kicker": "Vu sur",
-      "p1": "Capital M6",
-      "p2": "Le Parisien",
-      "p3": "Ouest-France",
-      "p4": "L'Hôtellerie"
-    },
     "grid": {
       "kicker": "Nos packs",
       "title": "Choisissez votre pack",
@@ -669,8 +662,14 @@
     },
     "admin": {
       "nav": {
-        "sectionTitle": "Admin",
+        "tenantSectionTitle": "Salon / groupe",
+        "sectionTitle": "Plateforme",
         "overview": "Vue d'ensemble",
+        "search": "Recherche",
+        "users": "Utilisateurs",
+        "webhooks": "Webhooks",
+        "audit": "Audit",
+        "stripe": "Stripe",
         "smarttags": "SmartTags",
         "orders": "Commandes",
         "transactions": "Transactions",
@@ -680,6 +679,7 @@
       "overview": {
         "title": "Vue d'ensemble SaaS",
         "subtitle": "Métriques globales sur tous les groupes et établissements.",
+        "purposeCallout": "Cet espace sert à piloter la plateforme Digitip : stock NFC, commandes matériel, rôles, paiements Stripe et intégrité des données. Les chiffres viennent directement de Supabase.",
         "gmv30d": "Volume de pourboires · 30j",
         "gmvSub": "{count} paiements réussis",
         "groups": "Groupes actifs",
@@ -779,6 +779,9 @@
       "transactions": {
         "title": "Transactions",
         "subtitle": "{n} transactions · {volume} de volume réussi",
+        "subtitleFiltered": "{shown} lignes affichées (max 500) · {total} transactions correspondant aux filtres · {volume} volume réussi (statut succeeded)",
+        "rpcFallback": "Les totaux exacts nécessitent la migration SQL 00019 (admin_transactions_summary). Affichage approximatif sur la page courante.",
+        "truncatedList": "Plus de {limit} transactions correspondent aux filtres — affinez la période ou le groupe.",
         "empty": "Aucune transaction ne correspond à ces filtres.",
         "anyStatus": "Tous les statuts",
         "anyGroup": "Tous les groupes",
@@ -791,6 +794,73 @@
         "colStaff": "Personnel",
         "colStatus": "Statut",
         "colStripe": "Stripe"
+      },
+      "users": {
+        "title": "Utilisateurs et rôles",
+        "subtitle": "Comptes Auth et affectations user_roles (données réelles Supabase).",
+        "addTitle": "Ajouter un rôle",
+        "fieldUser": "Utilisateur",
+        "fieldRole": "Rôle",
+        "fieldGroup": "Groupe",
+        "fieldEstablishment": "Établissement",
+        "submitAdd": "Ajouter",
+        "kindSuper": "Super admin",
+        "kindGroupAdmin": "Admin groupe",
+        "kindScoped": "Manager / staff (établissement)",
+        "colEmail": "Email / ID",
+        "colRole": "Rôle",
+        "colScope": "Portée",
+        "colActions": "Actions",
+        "remove": "Retirer",
+        "empty": "Aucun rôle enregistré."
+      },
+      "webhooks": {
+        "title": "Webhooks Stripe",
+        "subtitle": "Journal brut des événements reçus (traitement, erreurs).",
+        "rlsHint": "Appliquez la migration 00019 pour autoriser la lecture super_admin sur webhook_events.",
+        "empty": "Aucun événement enregistré.",
+        "colCreated": "Reçu",
+        "colType": "Type",
+        "colEventId": "ID Stripe",
+        "colProcessed": "Traité",
+        "colError": "Erreur"
+      },
+      "stripe": {
+        "title": "Stripe (données projet)",
+        "subtitle": "Liens vers le dashboard Stripe à partir des IDs stockés en base.",
+        "groupsTitle": "Groupes — client & abonnement",
+        "establishmentsTitle": "Établissements — comptes Connect",
+        "staffTitle": "Personnel — comptes Connect",
+        "staffEmpty": "Aucun compte Stripe connecté côté staff.",
+        "colName": "Nom",
+        "colGroup": "Groupe",
+        "colCustomer": "Client Stripe",
+        "colSubscription": "Abonnement",
+        "colAccount": "Compte Connect",
+        "colOnboarding": "Onboarding",
+        "colEstablishment": "Établissement"
+      },
+      "search": {
+        "title": "Recherche globale",
+        "subtitle": "Recherche rapide sur groupes, établissements, staff, tags et transactions.",
+        "placeholder": "Nom, slug, short_id, UUID…",
+        "submit": "Rechercher",
+        "secGroups": "Groupes",
+        "secEstablishments": "Établissements",
+        "secStaff": "Personnel",
+        "secStickers": "SmartTags",
+        "secTransactions": "Transactions",
+        "none": "Aucun résultat."
+      },
+      "audit": {
+        "title": "Journal d'audit",
+        "subtitle": "Actions sensibles réalisées depuis l'admin plateforme.",
+        "migrationHint": "Appliquez la migration 00019 pour activer admin_audit_log.",
+        "empty": "Aucune entrée.",
+        "colWhen": "Quand",
+        "colActor": "Acteur",
+        "colAction": "Action",
+        "colMeta": "Détails"
       },
       "groups": {
         "title": "Groupes",

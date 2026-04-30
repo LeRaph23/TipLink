@@ -176,13 +176,6 @@
       "title": "Lifetime quality guarantee",
       "sub": "Our epoxy plaques are built for daily use. If one breaks or has a defect, we ship a replacement free of charge. For life."
     },
-    "press": {
-      "kicker": "As seen on",
-      "p1": "Capital M6",
-      "p2": "Le Parisien",
-      "p3": "Ouest-France",
-      "p4": "L'Hôtellerie"
-    },
     "grid": {
       "kicker": "Our packs",
       "title": "Choose your pack",
@@ -669,8 +662,14 @@
     },
     "admin": {
       "nav": {
-        "sectionTitle": "Admin",
+        "tenantSectionTitle": "Salon / group",
+        "sectionTitle": "Platform",
         "overview": "Overview",
+        "search": "Search",
+        "users": "Users",
+        "webhooks": "Webhooks",
+        "audit": "Audit",
+        "stripe": "Stripe",
         "smarttags": "SmartTags",
         "orders": "Orders",
         "transactions": "Transactions",
@@ -680,6 +679,7 @@
       "overview": {
         "title": "SaaS overview",
         "subtitle": "Platform-wide metrics across every group and establishment.",
+        "purposeCallout": "Use this area to run Digitip: NFC stock, hardware orders, roles, Stripe health, and data integrity. All figures come straight from Supabase.",
         "gmv30d": "Tips volume · 30d",
         "gmvSub": "{count} successful payments",
         "groups": "Active groups",
@@ -779,6 +779,9 @@
       "transactions": {
         "title": "Transactions",
         "subtitle": "{n} transactions · {volume} successful volume",
+        "subtitleFiltered": "{shown} rows shown (max 500) · {total} transactions matching filters · {volume} successful volume (succeeded)",
+        "rpcFallback": "Exact totals require SQL migration 00019 (admin_transactions_summary). Showing an approximation from the current page.",
+        "truncatedList": "More than {limit} transactions match these filters — narrow the date range or group.",
         "empty": "No transactions match these filters.",
         "anyStatus": "Any status",
         "anyGroup": "Any group",
@@ -791,6 +794,73 @@
         "colStaff": "Staff",
         "colStatus": "Status",
         "colStripe": "Stripe"
+      },
+      "users": {
+        "title": "Users and roles",
+        "subtitle": "Auth accounts and user_roles assignments (live Supabase data).",
+        "addTitle": "Add a role",
+        "fieldUser": "User",
+        "fieldRole": "Role",
+        "fieldGroup": "Group",
+        "fieldEstablishment": "Establishment",
+        "submitAdd": "Add",
+        "kindSuper": "Super admin",
+        "kindGroupAdmin": "Group admin",
+        "kindScoped": "Manager / staff (establishment)",
+        "colEmail": "Email / ID",
+        "colRole": "Role",
+        "colScope": "Scope",
+        "colActions": "Actions",
+        "remove": "Remove",
+        "empty": "No roles yet."
+      },
+      "webhooks": {
+        "title": "Stripe webhooks",
+        "subtitle": "Raw log of received events (processing, errors).",
+        "rlsHint": "Apply migration 00019 to allow super_admin reads on webhook_events.",
+        "empty": "No events logged.",
+        "colCreated": "Received",
+        "colType": "Type",
+        "colEventId": "Stripe ID",
+        "colProcessed": "Processed",
+        "colError": "Error"
+      },
+      "stripe": {
+        "title": "Stripe (project data)",
+        "subtitle": "Deep links to the Stripe dashboard from IDs stored in the database.",
+        "groupsTitle": "Groups — customer & subscription",
+        "establishmentsTitle": "Establishments — Connect accounts",
+        "staffTitle": "Staff — Connect accounts",
+        "staffEmpty": "No staff Stripe Connect accounts.",
+        "colName": "Name",
+        "colGroup": "Group",
+        "colCustomer": "Stripe customer",
+        "colSubscription": "Subscription",
+        "colAccount": "Connect account",
+        "colOnboarding": "Onboarding",
+        "colEstablishment": "Establishment"
+      },
+      "search": {
+        "title": "Global search",
+        "subtitle": "Quick search across groups, establishments, staff, tags and transactions.",
+        "placeholder": "Name, slug, short_id, UUID…",
+        "submit": "Search",
+        "secGroups": "Groups",
+        "secEstablishments": "Establishments",
+        "secStaff": "Staff",
+        "secStickers": "SmartTags",
+        "secTransactions": "Transactions",
+        "none": "No matches."
+      },
+      "audit": {
+        "title": "Audit log",
+        "subtitle": "Sensitive actions performed from the platform admin.",
+        "migrationHint": "Apply migration 00019 to enable admin_audit_log.",
+        "empty": "No entries yet.",
+        "colWhen": "When",
+        "colActor": "Actor",
+        "colAction": "Action",
+        "colMeta": "Details"
       },
       "groups": {
         "title": "Groups",

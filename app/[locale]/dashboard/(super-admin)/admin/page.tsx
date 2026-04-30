@@ -114,6 +114,13 @@ export default async function AdminOverviewPage({
           {t('title')}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
+        <div style={{
+          marginTop: 14, padding: '12px 14px', borderRadius: 'var(--radius-sm)',
+          background: 'var(--accent-muted)', border: '1px solid var(--border)',
+          fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.55,
+        }}>
+          {t('purposeCallout')}
+        </div>
       </div>
 
       <div style={{

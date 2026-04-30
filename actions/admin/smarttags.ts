@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logAdminAction } from '@/lib/admin/audit';
 import { nanoid } from '@/lib/nfc/nanoid';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -53,6 +54,7 @@ export async function generateBatch(
 
   if (error) return { ok: false, error: error.message };
 
+  await logAdminAction('smarttags.generate_batch', { count, batch_label: batchLabel });
   revalidatePath('/dashboard/admin/smarttags');
   return { ok: true, data: { batch_label: batchLabel, short_ids: (data ?? []).map((r) => r.short_id) } };
 }
@@ -81,6 +83,7 @@ export async function assignTagsToEstablishment(
 
   if (error) return { ok: false, error: error.message };
 
+  await logAdminAction('smarttags.assign', { count: (data ?? []).length, establishmentId });
   revalidatePath('/dashboard/admin/smarttags');
   return { ok: true, data: { updated: (data ?? []).length } };
 }
@@ -126,6 +129,7 @@ export async function assignTagsByShortIdRange(
 
   if (error) return { ok: false, error: error.message };
 
+  await logAdminAction('smarttags.assign_range', { updated: (data ?? []).length, establishmentId });
   revalidatePath('/dashboard/admin/smarttags');
   return { ok: true, data: { updated: (data ?? []).length } };
 }
@@ -141,6 +145,7 @@ export async function unassignTag(stickerId: string): Promise<Result<null>> {
 
   if (error) return { ok: false, error: error.message };
 
+  await logAdminAction('smarttags.unassign', { stickerId });
   revalidatePath('/dashboard/admin/smarttags');
   return { ok: true, data: null };
 }
@@ -157,6 +162,7 @@ export async function deleteStockTag(stickerId: string): Promise<Result<null>> {
 
   if (error) return { ok: false, error: error.message };
 
+  await logAdminAction('smarttags.delete_stock', { stickerId });
   revalidatePath('/dashboard/admin/smarttags');
   return { ok: true, data: null };
 }

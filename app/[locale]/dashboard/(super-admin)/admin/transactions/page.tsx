@@ -24,6 +24,21 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+const LIST_LIMIT = 500;
+
+type TxRow = {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  created_at: string;
+  stripe_payment_intent_id: string | null;
+  establishment_id: string | null;
+  staff_id: string | null;
+  establishments: { name: string; group_id: string; groups: { name: string } | null } | null;
+  staff_profiles: { full_name: string } | null;
+};
+
 export default async function AdminTransactionsPage({
   params,
   searchParams,
@@ -37,35 +52,64 @@ export default async function AdminTransactionsPage({
   const t = await getTranslations('dashboard.admin.transactions');
   const supabase = await createClient();
 
+  let establishmentIdsForGroup: string[] | null = null;
+  if (sp.group) {
+    const { data: ests } = await supabase
+      .from('establishments')
+      .select('id')
+      .eq('group_id', sp.group)
+      .is('deleted_at', null);
+    establishmentIdsForGroup = (ests ?? []).map((e) => e.id);
+  }
+
+  const pTo =
+    sp.to && sp.to.length >= 10
+      ? `${sp.to.slice(0, 10)}T23:59:59.999Z`
+      : null;
+
+  const { data: summaryRows, error: summaryError } = await supabase.rpc('admin_transactions_summary', {
+    p_status: sp.status && sp.status.length ? sp.status : null,
+    p_group_id: sp.group && sp.group.length ? sp.group : null,
+    p_establishment_id: sp.establishment && sp.establishment.length ? sp.establishment : null,
+    p_from: sp.from && sp.from.length ? `${sp.from}T00:00:00.000Z` : null,
+    p_to: pTo,
+  });
+
+  let rows: TxRow[] = [];
+
   let query = supabase
     .from('transactions')
     .select('id, amount, currency, status, created_at, stripe_payment_intent_id, establishment_id, staff_id, establishments(name, group_id, groups(id, name)), staff_profiles(full_name)')
     .order('created_at', { ascending: false })
-    .limit(300);
+    .limit(LIST_LIMIT);
 
   if (sp.status) query = query.eq('status', sp.status as 'pending' | 'succeeded' | 'failed' | 'refunded');
   if (sp.establishment) query = query.eq('establishment_id', sp.establishment);
-  if (sp.from) query = query.gte('created_at', sp.from);
-  if (sp.to) query = query.lte('created_at', sp.to);
+  if (sp.from) query = query.gte('created_at', `${sp.from}T00:00:00.000Z`);
+  if (pTo) query = query.lte('created_at', pTo);
 
-  const { data: txs } = await query;
-
-  let rows = txs ?? [];
-  if (sp.group) {
-    rows = rows.filter((r) => {
-      const est = r.establishments as { group_id: string } | null;
-      return est?.group_id === sp.group;
-    });
+  if (establishmentIdsForGroup) {
+    if (establishmentIdsForGroup.length === 0) {
+      rows = [];
+    } else if (sp.establishment && !establishmentIdsForGroup.includes(sp.establishment)) {
+      rows = [];
+    } else {
+      query = query.in('establishment_id', establishmentIdsForGroup);
+      const { data } = await query;
+      rows = (data ?? []) as TxRow[];
+    }
+  } else {
+    const { data } = await query;
+    rows = (data ?? []) as TxRow[];
   }
 
-  const totals = rows.reduce(
-    (acc, r) => {
-      if (r.status === 'succeeded') acc.amount += r.amount ?? 0;
-      acc.count += 1;
-      return acc;
-    },
-    { amount: 0, count: 0 }
-  );
+  const summaryOk = !summaryError && summaryRows?.[0];
+  let totalMatching = Number(summaryRows?.[0]?.row_count ?? 0);
+  let succeededVolume = Number(summaryRows?.[0]?.succeeded_volume_cents ?? 0);
+  if (!summaryOk) {
+    totalMatching = rows.length;
+    succeededVolume = rows.reduce((a, r) => (r.status === 'succeeded' ? a + (r.amount ?? 0) : a), 0);
+  }
 
   const [{ data: groups }, { data: establishments }] = await Promise.all([
     supabase.from('groups').select('id, name').is('deleted_at', null).order('name'),
@@ -79,7 +123,11 @@ export default async function AdminTransactionsPage({
           {t('title')}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          {t('subtitle', { n: rows.length, volume: formatAmount(totals.amount, 'EUR', locale) })}
+          {t('subtitleFiltered', {
+            shown: rows.length,
+            total: totalMatching,
+            volume: formatAmount(succeededVolume, 'EUR', locale),
+          })}
         </p>
       </div>
 
@@ -112,6 +160,15 @@ export default async function AdminTransactionsPage({
           {t('apply')}
         </button>
       </form>
+
+      {summaryError && (
+        <p style={{ fontSize: 12, color: 'var(--warning)', marginBottom: 12 }}>{t('rpcFallback')}</p>
+      )}
+      {summaryOk && totalMatching > LIST_LIMIT && (
+        <p style={{ fontSize: 12, color: 'var(--warning)', marginBottom: 12 }}>
+          {t('truncatedList', { limit: LIST_LIMIT })}
+        </p>
+      )}
 
       {rows.length === 0 ? (
         <div style={{

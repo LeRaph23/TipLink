@@ -45,7 +45,24 @@ function EstIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 15V6l6-4 6 4v9" /><path d="M6 15v-4h4v4" /><path d="M2 6h12" /></svg>;
 }
 function GroupIcon() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="5" r="2.5" /><circle cx="11" cy="5" r="2.5" /><path d="M0 13.5c0-2.485 2.239-4 5-4" /><path d="M11 9.5c2.761 0 5 1.515 5 4" /><path d="M8 14c0-2.485 1.343-4 3-4s3 1.515 3 4" /></svg>;
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="5" r="2.5" /><circle cx="11" cy="5" r="2.5" /><path d="M0 13.5c0-2.485 2.239-4 5-4" /><path d="M11 9.5c2.761 0 5 1.515 5 4" /><path d="M8 14c0-2.485 1.343-4 3-4s3 1.515 3 4" /></svg>
+  );
+}
+function SearchIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="4.5" /><path d="M14 14l-3-3" /></svg>;
+}
+function UsersIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="6" cy="4.5" r="2.2" /><path d="M1 14c0-2.8 2.2-4 5-4s5 1.2 5 4" /><circle cx="11.5" cy="5" r="1.8" /><path d="M14 14v-.5c0-1.5-1-2.5-2.8-2.5" /></svg>;
+}
+function BoltIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M9.5 1L4 9h4l-1.5 6L12 7H8L9.5 1z" /></svg>;
+}
+function ListIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 4h12M2 8h8M2 12h10" /></svg>;
+}
+function CardIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="1.5" y="3" width="13" height="10" rx="1.5" /><path d="M1.5 6.5h13" /></svg>;
 }
 
 function NavLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
@@ -124,11 +141,16 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
 
   const adminLinks = [
     { href: '/dashboard/admin',                 label: ta('overview'),     icon: <HomeIcon /> },
-    { href: '/dashboard/admin/smarttags',       label: ta('smarttags'),    icon: <NfcIcon /> },
-    { href: '/dashboard/admin/orders',          label: ta('orders'),       icon: <PayoutIcon /> },
-    { href: '/dashboard/admin/transactions',    label: ta('transactions'), icon: <TxIcon /> },
-    { href: '/dashboard/admin/establishments',  label: ta('establishments'), icon: <EstIcon /> },
-    { href: '/dashboard/admin/groups',          label: ta('groups'),       icon: <GroupIcon /> },
+    { href: '/dashboard/admin/search',        label: ta('search'),       icon: <SearchIcon /> },
+    { href: '/dashboard/admin/users',         label: ta('users'),        icon: <UsersIcon /> },
+    { href: '/dashboard/admin/webhooks',      label: ta('webhooks'),    icon: <BoltIcon /> },
+    { href: '/dashboard/admin/audit',         label: ta('audit'),       icon: <ListIcon /> },
+    { href: '/dashboard/admin/stripe',        label: ta('stripe'),      icon: <CardIcon /> },
+    { href: '/dashboard/admin/smarttags',     label: ta('smarttags'),   icon: <NfcIcon /> },
+    { href: '/dashboard/admin/orders',         label: ta('orders'),      icon: <PayoutIcon /> },
+    { href: '/dashboard/admin/transactions',   label: ta('transactions'), icon: <TxIcon /> },
+    { href: '/dashboard/admin/establishments', label: ta('establishments'), icon: <EstIcon /> },
+    { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
   ];
 
   const visibleLinks = links.filter(l => l.always || (l.roles && l.roles.some(r => hasRole(r))));
@@ -155,6 +177,14 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
 
       {/* Nav links */}
       <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto' }}>
+        {isSuperAdmin && (
+          <div style={{
+            margin: '0 10px 6px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+          }}>
+            {ta('tenantSectionTitle')}
+          </div>
+        )}
         {visibleLinks.map(l => (
           <NavLink
             key={l.href} href={l.href} icon={l.icon} label={l.label}

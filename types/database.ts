@@ -413,6 +413,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_audit_log: {
+        Row: {
+          id: string;
+          actor_user_id: string;
+          action: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_user_id: string;
+          action: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor_user_id?: string;
+          action?: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       user_roles: {
         Row: {
           id: string;
@@ -475,6 +499,19 @@ export type Database = {
           total_tips: number;
           transaction_count: number;
           currency: string;
+        }[];
+      };
+      admin_transactions_summary: {
+        Args: {
+          p_status?: string | null;
+          p_group_id?: string | null;
+          p_establishment_id?: string | null;
+          p_from?: string | null;
+          p_to?: string | null;
+        };
+        Returns: {
+          row_count: number;
+          succeeded_volume_cents: number;
         }[];
       };
     };

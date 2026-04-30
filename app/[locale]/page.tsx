@@ -350,31 +350,6 @@ function GuaranteeSection() {
   );
 }
 
-// ─── Press ────────────────────────────────────────────────────────────────────
-function PressSection() {
-  const t = useTranslations('landing');
-  const logos = [
-    { text: t('press.p1'), emoji: '📺' },
-    { text: t('press.p2'), emoji: '📰' },
-    { text: t('press.p3'), emoji: '📰' },
-    { text: t('press.p4'), emoji: '🏨' },
-  ];
-  return (
-    <section style={{ background: '#fff', padding: 'clamp(40px,4vw,56px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: '#c4c4d4', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 24 }}>{t('press.kicker')}</p>
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-          {logos.map((l) => (
-            <div key={l.text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px', border: '1.5px solid #e4e4ec', borderRadius: 12, background: '#f9f9f7', fontSize: 14, fontWeight: 700, color: '#74748a', letterSpacing: '0.04em' }}>
-              <span>{l.emoji}</span>{l.text}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ─── Product grid ─────────────────────────────────────────────────────────────
 function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') => void }) {
   const t = useTranslations('landing');
@@ -709,7 +684,6 @@ export default function LandingPage() {
       <HowItWorksSection />
       <ShippingSection />
       <GuaranteeSection />
-      <PressSection />
       <ProductGridSection onOrderClick={openCart} />
       <ReviewsSection />
       <FinalCTASection onOrderClick={() => openCart()} />

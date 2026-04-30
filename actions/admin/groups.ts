@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logAdminAction } from '@/lib/admin/audit';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -39,6 +40,7 @@ export async function updateGroupFeeBps(
 
   if (error) return { ok: false, error: error.message };
 
+  await logAdminAction('groups.update_fee_bps', { groupId, bps: Math.round(bps) });
   revalidatePath('/dashboard/admin/groups');
   return { ok: true, data: null };
 }
