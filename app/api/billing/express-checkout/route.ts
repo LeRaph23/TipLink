@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
           unit_amount: packDef.hardwareAmount,
           product_data: {
             name: `Digitip — Plaque époxy NFC ${pack.charAt(0).toUpperCase() + pack.slice(1)} (${packDef.quantity} plaque${packDef.quantity > 1 ? 's' : ''})`,
-            description: `${pack.charAt(0).toUpperCase() + pack.slice(1)} · ${packDef.quantity} plaque${packDef.quantity > 1 ? 's' : ''} époxy NFC pré-configurée${packDef.quantity > 1 ? 's' : ''} · 2 % de commission sur les pourboires`,
+            description: `${pack.charAt(0).toUpperCase() + pack.slice(1)} · ${packDef.quantity} plaque${packDef.quantity > 1 ? 's' : ''} époxy NFC pré-configurée${packDef.quantity > 1 ? 's' : ''} · 3 % de commission sur les pourboires`,
           },
         },
         quantity: 1,

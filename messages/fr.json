@@ -107,7 +107,7 @@
       "h1a": "Le meilleur moyen",
       "h1b": "d'encaisser plus de",
       "h1c": "pourboires",
-      "sub": "Vos plaques époxy arrivent pré-programmées. Le client pose son téléphone dessus, choisit un montant, c'est fait. Les pourboires arrivent directement sur le compte bancaire du coiffeur.",
+      "sub": "Vos plaques époxy arrivent pré-programmées. Le client approche son téléphone, choisit un montant, c'est fait. Les pourboires arrivent directement sur le compte bancaire de votre équipe.",
       "social": "Adopté par 400+ équipes",
       "countries": "🇫🇷 🇧🇪 🇮🇪 🇩🇪 🇳🇱 🇪🇸",
       "cta": "Commander maintenant"
@@ -117,7 +117,7 @@
       "title": "Recevez des pourboires en seulement",
       "titleAccent": "3 secondes",
       "claim2title": "Doublez",
-      "claim2sub": "vos pourboires en 30 jours ou remboursé",
+      "claim2sub": "vos pourboires dès la première semaine",
       "sub": "Les SmartTags Digitip se posent en 20 secondes et fonctionnent immédiatement. Aucune app pour le client, aucune configuration technique."
     },
     "product": {
@@ -125,7 +125,7 @@
       "name": "SmartTag Digitip NFC",
       "rating": "4.8",
       "reviewCount": "+150 avis vérifiés",
-      "claim": "Doublez vos pourboires en 30 jours ou remboursé !",
+      "claim": "Garantie matériel à vie",
       "frenchCompany": "Entreprise française 🇫🇷",
       "get3s": "Recevez des pourboires en 3 secondes !",
       "packS": "Solo · 1 plaque époxy",
@@ -138,7 +138,7 @@
       "priceOffer": "69,00 €",
       "priceSave": "ÉCONOMISEZ 30%",
       "bullet1": "Paiement unique, 0 frais mensuel",
-      "bullet2": "2 % de commission sur les pourboires uniquement",
+      "bullet2": "3 % de commission sur les pourboires uniquement",
       "bullet3": "Résine époxy haute densité — conçue pour durer",
       "bullet4": "Entreprise française 🇫🇷",
       "bullet5": "Remplacement à vie du matériel",
@@ -173,8 +173,8 @@
       "tracking": "Numéro de suivi fourni"
     },
     "guarantee": {
-      "title": "Satisfait ou remboursé 30 jours",
-      "sub": "Si vous ne doublez pas vos pourboires dans les 30 jours, on vous rembourse intégralement. Sans justification."
+      "title": "Qualité garantie à vie",
+      "sub": "Nos plaques époxy sont fabriquées pour durer. En cas de casse ou défaut, on vous en envoie une nouvelle. Gratuitement. À vie."
     },
     "press": {
       "kicker": "Vu sur",
@@ -186,7 +186,7 @@
     "grid": {
       "kicker": "Nos packs",
       "title": "Choisissez votre pack",
-      "sub": "Plaques époxy pré-programmées, livrées prêtes à l'emploi. 2 % de commission sur les pourboires uniquement.",
+      "sub": "Plaques époxy pré-programmées, livrées prêtes à l'emploi. 3 % de commission sur les pourboires uniquement.",
       "packS": "Solo",
       "packSTag": "1 plaque époxy NFC",
       "packSPrice": "69,00 €",
@@ -205,33 +205,33 @@
     },
     "placements": {
       "kicker": "Emplacements idéaux",
-      "title": "Partout où votre client vous regarde",
-      "p1": "Sur le comptoir",
-      "p1sub": "À portée de main au moment de régler",
-      "p2": "Sur la table",
-      "p2sub": "Discret, toujours visible",
-      "p3": "Miroir / coiffeur",
-      "p3sub": "Parfait pour les salons de beauté",
-      "p4": "Plateau / addition",
-      "p4sub": "Glissé avec l'addition, naturel"
+      "title": "Partout où votre client vous voit",
+      "p1": "Comptoir / caisse",
+      "p1sub": "Visible au moment de régler, naturel",
+      "p2": "Poste de travail",
+      "p2sub": "À portée de main pendant la prestation",
+      "p3": "Face au miroir",
+      "p3sub": "Le client l'a en face de lui toute la séance",
+      "p4": "Salle d'attente",
+      "p4sub": "Discret, toujours visible"
     },
     "testimonials": {
       "kicker": "Ils en parlent",
       "title": "Ce que disent les gérants",
       "t1name": "Sophie L.",
-      "t1role": "Gérante — Brasserie Le Marché",
-      "t1quote": "En deux semaines nos serveurs ont vu leurs pourboires tripler. Les clients adorent le côté sans contact, et moi j'adore le dashboard.",
+      "t1role": "Gérante — Salon Coupe & Style",
+      "t1quote": "En deux semaines mes coiffeurs ont vu leurs pourboires doubler. Les clientes adorent le côté sans contact, et moi j'adore le dashboard.",
       "t2name": "Karim B.",
-      "t2role": "Manager — Groupe Côté Table (3 restos)",
-      "t2quote": "On a déployé les SmartTags dans les 3 établissements en une matinée. Zéro friction, zéro plainte. Les pourboires tombent directement en banque.",
+      "t2role": "Manager — Institut Beauté Harmonie (3 salons)",
+      "t2quote": "On a déployé les plaques dans les 3 salons en une matinée. Zéro friction, zéro plainte. Les pourboires tombent directement en banque.",
       "t3name": "Aurélie M.",
       "t3role": "Propriétaire — Salon Éclat Beauté",
       "t3quote": "Je pensais que c'était compliqué mais la config a pris 10 minutes. Mes collaboratrices reçoivent leurs pourboires le soir même."
     },
     "finalCta": {
       "title": "Pas encore convaincu ?",
-      "sub": "Essayez sans risque dès aujourd'hui",
-      "body": "30 jours satisfait ou remboursé. Livraison offerte. Aucun engagement.",
+      "sub": "Commandez avec confiance",
+      "body": "Livraison offerte. Garantie matériel à vie. Aucun engagement mensuel.",
       "cta": "Commander maintenant"
     },
     "faq": {
@@ -245,14 +245,14 @@
       "a3": "Indéfiniment. Il n'y a pas de batterie, pas d'électronique active. Le SmartTag fonctionne par induction. On offre un remplacement à vie en cas de casse.",
       "q4": "Peut-on utiliser Digitip dans plusieurs établissements ?",
       "a4": "Oui. Un seul compte Digitip peut gérer un nombre illimité d'établissements et d'équipes, chacun avec ses propres SmartTags et statistiques.",
-      "q5": "Que se passe-t-il si je ne suis pas satisfait ?",
-      "a5": "Remboursement intégral dans les 30 jours suivant la commande, sans justification. Contactez-nous par email et c'est réglé.",
+      "q5": "Ma plaque est abîmée ou défectueuse, que faire ?",
+      "a5": "Aucun souci. La garantie à vie du matériel est incluse dans chaque pack. Contactez-nous par email avec une photo et on vous en expédie une nouvelle gratuitement.",
       "q6": "Ai-je besoin d'un SIRET ou d'un statut particulier ?",
       "a6": "Non pour commander les SmartTags. En revanche, pour recevoir les pourboires via Stripe Connect, votre personnel devra créer un compte Stripe (vérification d'identité standard)."
     },
     "doubleGuarantee": {
-      "g1title": "Satisfait ou remboursé 30 jours",
-      "g1body": "Si vous n'êtes pas convaincu dans les 30 jours, on vous rembourse — sans question.",
+      "g1title": "Qualité premium garantie",
+      "g1body": "Nos plaques époxy sont conçues pour résister à un usage quotidien intensif. Résine haute densité, coins arrondis, NFC intégré.",
       "g2title": "Garantie à vie du matériel",
       "g2body": "Un SmartTag cassé ou défectueux ? On vous en envoie un neuf. Gratuitement. À vie.",
       "g3title": "Livraison offerte",
@@ -290,7 +290,7 @@
       "noSubscription": "Aucun abonnement, aucun engagement",
       "vatInvoice": "Factures TVA automatiques"
     },
-    "commissionLabel": "2 % de commission",
+    "commissionLabel": "3 % de commission",
     "commissionBody": "Prélevés uniquement sur les pourboires reçus. Pas de pourboire = vous ne payez rien.",
     "packs": {
       "solo": {

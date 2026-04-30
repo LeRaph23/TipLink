@@ -107,7 +107,7 @@
       "h1a": "The best way",
       "h1b": "to earn more",
       "h1c": "tips",
-      "sub": "Your epoxy plaques arrive pre-programmed. Customers tap their phone on the plaque, pick an amount, done. Tips land directly in the stylist's bank account.",
+      "sub": "Your epoxy plaques arrive pre-programmed. Customers tap their phone, pick an amount, done. Tips land directly in your team's bank account.",
       "social": "Trusted by 400+ teams",
       "countries": "🇫🇷 🇧🇪 🇮🇪 🇩🇪 🇳🇱 🇪🇸",
       "cta": "Order now"
@@ -117,7 +117,7 @@
       "title": "Receive tips in just",
       "titleAccent": "3 seconds",
       "claim2title": "Double",
-      "claim2sub": "your tips in 30 days or get refunded",
+      "claim2sub": "your tips within the first week",
       "sub": "Digitip SmartTags are set up in 20 seconds and work immediately. No app needed for customers, no technical setup required."
     },
     "product": {
@@ -125,7 +125,7 @@
       "name": "Digitip NFC SmartTag",
       "rating": "4.8",
       "reviewCount": "+150 verified reviews",
-      "claim": "Double your tips in 30 days or get a full refund!",
+      "claim": "Lifetime hardware guarantee",
       "frenchCompany": "French company 🇫🇷",
       "get3s": "Receive tips in 3 seconds!",
       "packS": "Solo · 1 epoxy plaque",
@@ -138,7 +138,7 @@
       "priceOffer": "€69",
       "priceSave": "SAVE 22%",
       "bullet1": "One-time purchase, no monthly fee",
-      "bullet2": "2% commission on tips only",
+      "bullet2": "3% commission on tips only",
       "bullet3": "Premium high-density epoxy resin — built to last",
       "bullet4": "French company 🇫🇷",
       "bullet5": "Lifetime hardware replacement",
@@ -173,8 +173,8 @@
       "tracking": "Tracking number provided"
     },
     "guarantee": {
-      "title": "30-day money-back guarantee",
-      "sub": "If you don't double your tips within 30 days, we give you a full refund. No questions asked."
+      "title": "Lifetime quality guarantee",
+      "sub": "Our epoxy plaques are built for daily use. If one breaks or has a defect, we ship a replacement free of charge. For life."
     },
     "press": {
       "kicker": "As seen on",
@@ -186,7 +186,7 @@
     "grid": {
       "kicker": "Our packs",
       "title": "Choose your pack",
-      "sub": "Pre-programmed epoxy plaques, ready to place. 2% commission on tips only.",
+      "sub": "Pre-programmed epoxy plaques, ready to place. 3% commission on tips only.",
       "packS": "Solo",
       "packSTag": "1 epoxy NFC plaque",
       "packSPrice": "€69",
@@ -205,33 +205,33 @@
     },
     "placements": {
       "kicker": "Ideal placements",
-      "title": "Everywhere your customer looks",
-      "p1": "On the counter",
-      "p1sub": "Right there when settling the bill",
-      "p2": "On the table",
-      "p2sub": "Discreet, always visible",
-      "p3": "Mirror / hair salon",
-      "p3sub": "Perfect for beauty salons",
-      "p4": "Tray / bill folder",
-      "p4sub": "Slipped with the bill, natural"
+      "title": "Wherever your client looks",
+      "p1": "Counter / checkout",
+      "p1sub": "Visible at payment time, feels natural",
+      "p2": "Workstation",
+      "p2sub": "Within reach during the service",
+      "p3": "Facing the mirror",
+      "p3sub": "The client sees it throughout the whole session",
+      "p4": "Waiting area",
+      "p4sub": "Discreet, always visible"
     },
     "testimonials": {
       "kicker": "What they say",
       "title": "Owners speak for themselves",
       "t1name": "Sophie L.",
-      "t1role": "Owner — Brasserie Le Marché",
-      "t1quote": "Within two weeks our staff tripled their tips. Customers love the contactless experience, and I love the dashboard.",
+      "t1role": "Owner — Coupe & Style Salon",
+      "t1quote": "Within two weeks my stylists doubled their tips. Clients love the contactless experience, and I love the dashboard.",
       "t2name": "Karim B.",
-      "t2role": "Manager — Groupe Côté Table (3 venues)",
-      "t2quote": "We deployed SmartTags across all 3 venues in one morning. Zero friction, zero complaints. Tips go straight to the bank.",
+      "t2role": "Manager — Institut Beauté Harmonie (3 salons)",
+      "t2quote": "We deployed the plaques across all 3 salons in one morning. Zero friction, zero complaints. Tips go straight to the bank.",
       "t3name": "Aurélie M.",
       "t3role": "Owner — Salon Éclat Beauté",
       "t3quote": "I thought it would be complicated but setup took 10 minutes. My team receives their tips the same evening."
     },
     "finalCta": {
       "title": "Not convinced yet?",
-      "sub": "Try risk-free today",
-      "body": "30-day money-back guarantee. Free shipping. No contracts.",
+      "sub": "Order with confidence",
+      "body": "Free shipping. Lifetime hardware guarantee. No monthly commitment.",
       "cta": "Order now"
     },
     "faq": {
@@ -245,14 +245,14 @@
       "a3": "Indefinitely. There's no battery, no active electronics. The SmartTag works by induction. We offer lifetime replacement if it breaks.",
       "q4": "Can Digitip be used across multiple venues?",
       "a4": "Yes. A single Digitip account can manage unlimited venues and teams, each with their own SmartTags and analytics.",
-      "q5": "What if I'm not satisfied?",
-      "a5": "Full refund within 30 days of ordering, no questions asked. Just email us and it's sorted.",
+      "q5": "My plaque is damaged or defective — what do I do?",
+      "a5": "No problem. Lifetime hardware replacement is included with every pack. Email us a photo and we'll ship a new one free of charge.",
       "q6": "Do I need a business registration?",
       "a6": "Not to order SmartTags. However, to receive tips via Stripe Connect, your staff will need to create a Stripe account (standard identity verification)."
     },
     "doubleGuarantee": {
-      "g1title": "30-day money-back guarantee",
-      "g1body": "Not satisfied within 30 days? Full refund, no questions.",
+      "g1title": "Premium quality guaranteed",
+      "g1body": "Our epoxy plaques are designed for intensive daily use. High-density resin, rounded corners, built-in NFC.",
       "g2title": "Lifetime hardware guarantee",
       "g2body": "SmartTag broken or defective? We send a new one. Free. For life.",
       "g3title": "Free shipping",
@@ -290,7 +290,7 @@
       "noSubscription": "No subscription, no commitment",
       "vatInvoice": "Auto-generated VAT invoices"
     },
-    "commissionLabel": "2% commission",
+    "commissionLabel": "3% commission",
     "commissionBody": "Charged only on tips collected. No tips = you pay nothing.",
     "packs": {
       "solo": {

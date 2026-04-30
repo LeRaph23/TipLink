@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
 import { BuyModal } from '@/components/landing/BuyModal';
 
@@ -52,26 +53,6 @@ function Badge({ children, variant = 'accent' }: { children: React.ReactNode; va
   );
 }
 
-// Exact Digifeel SmartTag placeholder (looks like a physical NFC plate)
-function SmartTagPlate({ size = 220, accent = '#7c3aed' }: { size?: number; accent?: string }) {
-  return (
-    <div style={{ width: size, height: size, borderRadius: 24, background: '#fff', border: '1.5px solid #e4e4ec', boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, flexShrink: 0 }}>
-      <div style={{ width: size * 0.55, height: size * 0.55, borderRadius: 16, background: `${accent}12`, border: `1.5px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width={size * 0.28} height={size * 0.28} viewBox="0 0 56 56" fill="none">
-          <path d="M18 28c0-5.5 4.5-10 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" />
-          <path d="M38 28c0 5.5-4.5 10-10 10" stroke={accent} strokeWidth="3" strokeLinecap="round" />
-          <circle cx="28" cy="28" r="4" fill={accent} />
-          <path d="M10 28c0-9.9 8.1-18 18-18" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
-          <path d="M46 28c0 9.9-8.1 18-18 18" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
-        </svg>
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: '#111118', letterSpacing: '0.06em' }}>DIGITIP</div>
-        <div style={{ fontSize: 9, color: '#74748a', letterSpacing: '0.04em' }}>Plaque époxy NFC</div>
-      </div>
-    </div>
-  );
-}
 
 // ─── PromoBanner ──────────────────────────────────────────────────────────────
 function PromoBanner({ text }: { text: string }) {
@@ -162,26 +143,19 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
           </div>
         </div>
 
-        {/* Right: product visual stack */}
+        {/* Right: product visual */}
         <div className="fade-up" style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: '160ms' }}>
-          <div style={{ position: 'relative', width: 280, height: 340 }}>
-            {/* Back plate (slightly rotated) */}
-            <div style={{ position: 'absolute', top: 20, left: 20, transform: 'rotate(-6deg)', opacity: 0.55 }}>
-              <SmartTagPlate size={200} accent="#8b5cf6" />
+          <div style={{ position: 'relative', width: 300, height: 340 }}>
+            <div style={{ width: 300, height: 300, borderRadius: 24, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)', position: 'relative' }}>
+              <Image src="/products/duo-double.jpg" alt="Plaques époxy NFC Digitip" fill sizes="300px" style={{ objectFit: 'cover' }} priority />
             </div>
-            {/* Front plate (main) */}
-            <div style={{ position: 'absolute', top: 0, left: 0, transform: 'rotate(3deg)' }}>
-              <SmartTagPlate size={220} accent="#7c3aed" />
-            </div>
-            {/* Phone tap indicator */}
             <div style={{ position: 'absolute', bottom: 0, right: -10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 28px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 28, height: 28, borderRadius: 8, background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📲</div>
               <div>
                 <div style={{ fontSize: 11.5, fontWeight: 700, color: '#111118' }}>+5,00 €</div>
-                <div style={{ fontSize: 10, color: '#74748a' }}>→ Marco R.</div>
+                <div style={{ fontSize: 10, color: '#74748a' }}>→ Léa C.</div>
               </div>
             </div>
-            {/* Stars bubble */}
             <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#d97706' }}>
               ★★★★★ 4.8
             </div>
@@ -215,7 +189,7 @@ function StatsStrip() {
 }
 
 // ─── Marquee ──────────────────────────────────────────────────────────────────
-const VENUES = ['Brasserie Le Marché', 'Harbour Kitchen', 'The Liffey Social', 'Saltwater Café', 'Côté Table', 'The Porterhouse', 'Fade Street Social', 'Salon Éclat Beauté', 'Grand Canal Hotel', 'Grogans Castle Lounge', 'L\'Atelier Coiffure', 'Bistrot du Coin'];
+const VENUES = ['Salon Éclat Beauté', 'L\'Atelier Coiffure', 'Institut Harmonie', 'Coupe & Style', 'Beauty Lab Paris', 'The Hair Studio', 'Ô Beauté', 'Nails & Co.', 'Salon Lumière', 'Spa Sérénité', 'L\'Artiste Coiffure', 'Glam Institut'];
 
 function Marquee() {
   const items = [...VENUES, ...VENUES];
@@ -426,10 +400,15 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
                   <div style={{ position: 'absolute', top: 14, right: 14, background: '#7c3aed', color: '#fff', fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.04em' }}>{t('grid.popular')}</div>
                 )}
                 {/* Product image area */}
-                <div style={{ background: p.popular ? '#f5f3ff' : '#f9f9f7', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, position: 'relative' }}>
-                  <SmartTagPlate size={120} accent={p.popular ? '#7c3aed' : '#9ca3af'} />
-                  {/* Save badge — like Digifeel's ÉCONOMISEZ */}
-                  <div style={{ position: 'absolute', top: 12, left: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 800, color: '#d97706' }}>
+                <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden' }}>
+                  <Image
+                    src={p.key === 'duo' ? '/products/duo-double.jpg' : '/products/solo-3d.jpg'}
+                    alt={p.key === 'duo' ? 'Pack Duo — 2 plaques époxy NFC' : 'Plaque époxy NFC Solo'}
+                    fill
+                    sizes="(max-width: 600px) 100vw, 320px"
+                    style={{ objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', top: 10, left: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 800, color: '#d97706' }}>
                     ÉCONOMISEZ {p.save}
                   </div>
                 </div>
@@ -474,10 +453,10 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
 function PlacementsSection() {
   const t = useTranslations('landing');
   const items = [
-    { icon: '🍺', title: t('placements.p1'), sub: t('placements.p1sub'), bg: '#fffbeb' },
-    { icon: '🍽️', title: t('placements.p2'), sub: t('placements.p2sub'), bg: '#f0fdf4' },
-    { icon: '💇', title: t('placements.p3'), sub: t('placements.p3sub'), bg: '#fdf4ff' },
-    { icon: '🧾', title: t('placements.p4'), sub: t('placements.p4sub'), bg: '#eff6ff' },
+    { img: '/products/solo-table.jpg', title: t('placements.p1'), sub: t('placements.p1sub') },
+    { img: '/products/solo-3d.jpg',    title: t('placements.p2'), sub: t('placements.p2sub') },
+    { img: '/products/solo-wall.jpg',  title: t('placements.p3'), sub: t('placements.p3sub') },
+    { img: '/products/duo-double.jpg', title: t('placements.p4'), sub: t('placements.p4sub') },
   ];
   return (
     <section style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
@@ -492,7 +471,9 @@ function PlacementsSection() {
           {items.map((item, i) => (
             <Reveal key={i} delay={i * 70}>
               <div style={{ borderRadius: 18, overflow: 'hidden', border: '1.5px solid #e4e4ec' }}>
-                <div style={{ background: item.bg, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>{item.icon}</div>
+                <div style={{ position: 'relative', height: 160 }}>
+                  <Image src={item.img} alt={item.title} fill sizes="280px" style={{ objectFit: 'cover' }} />
+                </div>
                 <div style={{ background: '#fff', padding: '18px 20px' }}>
                   <h3 style={{ fontSize: 15, fontWeight: 800, color: '#111118', marginBottom: 6, letterSpacing: '-0.01em' }}>{item.title}</h3>
                   <p style={{ fontSize: 13, color: '#74748a', lineHeight: 1.6 }}>{item.sub}</p>
