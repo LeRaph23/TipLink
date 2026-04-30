@@ -6,6 +6,7 @@ import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@/types/database';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { DashboardThemeToggle } from '@/components/dashboard/DashboardThemeProvider';
 
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
 
@@ -117,6 +118,7 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
   }, [menuOpen]);
 
   const hasRole = (role: UserRole['role']) => userRoles.some(r => r.role === role);
+  const isSuperAdmin = hasRole('super_admin');
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -155,6 +157,8 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
 
   const visibleLinks = links.filter(l => l.always || (l.roles && l.roles.some(r => hasRole(r))));
   const isSuperAdmin = hasRole('super_admin');
+  const hasTenantRole = hasRole('group_admin') || hasRole('manager') || hasRole('staff');
+  const showTenantNav = !isSuperAdmin || hasTenantRole;
 
   const displayName = userName || userEmail;
   const topRole = userRoles[0]?.role?.replace('_', ' ') ?? 'staff';
@@ -172,25 +176,32 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
           <LogoMark size={26} />
           <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>Digitip</span>
         </div>
-        <LanguageSwitcher compact />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <DashboardThemeToggle />
+          <LanguageSwitcher compact />
+        </div>
       </div>
 
       {/* Nav links */}
       <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto' }}>
-        {isSuperAdmin && (
-          <div style={{
-            margin: '0 10px 6px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-          }}>
-            {ta('tenantSectionTitle')}
-          </div>
+        {showTenantNav && (
+          <>
+            {isSuperAdmin && hasTenantRole && (
+              <div style={{
+                margin: '0 10px 6px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+              }}>
+                {ta('tenantSectionTitle')}
+              </div>
+            )}
+            {visibleLinks.map(l => (
+              <NavLink
+                key={l.href} href={l.href} icon={l.icon} label={l.label}
+                active={l.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(l.href)}
+              />
+            ))}
+          </>
         )}
-        {visibleLinks.map(l => (
-          <NavLink
-            key={l.href} href={l.href} icon={l.icon} label={l.label}
-            active={l.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(l.href)}
-          />
-        ))}
 
         {isSuperAdmin && (
           <>

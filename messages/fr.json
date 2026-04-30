@@ -496,7 +496,9 @@
       "settings": "Paramètres",
       "establishments": "Établissements",
       "groups": "Groupes",
-      "signOut": "Déconnexion"
+      "signOut": "Déconnexion",
+      "themeToLight": "Passer en thème clair",
+      "themeToDark": "Passer en thème sombre"
     },
     "billing": {
       "title": "Facturation & commissions",
@@ -702,6 +704,7 @@
         "subtitle": "Générer des lots, exporter vers l'usine, assigner aux établissements.",
         "generateBatch": "Générer un lot",
         "exportCsv": "Exporter CSV",
+        "exportUrlsTxt": "URLs (.txt)",
         "filterAllBatches": "Tous les lots",
         "searchActive": "Rechercher par short id, établissement ou groupe…",
         "tab": {
@@ -709,6 +712,8 @@
           "active": "Déployés"
         },
         "assignSelected": "Assigner la sélection ({n})",
+        "assignNeedsSelection": "Cochez au moins une ligne du tableau pour activer cette action.",
+        "noEstablishments": "Aucun établissement actif. Créez un groupe et un établissement avant d’assigner des tags.",
         "assignSelectedTitle": "Assigner {n} tags",
         "assignRange": "Assigner une plage",
         "colShortId": "Short ID",

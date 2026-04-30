@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -239,18 +240,33 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
             </select>
 
             {batchFilter && batchFilter !== '—' && (
-              <a
-                href={`/api/admin/smarttags/batch/${encodeURIComponent(batchFilter)}/export.csv`}
-                style={{ ...secondaryBtn, textDecoration: 'none', display: 'inline-block' }}
-              >
-                {t('exportCsv')}
-              </a>
+              <>
+                <a
+                  href={`/api/admin/smarttags/batch/${encodeURIComponent(batchFilter)}/export.csv`}
+                  style={{ ...secondaryBtn, textDecoration: 'none', display: 'inline-block' }}
+                >
+                  {t('exportCsv')}
+                </a>
+                <a
+                  href={`/api/admin/smarttags/batch/${encodeURIComponent(batchFilter)}/export-urls`}
+                  style={{ ...secondaryBtn, textDecoration: 'none', display: 'inline-block' }}
+                >
+                  {t('exportUrlsTxt')}
+                </a>
+              </>
             )}
 
             <div style={{ flex: 1 }} />
 
             <button
-              style={secondaryBtn}
+              type="button"
+              style={{
+                ...secondaryBtn,
+                ...(selected.size === 0 || pending
+                  ? { opacity: 0.5, cursor: 'not-allowed' as const }
+                  : {}),
+              }}
+              title={selected.size === 0 ? t('assignNeedsSelection') : undefined}
               disabled={selected.size === 0 || pending}
               onClick={() => setAssignOpen(true)}
             >
@@ -312,6 +328,7 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
               if (!res.ok) flash(res.error);
               else {
                 notify(t('generated', { n: res.data.short_ids.length, label: res.data.batch_label }));
+                setBatchFilter(res.data.batch_label);
                 setGenOpen(false);
                 router.refresh();
               }
@@ -476,20 +493,40 @@ function ActiveTable({
 }
 
 function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
-  return (
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  const overlay = (
     <div
+      role="presentation"
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 20, zIndex: 50,
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        zIndex: 10050,
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)', padding: 22, width: '100%', maxWidth: 460,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          padding: 22,
+          width: '100%',
+          maxWidth: 460,
         }}
       >
         <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>{title}</h2>
@@ -497,6 +534,8 @@ function ModalShell({ title, children, onClose }: { title: string; children: Rea
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
 
 function GenerateModal({ onClose, onSubmit, pending, t }: {
@@ -551,22 +590,27 @@ function AssignModal({
   t: ReturnType<typeof useTranslations<'dashboard.admin.smarttags'>>;
 }) {
   const [estId, setEstId] = useState('');
+  const noEst = establishments.length === 0;
   return (
     <ModalShell title={title} onClose={onClose}>
-      <label style={{ display: 'block', marginBottom: 18 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{t('targetEstablishment')}</div>
-        <select value={estId} onChange={(e) => setEstId(e.target.value)} style={input}>
-          <option value="">—</option>
-          {establishments.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}{e.group_name ? ` · ${e.group_name}` : ''}
-            </option>
-          ))}
-        </select>
-      </label>
+      {noEst ? (
+        <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 18 }}>{t('noEstablishments')}</p>
+      ) : (
+        <label style={{ display: 'block', marginBottom: 18 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{t('targetEstablishment')}</div>
+          <select value={estId} onChange={(e) => setEstId(e.target.value)} style={input}>
+            <option value="">—</option>
+            {establishments.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}{e.group_name ? ` · ${e.group_name}` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button style={secondaryBtn} onClick={onClose} disabled={pending}>{t('cancel')}</button>
-        <button style={primaryBtn} onClick={() => onSubmit(estId)} disabled={!estId || pending}>
+        <button type="button" style={secondaryBtn} onClick={onClose} disabled={pending}>{t('cancel')}</button>
+        <button type="button" style={primaryBtn} onClick={() => onSubmit(estId)} disabled={noEst || !estId || pending}>
           {pending ? t('working') : t('assignConfirm')}
         </button>
       </div>
@@ -586,7 +630,8 @@ function RangeModal({
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [estId, setEstId] = useState('');
-  const can = first.trim() && last.trim() && estId;
+  const noEst = establishments.length === 0;
+  const can = first.trim() && last.trim() && estId && !noEst;
   return (
     <ModalShell title={t('rangeTitle')} onClose={onClose}>
       <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 14 }}>
@@ -595,27 +640,31 @@ function RangeModal({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
         <label>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{t('firstShortId')}</div>
-          <input value={first} onChange={(e) => setFirst(e.target.value)} style={input} />
+          <input value={first} onChange={(e) => setFirst(e.target.value)} style={input} disabled={noEst} />
         </label>
         <label>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{t('lastShortId')}</div>
-          <input value={last} onChange={(e) => setLast(e.target.value)} style={input} />
+          <input value={last} onChange={(e) => setLast(e.target.value)} style={input} disabled={noEst} />
         </label>
       </div>
-      <label style={{ display: 'block', marginBottom: 18 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{t('targetEstablishment')}</div>
-        <select value={estId} onChange={(e) => setEstId(e.target.value)} style={input}>
-          <option value="">—</option>
-          {establishments.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}{e.group_name ? ` · ${e.group_name}` : ''}
-            </option>
-          ))}
-        </select>
-      </label>
+      {noEst ? (
+        <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 18 }}>{t('noEstablishments')}</p>
+      ) : (
+        <label style={{ display: 'block', marginBottom: 18 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{t('targetEstablishment')}</div>
+          <select value={estId} onChange={(e) => setEstId(e.target.value)} style={input}>
+            <option value="">—</option>
+            {establishments.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}{e.group_name ? ` · ${e.group_name}` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button style={secondaryBtn} onClick={onClose} disabled={pending}>{t('cancel')}</button>
-        <button style={primaryBtn} onClick={() => onSubmit(first, last, estId)} disabled={!can || pending}>
+        <button type="button" style={secondaryBtn} onClick={onClose} disabled={pending}>{t('cancel')}</button>
+        <button type="button" style={primaryBtn} onClick={() => onSubmit(first, last, estId)} disabled={!can || pending}>
           {pending ? t('working') : t('assignConfirm')}
         </button>
       </div>

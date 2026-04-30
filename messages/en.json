@@ -496,7 +496,9 @@
       "settings": "Settings",
       "establishments": "Establishments",
       "groups": "Groups",
-      "signOut": "Sign out"
+      "signOut": "Sign out",
+      "themeToLight": "Switch to light mode",
+      "themeToDark": "Switch to dark mode"
     },
     "billing": {
       "title": "Billing & commission",
@@ -702,6 +704,7 @@
         "subtitle": "Generate batches, export for the factory, assign to establishments.",
         "generateBatch": "Generate a batch",
         "exportCsv": "Export CSV",
+        "exportUrlsTxt": "URLs (.txt)",
         "filterAllBatches": "All batches",
         "searchActive": "Search by short id, establishment or group…",
         "tab": {
@@ -709,6 +712,8 @@
           "active": "Deployed"
         },
         "assignSelected": "Assign selected ({n})",
+        "assignNeedsSelection": "Select at least one table row to enable this action.",
+        "noEstablishments": "No active establishment. Create a group and an establishment before assigning tags.",
         "assignSelectedTitle": "Assign {n} tags",
         "assignRange": "Assign a range",
         "colShortId": "Short ID",
