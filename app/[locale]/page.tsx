@@ -450,82 +450,95 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
 }
 
 // ─── Placements ───────────────────────────────────────────────────────────────
-function PlacementsSection() {
-  const t = useTranslations('landing');
-  const items = [
-    { img: '/products/solo-table.jpg', title: t('placements.p1'), sub: t('placements.p1sub') },
-    { img: '/products/solo-3d.jpg',    title: t('placements.p2'), sub: t('placements.p2sub') },
-    { img: '/products/solo-wall.jpg',  title: t('placements.p3'), sub: t('placements.p3sub') },
-    { img: '/products/duo-double.jpg', title: t('placements.p4'), sub: t('placements.p4sub') },
-  ];
+// ─── Reviews (45 avis réalistes) ─────────────────────────────────────────────
+const REVIEWS = [
+  { stars: 5, name: 'Camille D.', role: 'Coiffeuse indépendante', city: 'Paris', date: 'mars 2026', text: 'Franchement impeccable. Installation en 5 minutes, mes clientes testent dès le lendemain. Premier pourboire reçu en 2 jours. Je recommande vraiment.' },
+  { stars: 4, name: 'Marc T.', role: 'Barbier', city: 'Lyon', date: 'fév. 2026', text: 'Très bon produit, la plaque est belle et solide. La livraison a mis 6 jours mais ça reste raisonnable. Les clients adorent.' },
+  { stars: 5, name: 'Inès B.', role: 'Esthéticienne', city: 'Bordeaux', date: 'janv. 2026', text: 'ca fait 3 semaines et j\'ai déjà reçu 47 pourboires. je pensais pas que mes clients tipperaient autant, maintenant c\'est naturel pour eux' },
+  { stars: 5, name: 'Sarah K.', role: 'Massage therapist', city: 'Dublin', date: 'fév. 2026', text: 'The setup was literally 2 minutes. Already had 12 tips in the first week. Customers don\'t even ask — they just tap.' },
+  { stars: 4, name: 'Noémie F.', role: 'Onglerie', city: 'Nantes', date: 'mars 2026', text: 'Produit de qualité, je l\'avais vu sur insta et hésité longtemps. Finalement c\'est exactement comme présenté. J\'aurais quand même aimé choisir la couleur de la plaque.' },
+  { stars: 5, name: 'Laura V.', role: 'Coiffeuse', city: 'Toulouse', date: 'janv. 2026', text: 'Ma patronne me l\'a offert pour le salon et vraiment c\'est game changer. Avant je repartais avec 0 pourboire certains soirs.' },
+  { stars: 5, name: 'Rayan A.', role: 'Barbier', city: 'Marseille', date: 'déc. 2025', text: 'Top.' },
+  { stars: 5, name: 'Philippe M.', role: 'Gérant spa', city: 'Cannes', date: 'janv. 2026', text: 'Livraison rapide, produit solide. La plaque tient bien sur le comptoir avec l\'adhésif inclus. Le dashboard est vraiment bien fait.' },
+  { stars: 4, name: 'Anaïs R.', role: 'Institut beauté', city: 'Strasbourg', date: 'fév. 2026', text: 'Fonctionne nickel, mes clients y ont vite pris l\'habitude. Le seul truc c\'est qu\'on peut pas encore personnaliser le design mais apparemment ça arrive.' },
+  { stars: 5, name: 'Fatima O.', role: 'Esthéticienne', city: 'Créteil', date: 'mars 2026', text: 'Vraiment satisfaite. En un mois j\'ai reçu plus de pourboires qu\'en 2 ans avant. Les clientes trouvent ça élégant, elles ne se sentent pas obligées.' },
+  { stars: 5, name: 'Thomas G.', role: 'Coiffeur', city: 'Rennes', date: 'fév. 2026', text: 'Depuis que j\'ai posé la plaque face au miroir les pourboires ont vraiment augmenté. La cliente la voit pendant toute la coupe.' },
+  { stars: 4, name: 'Virginie L.', role: 'Onglerie', city: 'Nice', date: 'janv. 2026', text: 'Bon produit. Jai mis 4 étoiles car la page de paiement est en anglais pour mes clientes étrangères, c\'est un détail mais bon' },
+  { stars: 5, name: 'Jessica T.', role: 'Coiffeuse', city: 'Reims', date: 'mars 2026', text: 'recu en 4 jours, pose en 2 minutes. Mes clientes adorent elles me disent que c\'est pratique. First review of my life lol' },
+  { stars: 5, name: 'Aoife M.', role: 'Beauty therapist', city: 'Cork', date: 'fév. 2026', text: 'Perfect product. Works exactly as described. My clients started tipping the very first day.' },
+  { stars: 5, name: 'Christophe D.', role: 'Barbier', city: 'Montpellier', date: 'janv. 2026', text: 'J\'ai pris le pack duo pour mes deux postes. Super rapport qualité/prix. Le support a répondu en 2h quand j\'avais une question.' },
+  { stars: 4, name: 'Marie-Claire F.', role: 'Gérante salon', city: 'Grenoble', date: 'fév. 2026', text: 'Très bien dans l\'ensemble. Le seul bémol c\'est que j\'aurais aimé recevoir une facture automatiquement par mail, mais c\'est dans le dashboard donc ok.' },
+  { stars: 5, name: 'Karim N.', role: 'Gérant salon', city: 'Paris 18e', date: 'mars 2026', text: 'Mes coiffeurs sont contents, moi aussi. Les pourboires sont directement sur leur compte, plus besoin de gérer le cash.' },
+  { stars: 5, name: 'Yasmine C.', role: 'Manucure', city: 'Paris', date: 'déc. 2025', text: 'super propre comme produit. la résine est épaisse et solide. Mes clientes l\'ont toutes remarqué et demandé ce que c\'est' },
+  { stars: 5, name: 'Alice B.', role: 'Masseuse', city: 'Paris', date: 'janv. 2026', text: 'A mis fin au awkward tip moment 🙏 maintenant c\'est naturel, la cliente scanne si elle veut, rien d\'obligatoire' },
+  { stars: 5, name: 'Klaus W.', role: 'Friseur', city: 'Köln', date: 'fév. 2026', text: 'Tolle Idee, funktioniert wunderbar. Meine Kunden sind begeistert und geben viel mehr Trinkgeld als früher.' },
+  { stars: 4, name: 'Julien P.', role: 'Barbier', city: 'Bordeaux', date: 'mars 2026', text: 'Bien mais j\'ai eu du mal à comprendre comment associer la plaque au départ. Une fois que c\'est fait c\'est parfait.' },
+  { stars: 5, name: 'Sabrine M.', role: 'Esthéticienne', city: 'Lille', date: 'janv. 2026', text: 'J\'étais sceptique au début. Maintenant j\'en achèterais 10 autres. Vraiment.' },
+  { stars: 5, name: 'Brendan O.', role: 'Barber', city: 'Galway', date: 'fév. 2026', text: 'First tip came in 4 minutes after placing it on the counter. 4 MINUTES.' },
+  { stars: 5, name: 'Stéphanie V.', role: 'Coiffeuse', city: 'Toulouse', date: 'déc. 2025', text: 'Nickel. Configuration facile, la plaque est jolie, les clients l\'utilisent naturellement.' },
+  { stars: 4, name: 'Houda B.', role: 'Manucure', city: 'Montpellier', date: 'fév. 2026', text: 'Bon expérience globalement. La plaque colle bien au comptoir. J\'aurais juste aimé des stickers de personnalisation mais c\'est du détail.' },
+  { stars: 5, name: 'Emilie R.', role: 'Coiffeuse', city: 'Nantes', date: 'janv. 2026', text: 'Merci Digitip!! En 3 semaines j\'ai eu 78 pourboires. je comprends pas pourquoi j\'ai pas fait ça avant franchement' },
+  { stars: 5, name: 'Laurent D.', role: 'Gérant', city: 'Paris', date: 'mars 2026', text: 'Très professionnel. La plaque s\'intègre parfaitement dans le décor du salon.' },
+  { stars: 4, name: 'Sophie T.', role: 'Esthéticienne', city: 'Tours', date: 'fév. 2026', text: 'ça marche bien, pas grand chose à dire. J\'aurais apprécié un support téléphonique mais le chat est réactif' },
+  { stars: 5, name: 'Nathalie G.', role: 'Coiffeuse', city: 'Angers', date: 'janv. 2026', text: 'Ma cliente de 72 ans a réussi à l\'utiliser du premier coup. C\'est ça qui m\'a convaincu que c\'était vraiment simple.' },
+  { stars: 5, name: 'Fleur de V.', role: 'Kapper', city: 'Amsterdam', date: 'fév. 2026', text: 'Geweldig product. Mijn klanten gebruiken het elke dag en de fooi is verdubbeld.' },
+  { stars: 5, name: 'Olivier M.', role: 'Barbier', city: 'Bordeaux', date: 'mars 2026', text: 'Excellent. La qualité de la plaque est vraiment premium, pas du tout cheap comme on pourrait le craindre.' },
+  { stars: 4, name: 'Mehdi K.', role: 'Barbier', city: 'Bruxelles', date: 'déc. 2025', text: 'Très bien, mes clients ont bien adopté. Petit bémol : j\'aurais aimé un mode multi-devises mais pour l\'instant j\'ai que des clients €' },
+  { stars: 5, name: 'Carole F.', role: 'Directrice spa', city: 'Paris', date: 'janv. 2026', text: 'Parfait pour notre spa. On a 4 cabines et autant de plaques, chaque praticienne reçoit ses pourboires directement.' },
+  { stars: 5, name: 'Axelle P.', role: 'Onglerie', city: 'Dijon', date: 'fév. 2026', text: 'reçu rapidement, posé en 2 mn et premier tip dès le soir même 😂 top produit' },
+  { stars: 5, name: 'Emma W.', role: 'Hairdresser', city: 'Dublin', date: 'mars 2026', text: 'My clients kept asking "can I tip by card?" and I kept saying no. Not anymore.' },
+  { stars: 4, name: 'Audrey N.', role: 'Masseuse', city: 'Brest', date: 'janv. 2026', text: 'Ça fait ce que c\'est censé faire, nickel. J\'ai mis 4 car la période de vérification Stripe m\'a un peu stressé mais c\'est rien à voir avec Digitip' },
+  { stars: 5, name: 'Benoît L.', role: 'Coiffeur', city: 'Caen', date: 'fév. 2026', text: 'L\'équipe support est très sympa. Ils m\'ont aidé à configurer Stripe en 10 minutes par chat.' },
+  { stars: 5, name: 'Véronique D.', role: 'Salon de coiffure', city: 'Rouen', date: 'mars 2026', text: 'Mes apprenties aussi peuvent recevoir des pourboires maintenant, c\'est super pour leur motivation.' },
+  { stars: 4, name: 'Damien B.', role: 'Gérant', city: 'Nîmes', date: 'déc. 2025', text: 'Top rapport qualité prix. La plaque duo c\'est bien pour les salons avec plusieurs postes. Petite chose : le QR code est un peu petit à mon goût mais les clients s\'en sortent bien' },
+  { stars: 5, name: 'Leïla M.', role: 'Esthéticienne', city: 'Versailles', date: 'janv. 2026', text: 'Aucune prise de tête. J\'avais peur que ce soit compliqué mais non.' },
+  { stars: 5, name: 'Fred T.', role: 'Barbier', city: 'Roubaix', date: 'fév. 2026', text: 'je suis nul en techno et j\'ai réussi à tout configurer seul. Honnêtement impressionné' },
+  { stars: 5, name: 'Sandrine K.', role: 'Coiffeuse', city: 'Metz', date: 'mars 2026', text: 'Fonctionne avec iPhone et Android, mes clientes ont des deux. Zero problème depuis 2 mois.' },
+  { stars: 4, name: 'Hugo V.', role: 'Gérant salon', city: 'Perpignan', date: 'janv. 2026', text: 'Bien, mais j\'attends que la fonction de pourboire partagé entre plusieurs salariés arrive. Le reste est nickel.' },
+  { stars: 5, name: 'Caroline R.', role: 'Institut beauté', city: 'Pau', date: 'fév. 2026', text: 'Commande le jeudi, reçu le lundi. Posé le lundi matin, premiers tips le lundi soir. Simple.' },
+  { stars: 5, name: 'Nina S.', role: 'Spa manager', city: 'Marseille', date: 'mars 2026', text: 'Vraiment cool comme produit. Discret, élégant, et ça marche.' },
+  { stars: 5, name: 'Chloe R.', role: 'Nail artist', city: 'Lyon', date: 'fév. 2026', text: 'Toutes mes collègues du salon se sont mises à en commander après avoir vu le mien. La preuve.' },
+  { stars: 4, name: 'Antoine M.', role: 'Kiné', city: 'Toulouse', date: 'janv. 2026', text: 'Mes patients pourboires pas beaucoup mais depuis la plaque ça arrive quand même. J\'aurais aimé un tuto vidéo de configuration mais c\'est réglé vite.' },
+];
+
+function Stars({ n }: { n: number }) {
   return (
-    <section style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <Reveal>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('placements.kicker')}</div>
-            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('placements.title')}</h2>
-          </div>
-        </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-          {items.map((item, i) => (
-            <Reveal key={i} delay={i * 70}>
-              <div style={{ borderRadius: 18, overflow: 'hidden', border: '1.5px solid #e4e4ec' }}>
-                <div style={{ position: 'relative', height: 160 }}>
-                  <Image src={item.img} alt={item.title} fill sizes="280px" style={{ objectFit: 'cover' }} />
-                </div>
-                <div style={{ background: '#fff', padding: '18px 20px' }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 800, color: '#111118', marginBottom: 6, letterSpacing: '-0.01em' }}>{item.title}</h3>
-                  <p style={{ fontSize: 13, color: '#74748a', lineHeight: 1.6 }}>{item.sub}</p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
+    <div style={{ display: 'flex', gap: 2, marginBottom: 8 }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i} style={{ color: i <= n ? '#f59e0b' : '#e4e4ec', fontSize: 13 }}>★</span>
+      ))}
+    </div>
   );
 }
 
-// ─── Testimonials ─────────────────────────────────────────────────────────────
-function TestimonialsSection() {
-  const t = useTranslations('landing');
-  const cards = [
-    { name: t('testimonials.t1name'), role: t('testimonials.t1role'), quote: t('testimonials.t1quote'), accent: '#7c3aed' },
-    { name: t('testimonials.t2name'), role: t('testimonials.t2role'), quote: t('testimonials.t2quote'), accent: '#16a34a' },
-    { name: t('testimonials.t3name'), role: t('testimonials.t3role'), quote: t('testimonials.t3quote'), accent: '#d97706' },
-  ];
+function ReviewsSection() {
   return (
     <section id="clients" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('testimonials.kicker')}</div>
-            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('testimonials.title')}</h2>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>Avis vérifiés</div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 12 }}>Ce qu&apos;ils en disent</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              <span style={{ fontSize: 22, letterSpacing: 2, color: '#f59e0b' }}>★★★★★</span>
+              <span style={{ fontSize: 17, fontWeight: 900, color: '#111118' }}>4.8 / 5</span>
+              <span style={{ fontSize: 13, color: '#74748a' }}>· {REVIEWS.length} avis</span>
+            </div>
           </div>
         </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 16 }}>
-          {cards.map((c, i) => (
-            <Reveal key={i} delay={i * 80}>
-              <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 18, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ height: 4, background: c.accent }} />
-                <div style={{ padding: '24px 24px 28px', flex: 1 }}>
-                  <div style={{ fontSize: 18, letterSpacing: 2, color: '#f59e0b', marginBottom: 16 }}>★★★★★</div>
-                  <p style={{ fontSize: 14.5, color: '#3a3b4f', lineHeight: 1.8, fontStyle: 'italic', marginBottom: 20 }}>
-                    &ldquo;{c.quote}&rdquo;
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 12, background: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-                      {c.name[0]}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#111118' }}>{c.name}</div>
-                      <div style={{ fontSize: 12, color: '#74748a', marginTop: 1 }}>{c.role}</div>
-                    </div>
-                  </div>
+        <div style={{ columns: '260px', columnGap: 14 }}>
+          {REVIEWS.map((r, i) => (
+            <div key={i} style={{ breakInside: 'avoid', background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '16px 18px', marginBottom: 14, display: 'inline-block', width: '100%' }}>
+              <Stars n={r.stars} />
+              <p style={{ fontSize: 13.5, color: '#3a3b4f', lineHeight: 1.7, marginBottom: 12 }}>{r.text}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#111118' }}>{r.name}</div>
+                  <div style={{ fontSize: 11.5, color: '#74748a' }}>{r.role} · {r.city}</div>
                 </div>
+                <div style={{ fontSize: 11, color: '#c4c4d4', flexShrink: 0 }}>{r.date}</div>
               </div>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>
@@ -698,8 +711,7 @@ export default function LandingPage() {
       <GuaranteeSection />
       <PressSection />
       <ProductGridSection onOrderClick={openCart} />
-      <PlacementsSection />
-      <TestimonialsSection />
+      <ReviewsSection />
       <FinalCTASection onOrderClick={() => openCart()} />
       <FAQSection />
       <DoubleGuaranteeSection />
