@@ -138,7 +138,7 @@
       "priceOffer": "€69",
       "priceSave": "SAVE 22%",
       "bullet1": "One-time purchase, no monthly fee",
-      "bullet2": "3% commission on tips only",
+      "bullet2": "5% commission on tips only",
       "bullet3": "Premium high-density epoxy resin — built to last",
       "bullet4": "French company 🇫🇷",
       "bullet5": "Lifetime hardware replacement",
@@ -179,7 +179,7 @@
     "grid": {
       "kicker": "Our packs",
       "title": "Choose your pack",
-      "sub": "Pre-programmed epoxy plaques, ready to place. 3% commission on tips only.",
+      "sub": "Pre-programmed epoxy plaques, ready to place. 5% commission on tips only.",
       "packS": "Solo",
       "packSTag": "1 epoxy NFC plaque",
       "packSPrice": "€69",
@@ -283,7 +283,7 @@
       "noSubscription": "No subscription, no commitment",
       "vatInvoice": "Auto-generated VAT invoices"
     },
-    "commissionLabel": "3% commission",
+    "commissionLabel": "5% commission",
     "commissionBody": "Charged only on tips collected. No tips = you pay nothing.",
     "packs": {
       "solo": {
@@ -469,7 +469,8 @@
     "successBack": "Back to Digitip",
     "yourEmail": "Your email (optional)",
     "emailPlaceholder": "email@example.com",
-    "receiptNote": "A receipt will be sent to this address"
+    "receiptNote": "A receipt will be sent to this address",
+    "receiptByEmail": "Get a receipt by email"
   },
   "dashboard": {
     "welcome": "Welcome back,",

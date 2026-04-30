@@ -18,7 +18,6 @@ interface Props {
   currency: string;
 }
 
-// Memoize the loadStripe promise across renders/instances (Stripe.js best practice)
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
   if (!stripePromise) {
@@ -62,7 +61,7 @@ function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCard, setShowCard] = useState(false);
-  // Nonce is stable for the lifetime of this component (one attempt per mount).
+  const [showEmail, setShowEmail] = useState(false);
   const [nonce] = useState(() =>
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
@@ -73,7 +72,7 @@ function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
   const fmt = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency,
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
   });
 
   async function createIntent(): Promise<string | null> {
@@ -92,148 +91,133 @@ function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
 
   async function confirm(clientSecret: string) {
     if (!stripe || !elements) return;
-    const origin = window.location.origin;
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
       clientSecret,
-      confirmParams: {
-        return_url: `${origin}/${locale}/pay/success`,
-      },
+      confirmParams: { return_url: `${window.location.origin}/${locale}/pay/success` },
     });
     if (confirmError) {
       setError(confirmError.message ?? t('errors.genericFailed'));
     }
   }
 
-  const handleExpress = async () => {
+  async function handlePay() {
     if (!stripe || !elements) return;
     setError(null);
     setIsLoading(true);
     try {
       const { error: submitError } = await elements.submit();
-      if (submitError) {
-        setError(submitError.message ?? t('errors.validationFailed'));
-        return;
-      }
+      if (submitError) { setError(submitError.message ?? t('errors.validationFailed')); return; }
       const clientSecret = await createIntent();
       if (!clientSecret) return;
       await confirm(clientSecret);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCardSubmit = async () => {
-    if (!stripe || !elements) return;
-    setError(null);
-    setIsLoading(true);
-    try {
-      const { error: submitError } = await elements.submit();
-      if (submitError) {
-        setError(submitError.message ?? t('errors.validationFailed'));
-        return;
-      }
-      const clientSecret = await createIntent();
-      if (!clientSecret) return;
-      await confirm(clientSecret);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }
 
   return (
-    <div
-      style={{
-        padding: 20,
-        borderRadius: 20,
-        background: 'var(--surface)',
-        border: '1px solid var(--border-subtle)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
+    <div style={{
+      padding: 20,
+      borderRadius: 20,
+      background: 'var(--surface)',
+      border: '1px solid var(--border-subtle)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10,
+    }}>
       {error && (
-        <p style={{ fontSize: 12, color: 'var(--error)', textAlign: 'center' }}>
+        <p style={{ fontSize: 12, color: 'var(--error)', textAlign: 'center', margin: 0 }}>
           {error}
         </p>
       )}
 
-      <div>
-        <input
-          type="email"
-          value={customerEmail}
-          onChange={e => setCustomerEmail(e.target.value)}
-          placeholder={t('emailPlaceholder')}
-          style={{
-            width: '100%', padding: '10px 12px', borderRadius: 10,
-            border: '1px solid var(--border)', background: 'var(--surface-2)',
-            color: 'var(--text)', fontSize: 14, fontFamily: 'inherit',
-            outline: 'none', boxSizing: 'border-box',
-          }}
-        />
-        {customerEmail && (
-          <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 5, textAlign: 'center' }}>
-            {t('receiptNote')}
-          </p>
-        )}
-      </div>
-
-      {/* Real Apple Pay / Google Pay / Link buttons (if supported on this device). */}
+      {/* Apple Pay / Google Pay / Link — big buttons */}
       <ExpressCheckoutElement
-        onConfirm={handleExpress}
+        onConfirm={handlePay}
         options={{
-          buttonType: { applePay: 'tip', googlePay: 'donate' },
+          buttonHeight: 56,
+          buttonType: { applePay: 'tip', googlePay: 'pay' },
           buttonTheme: { applePay: 'black', googlePay: 'black' },
           layout: { maxColumns: 1, maxRows: 3 },
         }}
       />
 
-      {!showCard && (
+      {/* Divider */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
+        <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>ou</span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
+      </div>
+
+      {/* Card section */}
+      {!showCard ? (
         <button
           type="button"
           onClick={() => setShowCard(true)}
           style={{
-            width: '100%',
-            padding: 11,
-            borderRadius: 10,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-2)',
-            cursor: 'pointer',
-            fontSize: 13,
-            fontWeight: 500,
-            fontFamily: 'var(--font)',
+            width: '100%', padding: '16px', borderRadius: 14, border: '1.5px solid var(--border)',
+            background: 'var(--surface-2)', color: 'var(--text)',
+            cursor: 'pointer', fontSize: 15, fontWeight: 700,
+            fontFamily: 'var(--font)', letterSpacing: '-0.01em',
+            transition: 'all 130ms',
           }}
         >
-          {t('payButton')}
+          💳 {t('payButton')}
         </button>
-      )}
-
-      {showCard && (
+      ) : (
         <>
           <PaymentElement options={{ layout: 'tabs' }} />
           <button
             type="button"
-            onClick={handleCardSubmit}
+            onClick={handlePay}
             disabled={!stripe || !elements || isLoading}
             style={{
-              width: '100%',
-              height: 52,
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--accent)',
-              color: '#fff',
+              width: '100%', height: 58, borderRadius: 14, border: 'none',
+              background: isLoading ? 'var(--accent-muted)' : 'var(--accent)',
+              color: isLoading ? 'var(--accent)' : '#fff',
               cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: 17,
-              fontWeight: 600,
-              letterSpacing: '-0.01em',
-              opacity: isLoading ? 0.7 : 1,
+              fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em',
+              transition: 'all 130ms',
             }}
           >
             {isLoading ? t('processingButton') : `${t('pay')} ${fmt.format(amount / 100)}`}
           </button>
         </>
+      )}
+
+      {/* Optional email — collapsed by default */}
+      {!showEmail ? (
+        <button
+          type="button"
+          onClick={() => setShowEmail(true)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 12, color: 'var(--text-3)', fontFamily: 'var(--font)',
+            padding: '2px 0', textDecoration: 'underline', textUnderlineOffset: 3,
+            textAlign: 'center',
+          }}
+        >
+          {t('receiptByEmail')}
+        </button>
+      ) : (
+        <div>
+          <input
+            type="email"
+            value={customerEmail}
+            onChange={e => setCustomerEmail(e.target.value)}
+            placeholder={t('emailPlaceholder')}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: 10,
+              border: '1px solid var(--border)', background: 'var(--surface-2)',
+              color: 'var(--text)', fontSize: 14, fontFamily: 'inherit',
+              outline: 'none', boxSizing: 'border-box',
+            }}
+          />
+          <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 5, textAlign: 'center' }}>
+            {t('receiptNote')}
+          </p>
+        </div>
       )}
     </div>
   );

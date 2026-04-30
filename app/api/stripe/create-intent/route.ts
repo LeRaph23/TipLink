@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
   // Resolve the platform commission rate: establishment -> group -> default.
   // The group owns the commercial relationship; the rate lives on groups.
-  let platformFeeBps = 300;
+  let platformFeeBps = 500;
   if (staff.establishment_id) {
     const { data: estab } = await supabase
       .from('establishments')

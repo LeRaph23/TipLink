@@ -138,7 +138,7 @@
       "priceOffer": "69,00 €",
       "priceSave": "ÉCONOMISEZ 30%",
       "bullet1": "Paiement unique, 0 frais mensuel",
-      "bullet2": "3 % de commission sur les pourboires uniquement",
+      "bullet2": "5 % de commission sur les pourboires uniquement",
       "bullet3": "Résine époxy haute densité — conçue pour durer",
       "bullet4": "Entreprise française 🇫🇷",
       "bullet5": "Remplacement à vie du matériel",
@@ -179,7 +179,7 @@
     "grid": {
       "kicker": "Nos packs",
       "title": "Choisissez votre pack",
-      "sub": "Plaques époxy pré-programmées, livrées prêtes à l'emploi. 3 % de commission sur les pourboires uniquement.",
+      "sub": "Plaques époxy pré-programmées, livrées prêtes à l'emploi. 5 % de commission sur les pourboires uniquement.",
       "packS": "Solo",
       "packSTag": "1 plaque époxy NFC",
       "packSPrice": "69,00 €",
@@ -283,7 +283,7 @@
       "noSubscription": "Aucun abonnement, aucun engagement",
       "vatInvoice": "Factures TVA automatiques"
     },
-    "commissionLabel": "3 % de commission",
+    "commissionLabel": "5 % de commission",
     "commissionBody": "Prélevés uniquement sur les pourboires reçus. Pas de pourboire = vous ne payez rien.",
     "packs": {
       "solo": {
@@ -469,7 +469,8 @@
     "successBack": "Retour à Digitip",
     "yourEmail": "Votre email (optionnel)",
     "emailPlaceholder": "email@exemple.com",
-    "receiptNote": "Un reçu sera envoyé à cette adresse"
+    "receiptNote": "Un reçu sera envoyé à cette adresse",
+    "receiptByEmail": "Recevoir un reçu par email"
   },
   "dashboard": {
     "welcome": "Bon retour,",
