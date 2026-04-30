@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
 type Pack = 'solo' | 'duo';
@@ -11,17 +12,18 @@ type Props = {
   locale: string;
 };
 
-const PACK_INFO: Record<Pack, { qty: number; price: string; full: string; label: string }> = {
-  solo: { qty: 1, price: '69,00 €', full: '89,00 €', label: 'Solo — 1 plaque époxy NFC' },
-  duo:  { qty: 2, price: '99,00 €', full: '138,00 €', label: 'Duo — 2 plaques époxy NFC' },
+const PACK_INFO: Record<Pack, { qty: number; price: string; full: string; save: string; img: string; alt: string }> = {
+  solo: { qty: 1, price: '69,00 €', full: '89,00 €', save: '−22%', img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
+  duo:  { qty: 2, price: '99,00 €', full: '138,00 €', save: '−28%', img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
 };
 
-export function BuyModal({ pack, onClose, locale }: Props) {
+export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
   const tc = useTranslations('common');
+  const [selectedPack, setSelectedPack] = useState<Pack>(initialPack);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const info = PACK_INFO[pack];
+  const info = PACK_INFO[selectedPack];
 
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
@@ -38,7 +40,7 @@ export function BuyModal({ pack, onClose, locale }: Props) {
       const res = await fetch('/api/billing/express-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pack, locale }),
+        body: JSON.stringify({ pack: selectedPack, locale }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -68,37 +70,86 @@ export function BuyModal({ pack, onClose, locale }: Props) {
         boxShadow: '0 24px 80px rgba(0,0,0,0.18)',
         overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e6e6f0' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1020', letterSpacing: '-0.02em' }}>
-            🛒 Votre panier
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e6e6f0' }}>
+          <h2 style={{ fontSize: 17, fontWeight: 800, color: '#0f1020', letterSpacing: '-0.02em' }}>
+            Votre commande
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b6d85', lineHeight: 1, padding: 4 }}>✕</button>
         </div>
 
         <div style={{ padding: '20px 24px' }}>
+
+          {/* Pack selector */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+            {(['solo', 'duo'] as const).map((p) => {
+              const pi = PACK_INFO[p];
+              const active = selectedPack === p;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setSelectedPack(p)}
+                  style={{
+                    flex: 1, padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                    border: active ? '2px solid #7c3aed' : '1.5px solid #e6e6f0',
+                    background: active ? '#f5f3ff' : '#fafafa',
+                    textAlign: 'left', transition: 'all 120ms', position: 'relative',
+                  }}
+                >
+                  {p === 'duo' && (
+                    <span style={{
+                      position: 'absolute', top: -8, right: 8,
+                      background: '#7c3aed', color: '#fff', fontSize: 9, fontWeight: 800,
+                      padding: '2px 7px', borderRadius: 20, letterSpacing: '0.04em',
+                    }}>MEILLEUR PRIX</span>
+                  )}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#7c3aed' : '#0f1020', marginBottom: 2 }}>
+                    {p === 'solo' ? 'Solo' : 'Duo'}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#6b6d85' }}>
+                    {pi.qty} plaque{pi.qty > 1 ? 's' : ''} · {pi.price}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Product card */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 16,
+            display: 'flex', alignItems: 'center', gap: 14,
             background: '#f5f3ff', border: '1px solid #e9d5ff',
-            borderRadius: 12, padding: '16px',
+            borderRadius: 14, padding: '14px',
           }}>
             <div style={{
-              width: 56, height: 56, borderRadius: 10,
-              background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 24, flexShrink: 0,
-            }}>📡</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#0f1020' }}>Plaque époxy NFC — Digitip</div>
-              <div style={{ fontSize: 13, color: '#6b6d85', marginTop: 2 }}>{info.label}</div>
+              width: 72, height: 72, borderRadius: 10,
+              overflow: 'hidden', flexShrink: 0,
+              position: 'relative', background: '#ede9fe',
+            }}>
+              <Image
+                src={info.img}
+                alt={info.alt}
+                fill
+                sizes="72px"
+                style={{ objectFit: 'cover' }}
+              />
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#0f1020' }}>{info.price}</div>
-              <div style={{ fontSize: 12, color: '#6b6d85', textDecoration: 'line-through' }}>{info.full}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: '#0f1020' }}>Plaque époxy NFC — Digitip</div>
+              <div style={{ fontSize: 12.5, color: '#6b6d85', marginTop: 2 }}>
+                {selectedPack === 'solo' ? 'Solo — 1 plaque époxy NFC' : 'Duo — 2 plaques époxy NFC'}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{info.price}</div>
+              <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>{info.full}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#16a34a', marginTop: 2 }}>{info.save}</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16 }}>
+          {/* Trust items */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 14 }}>
             {[
-              '🛡️ Satisfait ou remboursé 30 jours',
+              '✅ Garantie matériel à vie',
               '🚚 Livraison offerte en Europe',
               '🔒 Paiement sécurisé par Stripe',
             ].map((s) => (
@@ -118,7 +169,7 @@ export function BuyModal({ pack, onClose, locale }: Props) {
             onClick={handleCheckout}
             disabled={loading}
             style={{
-              width: '100%', marginTop: 20, padding: '15px',
+              width: '100%', marginTop: 18, padding: '15px',
               borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer',
               background: loading ? '#a78bfa' : '#7c3aed',
               color: '#fff', fontSize: 16, fontWeight: 800, border: 'none',
