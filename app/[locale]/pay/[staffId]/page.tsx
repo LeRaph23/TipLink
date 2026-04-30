@@ -156,14 +156,8 @@ export default async function StaffTipPage({
 
       <div className="fade-up" style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1 }}>
         {/* Wordmark */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 28 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <rect width="24" height="24" rx="7" fill="var(--accent)" />
-            <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-            <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-            <circle cx="12" cy="12" r="1.8" fill="white" />
-          </svg>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '-0.02em' }}>Digitip</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
+          <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
         </div>
 
         {/* Staff card */}

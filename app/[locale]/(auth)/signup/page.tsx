@@ -41,12 +41,7 @@ export default async function SignupPage({
       <div className="fade-up" style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-              <rect width="24" height="24" rx="7" fill="var(--accent)" />
-              <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-              <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-              <circle cx="12" cy="12" r="1.8" fill="white" />
-            </svg>
+            <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 26, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
           </div>
           <h1 style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 5 }}>{t('signupTitle')}</h1>
           <p style={{ fontSize: 13.5, color: 'var(--text-3)' }}>{t('signupSubtitle')}</p>

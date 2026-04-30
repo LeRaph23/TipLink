@@ -1,16 +1,6 @@
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-function LogoMark({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="var(--accent)" />
-      <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="1.8" fill="white" />
-    </svg>
-  );
-}
 
 export type LegalSection = { title: string; body: string };
 
@@ -47,9 +37,8 @@ export function LegalPage({
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '18px 48px', position: 'relative', zIndex: 10,
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <LogoMark size={26} />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em', color: '#f0f0f8' }}>Digitip</span>
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
         </Link>
         <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <LanguageSwitcher />

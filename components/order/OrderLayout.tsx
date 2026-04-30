@@ -9,16 +9,6 @@ import { OrderSummary } from './OrderSummary';
 import type { PackId } from '@/lib/env';
 import type { Step } from '@/lib/order-validation';
 
-function LogoMark({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="var(--accent)" />
-      <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="1.8" fill="white" />
-    </svg>
-  );
-}
 
 export function OrderLayout({
   pack,
@@ -69,9 +59,8 @@ export function OrderLayout({
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--border-subtle)',
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <LogoMark size={24} />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)' }}>Digitip</span>
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 17, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
         </Link>
 
         <div style={{
