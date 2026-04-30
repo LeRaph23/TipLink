@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS, type PackId } from '@/lib/env';
@@ -23,18 +24,6 @@ function Check() {
   );
 }
 
-function PlaqueSVG({ accent = '#7c3aed', size = 80 }: { accent?: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 80 80" fill="none">
-      <rect width="80" height="80" rx="14" fill={`${accent}12`} stroke={`${accent}30`} strokeWidth="1" />
-      <path d="M28 40c0-6.6 5.4-12 12-12" stroke={accent} strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M52 40c0 6.6-5.4 12-12 12" stroke={accent} strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="40" cy="40" r="3.5" fill={accent} />
-      <path d="M22 40c0-9.9 8.1-18 18-18" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.35" />
-      <path d="M58 40c0 9.9-8.1 18-18 18" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.35" />
-    </svg>
-  );
-}
 
 export default async function PricingPage({
   params,
@@ -131,22 +120,22 @@ export default async function PricingPage({
                 {/* Product visual */}
                 <div style={{
                   background: popular ? '#f5f3ff' : '#f9f9f7',
-                  padding: '36px 28px 28px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+                  padding: '0',
                   position: 'relative',
+                  aspectRatio: '4/3',
+                  overflow: 'hidden',
                 }}>
-                  <div style={{ position: 'absolute', top: 12, left: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '3px 10px', fontSize: 10.5, fontWeight: 800, color: '#d97706' }}>
+                  <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 2, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '3px 10px', fontSize: 10.5, fontWeight: 800, color: '#d97706' }}>
                     {save}
                   </div>
-                  {def.quantity === 1 ? (
-                    <PlaqueSVG accent="#7c3aed" size={80} />
-                  ) : (
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <PlaqueSVG accent="#7c3aed" size={72} />
-                      <PlaqueSVG accent="#8b5cf6" size={72} />
-                    </div>
-                  )}
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#7c3aed', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  <Image
+                    src={id === 'duo' ? '/products/duo-double.jpg' : '/products/solo-3d.jpg'}
+                    alt={id === 'duo' ? 'Pack Duo — 2 plaques époxy NFC Digitip' : 'Plaque époxy NFC Digitip Solo'}
+                    fill
+                    sizes="(max-width: 900px) 100vw, 450px"
+                    style={{ objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 2, fontSize: 12.5, fontWeight: 700, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.4)', whiteSpace: 'nowrap' }}>
                     {name}
                   </div>
                 </div>
