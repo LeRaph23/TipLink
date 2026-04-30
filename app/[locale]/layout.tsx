@@ -75,9 +75,17 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      data-theme="dark"
+      data-theme="light"
       className={`${jakarta.variable} ${spaceGrotesk.variable} ${poppins.variable} h-full`}
     >
+      <head>
+        {/* Prevent theme flash by applying stored preference before paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t;})()`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col antialiased">
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>

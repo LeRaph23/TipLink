@@ -32,8 +32,8 @@ export default async function PricingPage({
     }).format(cents / 100);
 
   const packs: Array<{ id: PackId; popular?: boolean; accent: string; save: string }> = [
-    { id: 'solo', accent: '#7c3aed', save: isFr ? 'ÉCONOMISEZ 22%' : 'SAVE 22%' },
-    { id: 'duo',  accent: '#7c3aed', save: isFr ? 'ÉCONOMISEZ 28%' : 'SAVE 28%', popular: true },
+    { id: 'solo', accent: '#E57A97', save: isFr ? 'ÉCONOMISEZ 22%' : 'SAVE 22%' },
+    { id: 'duo',  accent: '#E57A97', save: isFr ? 'ÉCONOMISEZ 28%' : 'SAVE 28%', popular: true },
   ];
 
   const benefits = [
@@ -68,7 +68,7 @@ export default async function PricingPage({
 
       {/* Hero */}
       <section style={{ background: '#fff', padding: 'clamp(48px,6vw,80px) clamp(16px,4vw,48px) clamp(32px,4vw,56px)', borderBottom: '1px solid #e4e4ec', textAlign: 'center' }}>
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>{t('kicker')}</div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>{t('kicker')}</div>
         <h1 style={{ fontSize: 'clamp(28px,4vw,52px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1.02, marginBottom: 18 }}>
           {t('title')}
         </h1>
@@ -89,18 +89,18 @@ export default async function PricingPage({
               <div key={id} style={{
                 position: 'relative',
                 background: '#fff',
-                border: popular ? '2px solid #7c3aed' : '1.5px solid #e4e4ec',
+                border: popular ? '2px solid #E57A97' : '1.5px solid #e4e4ec',
                 borderRadius: 20,
                 overflow: 'hidden',
-                boxShadow: popular ? '0 12px 40px rgba(124,58,237,0.14)' : '0 2px 8px rgba(0,0,0,0.04)',
+                boxShadow: popular ? '0 12px 40px rgba(229,122,151,0.14)' : '0 2px 8px rgba(0,0,0,0.04)',
                 display: 'flex', flexDirection: 'column',
               }}>
                 {popular && (
                   <div style={{
                     position: 'absolute', top: 16, right: 16,
-                    background: '#7c3aed', color: '#fff',
+                    background: '#E57A97', color: '#fff',
                     fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20,
-                    letterSpacing: '0.04em', boxShadow: '0 2px 12px rgba(124,58,237,0.35)',
+                    letterSpacing: '0.04em', boxShadow: '0 2px 12px rgba(229,122,151,0.35)',
                   }}>
                     {t('mostPopular')}
                   </div>
@@ -108,7 +108,7 @@ export default async function PricingPage({
 
                 {/* Product visual */}
                 <div style={{
-                  background: popular ? '#f5f3ff' : '#f9f9f7',
+                  background: popular ? '#FEF1F4' : '#f9f9f7',
                   padding: '0',
                   position: 'relative',
                   aspectRatio: '4/3',
@@ -149,11 +149,11 @@ export default async function PricingPage({
                   <div style={{
                     margin: '16px 0',
                     padding: '10px 14px', borderRadius: 10,
-                    background: popular ? 'rgba(124,58,237,0.06)' : '#f9f9f7',
-                    border: popular ? '1px solid rgba(124,58,237,0.18)' : '1px solid #e4e4ec',
+                    background: popular ? 'rgba(229,122,151,0.06)' : '#f9f9f7',
+                    border: popular ? '1px solid rgba(229,122,151,0.18)' : '1px solid #e4e4ec',
                     fontSize: 12.5, color: '#3a3b4f', lineHeight: 1.5,
                   }}>
-                    <strong style={{ color: '#7c3aed' }}>{t('commissionLabel')}</strong> · {t('commissionBody')}
+                    <strong style={{ color: '#E57A97' }}>{t('commissionLabel')}</strong> · {t('commissionBody')}
                   </div>
 
                   {/* Benefits */}
@@ -171,10 +171,10 @@ export default async function PricingPage({
                     style={{
                       display: 'block', textAlign: 'center',
                       padding: '14px 20px', borderRadius: 12, textDecoration: 'none',
-                      background: popular ? '#7c3aed' : '#111118',
+                      background: popular ? '#E57A97' : '#111118',
                       color: '#fff',
                       fontSize: 15, fontWeight: 800,
-                      boxShadow: popular ? '0 4px 20px rgba(124,58,237,0.38)' : '0 2px 8px rgba(0,0,0,0.12)',
+                      boxShadow: popular ? '0 4px 20px rgba(229,122,151,0.38)' : '0 2px 8px rgba(0,0,0,0.12)',
                       letterSpacing: '-0.01em',
                     }}
                   >
@@ -194,7 +194,7 @@ export default async function PricingPage({
           gap: 24, flexWrap: 'wrap',
         }}>
           <div style={{ maxWidth: 520 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
               Enterprise
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 6 }}>

@@ -15,7 +15,7 @@ const LIGHT: React.CSSProperties = {
   '--ltext': '#111118',
   '--ltext-2': '#3a3b4f',
   '--lmuted': '#74748a',
-  '--laccent': '#7c3aed',
+  '--laccent': '#E57A97',
   '--lborder': '#e4e4ec',
   '--lsuccess': '#16a34a',
   '--lwarn': '#d97706',
@@ -41,7 +41,7 @@ function Reveal({ children, delay = 0, style: s = {} }: { children: React.ReactN
 
 function Badge({ children, variant = 'accent' }: { children: React.ReactNode; variant?: 'accent' | 'success' | 'warn' }) {
   const colors: Record<string, { bg: string; text: string; border: string }> = {
-    accent: { bg: '#f5f3ff', text: '#7c3aed', border: '#e9d5ff' },
+    accent: { bg: '#FEF1F4', text: '#E57A97', border: '#FBDAE3' },
     success: { bg: '#f0fdf4', text: '#16a34a', border: '#bbf7d0' },
     warn: { bg: '#fffbeb', text: '#d97706', border: '#fde68a' },
   };
@@ -57,7 +57,7 @@ function Badge({ children, variant = 'accent' }: { children: React.ReactNode; va
 // ─── PromoBanner ──────────────────────────────────────────────────────────────
 function PromoBanner({ text }: { text: string }) {
   return (
-    <div style={{ background: 'linear-gradient(90deg,#6d28d9,#7c3aed,#8b5cf6)', color: '#fff', textAlign: 'center', padding: '9px 16px', fontSize: 13, fontWeight: 600, letterSpacing: '0.01em', position: 'sticky', top: 0, zIndex: 300 }}>
+    <div style={{ background: 'linear-gradient(90deg,#C95578,#E57A97,#EC97B0)', color: '#fff', textAlign: 'center', padding: '9px 16px', fontSize: 13, fontWeight: 600, letterSpacing: '0.01em', position: 'sticky', top: 0, zIndex: 300 }}>
       {text}
     </div>
   );
@@ -95,7 +95,7 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <LanguageSwitcher />
         <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500, background: '#fff' }}>{tc('login')}</Link>
-        <button onClick={onOrderClick} style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#7c3aed', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(124,58,237,0.38)', transition: 'all 140ms' }}>
+        <button onClick={onOrderClick} style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(229,122,151,0.38)', transition: 'all 140ms' }}>
           {t('hero.cta')} →
         </button>
       </div>
@@ -117,13 +117,13 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
           </div>
           <h1 className="fade-up" style={{ fontSize: 'clamp(38px, 5.5vw, 72px)', fontWeight: 900, lineHeight: 0.96, letterSpacing: '-0.04em', color: '#111118', marginBottom: 22, animationDelay: '60ms' }}>
             {t('hero.h1a')}<br />{t('hero.h1b')}<br />
-            <span style={{ color: '#7c3aed' }}>{t('hero.h1c')}</span>
+            <span style={{ color: '#E57A97' }}>{t('hero.h1c')}</span>
           </h1>
           <p className="fade-up" style={{ fontSize: 16.5, color: '#74748a', lineHeight: 1.8, maxWidth: 480, marginBottom: 32, animationDelay: '130ms' }}>
             {t('hero.sub')}
           </p>
           <div className="fade-up" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 32, animationDelay: '200ms' }}>
-            <button onClick={onOrderClick} style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#7c3aed', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(124,58,237,0.42)', transition: 'all 140ms' }}>
+            <button onClick={onOrderClick} style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(229,122,151,0.42)', transition: 'all 140ms' }}>
               {t('hero.cta')} →
             </button>
             <a href="#comment-ca-marche" style={{ padding: '15px 24px', borderRadius: 11, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', display: 'inline-flex', alignItems: 'center' }}>
@@ -150,7 +150,7 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
               <Image src="/products/duo-double.jpg" alt="Plaques époxy NFC Digitip" fill sizes="300px" style={{ objectFit: 'cover' }} priority />
             </div>
             <div style={{ position: 'absolute', bottom: 0, right: -10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 28px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📲</div>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#E57A97', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📲</div>
               <div>
                 <div style={{ fontSize: 11.5, fontWeight: 700, color: '#111118' }}>+5,00 €</div>
                 <div style={{ fontSize: 10, color: '#74748a' }}>→ Léa C.</div>
@@ -214,19 +214,19 @@ function ClaimSection() {
     <section style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         <Reveal>
-          <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #7c3aed' }}>
-            <div style={{ fontSize: 56, fontWeight: 900, color: '#7c3aed', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>3s</div>
+          <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #E57A97' }}>
+            <div style={{ fontSize: 56, fontWeight: 900, color: '#E57A97', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>3s</div>
             <div style={{ fontSize: 21, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 10 }}>
-              {t('claim.title')} <span style={{ color: '#7c3aed' }}>{t('claim.titleAccent')}</span>
+              {t('claim.title')} <span style={{ color: '#E57A97' }}>{t('claim.titleAccent')}</span>
             </div>
             <p style={{ fontSize: 14.5, color: '#74748a', lineHeight: 1.7 }}>{t('claim.sub')}</p>
           </div>
         </Reveal>
         <Reveal delay={100}>
-          <div style={{ background: '#7c3aed', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #5b21b6', color: '#fff' }}>
-            <div style={{ fontSize: 56, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12, color: '#e9d5ff' }}>×2</div>
+          <div style={{ background: '#E57A97', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #B03860', color: '#fff' }}>
+            <div style={{ fontSize: 56, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12, color: '#FBDAE3' }}>×2</div>
             <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10 }}>
-              {t('claim.claim2title')} <span style={{ color: '#e9d5ff' }}>{t('claim.claim2sub')}</span>
+              {t('claim.claim2title')} <span style={{ color: '#FBDAE3' }}>{t('claim.claim2sub')}</span>
             </div>
             <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.7 }}>{t('claim.sub')}</p>
           </div>
@@ -245,7 +245,7 @@ function ProductSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') =>
         <Reveal style={{ marginBottom: 44 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>{t('product.kicker')}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>{t('product.kicker')}</div>
               <h2 style={{ fontSize: 'clamp(26px,3.5vw,40px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{t('product.name')}</h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -276,7 +276,7 @@ function HowItWorksSection() {
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('howItWorks.kicker')}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('howItWorks.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('howItWorks.title')}</h2>
             <p style={{ fontSize: 15, color: '#74748a', marginTop: 12, maxWidth: 460, margin: '12px auto 0' }}>{t('howItWorks.sub')}</p>
           </div>
@@ -289,8 +289,8 @@ function HowItWorksSection() {
                   <div style={{ position: 'absolute', top: 52, right: -2, width: 24, height: 2, background: '#e4e4ec', display: 'none' }} />
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#f5f3ff', border: '1.5px solid #e9d5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#7c3aed' }}>{s.n}</div>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#E57A97' }}>{s.n}</div>
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
                 <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.75 }}>{s.body}</p>
@@ -317,7 +317,7 @@ function ShippingSection() {
     <section style={{ background: '#fff', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('shipping.kicker')}</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('shipping.kicker')}</div>
           <h2 style={{ fontSize: 'clamp(22px,2.8vw,34px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.03em' }}>{t('shipping.title')}</h2>
         </Reveal>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
@@ -340,8 +340,8 @@ function GuaranteeSection() {
   return (
     <section style={{ background: '#f9f9f7', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <Reveal>
-        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', background: '#fff', border: '2px solid #e9d5ff', borderRadius: 24, padding: 'clamp(32px,5vw,56px) clamp(24px,5vw,56px)' }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: '#f5f3ff', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🛡️</div>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', background: '#fff', border: '2px solid #FBDAE3', borderRadius: 24, padding: 'clamp(32px,5vw,56px) clamp(24px,5vw,56px)' }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: '#FEF1F4', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🛡️</div>
           <h2 style={{ fontSize: 'clamp(20px,2.5vw,28px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.03em', marginBottom: 14 }}>{t('guarantee.title')}</h2>
           <p style={{ fontSize: 15, color: '#74748a', lineHeight: 1.8 }}>{t('guarantee.sub')}</p>
         </div>
@@ -362,7 +362,7 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('grid.kicker')}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('grid.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('grid.title')}</h2>
             <p style={{ fontSize: 15, color: '#74748a', marginTop: 10 }}>{t('grid.sub')}</p>
           </div>
@@ -370,9 +370,9 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16 }}>
           {packs.map((p, i) => (
             <Reveal key={p.key} delay={i * 80}>
-              <div style={{ background: '#fff', border: p.popular ? '2px solid #7c3aed' : '1.5px solid #e4e4ec', borderRadius: 18, overflow: 'hidden', boxShadow: p.popular ? '0 8px 32px rgba(124,58,237,0.14)' : '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
+              <div style={{ background: '#fff', border: p.popular ? '2px solid #E57A97' : '1.5px solid #e4e4ec', borderRadius: 18, overflow: 'hidden', boxShadow: p.popular ? '0 8px 32px rgba(229,122,151,0.14)' : '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
                 {p.popular && (
-                  <div style={{ position: 'absolute', top: 14, right: 14, background: '#7c3aed', color: '#fff', fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.04em' }}>{t('grid.popular')}</div>
+                  <div style={{ position: 'absolute', top: 14, right: 14, background: '#E57A97', color: '#fff', fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.04em' }}>{t('grid.popular')}</div>
                 )}
                 {/* Product image area */}
                 <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden' }}>
@@ -395,7 +395,7 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
                     <span style={{ fontSize: 24, fontWeight: 900, color: '#111118', letterSpacing: '-0.03em' }}>{p.price}</span>
                     <span style={{ fontSize: 14, color: '#c4c4d4', textDecoration: 'line-through', fontWeight: 500 }}>{p.full}</span>
                   </div>
-                  <button onClick={() => onOrderClick(p.key)} style={{ width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer', background: p.popular ? '#7c3aed' : '#111118', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', transition: 'all 140ms' }}>
+                  <button onClick={() => onOrderClick(p.key)} style={{ width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer', background: p.popular ? '#E57A97' : '#111118', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', transition: 'all 140ms' }}>
                     {t('grid.choose')} →
                   </button>
                 </div>
@@ -492,7 +492,7 @@ function ReviewsSection() {
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>Avis vérifiés</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>Avis vérifiés</div>
             <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 12 }}>Ce qu&apos;ils en disent</h2>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <span style={{ fontSize: 22, letterSpacing: 2, color: '#f59e0b' }}>★★★★★</span>
@@ -525,16 +525,16 @@ function ReviewsSection() {
 function FinalCTASection({ onOrderClick }: { onOrderClick: () => void }) {
   const t = useTranslations('landing');
   return (
-    <section style={{ background: 'linear-gradient(135deg,#5b21b6,#7c3aed,#8b5cf6)', padding: 'clamp(70px,8vw,100px) clamp(16px,4vw,48px)', textAlign: 'center' }}>
+    <section style={{ background: 'linear-gradient(135deg,#B03860,#E57A97,#EC97B0)', padding: 'clamp(70px,8vw,100px) clamp(16px,4vw,48px)', textAlign: 'center' }}>
       <Reveal>
         <div style={{ maxWidth: 620, margin: '0 auto' }}>
           <div style={{ fontSize: 44, marginBottom: 18 }}>🤔</div>
           <h2 style={{ fontSize: 'clamp(28px,4.5vw,52px)', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em', lineHeight: 0.97, marginBottom: 14 }}>
             {t('finalCta.title')}
           </h2>
-          <p style={{ fontSize: 22, fontWeight: 700, color: '#e9d5ff', marginBottom: 18 }}>{t('finalCta.sub')}</p>
+          <p style={{ fontSize: 22, fontWeight: 700, color: '#FBDAE3', marginBottom: 18 }}>{t('finalCta.sub')}</p>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', marginBottom: 36, lineHeight: 1.7 }}>{t('finalCta.body')}</p>
-          <button onClick={onOrderClick} style={{ padding: '17px 44px', borderRadius: 13, cursor: 'pointer', background: '#fff', color: '#7c3aed', fontSize: 17, fontWeight: 900, border: 'none', boxShadow: '0 6px 28px rgba(0,0,0,0.22)', letterSpacing: '-0.01em' }}>
+          <button onClick={onOrderClick} style={{ padding: '17px 44px', borderRadius: 13, cursor: 'pointer', background: '#fff', color: '#E57A97', fontSize: 17, fontWeight: 900, border: 'none', boxShadow: '0 6px 28px rgba(0,0,0,0.22)', letterSpacing: '-0.01em' }}>
             {t('finalCta.cta')} →
           </button>
         </div>
@@ -560,17 +560,17 @@ function FAQSection() {
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('faq.kicker')}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('faq.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('faq.title')}</h2>
           </div>
         </Reveal>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {items.map((item, i) => (
             <Reveal key={i} delay={i * 35}>
-              <div style={{ border: '1.5px solid #e4e4ec', borderRadius: 14, overflow: 'hidden', background: '#fff', transition: 'border-color 200ms', ...(open === i ? { borderColor: '#e9d5ff' } : {}) }}>
+              <div style={{ border: '1.5px solid #e4e4ec', borderRadius: 14, overflow: 'hidden', background: '#fff', transition: 'border-color 200ms', ...(open === i ? { borderColor: '#FBDAE3' } : {}) }}>
                 <button onClick={() => setOpen(open === i ? null : i)} style={{ width: '100%', padding: '18px 20px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', gap: 16 }}>
                   <span style={{ fontSize: 15.5, fontWeight: 700, color: '#111118', lineHeight: 1.4 }}>{item.q}</span>
-                  <span style={{ fontSize: 20, color: '#7c3aed', transition: 'transform 200ms', transform: open === i ? 'rotate(45deg)' : 'none', flexShrink: 0, lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: 20, color: '#E57A97', transition: 'transform 200ms', transform: open === i ? 'rotate(45deg)' : 'none', flexShrink: 0, lineHeight: 1 }}>+</span>
                 </button>
                 {open === i && (
                   <div style={{ padding: '0 20px 20px', fontSize: 14.5, color: '#74748a', lineHeight: 1.8, borderTop: '1px solid #f0f0f0' }}>
@@ -590,7 +590,7 @@ function FAQSection() {
 function DoubleGuaranteeSection() {
   const t = useTranslations('landing');
   const items = [
-    { icon: '🛡️', title: t('doubleGuarantee.g1title'), body: t('doubleGuarantee.g1body'), accent: '#7c3aed' },
+    { icon: '🛡️', title: t('doubleGuarantee.g1title'), body: t('doubleGuarantee.g1body'), accent: '#E57A97' },
     { icon: '🔁', title: t('doubleGuarantee.g2title'), body: t('doubleGuarantee.g2body'), accent: '#16a34a' },
     { icon: '🚚', title: t('doubleGuarantee.g3title'), body: t('doubleGuarantee.g3body'), accent: '#2563eb' },
     { icon: '💳', title: t('doubleGuarantee.g4title'), body: t('doubleGuarantee.g4body'), accent: '#d97706' },

@@ -91,19 +91,19 @@ export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
                   onClick={() => setSelectedPack(p)}
                   style={{
                     flex: 1, padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                    border: active ? '2px solid #7c3aed' : '1.5px solid #e6e6f0',
-                    background: active ? '#f5f3ff' : '#fafafa',
+                    border: active ? '2px solid #E57A97' : '1.5px solid #e6e6f0',
+                    background: active ? '#FEF1F4' : '#fafafa',
                     textAlign: 'left', transition: 'all 120ms', position: 'relative',
                   }}
                 >
                   {p === 'duo' && (
                     <span style={{
                       position: 'absolute', top: -8, right: 8,
-                      background: '#7c3aed', color: '#fff', fontSize: 9, fontWeight: 800,
+                      background: '#E57A97', color: '#fff', fontSize: 9, fontWeight: 800,
                       padding: '2px 7px', borderRadius: 20, letterSpacing: '0.04em',
                     }}>MEILLEUR PRIX</span>
                   )}
-                  <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#7c3aed' : '#0f1020', marginBottom: 2 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#E57A97' : '#0f1020', marginBottom: 2 }}>
                     {p === 'solo' ? 'Solo' : 'Duo'}
                   </div>
                   <div style={{ fontSize: 11.5, color: '#6b6d85' }}>
@@ -117,7 +117,7 @@ export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
           {/* Product card */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 14,
-            background: '#f5f3ff', border: '1px solid #e9d5ff',
+            background: '#FEF1F4', border: '1px solid #FBDAE3',
             borderRadius: 14, padding: '14px',
           }}>
             <div style={{
@@ -171,9 +171,9 @@ export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
             style={{
               width: '100%', marginTop: 18, padding: '15px',
               borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer',
-              background: loading ? '#a78bfa' : '#7c3aed',
+              background: loading ? '#F2B3C4' : '#E57A97',
               color: '#fff', fontSize: 16, fontWeight: 800, border: 'none',
-              boxShadow: '0 4px 20px rgba(124,58,237,0.35)',
+              boxShadow: '0 4px 20px rgba(229,122,151,0.35)',
               transition: 'all 140ms',
             }}
           >

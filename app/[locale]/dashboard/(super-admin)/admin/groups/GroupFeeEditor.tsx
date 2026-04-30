@@ -66,7 +66,7 @@ export function GroupFeeEditor({ groupId, initialBps }: Props) {
         {isPending ? t('feeSaving') : t('feeSave')}
       </button>
       {feedback && (
-        <span style={{ fontSize: 11.5, color: feedback.ok ? 'var(--success)' : 'var(--danger)', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 11.5, color: feedback.ok ? 'var(--success)' : 'var(--error)', whiteSpace: 'nowrap' }}>
           {feedback.msg}
         </span>
       )}

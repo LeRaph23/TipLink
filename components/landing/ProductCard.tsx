@@ -62,7 +62,7 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
       <div>
         <div style={{
           width: '100%', aspectRatio: '1/1', borderRadius: 20,
-          background: '#f5f3ff',
+          background: '#FEF1F4',
           border: '1px solid #e6e6f0',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           marginBottom: 12, overflow: 'hidden',
@@ -81,8 +81,8 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
           {gallery.map((img, i) => (
             <button key={i} onClick={() => setActiveImg(i)} style={{
               width: 64, height: 64, borderRadius: 10,
-              border: activeImg === i ? '2px solid #7c3aed' : '1px solid #e6e6f0',
-              background: '#f5f3ff', cursor: 'pointer', padding: 0, flexShrink: 0,
+              border: activeImg === i ? '2px solid #E57A97' : '1px solid #e6e6f0',
+              background: '#FEF1F4', cursor: 'pointer', padding: 0, flexShrink: 0,
               overflow: 'hidden', position: 'relative',
             }}>
               <Image
@@ -100,7 +100,7 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
       {/* Info panel */}
       <div>
         <div style={{ marginBottom: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('product.kicker')}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('product.kicker')}</span>
         </div>
         <h2 style={{ fontSize: 26, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.03em', marginBottom: 10 }}>{t('product.name')}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -117,8 +117,8 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
           }}>🛡️ {t('product.claim')}</span>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: '#f5f3ff', border: '1px solid #e9d5ff', borderRadius: 8,
-            padding: '5px 12px', fontSize: 12.5, fontWeight: 700, color: '#7c3aed',
+            background: '#FEF1F4', border: '1px solid #FBDAE3', borderRadius: 8,
+            padding: '5px 12px', fontSize: 12.5, fontWeight: 700, color: '#E57A97',
           }}>{t('product.frenchCompany')}</span>
         </div>
 
@@ -129,9 +129,9 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
             {packs.map((p) => (
               <button key={p.key} onClick={() => { setSelectedPack(p.key); setActiveImg(0); }} style={{
                 padding: '10px 18px', borderRadius: 10, cursor: 'pointer',
-                border: selectedPack === p.key ? '2px solid #7c3aed' : '1.5px solid #e6e6f0',
-                background: selectedPack === p.key ? '#f5f3ff' : '#fff',
-                color: selectedPack === p.key ? '#7c3aed' : '#3a3b4f',
+                border: selectedPack === p.key ? '2px solid #E57A97' : '1.5px solid #e6e6f0',
+                background: selectedPack === p.key ? '#FEF1F4' : '#fff',
+                color: selectedPack === p.key ? '#E57A97' : '#3a3b4f',
                 fontSize: 13, fontWeight: 600,
                 transition: 'all 140ms',
                 position: 'relative',
@@ -139,7 +139,7 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
                 {p.key === 'duo' && (
                   <span style={{
                     position: 'absolute', top: -9, right: 8,
-                    background: '#7c3aed', color: '#fff', fontSize: 9, fontWeight: 800,
+                    background: '#E57A97', color: '#fff', fontSize: 9, fontWeight: 800,
                     padding: '2px 7px', borderRadius: 20, letterSpacing: '0.04em',
                   }}>MEILLEUR PRIX</span>
                 )}
@@ -166,9 +166,9 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
           onClick={() => onAddToCart(selectedPack)}
           style={{
             width: '100%', padding: '15px', borderRadius: 12, cursor: 'pointer',
-            background: '#7c3aed', color: '#fff', fontSize: 16, fontWeight: 800,
+            background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800,
             border: 'none', marginBottom: 20,
-            boxShadow: '0 4px 20px rgba(124,58,237,0.35)',
+            boxShadow: '0 4px 20px rgba(229,122,151,0.35)',
             transition: 'all 140ms',
           }}
         >

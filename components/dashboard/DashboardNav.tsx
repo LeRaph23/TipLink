@@ -6,6 +6,7 @@ import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@/types/database';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
 
@@ -15,16 +16,6 @@ interface Props {
   userName: string;
 }
 
-function LogoMark({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="var(--accent)" />
-      <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="1.8" fill="white" />
-    </svg>
-  );
-}
 
 function HomeIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 01-1 1H3a1 1 0 01-1-1V6.5z" /><path d="M6 15V9h4v6" /></svg>;
@@ -89,7 +80,7 @@ function NavLink({ href, icon, label, active }: { href: string; icon: React.Reac
 }
 
 function Avatar({ name, size = 28 }: { name: string; size?: number }) {
-  const palette = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
+  const palette = ['#E57A97', '#EC97B0', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
   const idx = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length;
   const initials = name.trim().split(/\s+/).map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (
@@ -168,11 +159,11 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
     }}>
       {/* Logo */}
       <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <LogoMark size={26} />
-          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>Digitip</span>
+        <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 16, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <ThemeToggle />
+          <LanguageSwitcher compact />
         </div>
-        <LanguageSwitcher compact />
       </div>
 
       {/* Nav links */}
