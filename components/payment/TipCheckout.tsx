@@ -61,7 +61,6 @@ function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCard, setShowCard] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
   const [nonce] = useState(() =>
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
@@ -132,11 +131,11 @@ function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
         </p>
       )}
 
-      {/* Apple Pay / Google Pay / Link — big buttons */}
+      {/* Apple Pay / Google Pay / Link */}
       <ExpressCheckoutElement
         onConfirm={handlePay}
         options={{
-          buttonHeight: 56,
+          buttonHeight: 62,
           buttonType: { applePay: 'tip', googlePay: 'pay' },
           buttonTheme: { applePay: 'black', googlePay: 'black' },
           layout: { maxColumns: 1, maxRows: 3 },
@@ -186,39 +185,27 @@ function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
         </>
       )}
 
-      {/* Optional email — collapsed by default */}
-      {!showEmail ? (
-        <button
-          type="button"
-          onClick={() => setShowEmail(true)}
+      {/* Email — always visible, clearly optional */}
+      <div>
+        <label style={{
+          display: 'block', fontSize: 12, color: 'var(--text-3)',
+          marginBottom: 6, letterSpacing: '0.01em',
+        }}>
+          {t('yourEmail')}
+        </label>
+        <input
+          type="email"
+          value={customerEmail}
+          onChange={e => setCustomerEmail(e.target.value)}
+          placeholder={t('emailPlaceholder')}
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 12, color: 'var(--text-3)', fontFamily: 'var(--font)',
-            padding: '2px 0', textDecoration: 'underline', textUnderlineOffset: 3,
-            textAlign: 'center',
+            width: '100%', padding: '11px 12px', borderRadius: 10,
+            border: '1px solid var(--border)', background: 'var(--surface-2)',
+            color: 'var(--text)', fontSize: 14, fontFamily: 'inherit',
+            outline: 'none', boxSizing: 'border-box',
           }}
-        >
-          {t('receiptByEmail')}
-        </button>
-      ) : (
-        <div>
-          <input
-            type="email"
-            value={customerEmail}
-            onChange={e => setCustomerEmail(e.target.value)}
-            placeholder={t('emailPlaceholder')}
-            style={{
-              width: '100%', padding: '10px 12px', borderRadius: 10,
-              border: '1px solid var(--border)', background: 'var(--surface-2)',
-              color: 'var(--text)', fontSize: 14, fontFamily: 'inherit',
-              outline: 'none', boxSizing: 'border-box',
-            }}
-          />
-          <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 5, textAlign: 'center' }}>
-            {t('receiptNote')}
-          </p>
-        </div>
-      )}
+        />
+      </div>
     </div>
   );
 }

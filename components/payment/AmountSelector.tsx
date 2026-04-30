@@ -88,19 +88,15 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
         </div>
       </div>
 
-      {/* Service fee breakdown — shown once a valid tip is selected */}
+      {/* Service fee — clean single line, no box */}
       {hasAmount && tipAmount && (
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '10px 14px', borderRadius: 10,
-          background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-          fontSize: 12.5, color: 'var(--text-3)', marginBottom: 0,
-        }}>
-          <span>{fmt.format(tipAmount / 100)} pourboire + {fmtCents.format(SERVICE_FEE_CENTS / 100)} frais de service</span>
-          <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: 13 }}>
-            = {fmtCents.format((tipAmount + SERVICE_FEE_CENTS) / 100)}
-          </span>
-        </div>
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-3)', margin: '-4px 0 0', lineHeight: 1.5 }}>
+          {fmt.format(tipAmount / 100)} pourboire&nbsp;+&nbsp;{fmtCents.format(SERVICE_FEE_CENTS / 100)} frais de service
+          {' = '}
+          <strong style={{ color: 'var(--text-2)', fontWeight: 700 }}>
+            {fmtCents.format((tipAmount + SERVICE_FEE_CENTS) / 100)} débités
+          </strong>
+        </p>
       )}
 
       {/* Checkout card — only shown once a valid amount is chosen.
