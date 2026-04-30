@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google';
+import { Plus_Jakarta_Sans, Space_Grotesk, Poppins } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -17,6 +17,13 @@ const spaceGrotesk = Space_Grotesk({
   variable: '--font-display',
   subsets: ['latin'],
   weight: ['500', '600', '700'],
+  display: 'swap',
+});
+
+const poppins = Poppins({
+  variable: '--font-poppins',
+  subsets: ['latin'],
+  weight: ['700', '800', '900'],
   display: 'swap',
 });
 
@@ -69,7 +76,7 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       data-theme="dark"
-      className={`${jakarta.variable} ${spaceGrotesk.variable} h-full`}
+      className={`${jakarta.variable} ${spaceGrotesk.variable} ${poppins.variable} h-full`}
     >
       <body className="min-h-full flex flex-col antialiased">
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>

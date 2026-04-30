@@ -4,16 +4,6 @@ import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS, type PackId } from '@/lib/env';
 
-function LogoMark({ size = 26 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="#7c3aed" />
-      <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="1.8" fill="white" />
-    </svg>
-  );
-}
 
 function Check() {
   return (
@@ -66,9 +56,8 @@ export default async function PricingPage({
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 clamp(16px,4vw,48px)', height: 62,
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <LogoMark size={26} />
-          <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: '-0.03em', color: '#111118' }}>Digitip</span>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
         </Link>
         <nav style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <LanguageSwitcher />

@@ -22,16 +22,6 @@ const LIGHT: React.CSSProperties = {
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
-function LogoMark({ size = 26 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="7" fill="#7c3aed" />
-      <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="1.8" fill="white" />
-    </svg>
-  );
-}
 
 function Reveal({ children, delay = 0, style: s = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -104,9 +94,8 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
   }, []);
   return (
     <header style={{ position: 'sticky', top: 38, zIndex: 200, height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px, 4vw, 48px)', background: scrolled ? 'rgba(255,255,255,0.96)' : '#fff', backdropFilter: scrolled ? 'blur(12px)' : 'none', borderBottom: '1px solid #e4e4ec', transition: 'background 300ms' }}>
-      <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-        <LogoMark size={26} />
-        <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: '-0.03em', color: '#111118' }}>Digitip</span>
+      <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
       </Link>
 
       <nav style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -665,9 +654,8 @@ function FooterSection() {
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 32, marginBottom: 40 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <LogoMark size={24} />
-              <span style={{ fontWeight: 900, fontSize: 15, color: '#fff', letterSpacing: '-0.02em' }}>Digitip</span>
+            <div style={{ marginBottom: 14 }}>
+              <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, color: '#fff', letterSpacing: '-0.02em' }}>DigiTip</span>
             </div>
             <p style={{ fontSize: 13, lineHeight: 1.75, maxWidth: 180 }}>{t('footer.tagline')}</p>
           </div>
