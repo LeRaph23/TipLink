@@ -107,6 +107,7 @@ export async function POST() {
     // afterwards.
     const corePatch: Record<string, unknown> = {
       settings: { tip_thresholds: [2, 5, 10, 20], default_currency: 'EUR' },
+      platform_fee_bps: 300,
     };
     const billingPatch: Record<string, unknown> = {
       subscription_status: 'active',
@@ -115,6 +116,7 @@ export async function POST() {
       subscription_id: 'sub_demo',
       legal_name: 'Demo Bistro SARL',
       vat_number: 'FR12345678901',
+      platform_fee_bps: 300,
     };
 
     {

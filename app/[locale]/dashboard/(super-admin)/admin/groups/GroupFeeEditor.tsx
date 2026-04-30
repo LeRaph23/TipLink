@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { updateGroupFeeBps } from '@/actions/admin/groups';
 
@@ -14,6 +14,10 @@ export function GroupFeeEditor({ groupId, initialBps }: Props) {
   const [bps, setBps] = useState(initialBps);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  useEffect(() => {
+    setBps(initialBps);
+  }, [initialBps]);
 
   const pct = (bps / 100).toFixed(2);
   const unchanged = bps === initialBps;
@@ -36,21 +40,53 @@ export function GroupFeeEditor({ groupId, initialBps }: Props) {
       <label style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
         {t('feeLabel')}
       </label>
-      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-subtle)', borderRadius: 6, overflow: 'hidden', background: 'var(--surface-2)' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 6,
+          overflow: 'hidden',
+          background: 'var(--surface-2)',
+          minHeight: 30,
+        }}
+      >
         <input
           type="number"
+          className="input-no-spinner"
           min={0}
           max={15}
           step={0.01}
           value={pct}
           onChange={handleChange}
           style={{
-            width: 60, padding: '4px 8px', fontSize: 13, fontWeight: 600,
-            background: 'transparent', border: 'none', outline: 'none',
-            color: 'var(--text)', textAlign: 'right',
+            width: 64,
+            minWidth: 0,
+            height: 30,
+            boxSizing: 'border-box',
+            padding: '0 8px',
+            fontSize: 13,
+            fontWeight: 600,
+            lineHeight: '30px',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            color: 'var(--text)',
+            textAlign: 'right',
           }}
         />
-        <span style={{ padding: '4px 8px 4px 2px', fontSize: 13, color: 'var(--text-3)' }}>%</span>
+        <span
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 8px 0 2px',
+            fontSize: 13,
+            color: 'var(--text-3)',
+            flexShrink: 0,
+          }}
+        >
+          %
+        </span>
       </div>
       <button
         onClick={handleSave}

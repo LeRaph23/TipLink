@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DEFAULT_PLATFORM_FEE_BPS } from '@/lib/env';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   // Resolve the platform commission rate: establishment -> group -> default.
   // The group owns the commercial relationship; the rate lives on groups.
-  let platformFeeBps = 200;
+  let platformFeeBps = DEFAULT_PLATFORM_FEE_BPS;
   if (staff.establishment_id) {
     const { data: estab } = await supabase
       .from('establishments')

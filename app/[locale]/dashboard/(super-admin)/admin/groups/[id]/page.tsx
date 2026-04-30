@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
+import { DEFAULT_PLATFORM_FEE_BPS } from '@/lib/env';
 import { createServiceClient } from '@/lib/supabase/service';
 import { GroupFeeForm } from './GroupFeeForm';
 
@@ -47,7 +48,7 @@ export default async function GroupDetailPage({
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>
           {t('groups.feeLabel')}
         </div>
-        <GroupFeeForm groupId={group.id} currentBps={group.platform_fee_bps ?? 200} />
+        <GroupFeeForm groupId={group.id} currentBps={group.platform_fee_bps ?? DEFAULT_PLATFORM_FEE_BPS} />
       </div>
     </div>
   );

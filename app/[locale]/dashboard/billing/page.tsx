@@ -1,4 +1,5 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { DEFAULT_PLATFORM_FEE_BPS } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
@@ -72,7 +73,7 @@ export default async function BillingPage({
       txnCount = txns.length;
     }
   }
-  const bps = group?.platform_fee_bps ?? 200;
+  const bps = group?.platform_fee_bps ?? DEFAULT_PLATFORM_FEE_BPS;
   const commissionCents = Math.floor((totalTipsCents * bps) / 10_000);
 
   const fmt = (cents: number) =>

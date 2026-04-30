@@ -38,6 +38,7 @@ export function GroupFeeForm({ groupId, currentBps }: Props) {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <input
             type="number"
+            className="input-no-spinner"
             min={0}
             max={1500}
             step={1}
