@@ -64,7 +64,7 @@ export function AnalyticsCharts({ daily, topStaff, currency, locale, labels }: P
                   labelFormatter={(v) => new Date(String(v)).toLocaleDateString(locale, { day: 'numeric', month: 'long' })}
                   contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                 />
-                <Line type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="total" stroke="#E57A97" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -88,7 +88,7 @@ export function AnalyticsCharts({ daily, topStaff, currency, locale, labels }: P
                   formatter={(v) => fmt.format(Number(v ?? 0))}
                   contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                 />
-                <Bar dataKey="total" fill="#8b5cf6" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="total" fill="#EC97B0" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -37,7 +37,7 @@ const ContinueBtn = ({ children, onClick, disabled }: {
     style={{
       flex: 1,
       padding: '12px 18px', borderRadius: 12,
-      background: disabled ? 'var(--surface-2)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+      background: disabled ? 'var(--surface-2)' : 'linear-gradient(135deg, #E57A97, #EC97B0)',
       color: disabled ? 'var(--text-3)' : '#fff',
       fontSize: 14, fontWeight: 700,
       border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',

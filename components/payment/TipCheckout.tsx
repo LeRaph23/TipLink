@@ -37,7 +37,7 @@ export function TipCheckout({ staffId, amount, currency }: Props) {
       appearance: {
         theme: 'night',
         variables: {
-          colorPrimary: '#6366f1',
+          colorPrimary: '#E57A97',
           borderRadius: '12px',
           fontFamily: 'inherit',
         },

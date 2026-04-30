@@ -51,7 +51,7 @@ export function StripeConnectEmbed({ hasAccount, isComplete, showManagement = fa
           variables: {
             borderRadius: '10px',
             spacingUnit: '4px',
-            colorPrimary: '#6366f1',
+            colorPrimary: '#E57A97',
             colorBackground: '#17171d',
             colorText: '#f2f2f5',
             colorSecondaryText: '#9898a8',

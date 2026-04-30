@@ -134,7 +134,7 @@ export default function SetupPage() {
 
           <button type="submit" disabled={loading} style={{
             width: '100%', padding: '13px', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer',
-            background: loading ? '#a78bfa' : '#7c3aed',
+            background: loading ? '#F2B3C4' : '#E57A97',
             color: '#fff', fontSize: 15, fontWeight: 700, border: 'none',
           }}>
             {loading ? 'Activation…' : 'Accéder à mon dashboard →'}

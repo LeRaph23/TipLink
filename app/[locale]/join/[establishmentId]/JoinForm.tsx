@@ -107,7 +107,7 @@ export function JoinForm({
         disabled={loading || !fullName.trim() || !email || !password}
         style={{
           padding: '13px 20px', borderRadius: 12, border: 'none',
-          background: loading ? 'var(--surface-2)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          background: loading ? 'var(--surface-2)' : 'linear-gradient(135deg, #E57A97, #EC97B0)',
           color: loading ? 'var(--text-3)' : '#fff',
           fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
           fontFamily: 'var(--font)', marginTop: 4,
