@@ -181,7 +181,12 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
         {/* Left: text */}
         <div style={{ maxWidth: 580, flex: '1 1 300px', minWidth: 0 }}>
           <div className="fade-up" style={{ marginBottom: 20 }}>
-            <Badge>{t('hero.badge')}</Badge>
+            <Badge>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, lineHeight: 1 }}>
+                <StarRow size={12} gap={1} />
+                <span>4.8 / 5</span>
+              </span>
+            </Badge>
           </div>
           <h1 className="fade-up" style={{ fontSize: 'clamp(36px, 5.5vw, 72px)', fontWeight: 900, lineHeight: 0.96, letterSpacing: '-0.04em', color: '#111118', marginBottom: 20, animationDelay: '60ms' }}>
             {t('hero.h1a')}<br />{t('hero.h1b')}<br />
@@ -238,7 +243,7 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
 function StatsStrip() {
   const stats = [
     { n: '400+', label: 'équipes actives' },
-    { n: '4.8/5', label: '+150 avis vérifiés' },
+    { n: '4.8/5', label: '+127 avis vérifiés' },
     { n: '3 sec', label: 'pour recevoir un pourboire' },
     { n: '0 €', label: 'frais mensuel' },
   ];
@@ -349,16 +354,13 @@ function HowItWorksSection() {
             <p style={{ fontSize: 15, color: '#74748a', marginTop: 12, maxWidth: 460, margin: '12px auto 0' }}>{t('howItWorks.sub')}</p>
           </div>
         </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
           {steps.map((s, i) => (
             <Reveal key={i} delay={i * 80}>
               <div style={{ padding: '32px 28px', position: 'relative' }}>
-                {i < steps.length - 1 && (
-                  <div style={{ position: 'absolute', top: 52, right: -2, width: 24, height: 2, background: '#e4e4ec', display: 'none' }} />
-                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                   <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#E57A97' }}>{s.n}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Étape {s.n}</div>
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
                 <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.75 }}>{s.body}</p>
@@ -555,7 +557,7 @@ function Stars({ n }: { n: number }) {
 function ReviewsSection() {
   return (
     <section id="clients" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>Avis vérifiés</div>
