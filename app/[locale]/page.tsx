@@ -53,6 +53,22 @@ function Badge({ children, variant = 'accent' }: { children: React.ReactNode; va
   );
 }
 
+function StarIcon({ filled = true, size = 14 }: { filled?: boolean; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill={filled ? '#f59e0b' : '#e4e4ec'} xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+    </svg>
+  );
+}
+
+function StarRow({ size = 15, gap = 2 }: { size?: number; gap?: number }) {
+  return (
+    <span style={{ display: 'inline-flex', gap, alignItems: 'center' }}>
+      {[1,2,3,4,5].map(i => <StarIcon key={i} filled size={size} />)}
+    </span>
+  );
+}
+
 
 // ─── PromoBanner ──────────────────────────────────────────────────────────────
 function PromoBanner({ text }: { text: string }) {
@@ -184,7 +200,7 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
           </div>
           <div className="fade-up" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', animationDelay: '280ms' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16, letterSpacing: 1, color: '#f59e0b' }}>★★★★★</span>
+              <StarRow size={15} gap={2} />
               <span style={{ fontSize: 14, fontWeight: 700, color: '#111118' }}>4.8</span>
               <span style={{ fontSize: 13, color: '#74748a' }}>/ 5</span>
             </div>
@@ -208,8 +224,8 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
                 <div style={{ fontSize: 10, color: '#74748a' }}>→ Léa C.</div>
               </div>
             </div>
-            <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#d97706' }}>
-              ★★★★★ 4.8
+            <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#d97706', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <StarRow size={12} gap={1} /> 4.8
             </div>
           </div>
         </div>
@@ -301,7 +317,7 @@ function ProductSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') =>
               <h2 style={{ fontSize: 'clamp(26px,3.5vw,40px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{t('product.name')}</h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 18, color: '#f59e0b', letterSpacing: 2 }}>★★★★★</span>
+              <StarRow size={17} gap={2} />
               <span style={{ fontSize: 15, fontWeight: 800, color: '#111118' }}>{t('product.rating')}</span>
               <span style={{ fontSize: 13, color: '#74748a' }}>{t('product.reviewCount')}</span>
             </div>
@@ -531,9 +547,7 @@ const REVIEWS = [
 function Stars({ n }: { n: number }) {
   return (
     <div style={{ display: 'flex', gap: 2, marginBottom: 8 }}>
-      {[1,2,3,4,5].map(i => (
-        <span key={i} style={{ color: i <= n ? '#f59e0b' : '#e4e4ec', fontSize: 13 }}>★</span>
-      ))}
+      {[1,2,3,4,5].map(i => <StarIcon key={i} filled={i <= n} size={13} />)}
     </div>
   );
 }
@@ -547,9 +561,9 @@ function ReviewsSection() {
             <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>Avis vérifiés</div>
             <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 12 }}>Ce qu&apos;ils en disent</h2>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <span style={{ fontSize: 22, letterSpacing: 2, color: '#f59e0b' }}>★★★★★</span>
+              <StarRow size={22} gap={3} />
               <span style={{ fontSize: 17, fontWeight: 900, color: '#111118' }}>4.8 / 5</span>
-              <span style={{ fontSize: 13, color: '#74748a' }}>· {REVIEWS.length} avis</span>
+              <span style={{ fontSize: 13, color: '#74748a' }}>· 127 avis</span>
             </div>
           </div>
         </Reveal>
@@ -703,10 +717,14 @@ function FooterSection() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.payment')}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {/* Payment method badges with card-style */}
               {['VISA', 'MC', 'AMEX', 'Apple Pay', 'Google Pay', 'CB'].map((p) => (
                 <span key={p} style={{ padding: '5px 9px', borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.02em' }}>{p}</span>
               ))}
+              <span style={{ padding: '5px 9px', borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', display: 'inline-flex', alignItems: 'center' }}>
+                <svg width="34" height="14" viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Stripe">
+                  <path d="M8.656 9.682c0-.638.524-1.25 1.56-1.25 1.387 0 2.812.444 4.2 1.138V5.608C12.874 4.94 11.304 4.67 9.734 4.67 5.978 4.67 3.5 6.748 3.5 9.876c0 4.89 6.738 4.114 6.738 6.222 0 .75-.654 1.25-1.75 1.25-1.512 0-3.448-.624-4.978-1.472v3.988c1.694.734 3.406 1.046 4.978 1.046 3.842 0 6.496-1.902 6.496-5.08-.016-5.28-6.328-4.348-6.328-6.148zM24.25 4.67c-2.52 0-4.13 1.194-4.13 3.188V20.91h4.354V8.888h2.618V5.07h-2.618V2h-4.354v2.67h4.13zM32.5 6.53l-.27-1.46h-3.904v15.84h4.354V10.26c1.028-1.346 2.772-1.1 3.318-.908V5.07c-.564-.208-2.618-.556-3.498 1.46zM37.5 20.91h4.354V5.07H37.5v15.84zM37.5 3.62h4.354V0H37.5v3.62zM48.736 4.67c-4.424 0-7.018 3.72-7.018 8.22 0 4.582 2.642 8.12 7.234 8.12 2.076 0 3.654-.57 4.806-1.53v-3.47c-1.06.832-2.316 1.336-3.836 1.336-1.96 0-3.178-1.032-3.506-2.658h8.184c.024-.278.04-.556.04-.846-.008-4.668-2.31-7.172-5.904-7.172zm-2.388 6.504c.272-1.668 1.32-2.7 2.604-2.7 1.26 0 2.228.986 2.42 2.7h-5.024z" fill="rgba(255,255,255,0.5)"/>
+                </svg>
+              </span>
             </div>
           </div>
         </div>
