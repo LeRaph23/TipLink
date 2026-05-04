@@ -168,36 +168,20 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
 
       {/* Nav links */}
       <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto' }}>
-        {isSuperAdmin && (
-          <div style={{
-            margin: '0 10px 6px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-          }}>
-            {ta('tenantSectionTitle')}
-          </div>
-        )}
-        {visibleLinks.map(l => (
-          <NavLink
-            key={l.href} href={l.href} icon={l.icon} label={l.label}
-            active={l.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(l.href)}
-          />
-        ))}
-
-        {isSuperAdmin && (
-          <>
-            <div style={{
-              margin: '14px 10px 6px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-            }}>
-              {ta('sectionTitle')}
-            </div>
-            {adminLinks.map(l => (
-              <NavLink
-                key={l.href} href={l.href} icon={l.icon} label={l.label}
-                active={l.href === '/dashboard/admin' ? pathname === '/dashboard/admin' : pathname.startsWith(l.href)}
-              />
-            ))}
-          </>
+        {isSuperAdmin ? (
+          adminLinks.map(l => (
+            <NavLink
+              key={l.href} href={l.href} icon={l.icon} label={l.label}
+              active={l.href === '/dashboard/admin' ? pathname === '/dashboard/admin' : pathname.startsWith(l.href)}
+            />
+          ))
+        ) : (
+          visibleLinks.map(l => (
+            <NavLink
+              key={l.href} href={l.href} icon={l.icon} label={l.label}
+              active={l.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(l.href)}
+            />
+          ))
         )}
       </nav>
 
