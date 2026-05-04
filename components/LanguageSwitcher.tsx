@@ -7,9 +7,10 @@ import { routing, type Locale } from '@/i18n/routing';
 
 type Props = {
   compact?: boolean;
+  variant?: 'dark' | 'light';
 };
 
-export function LanguageSwitcher({ compact = false }: Props) {
+export function LanguageSwitcher({ compact = false, variant = 'dark' }: Props) {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -23,6 +24,8 @@ export function LanguageSwitcher({ compact = false }: Props) {
     });
   };
 
+  const isLight = variant === 'light';
+
   return (
     <div
       role="group"
@@ -30,7 +33,7 @@ export function LanguageSwitcher({ compact = false }: Props) {
       style={{
         display: 'inline-flex',
         borderRadius: 8,
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: `1px solid ${isLight ? '#e4e4ec' : 'rgba(255,255,255,0.1)'}`,
         overflow: 'hidden',
         opacity: isPending ? 0.6 : 1,
         transition: 'opacity 150ms',
@@ -50,8 +53,12 @@ export function LanguageSwitcher({ compact = false }: Props) {
               fontWeight: 600,
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
-              background: active ? 'rgba(99,102,241,0.2)' : 'transparent',
-              color: active ? '#a5b4fc' : 'rgba(255,255,255,0.55)',
+              background: active
+                ? isLight ? 'color-mix(in oklch, #E57A97 12%, transparent)' : 'rgba(99,102,241,0.2)'
+                : 'transparent',
+              color: active
+                ? isLight ? '#E57A97' : '#a5b4fc'
+                : isLight ? '#74748a' : 'rgba(255,255,255,0.55)',
               border: 'none',
               cursor: active ? 'default' : 'pointer',
               fontFamily: 'var(--font)',

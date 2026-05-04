@@ -101,18 +101,18 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
 
         {/* Desktop buttons */}
         <div className="land-btns-desktop" style={{ gap: 8, alignItems: 'center' }}>
-          <LanguageSwitcher />
+          <LanguageSwitcher variant="light" />
           <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500, background: '#fff' }}>{tc('login')}</Link>
           <button onClick={onOrderClick} style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(229,122,151,0.38)', transition: 'all 140ms' }}>
             {t('hero.cta')} →
           </button>
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Mobile hamburger — visibility handled by .land-mob-toggle CSS class */}
         <button
           className="land-mob-toggle"
           onClick={() => setMobileOpen(true)}
-          style={{ display: 'none', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 9, border: '1.5px solid #e4e4ec', background: '#fff', cursor: 'pointer', color: '#111118' }}
+          style={{ alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 9, border: '1.5px solid #e4e4ec', background: '#fff', cursor: 'pointer', color: '#111118' }}
           aria-label="Menu"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
@@ -141,7 +141,7 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
           </div>
           {/* CTA */}
           <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <LanguageSwitcher />
+            <LanguageSwitcher variant="light" />
             <Link href="/login" onClick={() => setMobileOpen(false)} style={{ display: 'block', padding: '14px', borderRadius: 12, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', textAlign: 'center' }}>
               {tc('login')}
             </Link>
@@ -266,18 +266,18 @@ function ClaimSection() {
     <section style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         <Reveal>
-          <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #E57A97' }}>
-            <div style={{ fontSize: 56, fontWeight: 900, color: '#E57A97', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>3s</div>
-            <div style={{ fontSize: 21, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 10 }}>
+          <div className="land-claim-card" style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #E57A97' }}>
+            <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, color: '#E57A97', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>3s</div>
+            <div className="land-claim-title" style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 10 }}>
               {t('claim.title')} <span style={{ color: '#E57A97' }}>{t('claim.titleAccent')}</span>
             </div>
             <p style={{ fontSize: 14.5, color: '#74748a', lineHeight: 1.7 }}>{t('claim.sub')}</p>
           </div>
         </Reveal>
         <Reveal delay={100}>
-          <div style={{ background: '#E57A97', borderRadius: 20, padding: '44px 40px', borderTop: '4px solid #B03860', color: '#fff' }}>
-            <div style={{ fontSize: 56, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12, color: '#FBDAE3' }}>×2</div>
-            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10 }}>
+          <div className="land-claim-card" style={{ background: '#E57A97', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #B03860', color: '#fff' }}>
+            <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12, color: '#FBDAE3' }}>×2</div>
+            <div className="land-claim-title" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10 }}>
               {t('claim.claim2title')} <span style={{ color: '#FBDAE3' }}>{t('claim.claim2sub')}</span>
             </div>
             <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.7 }}>{t('claim.sub')}</p>

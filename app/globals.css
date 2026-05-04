@@ -213,4 +213,9 @@ input, select, textarea, button { font-family: var(--font); }
   /* Stats strip — no vertical dividers when stacked */
   .land-stat-item { border-right: none !important; border-bottom: 1px solid #e4e4ec; }
   .land-stat-item:last-child { border-bottom: none; }
+
+  /* Claim cards — reduce padding & font on mobile */
+  .land-claim-card { padding: 28px 24px !important; }
+  .land-claim-num  { font-size: 44px !important; }
+  .land-claim-title{ font-size: 18px !important; }
 }
