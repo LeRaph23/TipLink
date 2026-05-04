@@ -517,6 +517,7 @@
       "orderStatus": "Status",
       "orderDate": "Ordered",
       "orderTracking": "Tracking",
+      "orderInvoice": "Invoice",
       "noOrders": "No orders yet.",
       "pendingFulfillment": "Fulfillment in progress — we're hand-programming your SmartTags and will ship them within 3 business days.",
       "successTitle": "You're all set.",
