@@ -68,38 +68,90 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
   const t = useTranslations('landing');
   const tc = useTranslations('common');
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', h, { passive: true });
     return () => window.removeEventListener('scroll', h);
   }, []);
+
+  const navItems = [
+    { key: 'packs', href: '#packs' },
+    { key: 'clients', href: '#clients' },
+    { key: 'faq', href: '#faq' },
+    { key: 'contact', href: '/contact' },
+  ] as const;
+
   return (
-    <header style={{ position: 'sticky', top: 38, zIndex: 200, height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px, 4vw, 48px)', background: scrolled ? 'rgba(255,255,255,0.96)' : '#fff', backdropFilter: scrolled ? 'blur(12px)' : 'none', borderBottom: '1px solid #e4e4ec', transition: 'background 300ms' }}>
-      <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-        <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
-      </Link>
+    <>
+      <header style={{ position: 'sticky', top: 38, zIndex: 200, height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px, 4vw, 48px)', background: scrolled ? 'rgba(255,255,255,0.97)' : '#fff', backdropFilter: scrolled ? 'blur(12px)' : 'none', borderBottom: '1px solid #e4e4ec', transition: 'background 300ms' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
+        </Link>
 
-      <nav style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-        {[
-          { key: 'packs', href: '#packs' },
-          { key: 'clients', href: '#clients' },
-          { key: 'faq', href: '#faq' },
-          { key: 'contact', href: '/contact' },
-        ].map(({ key, href }) => (
-          <a key={key} href={href} style={{ padding: '6px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13.5, fontWeight: 500, borderRadius: 7, transition: 'color 150ms' }}>
-            {t(`nav.${key}` as Parameters<typeof t>[0])}
-          </a>
-        ))}
-      </nav>
+        {/* Desktop nav */}
+        <nav className="land-nav-desktop" style={{ gap: 2, alignItems: 'center' }}>
+          {navItems.map(({ key, href }) => (
+            <a key={key} href={href} style={{ padding: '6px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13.5, fontWeight: 500, borderRadius: 7, transition: 'color 150ms' }}>
+              {t(`nav.${key}` as Parameters<typeof t>[0])}
+            </a>
+          ))}
+        </nav>
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <LanguageSwitcher />
-        <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500, background: '#fff' }}>{tc('login')}</Link>
-        <button onClick={onOrderClick} style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(229,122,151,0.38)', transition: 'all 140ms' }}>
-          {t('hero.cta')} →
+        {/* Desktop buttons */}
+        <div className="land-btns-desktop" style={{ gap: 8, alignItems: 'center' }}>
+          <LanguageSwitcher />
+          <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500, background: '#fff' }}>{tc('login')}</Link>
+          <button onClick={onOrderClick} style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(229,122,151,0.38)', transition: 'all 140ms' }}>
+            {t('hero.cta')} →
+          </button>
+        </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="land-mob-toggle"
+          onClick={() => setMobileOpen(true)}
+          style={{ display: 'none', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 9, border: '1.5px solid #e4e4ec', background: '#fff', cursor: 'pointer', color: '#111118' }}
+          aria-label="Menu"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+            <path d="M2.5 4.5h13M2.5 9h13M2.5 13.5h13" />
+          </svg>
         </button>
-      </div>
-    </header>
+      </header>
+
+      {/* Mobile full-screen menu */}
+      {mobileOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 300, display: 'flex', flexDirection: 'column', padding: '0 0 32px' }}>
+          {/* Top bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 62, borderBottom: '1px solid #e4e4ec', flexShrink: 0 }}>
+            <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
+            <button onClick={() => setMobileOpen(false)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, border: '1.5px solid #e4e4ec', background: '#fff', cursor: 'pointer', fontSize: 20, color: '#74748a' }}>
+              ✕
+            </button>
+          </div>
+          {/* Nav links */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 20px', gap: 4 }}>
+            {navItems.map(({ key, href }) => (
+              <a key={key} href={href} onClick={() => setMobileOpen(false)} style={{ padding: '14px 16px', textDecoration: 'none', color: '#111118', fontSize: 17, fontWeight: 600, borderRadius: 12, display: 'block' }}>
+                {t(`nav.${key}` as Parameters<typeof t>[0])}
+              </a>
+            ))}
+          </div>
+          {/* CTA */}
+          <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <LanguageSwitcher />
+            <Link href="/login" onClick={() => setMobileOpen(false)} style={{ display: 'block', padding: '14px', borderRadius: 12, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', textAlign: 'center' }}>
+              {tc('login')}
+            </Link>
+            <button onClick={() => { setMobileOpen(false); onOrderClick(); }} style={{ width: '100%', padding: '15px', borderRadius: 12, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(229,122,151,0.4)' }}>
+              {t('hero.cta')} →
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -107,44 +159,44 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
 function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
   const t = useTranslations('landing');
   return (
-    <section style={{ background: '#fff', padding: 'clamp(60px,8vw,100px) clamp(16px,5vw,60px) clamp(40px,5vw,70px)', borderBottom: '1px solid #e4e4ec' }}>
-      <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 48, flexWrap: 'wrap' }}>
+    <section style={{ background: '#fff', padding: 'clamp(52px,8vw,100px) clamp(20px,5vw,60px) clamp(40px,5vw,70px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div className="land-hero-inner" style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 48, flexWrap: 'wrap' }}>
 
         {/* Left: text */}
-        <div style={{ maxWidth: 580, flex: '1 1 320px' }}>
-          <div className="fade-up" style={{ marginBottom: 22 }}>
+        <div style={{ maxWidth: 580, flex: '1 1 300px', minWidth: 0 }}>
+          <div className="fade-up" style={{ marginBottom: 20 }}>
             <Badge>{t('hero.badge')}</Badge>
           </div>
-          <h1 className="fade-up" style={{ fontSize: 'clamp(38px, 5.5vw, 72px)', fontWeight: 900, lineHeight: 0.96, letterSpacing: '-0.04em', color: '#111118', marginBottom: 22, animationDelay: '60ms' }}>
+          <h1 className="fade-up" style={{ fontSize: 'clamp(36px, 5.5vw, 72px)', fontWeight: 900, lineHeight: 0.96, letterSpacing: '-0.04em', color: '#111118', marginBottom: 20, animationDelay: '60ms' }}>
             {t('hero.h1a')}<br />{t('hero.h1b')}<br />
             <span style={{ color: '#E57A97' }}>{t('hero.h1c')}</span>
           </h1>
-          <p className="fade-up" style={{ fontSize: 16.5, color: '#74748a', lineHeight: 1.8, maxWidth: 480, marginBottom: 32, animationDelay: '130ms' }}>
+          <p className="fade-up" style={{ fontSize: 16, color: '#74748a', lineHeight: 1.8, maxWidth: 480, marginBottom: 28, animationDelay: '130ms' }}>
             {t('hero.sub')}
           </p>
-          <div className="fade-up" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 32, animationDelay: '200ms' }}>
-            <button onClick={onOrderClick} style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(229,122,151,0.42)', transition: 'all 140ms' }}>
+          <div className="fade-up land-hero-btns" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 28, animationDelay: '200ms' }}>
+            <button onClick={onOrderClick} className="land-hero-btn" style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(229,122,151,0.42)', transition: 'all 140ms', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               {t('hero.cta')} →
             </button>
-            <a href="#comment-ca-marche" style={{ padding: '15px 24px', borderRadius: 11, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', display: 'inline-flex', alignItems: 'center' }}>
+            <a href="#comment-ca-marche" className="land-hero-btn" style={{ padding: '15px 24px', borderRadius: 11, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               {t('howItWorks.title')}
             </a>
           </div>
-          <div className="fade-up" style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap', animationDelay: '280ms' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ fontSize: 18, letterSpacing: 2, color: '#f59e0b' }}>★★★★★</span>
+          <div className="fade-up" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', animationDelay: '280ms' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 16, letterSpacing: 1, color: '#f59e0b' }}>★★★★★</span>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#111118' }}>4.8</span>
               <span style={{ fontSize: 13, color: '#74748a' }}>/ 5</span>
             </div>
             <span style={{ color: '#e4e4ec' }}>·</span>
-            <span style={{ fontSize: 13.5, fontWeight: 600, color: '#74748a' }}>{t('hero.social')}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#74748a' }}>{t('hero.social')}</span>
             <span style={{ color: '#e4e4ec' }}>·</span>
-            <span style={{ fontSize: 17 }}>{t('hero.countries')}</span>
+            <span style={{ fontSize: 16 }}>{t('hero.countries')}</span>
           </div>
         </div>
 
-        {/* Right: product visual */}
-        <div className="fade-up" style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: '160ms' }}>
+        {/* Right: product visual — hidden on mobile */}
+        <div className="fade-up land-hero-visual" style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: '160ms' }}>
           <div style={{ position: 'relative', width: 300, height: 340 }}>
             <div style={{ width: 300, height: 300, borderRadius: 24, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)', position: 'relative' }}>
               <Image src="/products/duo-double.jpg" alt="Plaques époxy NFC Digitip" fill sizes="300px" style={{ objectFit: 'cover' }} priority />
@@ -178,7 +230,7 @@ function StatsStrip() {
     <div style={{ background: '#f9f9f7', borderBottom: '1px solid #e4e4ec', padding: '0 clamp(16px,4vw,48px)' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
         {stats.map((s, i) => (
-          <div key={i} style={{ flex: '1 1 140px', padding: '20px 16px', textAlign: 'center', borderRight: i < stats.length - 1 ? '1px solid #e4e4ec' : 'none' }}>
+          <div key={i} className="land-stat-item" style={{ flex: '1 1 140px', padding: '20px 16px', textAlign: 'center', borderRight: i < stats.length - 1 ? '1px solid #e4e4ec' : 'none' }}>
             <div style={{ fontSize: 26, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{s.n}</div>
             <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
           </div>

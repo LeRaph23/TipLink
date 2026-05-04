@@ -139,3 +139,78 @@ input, select, textarea, button { font-family: var(--font); }
 .scale-in { animation: scaleIn 180ms cubic-bezier(.34,1.3,.64,1) both; }
 .check-in { animation: checkIn 400ms cubic-bezier(.34,1.3,.64,1) both; }
 .shimmer  { animation: shimmer 1.6s ease infinite; background: var(--surface-3); border-radius: 6px; }
+
+/* ── Dashboard sidebar ──────────────────────────────────────────────────────── */
+.dash-sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────────── */
+.mob-bar      { display: none; }
+.mob-hamburger{ display: none; }
+
+/* Landing mobile — hidden by default (desktop first) */
+.land-nav-desktop  { display: flex; }
+.land-btns-desktop { display: flex; }
+.land-mob-toggle   { display: none; }
+.land-mob-menu     { display: none; }
+
+@media (max-width: 767px) {
+  /* ── Dashboard sidebar becomes a fixed overlay ── */
+  .dash-sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    z-index: 95;
+    transform: translateX(-100%);
+    transition: transform 300ms cubic-bezier(.32,0,.67,0);
+  }
+  .dash-sidebar.is-open {
+    transform: translateX(0);
+    transition: transform 340ms cubic-bezier(.22,1,.36,1);
+    box-shadow: 6px 0 40px rgba(0,0,0,0.28);
+  }
+  /* Mobile top bar + hamburger button */
+  .mob-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .mob-hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  /* Main content padding on mobile */
+  .dash-main-pad { padding: 20px 16px !important; }
+
+  /* ── Landing page ── */
+  .land-nav-desktop  { display: none !important; }
+  .land-btns-desktop { display: none !important; }
+  .land-mob-toggle   { display: flex !important; }
+  .land-mob-menu     { display: flex !important; }
+
+  /* Hero */
+  .land-hero-inner   { flex-direction: column !important; }
+  .land-hero-visual  { display: none !important; }
+  .land-hero-btns    { flex-direction: column !important; }
+  .land-hero-btn     { width: 100% !important; justify-content: center !important; text-align: center !important; box-sizing: border-box !important; }
+
+  /* Stats strip — no vertical dividers when stacked */
+  .land-stat-item { border-right: none !important; border-bottom: 1px solid #e4e4ec; }
+  .land-stat-item:last-child { border-bottom: none; }
+}

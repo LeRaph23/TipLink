@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { DashboardNav } from '@/components/dashboard/DashboardNav';
+import { DashboardShell } from '@/components/dashboard/DashboardShell';
 
 export default async function DashboardLayout({
   children,
@@ -22,17 +22,12 @@ export default async function DashboardLayout({
   const userName = staffProfile?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? '';
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
-      <DashboardNav
-        userRoles={roles ?? []}
-        userEmail={user.email ?? ''}
-        userName={userName}
-      />
-      <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
-        <div className="fade-up" style={{ padding: '36px 40px', maxWidth: 1080 }}>
-          {children}
-        </div>
-      </main>
-    </div>
+    <DashboardShell
+      userRoles={roles ?? []}
+      userEmail={user.email ?? ''}
+      userName={userName}
+    >
+      {children}
+    </DashboardShell>
   );
 }
