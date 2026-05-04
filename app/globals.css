@@ -150,13 +150,31 @@ input, select, textarea, button { font-family: var(--font); }
 .mob-bar      { display: none; }
 .mob-hamburger{ display: none; }
 
-/* Landing mobile — hidden by default (desktop first) */
-.land-nav-desktop  { display: flex; }
-.land-btns-desktop { display: flex; }
-.land-mob-toggle   { display: none; }
-.land-mob-menu     { display: none; }
+/* Landing nav/buttons — mobile first (no inline-style conflict, no !important needed) */
+.land-nav-desktop  { display: none; }
+.land-btns-desktop { display: none; }
+.land-mob-toggle   { display: flex; }
+.land-mob-menu     { display: flex; }
+
+@media (min-width: 768px) {
+  .land-nav-desktop  { display: flex; }
+  .land-btns-desktop { display: flex; }
+  .land-mob-toggle   { display: none; }
+  .land-mob-menu     { display: none; }
+}
 
 @media (max-width: 767px) {
+  /* ── Landing: items with inline-style conflicts need !important ── */
+  .land-hero-inner   { flex-direction: column !important; }
+  .land-hero-visual  { display: none !important; }
+  .land-hero-btns    { flex-direction: column !important; }
+  .land-hero-btn     { width: 100% !important; justify-content: center !important; text-align: center !important; box-sizing: border-box !important; }
+  .land-stat-item    { border-right: none !important; border-bottom: 1px solid #e4e4ec; }
+  .land-stat-item:last-child { border-bottom: none; }
+  .land-claim-card   { padding: 28px 24px !important; }
+  .land-claim-num    { font-size: 44px !important; }
+  .land-claim-title  { font-size: 18px !important; }
+
   /* ── Dashboard sidebar becomes a fixed overlay ── */
   .dash-sidebar {
     position: fixed;
@@ -197,25 +215,4 @@ input, select, textarea, button { font-family: var(--font); }
   }
   /* Main content padding on mobile */
   .dash-main-pad { padding: 20px 16px !important; }
-
-  /* ── Landing page ── */
-  .land-nav-desktop  { display: none !important; }
-  .land-btns-desktop { display: none !important; }
-  .land-mob-toggle   { display: flex !important; }
-  .land-mob-menu     { display: flex !important; }
-
-  /* Hero */
-  .land-hero-inner   { flex-direction: column !important; }
-  .land-hero-visual  { display: none !important; }
-  .land-hero-btns    { flex-direction: column !important; }
-  .land-hero-btn     { width: 100% !important; justify-content: center !important; text-align: center !important; box-sizing: border-box !important; }
-
-  /* Stats strip — no vertical dividers when stacked */
-  .land-stat-item { border-right: none !important; border-bottom: 1px solid #e4e4ec; }
-  .land-stat-item:last-child { border-bottom: none; }
-
-  /* Claim cards — reduce padding & font on mobile */
-  .land-claim-card { padding: 28px 24px !important; }
-  .land-claim-num  { font-size: 44px !important; }
-  .land-claim-title{ font-size: 18px !important; }
 }
