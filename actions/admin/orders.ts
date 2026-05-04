@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
+import { sendOrderShipped, sendOrderDelivered } from '@/lib/email';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -20,6 +22,25 @@ async function assertSuperAdmin() {
   if (!isSuperAdmin) return { supabase, ok: false as const, error: 'Forbidden' };
 
   return { supabase, ok: true as const };
+}
+
+/** Find the group admin's email for a given group. */
+async function getGroupAdminEmail(groupId: string): Promise<{ email: string; locale: string } | null> {
+  const service = createServiceClient();
+  const { data: role } = await service
+    .from('user_roles')
+    .select('user_id')
+    .eq('group_id', groupId)
+    .eq('role', 'group_admin')
+    .limit(1)
+    .single();
+  if (!role) return null;
+
+  const { data: { user } } = await service.auth.admin.getUserById(role.user_id);
+  if (!user?.email) return null;
+
+  const locale = (user.user_metadata?.locale as string | undefined) ?? 'fr';
+  return { email: user.email, locale };
 }
 
 /**
@@ -107,6 +128,12 @@ export async function markOrderShipped(
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
+  const { data: order } = await auth.supabase
+    .from('smarttag_orders')
+    .select('id, group_id, pack, quantity')
+    .eq('id', orderId)
+    .single();
+
   const { error } = await auth.supabase
     .from('smarttag_orders')
     .update({
@@ -120,13 +147,35 @@ export async function markOrderShipped(
 
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
+  revalidatePath('/dashboard/billing');
   await logAdminAction('orders.mark_shipped', { orderId });
+
+  if (order) {
+    getGroupAdminEmail(order.group_id).then((contact) => {
+      if (!contact) return;
+      sendOrderShipped({
+        to: contact.email,
+        pack: order.pack,
+        quantity: order.quantity,
+        orderId: order.id,
+        trackingNumber: trackingNumber ?? null,
+        locale: contact.locale,
+      }).catch(() => {});
+    }).catch(() => {});
+  }
+
   return { ok: true, data: null };
 }
 
 export async function markOrderDelivered(orderId: string): Promise<Result<null>> {
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
+
+  const { data: order } = await auth.supabase
+    .from('smarttag_orders')
+    .select('id, group_id, pack, quantity')
+    .eq('id', orderId)
+    .single();
 
   const { error } = await auth.supabase
     .from('smarttag_orders')
@@ -137,6 +186,21 @@ export async function markOrderDelivered(orderId: string): Promise<Result<null>>
 
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
+  revalidatePath('/dashboard/billing');
   await logAdminAction('orders.mark_delivered', { orderId });
+
+  if (order) {
+    getGroupAdminEmail(order.group_id).then((contact) => {
+      if (!contact) return;
+      sendOrderDelivered({
+        to: contact.email,
+        pack: order.pack,
+        quantity: order.quantity,
+        orderId: order.id,
+        locale: contact.locale,
+      }).catch(() => {});
+    }).catch(() => {});
+  }
+
   return { ok: true, data: null };
 }

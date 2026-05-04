@@ -4,6 +4,17 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { BillingPortalButton } from './BillingPortalButton';
 
+function statusStyle(status: string): { color: string; bg: string; dot: string } {
+  switch (status) {
+    case 'delivered':     return { color: '#22c55e', bg: '#22c55e18', dot: '●' };
+    case 'shipped':       return { color: '#60a5fa', bg: '#3b82f618', dot: '●' };
+    case 'ready_to_ship': return { color: '#a78bfa', bg: '#8b5cf618', dot: '●' };
+    case 'encoding':      return { color: '#fbbf24', bg: '#f59e0b18', dot: '●' };
+    case 'canceled':      return { color: '#f87171', bg: '#ef444418', dot: '●' };
+    default:              return { color: '#9ca3af', bg: '#6b728018', dot: '○' };
+  }
+}
+
 export default async function BillingPage({
   params,
 }: {
@@ -40,10 +51,10 @@ export default async function BillingPage({
     groupId
       ? service
           .from('smarttag_orders')
-          .select('id, pack, quantity, status, tracking_number, created_at')
+          .select('id, pack, quantity, status, tracking_number, created_at, stripe_invoice_id, shipped_at, delivered_at')
           .eq('group_id', groupId)
           .order('created_at', { ascending: false })
-          .limit(10)
+          .limit(20)
       : Promise.resolve({ data: [] }),
     groupId
       ? service
@@ -158,29 +169,54 @@ export default async function BillingPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('orderPack'), t('orderStatus'), t('orderDate'), t('orderTracking')].map(h => (
+                {[t('orderPack'), t('orderStatus'), t('orderDate'), t('orderTracking'), t('orderInvoice'), ''].map(h => (
                   <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {orders.map(o => (
-                <tr key={o.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '11px 16px', fontWeight: 600 }}>{o.pack.toUpperCase()} · {o.quantity}</td>
-                  <td style={{ padding: '11px 16px', color: 'var(--text-2)', textTransform: 'capitalize' }}>{o.status.replace(/_/g, ' ')}</td>
-                  <td style={{ padding: '11px 16px', color: 'var(--text-3)' }}>
-                    {new Date(o.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-IE', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </td>
-                  <td style={{ padding: '11px 16px', color: 'var(--text-3)' }}>
-                    {o.tracking_number ?? '—'}
-                  </td>
-                </tr>
-              ))}
+              {orders.map(o => {
+                const { color, bg, dot } = statusStyle(o.status);
+                return (
+                  <tr key={o.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '11px 16px', fontWeight: 600 }}>
+                      {o.pack.toUpperCase()} · {o.quantity}
+                    </td>
+                    <td style={{ padding: '11px 16px' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        padding: '3px 9px', borderRadius: 20,
+                        background: bg, color, fontSize: 12, fontWeight: 600,
+                      }}>
+                        {dot} {t(`orderStatusLabel.${o.status}` as Parameters<typeof t>[0])}
+                      </span>
+                    </td>
+                    <td style={{ padding: '11px 16px', color: 'var(--text-3)' }}>
+                      {new Date(o.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-IE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td style={{ padding: '11px 16px', color: 'var(--text-3)', fontFamily: 'monospace', fontSize: 12 }}>
+                      {o.tracking_number ?? '—'}
+                    </td>
+                    <td style={{ padding: '11px 16px' }}>
+                      {o.stripe_invoice_id ? (
+                        <Link href={`/dashboard/billing/orders/${o.id}`} style={{ color: 'var(--accent)', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>
+                          {t('viewInvoice')}
+                        </Link>
+                      ) : '—'}
+                    </td>
+                    <td style={{ padding: '11px 16px' }}>
+                      <Link href={`/dashboard/billing/orders/${o.id}`} style={{ color: 'var(--text-3)', fontSize: 12, textDecoration: 'none' }}>
+                        {t('viewDetails')} →
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
 
-        {orders?.some(o => o.status === 'pending_fulfillment') && (
+        {orders?.some(o => ['pending_fulfillment', 'encoding'].includes(o.status)) && (
           <div style={{
             padding: '12px 18px', borderTop: '1px solid var(--border-subtle)',
             fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6,

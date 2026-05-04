@@ -521,7 +521,29 @@
       "pendingFulfillment": "Préparation en cours — nous programmons vos SmartTags à la main et expédions sous 3 jours ouvrés.",
       "successTitle": "C'est tout bon.",
       "successBody": "Votre commande est confirmée. Nous programmons vos SmartTags à la main et les expédions sous 3 jours ouvrés. Une facture a été envoyée par email.",
-      "goToDashboard": "Aller au dashboard"
+      "goToDashboard": "Aller au dashboard",
+      "viewDetails": "Voir",
+      "viewInvoice": "Facture PDF",
+      "backToOrders": "Retour aux commandes",
+      "orderDetailTitle": "Commande {pack} × {qty}",
+      "orderDetailRef": "Réf. {ref}",
+      "orderTimeline": "Suivi de commande",
+      "orderInfo": "Détails",
+      "shippingAddress": "Adresse de livraison",
+      "invoice": "Facture",
+      "invoiceNumber": "N°",
+      "invoiceReady": "Facture disponible",
+      "invoiceGenerating": "Facture en cours de génération…",
+      "downloadInvoice": "Télécharger la facture PDF",
+      "orderStatusLabel": {
+        "pending_payment": "Paiement en attente",
+        "pending_fulfillment": "Commande reçue",
+        "encoding": "Programmation en cours",
+        "ready_to_ship": "Prête à expédier",
+        "shipped": "Expédiée",
+        "delivered": "Livrée",
+        "canceled": "Annulée"
+      }
     },
     "home": {
       "dashboard": "Dashboard",

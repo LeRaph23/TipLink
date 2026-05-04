@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
-import { sendTipReceipt } from '@/lib/email';
+import { sendTipReceipt, sendOrderConfirmation } from '@/lib/email';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -205,16 +205,38 @@ async function handleEvent(
           throw new Error(`Express checkout: failed to create group — ${groupErr?.message ?? 'unknown'}`);
         }
 
-        await supabase.from('smarttag_orders').insert({
+        // Fetch the Stripe invoice created by invoice_creation.enabled
+        const invoiceId = typeof session.invoice === 'string' ? session.invoice : (session.invoice as { id?: string } | null)?.id ?? null;
+        let invoicePdfUrl: string | null = null;
+        if (invoiceId) {
+          try {
+            const inv = await stripe.invoices.retrieve(invoiceId);
+            invoicePdfUrl = inv.invoice_pdf ?? null;
+          } catch { /* non-blocking */ }
+        }
+
+        const { data: newOrder } = await supabase.from('smarttag_orders').insert({
           group_id: newGroup.id,
           pack,
           quantity,
           stripe_checkout_session_id: session.id,
+          stripe_invoice_id: invoiceId,
           status: 'pending_fulfillment',
           shipping_address: shipping
             ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
             : null,
-        });
+        }).select('id').single();
+
+        if (email && newOrder) {
+          await sendOrderConfirmation({
+            to: email,
+            pack,
+            quantity,
+            orderId: newOrder.id,
+            invoicePdfUrl,
+            locale: session.locale?.startsWith('fr') ? 'fr' : 'en',
+          }).catch(() => {});
+        }
 
         if (email) {
           // Check if a user account already exists for this email
@@ -265,8 +287,18 @@ async function handleEvent(
         })
         .eq('id', groupId);
 
+      // Fetch Stripe invoice created by invoice_creation.enabled
+      const invoiceId = typeof session.invoice === 'string' ? session.invoice : (session.invoice as { id?: string } | null)?.id ?? null;
+      let invoicePdfUrl: string | null = null;
+      if (invoiceId) {
+        try {
+          const inv = await stripe.invoices.retrieve(invoiceId);
+          invoicePdfUrl = inv.invoice_pdf ?? null;
+        } catch { /* non-blocking */ }
+      }
+
       const quantity = Number(session.metadata?.quantity ?? 0) || null;
-      await supabase
+      const { data: upsertedOrder } = await supabase
         .from('smarttag_orders')
         .upsert(
           {
@@ -274,6 +306,7 @@ async function handleEvent(
             pack,
             quantity: quantity ?? (pack === 'solo' ? 1 : 2),
             stripe_checkout_session_id: session.id,
+            stripe_invoice_id: invoiceId,
             status: 'pending_fulfillment',
             shipping_address: shipping
               ? ({
@@ -283,7 +316,33 @@ async function handleEvent(
               : null,
           },
           { onConflict: 'stripe_checkout_session_id' }
-        );
+        ).select('id').single();
+
+      // Send order confirmation email to the group admin
+      if (upsertedOrder) {
+        try {
+          const { data: adminRole } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .eq('group_id', groupId)
+            .eq('role', 'group_admin')
+            .limit(1)
+            .single();
+          if (adminRole) {
+            const { data: { user: adminUser } } = await supabase.auth.admin.getUserById(adminRole.user_id);
+            if (adminUser?.email) {
+              await sendOrderConfirmation({
+                to: adminUser.email,
+                pack,
+                quantity: upsertedOrder ? (quantity ?? (pack === 'solo' ? 1 : 2)) : (pack === 'solo' ? 1 : 2),
+                orderId: upsertedOrder.id,
+                invoicePdfUrl,
+                locale: session.locale?.startsWith('fr') ? 'fr' : 'en',
+              }).catch(() => {});
+            }
+          }
+        } catch { /* non-blocking */ }
+      }
 
       // Auto-provision first establishment for new groups so the tip flow works immediately
       const { data: existingEst } = await supabase

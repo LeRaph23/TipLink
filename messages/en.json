@@ -521,7 +521,29 @@
       "pendingFulfillment": "Fulfillment in progress — we're hand-programming your SmartTags and will ship them within 3 business days.",
       "successTitle": "You're all set.",
       "successBody": "Your order is confirmed. We're hand-programming your SmartTags and will ship within 3 business days. An invoice was sent to your email.",
-      "goToDashboard": "Go to dashboard"
+      "goToDashboard": "Go to dashboard",
+      "viewDetails": "View",
+      "viewInvoice": "Invoice PDF",
+      "backToOrders": "Back to orders",
+      "orderDetailTitle": "Order {pack} × {qty}",
+      "orderDetailRef": "Ref. {ref}",
+      "orderTimeline": "Order tracking",
+      "orderInfo": "Details",
+      "shippingAddress": "Shipping address",
+      "invoice": "Invoice",
+      "invoiceNumber": "No.",
+      "invoiceReady": "Invoice available",
+      "invoiceGenerating": "Invoice being generated…",
+      "downloadInvoice": "Download invoice PDF",
+      "orderStatusLabel": {
+        "pending_payment": "Awaiting payment",
+        "pending_fulfillment": "Order received",
+        "encoding": "Programming in progress",
+        "ready_to_ship": "Ready to ship",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "canceled": "Canceled"
+      }
     },
     "home": {
       "dashboard": "Dashboard",
