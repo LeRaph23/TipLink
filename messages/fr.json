@@ -243,7 +243,7 @@
       "q6": "Ai-je besoin d'un SIRET ou d'un statut particulier ?",
       "a6": "Non pour commander les SmartTags. En revanche, pour recevoir les pourboires via Stripe Connect, votre personnel devra créer un compte Stripe (vérification d'identité standard).",
       "q7": "Comment Digitip se rémunère-t-il ?",
-      "a7": "Digitip prélève 5 % sur chaque pourboire encaissé. Cette commission couvre les frais de traitement imposés par Stripe (entre 1,5 % et 2,5 % selon le pays, auxquels s'ajoutent 0,25 € fixes par transaction), l'hébergement des serveurs de paiement, la maintenance de l'infrastructure technique, la lutte contre la fraude, et le support. Nous avons compressé notre marge autant que possible — en dessous de 5 %, nous ne pouvons pas maintenir la qualité et la fiabilité du service. Aucun pourboire encaissé = aucun frais de votre côté."
+      "a7": "Digitip prélève 5 % sur chaque pourboire encaissé. Cette commission couvre les frais de traitement imposés par Stripe (entre 1,5 % et 2,5 % selon le pays, auxquels s'ajoutent 0,25 € fixes par transaction), l'hébergement des serveurs de paiement, la maintenance de l'infrastructure technique, la lutte contre la fraude, et le support. Nous avons compressé notre marge autant que possible — en dessous de 5 %, nous ne pouvons pas maintenir la qualité et la fiabilité du service. Ce qui compte pour nous avant tout : vous ne nous devez rien tant que vous n'avez pas encaissé."
     },
     "doubleGuarantee": {
       "g1title": "Qualité premium garantie",
