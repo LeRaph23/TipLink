@@ -67,7 +67,7 @@ export default async function OrderSuccessPage({
           {t('nextStep')}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <Link href="/auth/signup" style={{
+          <Link href="/signup" style={{
             display: 'block', padding: '14px', borderRadius: 12,
             background: '#E57A97', color: '#fff',
             fontSize: 15, fontWeight: 700, textDecoration: 'none', textAlign: 'center',
