@@ -812,10 +812,12 @@ function FooterSection() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.legal')}</div>
             {[
-              { label: tc('privacy'), href: '/legal/privacy' },
-              { label: tc('terms'), href: '/legal/terms' },
+              { label: tc('mentionsLegales'), href: '/mentions-legales' },
+              { label: tc('cgv'),             href: '/cgv' },
+              { label: tc('terms'),           href: '/terms' },
+              { label: tc('privacy'),         href: '/privacy' },
             ].map((l) => (
-              <Link key={l.href} href={l.href} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', marginBottom: 9 }}>{l.label}</Link>
+              <Link key={l.href} href={l.href} className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</Link>
             ))}
           </div>
           <div>

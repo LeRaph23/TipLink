@@ -3,18 +3,18 @@ import { LegalPage } from '@/components/legal/LegalPage';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'legal.privacy' });
+  const t = await getTranslations({ locale, namespace: 'cgv' });
   return { title: `${t('title')} · Digitip` };
 }
 
-export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function CGVPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('legal.privacy');
+  const t = await getTranslations('cgv');
   const tl = await getTranslations('legal');
   const tc = await getTranslations('common');
 
-  const sections = (['s1','s2','s3','s4','s5','s6','s7','s8','s9'] as const).map((k) => ({
+  const sections = (['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11'] as const).map((k) => ({
     title: t(`${k}Title`), body: t(`${k}Body`),
   }));
 
@@ -34,7 +34,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
       lastUpdatedDate={tl('updatedDate')}
       backLabel={tl('backHome')}
       navLinks={navLinks}
-      currentPath="/privacy"
+      currentPath="/cgv"
     />
   );
 }

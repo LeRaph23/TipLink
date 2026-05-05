@@ -1,8 +1,9 @@
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-
 export type LegalSection = { title: string; body: string };
+
+type LegalPath = '/privacy' | '/terms' | '/mentions-legales' | '/cgv';
 
 export function LegalPage({
   title,
@@ -11,10 +12,7 @@ export function LegalPage({
   lastUpdatedLabel,
   lastUpdatedDate,
   backLabel,
-  pricingLabel,
-  contactLabel,
-  privacyLabel,
-  termsLabel,
+  navLinks,
   currentPath,
 }: {
   title: string;
@@ -23,11 +21,8 @@ export function LegalPage({
   lastUpdatedLabel: string;
   lastUpdatedDate: string;
   backLabel: string;
-  pricingLabel: string;
-  contactLabel: string;
-  privacyLabel: string;
-  termsLabel: string;
-  currentPath: '/privacy' | '/terms';
+  navLinks: { label: string; href: LegalPath }[];
+  currentPath: LegalPath;
 }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
@@ -42,10 +37,6 @@ export function LegalPage({
         </Link>
         <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <LanguageSwitcher />
-          <Link href="/pricing" style={{
-            padding: '7px 14px', textDecoration: 'none',
-            color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500,
-          }}>{pricingLabel}</Link>
         </nav>
       </header>
 
@@ -84,19 +75,13 @@ export function LegalPage({
         <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: '36px 0 24px' }} />
 
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 13 }}>
-          {currentPath !== '/privacy' && (
-            <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
-              {privacyLabel}
-            </Link>
-          )}
-          {currentPath !== '/terms' && (
-            <Link href="/terms" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
-              {termsLabel}
-            </Link>
-          )}
-          <Link href="/contact" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
-            {contactLabel}
-          </Link>
+          {navLinks
+            .filter((l) => l.href !== currentPath)
+            .map((l) => (
+              <Link key={l.href} href={l.href} style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
+                {l.label}
+              </Link>
+            ))}
         </div>
       </main>
     </div>
