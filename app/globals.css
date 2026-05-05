@@ -146,6 +146,14 @@ input, select, textarea, button { font-family: var(--font); }
   flex-shrink: 0;
 }
 
+/* ── Landing hover utilities ────────────────────────────────────────────────── */
+.land-nav-link { transition: color 150ms; }
+.land-nav-link:hover { color: #E57A97 !important; }
+.land-footer-link { transition: color 150ms; }
+.land-footer-link:hover { color: rgba(255,255,255,0.85) !important; }
+.land-card-hover { transition: box-shadow 200ms ease, transform 200ms ease; }
+.land-card-hover:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.10); transform: translateY(-2px); }
+
 /* ── Mobile ─────────────────────────────────────────────────────────────────── */
 .mob-bar      { display: none; }
 .mob-hamburger{ display: none; }

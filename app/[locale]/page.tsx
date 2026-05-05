@@ -70,6 +70,96 @@ function StarRow({ size = 15, gap = 2 }: { size?: number; gap?: number }) {
 }
 
 
+// ─── SVG icons (replaces emojis for consistent cross-platform rendering) ──────
+function ShieldIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+}
+function RefreshIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 4v6h-6M1 20v-6h6" />
+      <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+    </svg>
+  );
+}
+function TruckIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="1" />
+      <path d="M16 8h4l3 3v5h-7V8z" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </svg>
+  );
+}
+function CardIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  );
+}
+function BoxIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+function BoltIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+function CoinIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v8M9.5 10.5C9.5 9.12 10.62 8 12 8s2.5 1.12 2.5 2.5c0 2.5-5 2.5-5 5S10.62 18 12 18s2.5-1.12 2.5-2.5" />
+    </svg>
+  );
+}
+function GlobeIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+    </svg>
+  );
+}
+function BuildingIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18M9 21V9M15 21V9" />
+    </svg>
+  );
+}
+function PlaneIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+    </svg>
+  );
+}
+function MessageIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </svg>
+  );
+}
+
 // ─── PromoBanner ──────────────────────────────────────────────────────────────
 function PromoBanner({ text }: { text: string }) {
   return (
@@ -109,7 +199,7 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
         {/* Desktop nav */}
         <nav className="land-nav-desktop" style={{ gap: 2, alignItems: 'center' }}>
           {navItems.map(({ key, href }) => (
-            <a key={key} href={href} style={{ padding: '6px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13.5, fontWeight: 500, borderRadius: 7, transition: 'color 150ms' }}>
+            <a key={key} href={href} className="land-nav-link" style={{ padding: '6px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13.5, fontWeight: 500, borderRadius: 7, transition: 'color 150ms' }}>
               {t(`nav.${key}` as Parameters<typeof t>[0])}
             </a>
           ))}
@@ -267,14 +357,19 @@ const VENUES = ['Salon Éclat Beauté', 'L\'Atelier Coiffure', 'Institut Harmoni
 function Marquee() {
   const items = [...VENUES, ...VENUES];
   return (
-    <div style={{ overflow: 'hidden', borderBottom: '1px solid #e4e4ec', padding: '13px 0', background: '#fff', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}>
-      <div style={{ display: 'flex', animation: 'marqueeScroll 32s linear infinite', width: 'max-content' }}>
-        {items.map((v, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '0 18px', whiteSpace: 'nowrap' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#c4c4d4', letterSpacing: '0.01em' }}>{v}</span>
-            <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#e4e4ec', flexShrink: 0, display: 'inline-block' }} />
-          </div>
-        ))}
+    <div style={{ borderBottom: '1px solid #e4e4ec', background: '#fff' }}>
+      <div style={{ textAlign: 'center', paddingTop: 14, fontSize: 11, fontWeight: 700, color: '#c4c4d4', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+        Utilisé par des équipes en Europe
+      </div>
+      <div style={{ overflow: 'hidden', padding: '10px 0 14px', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}>
+        <div style={{ display: 'flex', animation: 'marqueeScroll 32s linear infinite', width: 'max-content' }}>
+          {items.map((v, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '0 18px', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#c4c4d4', letterSpacing: '0.01em' }}>{v}</span>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#e4e4ec', flexShrink: 0, display: 'inline-block' }} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -339,10 +434,10 @@ function ProductSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') =>
 // ─── How it works ─────────────────────────────────────────────────────────────
 function HowItWorksSection() {
   const t = useTranslations('landing');
-  const steps = [
-    { n: '01', title: t('howItWorks.step1t'), body: t('howItWorks.step1b'), icon: '📦' },
-    { n: '02', title: t('howItWorks.step2t'), body: t('howItWorks.step2b'), icon: '⚡' },
-    { n: '03', title: t('howItWorks.step3t'), body: t('howItWorks.step3b'), icon: '💸' },
+  const steps: { n: string; title: string; body: string; icon: React.ReactNode }[] = [
+    { n: '01', title: t('howItWorks.step1t'), body: t('howItWorks.step1b'), icon: <BoxIcon size={22} color="#E57A97" /> },
+    { n: '02', title: t('howItWorks.step2t'), body: t('howItWorks.step2b'), icon: <BoltIcon size={22} color="#E57A97" /> },
+    { n: '03', title: t('howItWorks.step3t'), body: t('howItWorks.step3b'), icon: <CoinIcon size={22} color="#E57A97" /> },
   ];
   return (
     <section id="comment-ca-marche" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
@@ -359,7 +454,7 @@ function HowItWorksSection() {
             <Reveal key={i} delay={i * 80}>
               <div style={{ padding: '32px 28px', position: 'relative' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.icon}</div>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Étape {s.n}</div>
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
@@ -376,12 +471,12 @@ function HowItWorksSection() {
 // ─── Shipping ─────────────────────────────────────────────────────────────────
 function ShippingSection() {
   const t = useTranslations('landing');
-  const items = [
-    { icon: '⚡', text: t('shipping.processing') },
-    { icon: '🚀', text: t('shipping.freeEU') },
-    { icon: '🇫🇷', text: t('shipping.timezoneFR') },
-    { icon: '🌍', text: t('shipping.timezoneEU') },
-    { icon: '📦', text: t('shipping.tracking') },
+  const items: { icon: React.ReactNode; text: string }[] = [
+    { icon: <BoltIcon size={17} color="#E57A97" />, text: t('shipping.processing') },
+    { icon: <PlaneIcon size={17} color="#2563eb" />, text: t('shipping.freeEU') },
+    { icon: <span style={{ fontSize: 15, lineHeight: 1 }}>🇫🇷</span>, text: t('shipping.timezoneFR') },
+    { icon: <GlobeIcon size={17} color="#16a34a" />, text: t('shipping.timezoneEU') },
+    { icon: <BoxIcon size={17} color="#74748a" />, text: t('shipping.tracking') },
   ];
   return (
     <section style={{ background: '#fff', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
@@ -394,7 +489,7 @@ function ShippingSection() {
           {items.map((item, i) => (
             <Reveal key={i} delay={i * 50}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f9f9f7', border: '1.5px solid #e4e4ec', borderRadius: 12, padding: '14px 22px', fontSize: 14, color: '#3a3b4f', fontWeight: 600 }}>
-                <span style={{ fontSize: 18 }}>{item.icon}</span>{item.text}
+                {item.icon}{item.text}
               </div>
             </Reveal>
           ))}
@@ -411,7 +506,9 @@ function GuaranteeSection() {
     <section style={{ background: '#f9f9f7', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <Reveal>
         <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', background: '#fff', border: '2px solid #FBDAE3', borderRadius: 24, padding: 'clamp(32px,5vw,56px) clamp(24px,5vw,56px)' }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: '#FEF1F4', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🛡️</div>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: '#FEF1F4', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShieldIcon size={30} color="#E57A97" />
+          </div>
           <h2 style={{ fontSize: 'clamp(20px,2.5vw,28px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.03em', marginBottom: 14 }}>{t('guarantee.title')}</h2>
           <p style={{ fontSize: 15, color: '#74748a', lineHeight: 1.8 }}>{t('guarantee.sub')}</p>
         </div>
@@ -440,7 +537,7 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16 }}>
           {packs.map((p, i) => (
             <Reveal key={p.key} delay={i * 80}>
-              <div style={{ background: '#fff', border: p.popular ? '2px solid #E57A97' : '1.5px solid #e4e4ec', borderRadius: 18, overflow: 'hidden', boxShadow: p.popular ? '0 8px 32px rgba(229,122,151,0.14)' : '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
+              <div className="land-card-hover" style={{ background: '#fff', border: p.popular ? '2px solid #E57A97' : '1.5px solid #e4e4ec', borderRadius: 18, overflow: 'hidden', boxShadow: p.popular ? '0 8px 32px rgba(229,122,151,0.14)' : '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
                 {p.popular && (
                   <div style={{ position: 'absolute', top: 14, right: 14, background: '#E57A97', color: '#fff', fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.04em' }}>{t('grid.popular')}</div>
                 )}
@@ -475,8 +572,8 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
           {/* Custom pack */}
           <Reveal delay={3 * 80}>
             <div style={{ background: '#fff', border: '1.5px dashed #e4e4ec', borderRadius: 18, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: '#f9f9f7', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <div style={{ fontSize: 48 }}>🏢</div>
+              <div style={{ background: '#f9f9f7', padding: '40px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <BuildingIcon size={44} color="#c4c4d4" />
               </div>
               <div style={{ padding: '20px 22px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 4 }}>{t('grid.packCustom')}</h3>
@@ -571,7 +668,7 @@ function ReviewsSection() {
         </Reveal>
         <div style={{ columns: '260px', columnGap: 14 }}>
           {REVIEWS.map((r, i) => (
-            <div key={i} style={{ breakInside: 'avoid', background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '16px 18px', marginBottom: 14, display: 'inline-block', width: '100%' }}>
+            <div key={i} className="land-card-hover" style={{ breakInside: 'avoid', background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '16px 18px', marginBottom: 14, display: 'inline-block', width: '100%' }}>
               <Stars n={r.stars} />
               <p style={{ fontSize: 13.5, color: '#3a3b4f', lineHeight: 1.7, marginBottom: 12 }}>{r.text}</p>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -596,12 +693,14 @@ function FinalCTASection({ onOrderClick }: { onOrderClick: () => void }) {
     <section style={{ background: 'linear-gradient(135deg,#B03860,#E57A97,#EC97B0)', padding: 'clamp(70px,8vw,100px) clamp(16px,4vw,48px)', textAlign: 'center' }}>
       <Reveal>
         <div style={{ maxWidth: 620, margin: '0 auto' }}>
-          <div style={{ fontSize: 44, marginBottom: 18 }}>🤔</div>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(255,255,255,0.15)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MessageIcon size={28} color="#fff" />
+          </div>
           <h2 style={{ fontSize: 'clamp(28px,4.5vw,52px)', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em', lineHeight: 0.97, marginBottom: 14 }}>
             {t('finalCta.title')}
           </h2>
-          <p style={{ fontSize: 22, fontWeight: 700, color: '#FBDAE3', marginBottom: 18 }}>{t('finalCta.sub')}</p>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', marginBottom: 36, lineHeight: 1.7 }}>{t('finalCta.body')}</p>
+          <p style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.92)', marginBottom: 18 }}>{t('finalCta.sub')}</p>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', marginBottom: 36, lineHeight: 1.7 }}>{t('finalCta.body')}</p>
           <button onClick={onOrderClick} style={{ padding: '17px 44px', borderRadius: 13, cursor: 'pointer', background: '#fff', color: '#E57A97', fontSize: 17, fontWeight: 900, border: 'none', boxShadow: '0 6px 28px rgba(0,0,0,0.22)', letterSpacing: '-0.01em' }}>
             {t('finalCta.cta')} →
           </button>
@@ -657,11 +756,11 @@ function FAQSection() {
 // ─── Double guarantee ─────────────────────────────────────────────────────────
 function DoubleGuaranteeSection() {
   const t = useTranslations('landing');
-  const items = [
-    { icon: '🛡️', title: t('doubleGuarantee.g1title'), body: t('doubleGuarantee.g1body'), accent: '#E57A97' },
-    { icon: '🔁', title: t('doubleGuarantee.g2title'), body: t('doubleGuarantee.g2body'), accent: '#16a34a' },
-    { icon: '🚚', title: t('doubleGuarantee.g3title'), body: t('doubleGuarantee.g3body'), accent: '#2563eb' },
-    { icon: '💳', title: t('doubleGuarantee.g4title'), body: t('doubleGuarantee.g4body'), accent: '#d97706' },
+  const items: { icon: React.ReactNode; title: string; body: string; accent: string }[] = [
+    { icon: <ShieldIcon size={20} color="#E57A97" />, title: t('doubleGuarantee.g1title'), body: t('doubleGuarantee.g1body'), accent: '#E57A97' },
+    { icon: <RefreshIcon size={20} color="#16a34a" />, title: t('doubleGuarantee.g2title'), body: t('doubleGuarantee.g2body'), accent: '#16a34a' },
+    { icon: <TruckIcon size={20} color="#2563eb" />, title: t('doubleGuarantee.g3title'), body: t('doubleGuarantee.g3body'), accent: '#2563eb' },
+    { icon: <CardIcon size={20} color="#d97706" />, title: t('doubleGuarantee.g4title'), body: t('doubleGuarantee.g4body'), accent: '#d97706' },
   ];
   return (
     <section style={{ background: '#f9f9f7', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
@@ -669,7 +768,7 @@ function DoubleGuaranteeSection() {
         {items.map((item, i) => (
           <Reveal key={i} delay={i * 60}>
             <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 16, padding: '24px 22px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${item.accent}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{item.icon}</div>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${item.accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{item.icon}</div>
               <div>
                 <h3 style={{ fontSize: 14, fontWeight: 800, color: '#111118', marginBottom: 6, letterSpacing: '-0.01em' }}>{item.title}</h3>
                 <p style={{ fontSize: 13, color: '#74748a', lineHeight: 1.65 }}>{item.body}</p>
@@ -687,7 +786,7 @@ function FooterSection() {
   const t = useTranslations('landing');
   const tc = useTranslations('common');
   return (
-    <footer style={{ background: '#0d0d1a', color: 'rgba(255,255,255,0.45)', padding: 'clamp(40px,5vw,60px) clamp(16px,4vw,48px) 28px' }}>
+    <footer style={{ background: '#0d0d1a', color: 'rgba(255,255,255,0.62)', padding: 'clamp(40px,5vw,60px) clamp(16px,4vw,48px) 28px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 32, marginBottom: 40 }}>
           <div>
@@ -704,7 +803,7 @@ function FooterSection() {
               { label: t('faq.kicker'), href: '#faq' },
               { label: tc('contact'), href: '/contact' },
             ].map((l) => (
-              <a key={l.href} href={l.href} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</a>
+              <a key={l.href} href={l.href} className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</a>
             ))}
           </div>
           <div>
