@@ -140,6 +140,18 @@
     "s11Title": "11. Médiation et litiges",
     "s11Body": "En cas de litige non résolu amiablement, tout consommateur peut recourir gratuitement à un médiateur agréé : CM2C — Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris — www.cm2c.net. La Commission européenne met également à disposition une plateforme de résolution en ligne des litiges : ec.europa.eu/consumers/odr. Les litiges entre professionnels relèvent de la compétence exclusive des tribunaux du ressort de la Cour d'appel de Colmar, sauf disposition impérative contraire. Les présentes CGV sont régies par le droit français."
   },
+  "orderSuccess": {
+    "title": "Commande confirmée !",
+    "body": "Merci pour votre achat. Nous programmons vos SmartTags à la main et les expédions sous 3 jours ouvrés. Vous recevrez une confirmation par email.",
+    "nextStep": "Créer votre compte pour accéder au tableau de bord et suivre vos pourboires.",
+    "ctaSignup": "Créer mon compte Digitip",
+    "ctaHome": "Retour à l'accueil",
+    "steps": {
+      "s1": "Paiement reçu",
+      "s2": "Programmation des SmartTags",
+      "s3": "Expédition sous 3 jours ouvrés"
+    }
+  },
   "landing": {
     "promoBanner": "OFFRE DE LANCEMENT — Livraison offerte en Europe",
     "nav": {

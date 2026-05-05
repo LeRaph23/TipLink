@@ -140,6 +140,18 @@
     "s11Title": "11. Disputes and mediation",
     "s11Body": "In the event of an unresolved dispute, any consumer may use a free approved mediator: CM2C — Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris — www.cm2c.net. The European Commission also provides an online dispute resolution platform: ec.europa.eu/consumers/odr. Disputes between professionals fall under the exclusive jurisdiction of the courts of the Colmar Court of Appeal, unless mandatory law provides otherwise. These Terms are governed by French law."
   },
+  "orderSuccess": {
+    "title": "Order confirmed!",
+    "body": "Thank you for your purchase. We hand-program your SmartTags and ship within 3 business days. You'll receive a confirmation by email.",
+    "nextStep": "Create your account to access your dashboard and track your tips.",
+    "ctaSignup": "Create my Digitip account",
+    "ctaHome": "Back to home",
+    "steps": {
+      "s1": "Payment received",
+      "s2": "SmartTag programming",
+      "s3": "Shipped within 3 business days"
+    }
+  },
   "landing": {
     "promoBanner": "LAUNCH OFFER — Free shipping across Europe",
     "nav": {
