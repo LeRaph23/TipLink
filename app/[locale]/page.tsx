@@ -313,7 +313,9 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
               <Image src="/products/duo-double.jpg" alt="Plaques époxy NFC Digitip" fill sizes="300px" style={{ objectFit: 'cover' }} priority />
             </div>
             <div style={{ position: 'absolute', bottom: 0, right: -10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 28px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#E57A97', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📲</div>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#E57A97', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CoinIcon size={16} color="#fff" />
+              </div>
               <div>
                 <div style={{ fontSize: 11.5, fontWeight: 700, color: '#111118' }}>+5,00 €</div>
                 <div style={{ fontSize: 10, color: '#74748a' }}>→ Léa C.</div>
