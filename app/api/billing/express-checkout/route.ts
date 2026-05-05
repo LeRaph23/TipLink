@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
-import { getBaseUrl, PACKS, type PackId } from '@/lib/env';
+import { getBaseUrl, getPackPrices, PACKS, type PackId } from '@/lib/env';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -48,17 +48,7 @@ export async function POST(request: NextRequest) {
     },
     phone_number_collection: { enabled: false },
     line_items: [
-      {
-        price_data: {
-          currency: 'eur',
-          unit_amount: packDef.hardwareAmount,
-          product_data: {
-            name: `Digitip — Plaque époxy NFC ${pack.charAt(0).toUpperCase() + pack.slice(1)} (${packDef.quantity} plaque${packDef.quantity > 1 ? 's' : ''})`,
-            description: `${packDef.quantity} plaque${packDef.quantity > 1 ? 's' : ''} époxy NFC pré-configurée${packDef.quantity > 1 ? 's' : ''}, pré-programmée${packDef.quantity > 1 ? 's' : ''}, prête${packDef.quantity > 1 ? 's' : ''} à l'emploi`,
-          },
-        },
-        quantity: 1,
-      },
+      { price: getPackPrices(pack).hardware, quantity: 1 },
     ],
     automatic_tax: { enabled: true },
     tax_id_collection: { enabled: true },

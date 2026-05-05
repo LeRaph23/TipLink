@@ -75,8 +75,8 @@ export const PACKS: Record<PackId, PackDefinition> = {
 };
 
 // Default platform commission applied to every tip, in basis points.
-// Mirrors the server-side default (groups.platform_fee_bps DEFAULT 200).
-export const DEFAULT_PLATFORM_FEE_BPS = 200;
+// Mirrors the server-side default (groups.platform_fee_bps DEFAULT 500).
+export const DEFAULT_PLATFORM_FEE_BPS = 500;
 
 type StripePackPrices = {
   hardware: string;
