@@ -66,19 +66,19 @@ export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
       }}
     >
       <div style={{
-        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 480,
+        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 560,
         boxShadow: '0 24px 80px rgba(0,0,0,0.18)',
         overflow: 'hidden',
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e6e6f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid #e6e6f0' }}>
           <h2 style={{ fontSize: 17, fontWeight: 800, color: '#0f1020', letterSpacing: '-0.02em' }}>
             Votre commande
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b6d85', lineHeight: 1, padding: 4 }}>✕</button>
         </div>
 
-        <div style={{ padding: '20px 24px' }}>
+        <div style={{ padding: '22px 28px' }}>
 
           {/* Pack selector */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
@@ -147,13 +147,15 @@ export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
           </div>
 
           {/* Trust items */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 14 }}>
-            {[
-              '✅ Garantie matériel à vie',
-              '🚚 Livraison offerte en Europe',
-              '🔒 Paiement sécurisé par Stripe',
-            ].map((s) => (
-              <div key={s} style={{ fontSize: 13, color: '#3a3b4f', display: 'flex', alignItems: 'center', gap: 8 }}>{s}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16 }}>
+            {([
+              { icon: <svg width={14} height={14} viewBox="0 0 20 20" fill="none"><path d="M10 2L3 5v5c0 4.5 3 7.5 7 8.5C14 17.5 17 14.5 17 10V5l-7-3z" fill="#0ea36b" opacity=".18"/><path d="M10 2L3 5v5c0 4.5 3 7.5 7 8.5C14 17.5 17 14.5 17 10V5l-7-3z" stroke="#0ea36b" strokeWidth="1.4" strokeLinejoin="round"/><path d="M7 10.5l2 2 4-4" stroke="#0ea36b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: 'Garantie matériel à vie' },
+              { icon: <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>, label: 'Livraison offerte en Europe' },
+              { icon: <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, label: 'Paiement sécurisé par Stripe' },
+            ] as const).map(({ icon, label }) => (
+              <div key={label} style={{ fontSize: 13, color: '#3a3b4f', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {icon} {label}
+              </div>
             ))}
           </div>
 
