@@ -37,7 +37,7 @@ export default async function ContactPage({
       <main style={{ maxWidth: 520, margin: '0 auto', padding: '40px 24px 80px', position: 'relative', zIndex: 1 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(99,102,241,0.85)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 12 }}>{t('kicker')}</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3.4vw, 38px)', fontWeight: 800, color: '#f0f0f8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 14 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3.4vw, 38px)', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 14 }}>
             {t('title')}
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7 }}>

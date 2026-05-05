@@ -102,7 +102,7 @@
     "s1Title": "1. Éditeur du site",
     "s1Body": "Le site digitip.app est édité par la société YUZU LABS, SAS au capital de 100 €, immatriculée au Registre National des Entreprises (RNE) sous le numéro SIREN 994 879 013 — SIRET siège : 994 879 013 00013. Siège social : 11 rue de Lorraine, 68490 Petit-Landau, France. Code APE/NAF : 62.01Z — Programmation informatique. N° TVA intracommunautaire : FR13 994 879 013. Contact : contact@digitip.app.",
     "s2Title": "2. Directeur de la publication",
-    "s2Body": "Le directeur de la publication est le Président de YUZU LABS SAS. Contact : contact@digitip.app.",
+    "s2Body": "Raphaël Meyer. Contact : contact@digitip.app.",
     "s3Title": "3. Hébergement",
     "s3Body": "Le site digitip.app est hébergé par Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis — https://vercel.com. Les données des utilisateurs européens sont traitées conformément aux engagements de Vercel relatifs au RGPD.",
     "s4Title": "4. Propriété intellectuelle",
@@ -318,8 +318,8 @@
     "tagsIncluded": "{count, plural, one {# plaque époxy incluse} other {# plaques époxy incluses}}",
     "choose": "Commander",
     "mostPopular": "Meilleur rapport qualité/prix",
-    "enterpriseTitle": "Besoin de plus de plaques ?",
-    "enterpriseBody": "Groupes multi-établissements, branding sur-mesure, commandes en volume — parlons-en.",
+    "enterpriseTitle": "Multi-établissements ou besoin spécifique ?",
+    "enterpriseBody": "Plusieurs adresses, équipes importantes, questions sur la configuration — on s'adapte. Écrivez-nous.",
     "enterpriseCta": "Nous contacter",
     "benefits": {
       "preConfigured": "NFC pré-programmé, à poser directement",
@@ -348,9 +348,9 @@
     "trust3": "Sans engagement"
   },
   "contact": {
-    "kicker": "Entreprise",
-    "title": "Parlez-nous de votre équipe.",
-    "subtitle": "Plus de 60 SmartTags, branding personnalisé, multi-établissements ? Envoyez-nous un message — réponse sous 24 heures.",
+    "kicker": "Contact",
+    "title": "Comment pouvons-nous vous aider ?",
+    "subtitle": "Multi-établissements, questions sur le service ou besoin d'informations ? Écrivez-nous — réponse sous 24 heures.",
     "name": "Nom complet",
     "email": "Email professionnel",
     "phone": "Téléphone (optionnel)",
