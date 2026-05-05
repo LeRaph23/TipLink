@@ -86,6 +86,11 @@ type Props = {
   locale: string;
 };
 
+const PACK_PRICES: Record<Pack, { offer: string; full: string; save: string }> = {
+  solo: { offer: '69,00 €', full: '89,00 €', save: 'ÉCONOMISEZ 22%' },
+  duo:  { offer: '99,00 €', full: '138,00 €', save: 'ÉCONOMISEZ 28%' },
+};
+
 const PACK_GALLERIES: Record<Pack, { src: string; alt: string }[]> = {
   solo: [
     { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip — rendu 3D' },
@@ -105,6 +110,7 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
   const [selectedPack, setSelectedPack] = useState<Pack>('duo');
 
   const gallery = PACK_GALLERIES[selectedPack];
+  const priceInfo = PACK_PRICES[selectedPack];
 
   const packs: Array<{ key: Pack; label: string; sub: string }> = [
     { key: 'solo', label: t('product.packS'), sub: t('product.packSLabel') },
@@ -228,12 +234,12 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
-          <span style={{ fontSize: 32, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{t('product.priceOffer')}</span>
-          <span style={{ fontSize: 18, color: '#6b6d85', textDecoration: 'line-through' }}>{t('product.priceFull')}</span>
+          <span style={{ fontSize: 32, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{priceInfo.offer}</span>
+          <span style={{ fontSize: 18, color: '#6b6d85', textDecoration: 'line-through' }}>{priceInfo.full}</span>
           <span style={{
             background: '#fef3c7', color: '#d97706', fontSize: 11, fontWeight: 800,
             padding: '3px 10px', borderRadius: 6, letterSpacing: '0.04em',
-          }}>{t('product.priceSave')}</span>
+          }}>{priceInfo.save}</span>
         </div>
         <div style={{ fontSize: 12, color: '#6b6d85', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 5 }}>
           <BoltIcon size={12} color="#f59e0b" /> {t('product.get3s')}
