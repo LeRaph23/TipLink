@@ -56,6 +56,16 @@ export default function SetupPage() {
           { user_id: user.id, role: 'group_admin', group_id: pendingGroupId },
           { onConflict: 'user_id,role,group_id' }
         );
+        // Check if onboarding is still needed
+        const { data: grp } = await supabase
+          .from('groups')
+          .select('onboarding_completed_at')
+          .eq('id', pendingGroupId)
+          .maybeSingle();
+        if (grp && !grp.onboarding_completed_at) {
+          router.replace(`/${locale}/onboarding`);
+          return;
+        }
       }
     }
 

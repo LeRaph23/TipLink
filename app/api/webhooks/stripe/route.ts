@@ -238,10 +238,27 @@ async function handleEvent(
           }).catch(() => {});
         }
 
+        // Auto-provision establishment for the express checkout group
+        const expressSlug = legalName.toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const expressCountry = (shipping?.address?.country ?? 'FR').toUpperCase();
+
+        await supabase.from('establishments').insert({
+          group_id: newGroup.id,
+          name: legalName,
+          business_type: 'beauty',
+          slug: expressSlug,
+          country: expressCountry,
+          currency: 'eur',
+          onboarding_status: 'not_started',
+        });
+
         if (email) {
           // Check if a user account already exists for this email
           const { data: existingUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
           const existingUser = existingUsers?.users?.find((u) => u.email === email);
+          const inviteLocale = session.locale?.startsWith('fr') ? 'fr' : 'en';
 
           if (existingUser) {
             await supabase.from('user_roles').insert({
@@ -253,7 +270,7 @@ async function handleEvent(
             const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
             await supabase.auth.admin.inviteUserByEmail(email, {
               data: { pending_group_id: newGroup.id },
-              redirectTo: `${base}/en/auth/setup`,
+              redirectTo: `${base}/${inviteLocale}/auth/setup`,
             });
           }
         }

@@ -23,7 +23,7 @@ const labelStyle: React.CSSProperties = {
   fontSize: 12.5, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 5,
 };
 
-export function LoginForm() {
+export function LoginForm({ verified }: { verified?: boolean }) {
   const router = useRouter();
   const t = useTranslations('auth');
   const tc = useTranslations('common');
@@ -47,6 +47,19 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {verified && (
+        <div style={{
+          padding: '10px 14px',
+          borderRadius: 8,
+          background: 'rgba(22, 163, 74, 0.08)',
+          border: '1px solid rgba(22, 163, 74, 0.35)',
+          color: '#16a34a',
+          fontSize: 13.5,
+          fontWeight: 500,
+        }}>
+          ✓ Email vérifié — connectez-vous pour accéder à votre espace.
+        </div>
+      )}
       <div>
         <label style={labelStyle}>{t('emailAddress')}</label>
         <input

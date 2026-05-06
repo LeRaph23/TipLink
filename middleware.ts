@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
   // 1) NFC redirect: /s/[shortId] — short-circuits everything else.
   //    Uses raw PostgREST fetch (Edge-safe, no Supabase SDK).
   if (pathname.startsWith('/s/')) {
-    const shortId = pathname.slice(3);
+    const shortId = pathname.slice(3).toLowerCase();
 
     const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
     const acceptLang = request.headers.get('accept-language') ?? '';
