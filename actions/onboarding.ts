@@ -43,14 +43,15 @@ export async function validateSmartTagCode(
   code: string
 ): Promise<{ valid: boolean; id?: string }> {
   const service = createServiceClient();
+  const normalized = code.trim().toUpperCase();
   const { data } = await service
     .from('nfc_stickers')
-    .select('id')
-    .eq('short_id', code.trim().toUpperCase())
+    .select('id, short_id')
     .is('establishment_id', null)
-    .maybeSingle();
+    .limit(200);
 
-  return data ? { valid: true, id: data.id } : { valid: false };
+  const matching = (data ?? []).find((row) => row.short_id?.toUpperCase() === normalized);
+  return matching ? { valid: true, id: matching.id } : { valid: false };
 }
 
 // For authenticated group_admin who just completed the post-purchase wizard.
@@ -160,10 +161,9 @@ export async function completeNfcOnboarding(
   const { data: stickers } = await service
     .from('nfc_stickers')
     .select('id, short_id')
-    .in('short_id', normalizedCodes)
     .is('establishment_id', null);
 
-  const foundCodes = new Set((stickers ?? []).map((s) => s.short_id));
+  const foundCodes = new Set((stickers ?? []).map((s) => s.short_id.toUpperCase()));
   const invalid = normalizedCodes.filter((c) => !foundCodes.has(c));
   if (invalid.length > 0) {
     return { error: `Codes invalides ou déjà assignés : ${invalid.join(', ')}` };

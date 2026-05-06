@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { useCallback, useReducer, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -226,12 +226,14 @@ function StepTeamContent({
           <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input
+                placeholder="Prénom du collègue"
                 value={c.fullName}
                 onChange={(e) => update(i, { fullName: e.target.value })}
                 style={{ ...inp, fontSize: 14, padding: '11px 14px' }}
               />
               <input
                 type="email"
+                placeholder="Email du collègue"
                 value={c.email}
                 onChange={(e) => update(i, { email: e.target.value })}
                 style={{ ...inp, fontSize: 14, padding: '11px 14px' }}
@@ -311,6 +313,7 @@ export function OnboardingWizard(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   const goTo = useCallback(
     (step: string) => {
@@ -363,7 +366,10 @@ export function OnboardingWizard(props: Props) {
       const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
         email: state.adminEmail,
         password: state.password,
-        options: { data: { full_name: state.adminFullName } },
+        options: {
+          data: { full_name: state.adminFullName },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/${locale}/onboarding`)}`,
+        },
       });
 
       if (signUpErr) {
@@ -373,9 +379,7 @@ export function OnboardingWizard(props: Props) {
       }
 
       if (!signUpData.session) {
-        setError(
-          'Un email de confirmation a été envoyé. Vérifiez votre boîte mail pour activer votre compte.'
-        );
+        setConfirmationEmail(state.adminEmail);
         setSubmitting(false);
         return;
       }
@@ -416,6 +420,20 @@ export function OnboardingWizard(props: Props) {
   }
 
   // ─── Done screen ───────────────────────────────────────────────────────────
+
+  if (confirmationEmail) {
+    return (
+      <div style={{ width: '100%', maxWidth: 480, textAlign: 'center', animation: 'onbFadeUp 280ms ease-out' }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
+          Vérifiez votre email
+        </h1>
+        <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 20 }}>
+          Nous avons envoyé un email de validation à :
+        </p>
+        <p style={{ fontSize: 17, fontWeight: 700, marginBottom: 32 }}>{confirmationEmail}</p>
+      </div>
+    );
+  }
 
   if (done) {
     return (
