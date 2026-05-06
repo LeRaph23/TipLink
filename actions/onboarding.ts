@@ -43,15 +43,14 @@ export async function validateSmartTagCode(
   code: string
 ): Promise<{ valid: boolean; id?: string }> {
   const service = createServiceClient();
-  const normalized = code.trim().toUpperCase();
   const { data } = await service
     .from('nfc_stickers')
-    .select('id, short_id')
+    .select('id')
+    .eq('short_id', code.trim().toLowerCase())
     .is('establishment_id', null)
-    .limit(200);
+    .maybeSingle();
 
-  const matching = (data ?? []).find((row) => row.short_id?.toUpperCase() === normalized);
-  return matching ? { valid: true, id: matching.id } : { valid: false };
+  return data ? { valid: true, id: data.id } : { valid: false };
 }
 
 // For authenticated group_admin who just completed the post-purchase wizard.
@@ -128,6 +127,27 @@ export async function completePostPurchaseOnboarding(
     );
   }
 
+  // Auto-assign encoded SmartTags from this group's orders to the establishment
+  const { data: orderIds } = await service
+    .from('smarttag_orders')
+    .select('id')
+    .eq('group_id', roleRow.group_id);
+
+  if (orderIds?.length) {
+    const { data: stickerRows } = await service
+      .from('smarttag_order_tags')
+      .select('sticker_id')
+      .in('order_id', orderIds.map((o) => o.id));
+
+    if (stickerRows?.length) {
+      await service
+        .from('nfc_stickers')
+        .update({ establishment_id: est.id })
+        .in('id', stickerRows.map((s) => s.sticker_id))
+        .is('establishment_id', null);
+    }
+  }
+
   // Mark onboarding complete
   const { error: doneErr } = await service
     .from('groups')
@@ -157,7 +177,7 @@ export async function completeNfcOnboarding(
   const { nfcCodes, establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
 
   // Verify all NFC codes are valid unassigned stickers
-  const normalizedCodes = nfcCodes.map((c) => c.trim().toUpperCase());
+  const normalizedCodes = nfcCodes.map((c) => c.trim().toLowerCase());
   const { data: stickers } = await service
     .from('nfc_stickers')
     .select('id, short_id')

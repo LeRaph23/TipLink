@@ -56,6 +56,7 @@ export function JoinForm({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -79,6 +80,7 @@ export function JoinForm({
     reader.readAsDataURL(file);
 
     setAvatarUploading(true);
+    setAvatarError(null);
     try {
       const supabase = createClient();
       const ext = file.name.split('.').pop() ?? 'jpg';
@@ -95,9 +97,9 @@ export function JoinForm({
 
       setAvatarUrl(publicUrl);
     } catch {
-      // Photo upload failed — not blocking, just skip
       setAvatarUrl(null);
       setAvatarPreview(null);
+      setAvatarError('Échec de l\'envoi de la photo. Réessayez ou continuez sans photo.');
     }
     setAvatarUploading(false);
   }
@@ -347,9 +349,14 @@ export function JoinForm({
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
-        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-3)', marginBottom: 28 }}>
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-3)', marginBottom: avatarError ? 8 : 28 }}>
           JPG, PNG ou WebP · 2 Mo max
         </p>
+        {avatarError && (
+          <p style={{ fontSize: 12.5, color: 'var(--error)', textAlign: 'center', marginBottom: 20 }}>
+            {avatarError}
+          </p>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button

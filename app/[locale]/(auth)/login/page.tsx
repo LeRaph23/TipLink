@@ -7,10 +7,15 @@ import { LoginForm } from './LoginForm';
 
 export default async function LoginPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { locale } = await params;
+  const sp = await searchParams;
+  const verified = sp.verified === 'true';
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect(`/${locale}/dashboard`);
@@ -43,7 +48,7 @@ export default async function LoginPage({
           borderRadius: 'var(--radius-lg)', padding: 28,
           boxShadow: 'var(--shadow), 0 0 0 1px rgba(255,255,255,0.02)',
         }}>
-          <LoginForm />
+          <LoginForm verified={verified} />
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-3)', marginTop: 18 }}>

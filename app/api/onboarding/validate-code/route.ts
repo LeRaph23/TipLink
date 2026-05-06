@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 // Uses service client to bypass RLS (anon key can't read nfc_stickers).
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const code = url.searchParams.get('code')?.trim().toUpperCase();
+  const code = url.searchParams.get('code')?.trim().toLowerCase();
 
   if (!code || code.length < 1) {
     return NextResponse.json({ valid: false });

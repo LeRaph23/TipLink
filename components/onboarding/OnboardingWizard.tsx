@@ -103,7 +103,7 @@ function StepCodesContent({
   const [codeError, setCodeError] = useState<string | null>(null);
 
   async function addCode() {
-    const c = inputVal.trim().toUpperCase();
+    const c = inputVal.trim().toLowerCase();
     if (!c) return;
     if (codes.includes(c)) {
       setInputVal('');
@@ -172,8 +172,9 @@ function StepCodesContent({
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
         <input
           value={inputVal}
-          onChange={(e) => setInputVal(e.target.value.toUpperCase())}
+          onChange={(e) => setInputVal(e.target.value.toLowerCase())}
           onKeyDown={(e) => e.key === 'Enter' && addCode()}
+          placeholder="ex: a3f2b9c1"
           maxLength={32}
           style={{ ...inp, flex: 1 }}
         />
@@ -313,7 +314,7 @@ export function OnboardingWizard(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
 
   const goTo = useCallback(
     (step: string) => {
@@ -361,14 +362,16 @@ export function OnboardingWizard(props: Props) {
     setError(null);
 
     if (mode === 'scan') {
-      // 1. Create Supabase account client-side
+      // 1. Create Supabase account client-side with emailRedirectTo so the
+      //    verification link lands on the login page with a success banner.
       const supabase = createClient();
+      const redirectTo = `${window.location.origin}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/login?verified=true`)}`;
       const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
         email: state.adminEmail,
         password: state.password,
         options: {
           data: { full_name: state.adminFullName },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/${locale}/onboarding`)}`,
+          emailRedirectTo: redirectTo,
         },
       });
 
@@ -379,10 +382,13 @@ export function OnboardingWizard(props: Props) {
       }
 
       if (!signUpData.session) {
-        setConfirmationEmail(state.adminEmail);
+        // Email confirmation required — cannot run server action without a session.
+        setNeedsEmailVerification(true);
+        setDone(true);
         setSubmitting(false);
         return;
       }
+
 
       // 2. Call server action (session cookie is now set)
       const result = await completeNfcOnboarding({
@@ -399,6 +405,10 @@ export function OnboardingWizard(props: Props) {
         setSubmitting(false);
         return;
       }
+
+      // 3. Sign out — user must verify email before accessing dashboard
+      await supabase.auth.signOut();
+      setNeedsEmailVerification(true);
     } else {
       const result = await completePostPurchaseOnboarding({
         establishmentName: state.establishmentName,
@@ -421,31 +431,54 @@ export function OnboardingWizard(props: Props) {
 
   // ─── Done screen ───────────────────────────────────────────────────────────
 
-  if (confirmationEmail) {
-    return (
-      <div style={{ width: '100%', maxWidth: 480, textAlign: 'center', animation: 'onbFadeUp 280ms ease-out' }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
-          Vérifiez votre email
-        </h1>
-        <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 20 }}>
-          Nous avons envoyé un email de validation à :
-        </p>
-        <p style={{ fontSize: 17, fontWeight: 700, marginBottom: 32 }}>{confirmationEmail}</p>
-      </div>
-    );
-  }
-
   if (done) {
+    if (needsEmailVerification) {
+      return (
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 480,
+            textAlign: 'center',
+            animation: 'onbSlideIn 280ms ease-out',
+          }}
+        >
+          <style>{`@keyframes onbSlideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}`}</style>
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            background: 'var(--surface-2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+            fontSize: 28,
+          }}>
+            ✉
+          </div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
+            Vérifiez votre email
+          </h1>
+          <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 12 }}>
+            Un lien de confirmation a été envoyé à <strong style={{ color: 'var(--text)' }}>{state.adminEmail}</strong>.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.7 }}>
+            Cliquez dessus pour activer votre compte et accéder à votre espace <strong style={{ color: 'var(--text)' }}>{state.establishmentName}</strong>.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div
         style={{
           width: '100%',
           maxWidth: 480,
           textAlign: 'center',
-          animation: 'onbFadeUp 280ms ease-out',
+          animation: 'onbSlideIn 280ms ease-out',
         }}
       >
-        <style>{`@keyframes onbFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+        <style>{`@keyframes onbSlideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}`}</style>
         <div style={{
           width: 64,
           height: 64,
@@ -601,9 +634,9 @@ export function OnboardingWizard(props: Props) {
   return (
     <div style={{ width: '100%', maxWidth: 480 }}>
       <style>{`
-        @keyframes onbFadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes onbSlideIn {
+          from { opacity: 0; transform: translateX(20px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
       `}</style>
 
@@ -630,7 +663,7 @@ export function OnboardingWizard(props: Props) {
       </p>
 
       {/* Step header + body */}
-      <div key={currentStep} style={{ animation: 'onbFadeUp 240ms ease-out' }}>
+      <div key={currentStep} style={{ animation: 'onbSlideIn 220ms ease-out' }}>
         <h1 style={{
           fontSize: 28,
           fontWeight: 800,
