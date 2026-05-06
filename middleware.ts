@@ -51,8 +51,14 @@ export async function middleware(request: NextRequest) {
 
     const rows: Array<{ establishment_id: string | null }> = await res.json();
 
-    if (!rows.length || !rows[0].establishment_id) {
+    if (!rows.length) {
       return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
+    }
+
+    if (!rows[0].establishment_id) {
+      // Tag exists but is not yet assigned to a salon — launch onboarding wizard
+      const destination = `/${preferredLocale}/onboarding?code=${encodeURIComponent(shortId)}`;
+      return NextResponse.redirect(new URL(destination, request.url), 302);
     }
 
     const destination = `/${preferredLocale}/pay/group/${rows[0].establishment_id}`;

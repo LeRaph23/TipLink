@@ -25,14 +25,24 @@ export default async function JoinPage({
 
   if (!est) notFound();
 
+  // Fetch unclaimed staff profiles so the employee can self-identify
+  const { data: unclaimedProfiles } = await service
+    .from('staff_profiles')
+    .select('id, full_name')
+    .eq('establishment_id', establishmentId)
+    .is('user_id', null)
+    .is('deleted_at', null)
+    .eq('is_active', true)
+    .order('full_name');
+
   return (
     <main style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'flex-start',
       background: 'var(--bg)', padding: '40px 20px 60px',
     }}>
-      <div style={{ width: '100%', maxWidth: 420 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32, justifyContent: 'center' }}>
+      <div style={{ width: '100%', maxWidth: 440 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 36, justifyContent: 'center' }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <rect width="24" height="24" rx="7" fill="var(--accent)" />
             <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
@@ -42,23 +52,13 @@ export default async function JoinPage({
           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-3)' }}>Digitip</span>
         </div>
 
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 6 }}>
-            Rejoignez {est.name}
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6 }}>
-            Créez votre compte pour recevoir des pourboires directement sur votre compte bancaire.
-          </p>
-        </div>
+        <JoinForm
+          establishmentId={est.id}
+          establishmentName={est.name}
+          unclaimedProfiles={unclaimedProfiles ?? []}
+        />
 
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-          borderRadius: 16, padding: 24,
-        }}>
-          <JoinForm establishmentId={est.id} establishmentName={est.name} />
-        </div>
-
-        <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-3)', marginTop: 20 }}>
+        <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-3)', marginTop: 24 }}>
           Propulsé par Digitip · Paiements sécurisés par Stripe
         </p>
       </div>

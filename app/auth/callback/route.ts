@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { routing } from '@/i18n/routing';
+import { createServiceClient } from '@/lib/supabase/service';
 
-const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact'];
+const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact', '/onboarding'];
 
 function sanitizeNext(raw: string | null): string {
   if (!raw) return '/dashboard';
@@ -80,6 +81,34 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(new URL(`/${locale}/login?error=auth_callback_failed`, request.url));
+  }
+
+  // If no explicit `next` redirect, check whether this group_admin still needs onboarding
+  if (!rawNext) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const service = createServiceClient();
+      const { data: roleRow } = await service
+        .from('user_roles')
+        .select('group_id')
+        .eq('user_id', user.id)
+        .eq('role', 'group_admin')
+        .not('group_id', 'is', null)
+        .limit(1)
+        .maybeSingle();
+
+      if (roleRow?.group_id) {
+        const { data: group } = await service
+          .from('groups')
+          .select('onboarding_completed_at')
+          .eq('id', roleRow.group_id)
+          .maybeSingle();
+
+        if (group && !group.onboarding_completed_at) {
+          return NextResponse.redirect(new URL(`/${locale}/onboarding`, request.url));
+        }
+      }
+    }
   }
 
   return NextResponse.redirect(new URL(nextWithLocale, request.url));

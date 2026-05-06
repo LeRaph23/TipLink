@@ -969,5 +969,53 @@
         "colStripe": "Stripe"
       }
     }
+  },
+  "onboarding": {
+    "stepOf": "Étape {current} sur {total}",
+    "continue": "Continuer →",
+    "skip": "Passer cette étape",
+    "finish": "Terminer la configuration →",
+    "finishing": "Finalisation…",
+    "back": "← Retour",
+    "done": {
+      "title": "Votre espace est prêt !",
+      "body": "est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
+      "cta": "Accéder au dashboard →"
+    },
+    "codes": {
+      "title": "Vos SmartTags",
+      "subtitle": "Votre SmartTag est prêt à être configuré. Avez-vous d'autres tags à associer maintenant ?",
+      "add": "Ajouter",
+      "validating": "…",
+      "invalidCode": "Code invalide ou déjà utilisé",
+      "hint": "Les codes se trouvent sous le QR code imprimé sur chaque SmartTag."
+    },
+    "salon": {
+      "title": "Nom du salon",
+      "subtitle": "Comment s'appelle votre salon ou établissement ?"
+    },
+    "address": {
+      "title": "Adresse",
+      "subtitle": "À quelle adresse se trouve votre établissement ?"
+    },
+    "adminName": {
+      "title": "Votre nom",
+      "subtitle": "Comment vous appelez-vous ?"
+    },
+    "email": {
+      "title": "Votre email",
+      "subtitle": "Vous recevrez vos notifications et votre lien de connexion ici."
+    },
+    "password": {
+      "title": "Mot de passe",
+      "subtitle": "Choisissez un mot de passe sécurisé.",
+      "hint": "8 caractères minimum"
+    },
+    "team": {
+      "title": "Votre équipe",
+      "subtitle": "Invitez vos collègues pour qu'ils puissent eux aussi recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard.",
+      "add": "+ Ajouter un collègue",
+      "remove": "Retirer"
+    }
   }
 }

@@ -48,7 +48,7 @@ export default async function StaffListPage({
   const { data: est } = roleRow?.group_id
     ? await service
         .from('establishments')
-        .select('id')
+        .select('id, name')
         .eq('group_id', roleRow.group_id)
         .is('deleted_at', null)
         .limit(1)
@@ -71,8 +71,8 @@ export default async function StaffListPage({
         </div>
         {joinUrl && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 11.5, color: 'var(--text-3)', fontWeight: 500 }}>Lien d&apos;invitation coiffeurs</div>
-            <StaffInviteCopy url={joinUrl} />
+            <div style={{ fontSize: 11.5, color: 'var(--text-3)', fontWeight: 500 }}>Lien d&apos;invitation équipe</div>
+            <StaffInviteCopy url={joinUrl} establishmentName={est?.name ?? ''} />
           </div>
         )}
         <Link href="/dashboard/staff/new" style={{

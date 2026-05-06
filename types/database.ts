@@ -23,6 +23,7 @@ export type Database = {
           subscription_status: string | null;
           subscription_pack: 'solo' | 'duo' | null;
           platform_fee_bps: number;
+          onboarding_completed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -40,6 +41,7 @@ export type Database = {
           subscription_status?: string | null;
           subscription_pack?: 's' | 'm' | 'l' | null;
           platform_fee_bps?: number;
+          onboarding_completed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -57,6 +59,7 @@ export type Database = {
           subscription_status?: string | null;
           subscription_pack?: 's' | 'm' | 'l' | null;
           platform_fee_bps?: number;
+          onboarding_completed_at?: string | null;
         };
         Relationships: [];
       };
@@ -202,6 +205,7 @@ export type Database = {
           country: string;
           currency: string;
           onboarding_status: 'not_started' | 'pending' | 'complete';
+          address: string | null;
           created_at: string;
           deleted_at: string | null;
         };
@@ -215,6 +219,7 @@ export type Database = {
           country?: string;
           currency?: string;
           onboarding_status?: 'not_started' | 'pending' | 'complete';
+          address?: string | null;
           created_at?: string;
           deleted_at?: string | null;
         };
@@ -228,6 +233,7 @@ export type Database = {
           country?: string;
           currency?: string;
           onboarding_status?: 'not_started' | 'pending' | 'complete';
+          address?: string | null;
           created_at?: string;
           deleted_at?: string | null;
         };
@@ -513,6 +519,10 @@ export type Database = {
           row_count: number;
           succeeded_volume_cents: number;
         }[];
+      };
+      validate_unassigned_nfc_code: {
+        Args: { p_short_id: string };
+        Returns: string | null;
       };
     };
     Enums: {

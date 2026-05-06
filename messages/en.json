@@ -969,5 +969,53 @@
         "colStripe": "Stripe"
       }
     }
+  },
+  "onboarding": {
+    "stepOf": "Step {current} of {total}",
+    "continue": "Continue →",
+    "skip": "Skip this step",
+    "finish": "Finish setup →",
+    "finishing": "Finalizing…",
+    "back": "← Back",
+    "done": {
+      "title": "Your space is ready!",
+      "body": "is set up. You can now manage your team and track your tips.",
+      "cta": "Go to dashboard →"
+    },
+    "codes": {
+      "title": "Your SmartTags",
+      "subtitle": "Your SmartTag is ready to be set up. Do you have other tags to configure at the same time?",
+      "add": "Add",
+      "validating": "…",
+      "invalidCode": "Invalid or already assigned code",
+      "hint": "Codes are printed under the QR code on each SmartTag."
+    },
+    "salon": {
+      "title": "Salon name",
+      "subtitle": "What is your salon or establishment called?"
+    },
+    "address": {
+      "title": "Address",
+      "subtitle": "Where is your establishment located?"
+    },
+    "adminName": {
+      "title": "Your name",
+      "subtitle": "What is your full name?"
+    },
+    "email": {
+      "title": "Your email",
+      "subtitle": "You will receive your notifications and login link here."
+    },
+    "password": {
+      "title": "Password",
+      "subtitle": "Choose a secure password.",
+      "hint": "At least 8 characters"
+    },
+    "team": {
+      "title": "Your team",
+      "subtitle": "Invite your colleagues so they can also receive tips. You can skip this step and invite them later from your dashboard.",
+      "add": "+ Add a colleague",
+      "remove": "Remove"
+    }
   }
 }
