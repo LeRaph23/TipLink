@@ -30,6 +30,37 @@ function makeBatchLabel(): string {
   return `${ymd}-${suffix}`;
 }
 
+export async function createManualTag(
+  shortId: string,
+  batchLabel?: string
+): Promise<Result<{ id: string; short_id: string }>> {
+  const normalized = shortId.trim();
+  if (!normalized || normalized.length < 4 || normalized.length > 32) {
+    return { ok: false, error: 'Le code doit faire entre 4 et 32 caractères' };
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(normalized)) {
+    return { ok: false, error: 'Caractères autorisés : lettres, chiffres, - et _' };
+  }
+
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const { data, error } = await auth.supabase
+    .from('nfc_stickers')
+    .insert({ short_id: normalized, batch_label: batchLabel?.trim() || null })
+    .select('id, short_id')
+    .single();
+
+  if (error) {
+    if (error.code === '23505') return { ok: false, error: `Le code "${normalized}" existe déjà` };
+    return { ok: false, error: error.message };
+  }
+
+  await logAdminAction('smarttags.create_manual', { short_id: normalized, batch_label: batchLabel });
+  revalidatePath('/dashboard/admin/smarttags');
+  return { ok: true, data };
+}
+
 export async function generateBatch(
   count: number,
   label?: string

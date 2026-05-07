@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   generateBatch,
+  createManualTag,
   assignTagsToEstablishment,
   assignTagsByShortIdRange,
   unassignTag,
   deleteDeployedTag,
+  deleteStockTag,
   reassignTag,
 } from '@/actions/admin/smarttags';
 
@@ -111,6 +113,7 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
   const [pending, startTransition] = useTransition();
   const [tab, setTab] = useState<'stock' | 'active'>('stock');
   const [genOpen, setGenOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [rangeOpen, setRangeOpen] = useState(false);
   const [reassignTarget, setReassignTarget] = useState<ActiveTag | null>(null);
@@ -183,6 +186,9 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
           <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button style={secondaryBtn} onClick={() => setManualOpen(true)} disabled={pending}>
+            + Code manuel
+          </button>
           <button style={primaryBtn} onClick={() => setGenOpen(true)} disabled={pending}>
             {t('generateBatch')}
           </button>
@@ -273,6 +279,14 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
             selected={selected}
             onToggle={toggle}
             onToggleAll={() => toggleAll(filteredStock.map((s) => s.id))}
+            onDelete={(id) => {
+              if (!confirm('Supprimer ce SmartTag du stock ?')) return;
+              startTransition(async () => {
+                const res = await deleteStockTag(id);
+                if (!res.ok) flash(res.error);
+                else { notify('SmartTag supprimé'); router.refresh(); }
+              });
+            }}
             locale={locale}
             mode="stock"
             t={t}
@@ -314,6 +328,24 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
             t={t}
           />
         </div>
+      )}
+
+      {manualOpen && (
+        <ManualTagModal
+          onClose={() => setManualOpen(false)}
+          onSubmit={(shortId, label) => {
+            startTransition(async () => {
+              const res = await createManualTag(shortId, label || undefined);
+              if (!res.ok) flash(res.error);
+              else {
+                notify(`SmartTag "${res.data.short_id}" créé`);
+                setManualOpen(false);
+                router.refresh();
+              }
+            });
+          }}
+          pending={pending}
+        />
       )}
 
       {genOpen && (
@@ -400,12 +432,13 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
 }
 
 function TagTable({
-  rows, selected, onToggle, onToggleAll, locale, t,
+  rows, selected, onToggle, onToggleAll, onDelete, locale, t,
 }: {
   rows: StockTag[];
   selected: Set<string>;
   onToggle: (id: string) => void;
   onToggleAll: () => void;
+  onDelete: (id: string) => void;
   locale: string;
   mode: 'stock';
   t: ReturnType<typeof useTranslations<'dashboard.admin.smarttags'>>;
@@ -432,6 +465,7 @@ function TagTable({
             <th style={th}>{t('colShortId')}</th>
             <th style={th}>{t('colBatch')}</th>
             <th style={th}>{t('colGenerated')}</th>
+            <th style={{ ...th, textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -444,6 +478,9 @@ function TagTable({
               <td style={td}>{r.batch_label ?? '—'}</td>
               <td style={{ ...td, color: 'var(--text-3)' }}>
                 {new Date(r.generated_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
+              </td>
+              <td style={{ ...td, textAlign: 'right' }}>
+                <button style={dangerBtn} onClick={() => onDelete(r.id)}>Supprimer</button>
               </td>
             </tr>
           ))}
@@ -622,6 +659,53 @@ function AssignModal({
         <button style={secondaryBtn} onClick={onClose} disabled={pending}>{t('cancel')}</button>
         <button style={primaryBtn} onClick={() => onSubmit(estId)} disabled={!estId || pending}>
           {pending ? t('working') : t('assignConfirm')}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function ManualTagModal({ onClose, onSubmit, pending }: {
+  onClose: () => void;
+  onSubmit: (shortId: string, label: string) => void;
+  pending: boolean;
+}) {
+  const [shortId, setShortId] = useState('');
+  const [label, setLabel] = useState('');
+  return (
+    <ModalShell title="Ajouter un SmartTag manuellement" onClose={onClose}>
+      <label style={{ display: 'block', marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>Code (short_id) *</div>
+        <input
+          type="text"
+          value={shortId}
+          onChange={(e) => setShortId(e.target.value)}
+          placeholder="ex: KqRMCTaV"
+          style={input}
+          autoFocus
+        />
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+          Lettres, chiffres, tirets. 4–32 caractères. Respecte la casse.
+        </div>
+      </label>
+      <label style={{ display: 'block', marginBottom: 18 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>Lot (optionnel)</div>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="ex: MANUEL-2026"
+          style={input}
+        />
+      </label>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button style={secondaryBtn} onClick={onClose} disabled={pending}>Annuler</button>
+        <button
+          style={primaryBtn}
+          onClick={() => onSubmit(shortId, label)}
+          disabled={pending || shortId.trim().length < 4}
+        >
+          {pending ? '…' : 'Créer'}
         </button>
       </div>
     </ModalShell>
