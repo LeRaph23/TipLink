@@ -24,15 +24,15 @@ async function assertSuperAdmin() {
 
 export async function updateEstablishment(
   id: string,
-  data: { name?: string; address?: string; business_type?: string; country?: string; currency?: string }
+  data: { name?: string; address?: string; business_type?: 'restaurant' | 'beauty'; country?: string; currency?: string }
 ): Promise<Result<null>> {
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  const patch: Record<string, string> = {};
+  const patch: { name?: string; address?: string; business_type?: 'restaurant' | 'beauty'; country?: string; currency?: string } = {};
   if (data.name?.trim()) patch.name = data.name.trim();
   if (data.address?.trim()) patch.address = data.address.trim();
-  if (data.business_type?.trim()) patch.business_type = data.business_type.trim();
+  if (data.business_type) patch.business_type = data.business_type;
   if (data.country?.trim()) patch.country = data.country.trim().toUpperCase();
   if (data.currency?.trim()) patch.currency = data.currency.trim().toLowerCase();
 

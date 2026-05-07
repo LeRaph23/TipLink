@@ -23,6 +23,8 @@ const primaryBtn: React.CSSProperties = {
   cursor: 'pointer', fontFamily: 'var(--font)',
 };
 
+type BusinessType = 'restaurant' | 'beauty';
+
 type Props = {
   id: string;
   name: string;
@@ -34,7 +36,11 @@ export function EstablishmentActions({ id, name, address, businessType }: Props)
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name, address: address ?? '', businessType: businessType ?? '' });
+  const [form, setForm] = useState({
+    name,
+    address: address ?? '',
+    businessType: (businessType === 'restaurant' || businessType === 'beauty' ? businessType : 'restaurant') as BusinessType,
+  });
   const [error, setError] = useState<string | null>(null);
 
   function handleDelete() {
@@ -73,7 +79,10 @@ export function EstablishmentActions({ id, name, address, businessType }: Props)
           </label>
           <label>
             <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Type</div>
-            <input style={input} value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value })} />
+            <select style={input} value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value as BusinessType })}>
+              <option value="restaurant">Restaurant</option>
+              <option value="beauty">Beauté</option>
+            </select>
           </label>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
