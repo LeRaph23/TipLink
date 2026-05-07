@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    body { background:#f4f4f5 !important; color:#18181b !important; }
+    .card { background:#ffffff !important; border-color:#e4e4e7 !important; }
+    .card-header { border-color:#e4e4e7 !important; }
+    .card-footer { border-color:#e4e4e7 !important; }
+    .brand-name { color:#18181b !important; }
+    .brand-sub { color:#71717a !important; }
+    .title { color:#18181b !important; }
+    .body-text { color:#52525b !important; }
+    .disclaimer { color:#a1a1aa !important; }
+    .footer-text { color:#a1a1aa !important; }
+
+    @media (prefers-color-scheme: dark) {
+      body { background:#0a0a0a !important; color:#e5e5e5 !important; }
+      .card { background:#141414 !important; border-color:#222 !important; }
+      .card-header { border-color:#1e1e1e !important; }
+      .card-footer { border-color:#1e1e1e !important; }
+      .brand-name { color:#ffffff !important; }
+      .brand-sub { color:#666666 !important; }
+      .title { color:#ffffff !important; }
+      .body-text { color:#888888 !important; }
+      .disclaimer { color:#444444 !important; }
+      .footer-text { color:#444444 !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#18181b">
+  <table width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;border:1px solid #e4e4e7;overflow:hidden">
+    <tr><td class="card-header" style="padding:32px 32px 24px;border-bottom:1px solid #e4e4e7">
+      <div class="brand-name" style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#18181b">Digitip</div>
+      <div class="brand-sub" style="font-size:13px;color:#71717a;margin-top:2px">Connexion sans mot de passe</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div class="title" style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#18181b;margin-bottom:8px">Votre lien de connexion</div>
+      <div class="body-text" style="font-size:14px;color:#52525b;line-height:1.6">Cliquez ci-dessous pour vous connecter instantanément. Ce lien expire dans 1 heure.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 26px;background:linear-gradient(135deg,#E57A97,#EC97B0);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;letter-spacing:-0.01em">
+        Me connecter →
+      </a>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <p class="disclaimer" style="font-size:12px;color:#a1a1aa;margin:0;line-height:1.6">Si vous n'avez pas demandé ce lien, ignorez cet email.</p>
+    </td></tr>
+    <tr><td class="card-footer" style="padding:16px 32px;border-top:1px solid #e4e4e7;text-align:center">
+      <span class="footer-text" style="font-size:11px;color:#a1a1aa">© Digitip · Pourboires cashless via NFC</span>
+    </td></tr>
+  </table>
+</body>
+</html>
