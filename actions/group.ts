@@ -35,9 +35,9 @@ export async function updateGroup(
   if (input.tipThresholds !== undefined) {
     const currentSettings = (current?.settings as Record<string, unknown> | null) ?? {};
     const cleaned = input.tipThresholds
-      .filter((v) => typeof v === 'number' && v > 0 && v < 10000)
+      .filter((v) => typeof v === 'number' && v >= 2 && v < 10000)
       .slice(0, 4);
-    if (cleaned.length !== 4) return { error: 'Four positive tip amounts required' };
+    if (cleaned.length !== 4) return { error: 'Les quatre montants doivent être au minimum 2 €.' };
     patch.settings = { ...currentSettings, tip_thresholds: cleaned };
   }
 

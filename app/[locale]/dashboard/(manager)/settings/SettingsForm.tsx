@@ -145,7 +145,7 @@ export function SettingsForm({
             <input
               key={i}
               type="number"
-              min="0"
+              min="2"
               step="0.5"
               value={v}
               onChange={(e) => {
