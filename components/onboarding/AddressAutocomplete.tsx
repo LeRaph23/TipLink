@@ -116,7 +116,7 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
         onKeyDown={handleKeyDown}
         style={style}
         autoComplete="off"
-        placeholder="9 impasse Saint-Léger, 68130 Jettingen"
+        placeholder="12 rue de Rivoli, 75001 Paris"
       />
       {open && suggestions.length > 0 && (
         <ul style={dropdownStyle}>
