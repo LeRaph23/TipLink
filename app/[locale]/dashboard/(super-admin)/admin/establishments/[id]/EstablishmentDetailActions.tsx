@@ -32,18 +32,24 @@ const modalBox: React.CSSProperties = {
   borderRadius: 'var(--radius)', padding: 22, width: '100%', maxWidth: 480,
 };
 
+type BusinessType = 'restaurant' | 'beauty';
+
 type Props = {
   id: string;
   name: string;
   address: string | null;
-  businessType: string | null;
+  businessType: BusinessType | null;
 };
 
 export function EstablishmentDetailActions({ id, name, address, businessType }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name, address: address ?? '', businessType: businessType ?? '' });
+  const [form, setForm] = useState<{ name: string; address: string; businessType: BusinessType }>({
+    name,
+    address: address ?? '',
+    businessType: businessType ?? 'restaurant',
+  });
   const [error, setError] = useState<string | null>(null);
 
   function handleDelete() {
@@ -95,7 +101,7 @@ export function EstablishmentDetailActions({ id, name, address, businessType }: 
               </label>
               <label>
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 5 }}>Type</div>
-                <select style={input} value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value })}>
+                <select style={input} value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value as BusinessType })}>
                   <option value="restaurant">Restaurant</option>
                   <option value="beauty">Beauty</option>
                 </select>
