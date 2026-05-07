@@ -101,3 +101,21 @@ export async function removeUserRole(roleRowId: string): Promise<Result<null>> {
   revalidatePath('/dashboard/admin/users');
   return { ok: true, data: null };
 }
+
+export async function deleteAuthUser(userId: string): Promise<Result<null>> {
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+  if (!userId) return { ok: false, error: 'Missing user id' };
+
+  const service = createServiceClient();
+
+  // Remove all roles first (FK cleanup)
+  await auth.supabase.from('user_roles').delete().eq('user_id', userId);
+
+  const { error } = await service.auth.admin.deleteUser(userId);
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction('user.delete', { userId });
+  revalidatePath('/dashboard/admin/users');
+  return { ok: true, data: null };
+}

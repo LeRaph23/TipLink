@@ -8,6 +8,8 @@ import {
   assignTagsToEstablishment,
   assignTagsByShortIdRange,
   unassignTag,
+  deleteDeployedTag,
+  reassignTag,
 } from '@/actions/admin/smarttags';
 
 type StockTag = {
@@ -111,6 +113,7 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
   const [genOpen, setGenOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [rangeOpen, setRangeOpen] = useState(false);
+  const [reassignTarget, setReassignTarget] = useState<ActiveTag | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batchFilter, setBatchFilter] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<string>('');
@@ -291,6 +294,7 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
             rows={filteredActive}
             locale={locale}
             pending={pending}
+            establishments={establishments}
             onUnassign={(id) => {
               startTransition(async () => {
                 const res = await unassignTag(id);
@@ -298,6 +302,15 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
                 else { notify(t('unassigned')); router.refresh(); }
               });
             }}
+            onDelete={(id) => {
+              if (!confirm('Supprimer définitivement ce SmartTag déployé ?')) return;
+              startTransition(async () => {
+                const res = await deleteDeployedTag(id);
+                if (!res.ok) flash(res.error);
+                else { notify('SmartTag supprimé'); router.refresh(); }
+              });
+            }}
+            onReassign={(tag) => setReassignTarget(tag)}
             t={t}
           />
         </div>
@@ -338,6 +351,24 @@ export function SmartTagsManager({ locale, stock, active, establishments }: Prop
                 setAssignOpen(false);
                 router.refresh();
               }
+            });
+          }}
+          pending={pending}
+          t={t}
+        />
+      )}
+
+      {reassignTarget && (
+        <AssignModal
+          title={`Réassigner ${reassignTarget.short_id}`}
+          establishments={establishments}
+          onClose={() => setReassignTarget(null)}
+          onSubmit={(estId) => {
+            const id = reassignTarget.id;
+            startTransition(async () => {
+              const res = await reassignTag(id, estId);
+              if (!res.ok) flash(res.error);
+              else { notify('Tag réassigné'); setReassignTarget(null); router.refresh(); }
             });
           }}
           pending={pending}
@@ -422,13 +453,28 @@ function TagTable({
   );
 }
 
+const dangerBtn: React.CSSProperties = {
+  padding: '6px 10px',
+  borderRadius: 6,
+  background: 'transparent',
+  border: '1px solid var(--error, #ef4444)',
+  color: 'var(--error, #ef4444)',
+  fontSize: 11.5,
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'var(--font)',
+};
+
 function ActiveTable({
-  rows, locale, pending, onUnassign, t,
+  rows, locale, pending, establishments, onUnassign, onDelete, onReassign, t,
 }: {
   rows: ActiveTag[];
   locale: string;
   pending: boolean;
+  establishments: Establishment[];
   onUnassign: (id: string) => void;
+  onDelete: (id: string) => void;
+  onReassign: (tag: ActiveTag) => void;
   t: ReturnType<typeof useTranslations<'dashboard.admin.smarttags'>>;
 }) {
   if (rows.length === 0) {
@@ -461,9 +507,17 @@ function ActiveTable({
               <td style={{ ...td, color: 'var(--text-2)' }}>{r.group_name ?? '—'}</td>
               <td style={{ ...td, color: 'var(--text-3)' }}>{r.batch_label ?? '—'}</td>
               <td style={{ ...td, textAlign: 'right' }}>
-                <button style={ghostBtn} disabled={pending} onClick={() => onUnassign(r.id)}>
-                  {t('unassign')}
-                </button>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  <button style={ghostBtn} disabled={pending} onClick={() => onReassign(r)}>
+                    Réassigner
+                  </button>
+                  <button style={ghostBtn} disabled={pending} onClick={() => onUnassign(r.id)}>
+                    {t('unassign')}
+                  </button>
+                  <button style={dangerBtn} disabled={pending} onClick={() => onDelete(r.id)}>
+                    Supprimer
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

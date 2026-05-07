@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { EstablishmentActions } from './EstablishmentActions';
 
 export default async function EstablishmentsPage({
   params,
@@ -15,7 +16,7 @@ export default async function EstablishmentsPage({
   const { data: establishments } = await supabase
     .from('establishments')
     .select(`
-      id, name, business_type, slug, country, currency,
+      id, name, business_type, slug, country, currency, address,
       onboarding_status, deleted_at,
       groups (name)
     `)
@@ -47,6 +48,7 @@ export default async function EstablishmentsPage({
                   t('establishments.colType'),
                   t('establishments.colCurrency'),
                   t('establishments.colStripe'),
+                  'Actions',
                 ].map((h) => (
                   <th key={h} style={{
                     padding: '10px 16px', textAlign: 'left',
@@ -61,7 +63,7 @@ export default async function EstablishmentsPage({
             <tbody>
               {(!establishments || establishments.length === 0) && (
                 <tr>
-                  <td colSpan={5} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
+                  <td colSpan={6} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
                     {t('establishments.empty')}
                   </td>
                 </tr>
@@ -87,6 +89,12 @@ export default async function EstablishmentsPage({
                         {e.onboarding_status ?? '—'}
                       </span>
                     </td>
+                    <EstablishmentActions
+                      id={e.id}
+                      name={e.name ?? ''}
+                      address={e.address ?? null}
+                      businessType={e.business_type ?? null}
+                    />
                   </tr>
                 );
               })}

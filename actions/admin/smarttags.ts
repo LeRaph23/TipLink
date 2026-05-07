@@ -166,3 +166,46 @@ export async function deleteStockTag(stickerId: string): Promise<Result<null>> {
   revalidatePath('/dashboard/admin/smarttags');
   return { ok: true, data: null };
 }
+
+export async function deleteDeployedTag(stickerId: string): Promise<Result<null>> {
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const { error } = await auth.supabase
+    .from('nfc_stickers')
+    .delete()
+    .eq('id', stickerId);
+
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction('smarttags.delete_deployed', { stickerId });
+  revalidatePath('/dashboard/admin/smarttags');
+  return { ok: true, data: null };
+}
+
+export async function reassignTag(
+  stickerId: string,
+  establishmentId: string
+): Promise<Result<null>> {
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const { data: est } = await auth.supabase
+    .from('establishments')
+    .select('id')
+    .eq('id', establishmentId)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (!est) return { ok: false, error: 'Establishment not found' };
+
+  const { error } = await auth.supabase
+    .from('nfc_stickers')
+    .update({ establishment_id: establishmentId })
+    .eq('id', stickerId);
+
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction('smarttags.reassign', { stickerId, establishmentId });
+  revalidatePath('/dashboard/admin/smarttags');
+  return { ok: true, data: null };
+}

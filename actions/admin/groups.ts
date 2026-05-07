@@ -22,6 +22,44 @@ async function assertSuperAdmin() {
   return { supabase, ok: true as const };
 }
 
+export async function updateGroupName(
+  groupId: string,
+  name: string
+): Promise<Result<null>> {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > 200) return { ok: false, error: 'Nom invalide' };
+
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const { error } = await auth.supabase
+    .from('groups')
+    .update({ name: trimmed })
+    .eq('id', groupId);
+
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction('groups.update_name', { groupId, name: trimmed });
+  revalidatePath('/dashboard/admin/groups');
+  return { ok: true, data: null };
+}
+
+export async function deleteGroup(groupId: string): Promise<Result<null>> {
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const { error } = await auth.supabase
+    .from('groups')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', groupId);
+
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction('groups.delete', { groupId });
+  revalidatePath('/dashboard/admin/groups');
+  return { ok: true, data: null };
+}
+
 export async function updateGroupFeeBps(
   groupId: string,
   bps: number

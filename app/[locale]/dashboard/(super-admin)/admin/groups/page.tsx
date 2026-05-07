@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { GroupFeeEditor } from './GroupFeeEditor';
+import { GroupActions } from './GroupActions';
 
 export default async function GroupsPage({
   params,
@@ -67,6 +68,7 @@ export default async function GroupsPage({
                 {t('groups.createdOn')} {new Date(g.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
               <GroupFeeEditor groupId={g.id} initialBps={g.platform_fee_bps} />
+              <GroupActions groupId={g.id} groupName={g.name} />
             </div>
           ))}
         </div>
