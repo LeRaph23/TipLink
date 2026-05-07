@@ -8,6 +8,7 @@ import {
   completeNfcOnboarding,
   completeExpressOnboarding,
 } from '@/actions/onboarding';
+import { AddressAutocomplete } from './AddressAutocomplete';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -631,12 +632,11 @@ export function OnboardingWizard(props: Props) {
 
       case 'address':
         return (
-          <textarea
-            autoFocus
+          <AddressAutocomplete
             value={state.address}
-            onChange={(e) => dispatch({ address: e.target.value })}
-            rows={3}
-            style={{ ...inp, resize: 'vertical', lineHeight: 1.6 }}
+            onChange={(address) => dispatch({ address })}
+            onConfirm={() => canAdvance() && (isLastStep ? handleSubmit() : next())}
+            style={inp}
           />
         );
 
