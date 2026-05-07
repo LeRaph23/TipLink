@@ -160,6 +160,103 @@ export async function completePostPurchaseOnboarding(
   return { success: true };
 }
 
+const ExpressOnboardingSchema = z.object({
+  groupId: z.string().uuid(),
+  establishmentName: z.string().min(1).max(200),
+  address: z.string().min(1).max(500),
+  adminFullName: z.string().min(1).max(200),
+  colleagues: z.array(ColleagueSchema).max(20).default([]),
+  locale: z.enum(['fr', 'en']).default('fr'),
+});
+
+// For the express checkout flow (bought on landing page, no existing account).
+// The client calls supabase.auth.signUp() first, then this action links the
+// new user to the pre-existing group created by the Stripe webhook.
+export async function completeExpressOnboarding(
+  input: z.infer<typeof ExpressOnboardingSchema>
+): Promise<{ success: true } | { error: string }> {
+  const parsed = ExpressOnboardingSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Non authentifié — créez votre compte en premier.' };
+
+  const service = createServiceClient();
+  const { groupId, establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
+
+  // Verify the group exists and hasn't been onboarded yet
+  const { data: group } = await service
+    .from('groups')
+    .select('id, onboarding_completed_at')
+    .eq('id', groupId)
+    .maybeSingle();
+
+  if (!group) return { error: 'Groupe introuvable.' };
+  if (group.onboarding_completed_at) return { error: 'Ce salon a déjà été configuré.' };
+
+  // Get the establishment created by the webhook
+  const { data: est } = await service
+    .from('establishments')
+    .select('id')
+    .eq('group_id', groupId)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (!est) return { error: 'Établissement introuvable.' };
+
+  const slug = makeSlug(establishmentName);
+
+  // Update establishment with wizard data
+  const { error: estErr } = await service
+    .from('establishments')
+    .update({ name: establishmentName, address, slug })
+    .eq('id', est.id);
+
+  if (estErr) return { error: estErr.message };
+
+  // Update group name
+  await service.from('groups')
+    .update({ name: establishmentName })
+    .eq('id', groupId);
+
+  // Link user as group_admin
+  await service.from('user_roles').upsert(
+    { user_id: user.id, role: 'group_admin', group_id: groupId },
+    { onConflict: 'user_id,role,group_id' }
+  );
+
+  // Update auth user display name
+  await supabase.auth.updateUser({ data: { full_name: adminFullName } });
+
+  // Invite colleagues (best-effort)
+  if (colleagues.length > 0) {
+    await Promise.allSettled(
+      colleagues.map((c) =>
+        inviteStaffMember({
+          fullName: c.fullName,
+          email: c.email,
+          establishmentId: est.id,
+          role: 'staff',
+          locale,
+        })
+      )
+    );
+  }
+
+  // Mark onboarding complete
+  const { error: doneErr } = await service
+    .from('groups')
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq('id', groupId);
+
+  if (doneErr) return { error: doneErr.message };
+
+  revalidatePath('/dashboard');
+  return { success: true };
+}
+
 // For the unauthenticated NFC scan flow.
 // The client-side wizard calls supabase.auth.signUp() BEFORE this action,
 // so the session cookie is set and createClient() can read the new user.

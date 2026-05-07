@@ -11,10 +11,10 @@ export default async function OnboardingPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ code?: string; step?: string }>;
+  searchParams: Promise<{ code?: string; step?: string; group?: string; email?: string }>;
 }) {
   const { locale } = await params;
-  const { code } = await searchParams;
+  const { code, group: groupParam, email: emailParam } = await searchParams;
   setRequestLocale(locale);
 
   // NFC scan mode (unauthenticated allowed)
@@ -22,10 +22,34 @@ export default async function OnboardingPage({
     return (
       <OnboardingWizard
         mode="scan"
-        initialCode={code.trim().toUpperCase()}
+        initialCode={code.trim().toLowerCase()}
         locale={locale}
       />
     );
+  }
+
+  // Express checkout mode: group UUID + email from order confirmation email link
+  if (groupParam) {
+    const service = createServiceClient();
+    const { data: group } = await service
+      .from('groups')
+      .select('id, onboarding_completed_at')
+      .eq('id', groupParam)
+      .maybeSingle();
+
+    // If group doesn't exist or already onboarded, fall through to login
+    if (group && !group.onboarding_completed_at) {
+      return (
+        <OnboardingWizard
+          mode="express"
+          groupId={group.id}
+          initialEmail={emailParam ? decodeURIComponent(emailParam) : ''}
+          locale={locale}
+        />
+      );
+    }
+
+    redirect(`/${locale}/dashboard`);
   }
 
   // Post-purchase mode: must be authenticated group_admin
