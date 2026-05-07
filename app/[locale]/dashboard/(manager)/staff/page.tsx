@@ -57,11 +57,22 @@ export default async function StaffListPage({
 
   const joinUrl = est ? `${getBaseUrl()}/join/${est.id}` : null;
 
+  // Fetch emails for staff who have joined (have a user_id)
+  const userIds = (staffMembers ?? []).filter((s) => s.user_id).map((s) => s.user_id!);
+  const emailMap = new Map<string, string>();
+  if (userIds.length > 0) {
+    const results = await Promise.all(userIds.map((id) => service.auth.admin.getUserById(id)));
+    for (const r of results) {
+      if (r.data?.user?.email) emailMap.set(r.data.user.id, r.data.user.email);
+    }
+  }
+
   return (
     <div>
+      {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        gap: 16, marginBottom: 24, flexWrap: 'wrap',
+        gap: 16, marginBottom: 16,
       }}>
         <div>
           <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
@@ -69,22 +80,30 @@ export default async function StaffListPage({
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
         </div>
-        {joinUrl && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 11.5, color: 'var(--text-3)', fontWeight: 500 }}>Lien d&apos;invitation équipe</div>
-            <StaffInviteCopy url={joinUrl} establishmentName={est?.name ?? ''} />
-          </div>
-        )}
         <Link href="/dashboard/staff/new" style={{
           padding: '9px 16px', borderRadius: 'var(--radius)',
           background: 'var(--accent)', color: 'var(--accent-fg)',
           fontSize: 13, fontWeight: 600, textDecoration: 'none',
-          whiteSpace: 'nowrap',
+          whiteSpace: 'nowrap', flexShrink: 0,
         }}>
           {t('addButton')} {tc('arrowRight')}
         </Link>
       </div>
 
+      {/* Invitation link card */}
+      {joinUrl && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Lien d&apos;invitation équipe
+          </div>
+          <StaffInviteCopy url={joinUrl} establishmentName={est?.name ?? ''} />
+        </div>
+      )}
+
+      {/* Staff table */}
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius)', overflow: 'hidden',
@@ -93,11 +112,11 @@ export default async function StaffListPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('colName'), t('colEstablishment'), t('colPayout'), t('colStatus'), ''].map((h, i) => (
+                {[t('colName'), 'Email', t('colEstablishment'), t('colPayout'), t('colStatus'), ''].map((h, i) => (
                   <th
                     key={i}
                     style={{
-                      padding: '10px 16px', textAlign: i === 4 ? 'right' : 'left',
+                      padding: '10px 16px', textAlign: i === 5 ? 'right' : 'left',
                       fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
                       textTransform: 'uppercase', letterSpacing: '0.07em',
                       borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap',
@@ -112,13 +131,14 @@ export default async function StaffListPage({
             <tbody>
               {(!staffMembers || staffMembers.length === 0) && (
                 <tr>
-                  <td colSpan={5} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
+                  <td colSpan={6} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
                     {t('empty')}
                   </td>
                 </tr>
               )}
               {staffMembers?.map((s) => {
-                const est = Array.isArray(s.establishments) ? s.establishments[0] : s.establishments;
+                const estRow = Array.isArray(s.establishments) ? s.establishments[0] : s.establishments;
+                const email = s.user_id ? emailMap.get(s.user_id) : undefined;
                 const payoutLabel =
                   s.onboarding_status === 'complete'
                     ? t('detail.payoutComplete')
@@ -136,8 +156,17 @@ export default async function StaffListPage({
                     <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>
                       {s.full_name}
                     </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      {email ? (
+                        <a href={`mailto:${email}`} style={{ color: 'var(--text-2)', fontSize: 12.5, textDecoration: 'none' }}>
+                          {email}
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--text-3)', fontSize: 12.5 }}>—</span>
+                      )}
+                    </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)' }}>
-                      {est?.name ?? '—'}
+                      {estRow?.name ?? '—'}
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: 12.5, color: payoutColor }}>
                       {payoutLabel}
