@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { Link } from '@/i18n/navigation';
 import { EstablishmentActions } from './EstablishmentActions';
 
 export default async function EstablishmentsPage({
@@ -48,6 +49,7 @@ export default async function EstablishmentsPage({
                   t('establishments.colType'),
                   t('establishments.colCurrency'),
                   t('establishments.colStripe'),
+                  '',
                   'Actions',
                 ].map((h) => (
                   <th key={h} style={{
@@ -63,7 +65,7 @@ export default async function EstablishmentsPage({
             <tbody>
               {(!establishments || establishments.length === 0) && (
                 <tr>
-                  <td colSpan={6} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
+                  <td colSpan={7} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
                     {t('establishments.empty')}
                   </td>
                 </tr>
@@ -73,7 +75,11 @@ export default async function EstablishmentsPage({
                 const isComplete = e.onboarding_status === 'complete';
                 return (
                   <tr key={e.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>{e.name}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>
+                      <Link href={`/dashboard/admin/establishments/${e.id}`} style={{ color: 'var(--text)', textDecoration: 'none' }}>
+                        {e.name}
+                      </Link>
+                    </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)' }}>{group?.name ?? '—'}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)', textTransform: 'capitalize' }}>{e.business_type}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)', fontFamily: 'ui-monospace, monospace', textTransform: 'uppercase' }}>{e.currency}</td>
@@ -88,6 +94,19 @@ export default async function EstablishmentsPage({
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
                         {e.onboarding_status ?? '—'}
                       </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      <Link
+                        href={`/dashboard/admin/establishments/${e.id}`}
+                        style={{
+                          display: 'inline-block', padding: '5px 10px', borderRadius: 6,
+                          background: 'var(--surface-2)', border: '1px solid var(--border)',
+                          color: 'var(--text-2)', fontSize: 11.5, fontWeight: 500,
+                          textDecoration: 'none', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Voir détail →
+                      </Link>
                     </td>
                     <EstablishmentActions
                       id={e.id}
