@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUser } from '@/lib/auth/get-auth-user';
 import { createServiceClient } from '@/lib/supabase/service';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 
@@ -11,8 +11,7 @@ export default async function DashboardLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) redirect(`/${locale}/login`);
 
   const [{ data: roles }, { data: staffProfile }] = await Promise.all([

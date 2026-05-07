@@ -109,10 +109,7 @@ export async function POST() {
       settings: { tip_thresholds: [2, 5, 10, 20], default_currency: 'EUR' },
     };
     const billingPatch: Record<string, unknown> = {
-      subscription_status: 'active',
-      subscription_pack: 'm',
       stripe_customer_id: 'cus_demo',
-      subscription_id: 'sub_demo',
       legal_name: 'Demo Bistro SARL',
       vat_number: 'FR12345678901',
     };

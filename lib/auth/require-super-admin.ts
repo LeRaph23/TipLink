@@ -1,17 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUser } from './get-auth-user';
 
-/**
- * Ensures the current request comes from an authenticated super_admin.
- * Returns the authenticated user's id and the Supabase client for reuse.
- *
- * Non-authenticated visitors get redirected to /login, authenticated
- * users without the super_admin role get a 404 (the admin surface
- * should not acknowledge its existence).
- */
+// getAuthUser is React.cache'd — reuses the getUser() result already fetched
+// by the parent dashboard layout in the same render tree (zero extra round-trip).
 export async function requireSuperAdmin(locale?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
 
   if (!user) {
     const prefix = locale ? `/${locale}` : '';

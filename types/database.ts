@@ -19,9 +19,6 @@ export type Database = {
           billing_address: Json | null;
           shipping_address: Json | null;
           stripe_customer_id: string | null;
-          subscription_id: string | null;
-          subscription_status: string | null;
-          subscription_pack: 'solo' | 'duo' | null;
           platform_fee_bps: number;
           onboarding_completed_at: string | null;
         };
@@ -37,9 +34,6 @@ export type Database = {
           billing_address?: Json | null;
           shipping_address?: Json | null;
           stripe_customer_id?: string | null;
-          subscription_id?: string | null;
-          subscription_status?: string | null;
-          subscription_pack?: 's' | 'm' | 'l' | null;
           platform_fee_bps?: number;
           onboarding_completed_at?: string | null;
         };
@@ -55,9 +49,6 @@ export type Database = {
           billing_address?: Json | null;
           shipping_address?: Json | null;
           stripe_customer_id?: string | null;
-          subscription_id?: string | null;
-          subscription_status?: string | null;
-          subscription_pack?: 's' | 'm' | 'l' | null;
           platform_fee_bps?: number;
           onboarding_completed_at?: string | null;
         };
