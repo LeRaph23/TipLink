@@ -390,23 +390,15 @@ export function OnboardingWizard(props: Props) {
         },
       });
 
-      if (signUpErr) {
-        setError(signUpErr.message);
+      if (signUpErr || !signUpData.user) {
+        setError(signUpErr?.message ?? 'Erreur lors de la création du compte.');
         setSubmitting(false);
         return;
       }
 
-      if (!signUpData.session) {
-        // Email confirmation required — cannot run server action without a session.
-        setNeedsEmailVerification(true);
-        setDone(true);
-        setSubmitting(false);
-        return;
-      }
-
-
-      // 2. Call server action (session cookie is now set)
+      // 2. Call server action — passes userId so it works even before email confirmation
       const result = await completeNfcOnboarding({
+        userId: signUpData.user.id,
         nfcCodes: state.nfcCodes,
         establishmentName: state.establishmentName,
         address: state.address,
@@ -421,9 +413,13 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
-      // 3. Sign out — user must verify email before accessing dashboard
-      await supabase.auth.signOut();
-      setNeedsEmailVerification(true);
+      // 3. Sign out if no session (email confirmation pending), otherwise keep logged in
+      if (!signUpData.session) {
+        setNeedsEmailVerification(true);
+      } else {
+        await supabase.auth.signOut();
+        setNeedsEmailVerification(true);
+      }
     } else if (mode === 'express') {
       // Express flow: account created here, group already exists in DB
       const supabase = createClient();

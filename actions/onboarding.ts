@@ -20,6 +20,7 @@ const PostPurchaseSchema = z.object({
 });
 
 const NfcOnboardingSchema = z.object({
+  userId: z.string().uuid(),
   nfcCodes: z.array(z.string().min(1).max(32)).min(1).max(20),
   establishmentName: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
@@ -266,12 +267,12 @@ export async function completeNfcOnboarding(
   const parsed = NfcOnboardingSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Non authentifié — créez votre compte en premier.' };
-
   const service = createServiceClient();
-  const { nfcCodes, establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
+  const { userId, nfcCodes, establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
+
+  // Verify the user exists in Supabase auth (works even before email confirmation)
+  const { data: { user }, error: userErr } = await service.auth.admin.getUserById(userId);
+  if (userErr || !user) return { error: 'Utilisateur introuvable.' };
 
   // Verify all NFC codes are valid unassigned stickers
   const normalizedCodes = nfcCodes.map((c) => c.trim().toLowerCase());
@@ -342,8 +343,8 @@ export async function completeNfcOnboarding(
     group_id: group.id,
   });
 
-  // Update user display name
-  await supabase.auth.updateUser({ data: { full_name: adminFullName } });
+  // Update user display name via admin API (works without active session)
+  await service.auth.admin.updateUserById(user.id, { user_metadata: { full_name: adminFullName } });
 
   // Invite colleagues (best-effort)
   if (colleagues.length > 0) {
