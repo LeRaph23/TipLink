@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS, type PackId } from '@/lib/env';
-
+import { createClient } from '@/lib/supabase/server';
 
 function Check() {
   return (
@@ -13,7 +13,6 @@ function Check() {
     </svg>
   );
 }
-
 
 export default async function PricingPage({
   params,
@@ -25,23 +24,25 @@ export default async function PricingPage({
   const t = await getTranslations('pricing');
   const tc = await getTranslations('common');
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   const isFr = locale === 'fr';
   const formatPrice = (cents: number) =>
     new Intl.NumberFormat(isFr ? 'fr-FR' : 'en-IE', {
       style: 'currency', currency: 'EUR', minimumFractionDigits: 0,
     }).format(cents / 100);
 
-  const packs: Array<{ id: PackId; popular?: boolean; accent: string; save: string }> = [
-    { id: 'solo', accent: '#E57A97', save: isFr ? 'ÉCONOMISEZ 22%' : 'SAVE 22%' },
-    { id: 'duo',  accent: '#E57A97', save: isFr ? 'ÉCONOMISEZ 28%' : 'SAVE 28%', popular: true },
+  const packs: Array<{ id: PackId; popular?: boolean }> = [
+    { id: 'solo' },
+    { id: 'duo', popular: true },
   ];
 
   const benefits = [
     t('benefits.preConfigured'),
+    t('benefits.dashboard'),
     t('benefits.freeShipping'),
     t('benefits.lifetimeReplacement'),
-    t('benefits.dashboard'),
-    t('benefits.app'),
     t('benefits.vatInvoice'),
     t('benefits.noSubscription'),
   ];
@@ -61,7 +62,15 @@ export default async function PricingPage({
         </Link>
         <nav style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <LanguageSwitcher />
-          <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500 }}>{tc('login')}</Link>
+          {user ? (
+            <Link href="/dashboard" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', background: '#E57A97', color: '#fff', fontSize: 13, fontWeight: 600 }}>
+              ← {isFr ? 'Mon dashboard' : 'My dashboard'}
+            </Link>
+          ) : (
+            <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500 }}>
+              {tc('login')}
+            </Link>
+          )}
           <Link href="/contact" style={{ padding: '7px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13, fontWeight: 500 }}>{tc('contact')}</Link>
         </nav>
       </header>
@@ -80,7 +89,7 @@ export default async function PricingPage({
       {/* Pack grid */}
       <section style={{ padding: 'clamp(40px,5vw,64px) clamp(16px,4vw,48px)', maxWidth: 900, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-          {packs.map(({ id, popular, save }) => {
+          {packs.map(({ id, popular }) => {
             const def = PACKS[id];
             const name = t(`packs.${id}.name` as Parameters<typeof t>[0]);
             const tagline = t(`packs.${id}.tagline` as Parameters<typeof t>[0]);
@@ -101,6 +110,7 @@ export default async function PricingPage({
                     background: '#E57A97', color: '#fff',
                     fontSize: 10.5, fontWeight: 800, padding: '4px 12px', borderRadius: 20,
                     letterSpacing: '0.04em', boxShadow: '0 2px 12px rgba(229,122,151,0.35)',
+                    zIndex: 2,
                   }}>
                     {t('mostPopular')}
                   </div>
@@ -109,14 +119,10 @@ export default async function PricingPage({
                 {/* Product visual */}
                 <div style={{
                   background: popular ? '#FEF1F4' : '#f9f9f7',
-                  padding: '0',
                   position: 'relative',
                   aspectRatio: '4/3',
                   overflow: 'hidden',
                 }}>
-                  <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 2, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '3px 10px', fontSize: 10.5, fontWeight: 800, color: '#d97706' }}>
-                    {save}
-                  </div>
                   <Image
                     src={id === 'duo' ? '/products/duo-double.jpg' : '/products/solo-3d.jpg'}
                     alt={id === 'duo' ? 'Pack Duo — 2 plaques époxy NFC Digitip' : 'Plaque époxy NFC Digitip Solo'}
@@ -134,7 +140,7 @@ export default async function PricingPage({
                   <p style={{ fontSize: 13.5, color: '#74748a', lineHeight: 1.65, marginBottom: 20 }}>{tagline}</p>
 
                   {/* Pricing */}
-                  <div style={{ marginBottom: 6 }}>
+                  <div style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
                       <span style={{ fontSize: 42, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>
                         {formatPrice(def.hardwareAmount)}
@@ -143,17 +149,6 @@ export default async function PricingPage({
                     <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4 }}>
                       {t('oneTime')} · {t('tagsIncluded', { count: def.quantity })}
                     </div>
-                  </div>
-
-                  {/* Commission note */}
-                  <div style={{
-                    margin: '16px 0',
-                    padding: '10px 14px', borderRadius: 10,
-                    background: popular ? 'rgba(229,122,151,0.06)' : '#f9f9f7',
-                    border: popular ? '1px solid rgba(229,122,151,0.18)' : '1px solid #e4e4ec',
-                    fontSize: 12.5, color: '#3a3b4f', lineHeight: 1.5,
-                  }}>
-                    <strong style={{ color: '#E57A97' }}>{t('commissionLabel')}</strong> · {t('commissionBody')}
                   </div>
 
                   {/* Benefits */}
@@ -222,7 +217,7 @@ export default async function PricingPage({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🔒 {t('trust1')}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🧾 {t('trust2')}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>✓ {t('trust3')}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🚚 Livraison gratuite Europe</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🚚 {isFr ? 'Livraison gratuite Europe' : 'Free EU shipping'}</span>
         </div>
       </section>
     </div>
