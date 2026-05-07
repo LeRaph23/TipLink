@@ -91,11 +91,12 @@ export async function sendOrderConfirmation(opts: {
   quantity: number;
   orderId: string;
   invoicePdfUrl?: string | null;
+  setupUrl?: string | null;
   locale?: string;
 }): Promise<void> {
   if (!resend) return;
 
-  const { to, pack, quantity, orderId, invoicePdfUrl, locale = 'fr' } = opts;
+  const { to, pack, quantity, orderId, invoicePdfUrl, setupUrl, locale = 'fr' } = opts;
   const isFr = locale === 'fr';
   const shortRef = orderId.slice(0, 8).toUpperCase();
   const label = packLabel(pack, locale);
@@ -135,6 +136,24 @@ export async function sendOrderConfirmation(opts: {
       </td></tr>`
     : '';
 
+  const setupSection = setupUrl
+    ? `<tr><td style="padding:0 32px 28px">
+        <div style="background:#1a1a2e;border:1px solid #3b3b6e;border-radius:12px;padding:20px 24px">
+          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">
+            ${isFr ? '🎉 Configurez votre salon maintenant' : '🎉 Set up your salon now'}
+          </div>
+          <div style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.5">
+            ${isFr
+              ? 'Créez votre espace Digitip en 2 minutes : nom du salon, votre équipe, et vous êtes prêts à encaisser des pourboires.'
+              : 'Set up your Digitip space in 2 minutes: salon name, your team, and you\'re ready to collect tips.'}
+          </div>
+          <a href="${setupUrl}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#E57A97,#EC97B0);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;letter-spacing:-0.01em">
+            ${isFr ? 'Configurer mon espace →' : 'Set up my space →'}
+          </a>
+        </div>
+      </td></tr>`
+    : '';
+
   await resend.emails.send({
     from: FROM,
     to,
@@ -158,6 +177,7 @@ export async function sendOrderConfirmation(opts: {
       </table>
     </td></tr>
     ${invoiceSection}
+    ${setupSection}
     <tr><td style="padding:0 32px 28px">
       <div style="font-size:13px;font-weight:600;color:#ccc;margin-bottom:12px">${nextStepsTitle}</div>
       <div style="font-size:13px;color:#888;line-height:1.7">

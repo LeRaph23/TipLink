@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   completePostPurchaseOnboarding,
   completeNfcOnboarding,
+  completeExpressOnboarding,
 } from '@/actions/onboarding';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -27,9 +28,11 @@ interface WizardState {
 
 type ScanStep = 'codes' | 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team';
 type AuthStep = 'salon' | 'address' | 'admin-name' | 'team';
+type ExpressStep = 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team';
 
 const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'address', 'admin-name', 'email', 'password', 'team'];
 const AUTH_STEPS: AuthStep[] = ['salon', 'address', 'admin-name', 'team'];
+const EXPRESS_STEPS: ExpressStep[] = ['salon', 'address', 'admin-name', 'email', 'password', 'team'];
 
 type Props =
   | {
@@ -38,6 +41,7 @@ type Props =
       locale: string;
       establishment?: null;
       groupId?: null;
+      initialEmail?: null;
     }
   | {
       mode: 'postpurchase';
@@ -45,6 +49,15 @@ type Props =
       initialCode?: null;
       establishment: { id: string; name: string; address: string } | null;
       groupId: string;
+      initialEmail?: null;
+    }
+  | {
+      mode: 'express';
+      locale: string;
+      initialCode?: null;
+      establishment?: null;
+      groupId: string;
+      initialEmail: string;
     };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
@@ -288,7 +301,7 @@ function StepTeamContent({
 
 export function OnboardingWizard(props: Props) {
   const { mode, locale } = props;
-  const steps = mode === 'scan' ? SCAN_STEPS : AUTH_STEPS;
+  const steps = mode === 'scan' ? SCAN_STEPS : mode === 'express' ? EXPRESS_STEPS : AUTH_STEPS;
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -305,7 +318,7 @@ export function OnboardingWizard(props: Props) {
       establishmentName: props.establishment?.name ?? '',
       address: props.establishment?.address ?? '',
       adminFullName: '',
-      adminEmail: '',
+      adminEmail: mode === 'express' ? props.initialEmail : '',
       password: '',
       colleagues: [],
     }
@@ -407,6 +420,54 @@ export function OnboardingWizard(props: Props) {
       }
 
       // 3. Sign out — user must verify email before accessing dashboard
+      await supabase.auth.signOut();
+      setNeedsEmailVerification(true);
+    } else if (mode === 'express') {
+      // Express flow: account created here, group already exists in DB
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/login?verified=true`)}`;
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+        email: state.adminEmail,
+        password: state.password,
+        options: {
+          data: { full_name: state.adminFullName },
+          emailRedirectTo: redirectTo,
+        },
+      });
+
+      if (signUpErr) {
+        // Email already registered → ask them to log in instead
+        if (signUpErr.message.toLowerCase().includes('already') || signUpErr.status === 400) {
+          setError('Un compte existe déjà avec cet email. Connectez-vous sur digitip.app/login pour accéder à votre espace.');
+        } else {
+          setError(signUpErr.message);
+        }
+        setSubmitting(false);
+        return;
+      }
+
+      if (!signUpData.session) {
+        setNeedsEmailVerification(true);
+        setDone(true);
+        setSubmitting(false);
+        return;
+      }
+
+      const result = await completeExpressOnboarding({
+        groupId: props.groupId,
+        establishmentName: state.establishmentName,
+        address: state.address,
+        adminFullName: state.adminFullName,
+        colleagues: state.colleagues.filter((c) => c.fullName.trim() && c.email.trim()),
+        locale: locale as 'fr' | 'en',
+      });
+
+      if ('error' in result) {
+        setError(result.error);
+        setSubmitting(false);
+        return;
+      }
+
       await supabase.auth.signOut();
       setNeedsEmailVerification(true);
     } else {

@@ -227,22 +227,12 @@ async function handleEvent(
             : null,
         }).select('id').single();
 
-        if (email && newOrder) {
-          await sendOrderConfirmation({
-            to: email,
-            pack,
-            quantity,
-            orderId: newOrder.id,
-            invoicePdfUrl,
-            locale: session.locale?.startsWith('fr') ? 'fr' : 'en',
-          }).catch(() => {});
-        }
-
         // Auto-provision establishment for the express checkout group
         const expressSlug = legalName.toLowerCase()
           .normalize('NFD').replace(/[̀-ͯ]/g, '')
           .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         const expressCountry = (shipping?.address?.country ?? 'FR').toUpperCase();
+        const expressLocale = session.locale?.startsWith('fr') ? 'fr' : 'en';
 
         await supabase.from('establishments').insert({
           group_id: newGroup.id,
@@ -254,25 +244,20 @@ async function handleEvent(
           onboarding_status: 'not_started',
         });
 
-        if (email) {
-          // Check if a user account already exists for this email
-          const { data: existingUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-          const existingUser = existingUsers?.users?.find((u) => u.email === email);
-          const inviteLocale = session.locale?.startsWith('fr') ? 'fr' : 'en';
-
-          if (existingUser) {
-            await supabase.from('user_roles').insert({
-              user_id: existingUser.id,
-              role: 'group_admin',
-              group_id: newGroup.id,
-            });
-          } else {
-            const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
-            await supabase.auth.admin.inviteUserByEmail(email, {
-              data: { pending_group_id: newGroup.id },
-              redirectTo: `${base}/${inviteLocale}/auth/setup`,
-            });
-          }
+        // Build the setup URL embedded in the order confirmation email.
+        // The group UUID is cryptographically random — safe to include in the URL.
+        if (email && newOrder) {
+          const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
+          const setupUrl = `${base}/${expressLocale}/onboarding?group=${newGroup.id}&email=${encodeURIComponent(email)}`;
+          await sendOrderConfirmation({
+            to: email,
+            pack,
+            quantity,
+            orderId: newOrder.id,
+            invoicePdfUrl,
+            setupUrl,
+            locale: expressLocale,
+          }).catch(() => {});
         }
 
         break;
