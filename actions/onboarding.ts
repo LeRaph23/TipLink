@@ -46,7 +46,7 @@ export async function validateSmartTagCode(
   const { data } = await service
     .from('nfc_stickers')
     .select('id')
-    .eq('short_id', code.trim().toLowerCase())
+    .ilike('short_id', code.trim())
     .is('establishment_id', null)
     .maybeSingle();
 
@@ -280,11 +280,15 @@ export async function completeNfcOnboarding(
     .select('id, short_id')
     .is('establishment_id', null);
 
-  const foundCodes = new Set((stickers ?? []).map((s) => s.short_id.toUpperCase()));
+  const foundCodes = new Set((stickers ?? []).map((s) => s.short_id.toLowerCase()));
   const invalid = normalizedCodes.filter((c) => !foundCodes.has(c));
   if (invalid.length > 0) {
     return { error: `Codes invalides ou déjà assignés : ${invalid.join(', ')}` };
   }
+
+  const matchingStickers = (stickers ?? []).filter((s) =>
+    normalizedCodes.includes(s.short_id.toLowerCase())
+  );
 
   const slug = makeSlug(establishmentName);
 
@@ -323,12 +327,12 @@ export async function completeNfcOnboarding(
     return { error: estErr?.message ?? 'Erreur lors de la création de l\'établissement.' };
   }
 
-  // Assign all NFC stickers to this establishment
-  if ((stickers ?? []).length > 0) {
+  // Assign only the entered stickers to this establishment
+  if (matchingStickers.length > 0) {
     await service
       .from('nfc_stickers')
       .update({ establishment_id: est.id })
-      .in('id', (stickers ?? []).map((s) => s.id));
+      .in('id', matchingStickers.map((s) => s.id));
   }
 
   // Create group_admin role for the new user

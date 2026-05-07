@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const { data } = await service
     .from('nfc_stickers')
     .select('id')
-    .eq('short_id', code)
+    .ilike('short_id', code)
     .is('establishment_id', null)
     .maybeSingle();
 

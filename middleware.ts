@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
     let res: Response;
     try {
       res = await fetch(
-        `${supabaseUrl}/rest/v1/nfc_stickers?short_id=eq.${encodeURIComponent(shortId)}&select=establishment_id&limit=1`,
+        `${supabaseUrl}/rest/v1/nfc_stickers?short_id=ilike.${encodeURIComponent(shortId)}&select=establishment_id&limit=1`,
         {
           headers: {
             apikey: serviceKey,
