@@ -380,7 +380,7 @@ export function OnboardingWizard(props: Props) {
       // 1. Create Supabase account client-side with emailRedirectTo so the
       //    verification link lands on the login page with a success banner.
       const supabase = createClient();
-      const redirectTo = `${getBaseUrl()}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/login?verified=true`)}`;
+      const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/login?verified=true`)}`;
       const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
         email: state.adminEmail,
         password: state.password,
@@ -427,7 +427,7 @@ export function OnboardingWizard(props: Props) {
     } else if (mode === 'express') {
       // Express flow: account created here, group already exists in DB
       const supabase = createClient();
-      const redirectTo = `${getBaseUrl()}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/login?verified=true`)}`;
+      const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/login?verified=true`)}`;
       const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
         email: state.adminEmail,
         password: state.password,
