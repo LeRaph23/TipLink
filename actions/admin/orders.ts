@@ -187,7 +187,12 @@ export async function forceOrderStatus(
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const service = createServiceClient();
-  const patch: Record<string, string | null> = { status: newStatus };
+  const patch: {
+    status: OrderStatus;
+    shipped_at?: string;
+    delivered_at?: string;
+    tracking_number?: string;
+  } = { status: newStatus };
 
   if (newStatus === 'shipped') {
     patch.shipped_at = new Date().toISOString();
