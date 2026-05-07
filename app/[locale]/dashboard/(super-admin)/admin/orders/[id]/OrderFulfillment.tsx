@@ -3,10 +3,21 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { fulfillOrder, markOrderShipped, markOrderDelivered } from '@/actions/admin/orders';
+import { fulfillOrder, markOrderShipped, markOrderDelivered, forceOrderStatus } from '@/actions/admin/orders';
 
 type Establishment = { id: string; name: string };
 type StockTag = { id: string; short_id: string; batch_label: string | null };
+
+const ALL_STATUSES = [
+  'pending_payment',
+  'pending_fulfillment',
+  'encoding',
+  'ready_to_ship',
+  'shipped',
+  'delivered',
+  'canceled',
+] as const;
+type OrderStatus = (typeof ALL_STATUSES)[number];
 
 type Props = {
   orderId: string;
@@ -46,6 +57,9 @@ export function OrderFulfillment({
   const [countToAssign, setCountToAssign] = useState(Math.max(1, quantity - encodedCount));
   const [tracking, setTracking] = useState(trackingNumber ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [forceStatus, setForceStatus] = useState<OrderStatus>(status as OrderStatus);
+  const [forceTracking, setForceTracking] = useState(trackingNumber ?? '');
+  const [toast, setToast] = useState<string | null>(null);
 
   const remaining = quantity - encodedCount;
   const canFulfill = remaining > 0 && ['pending_fulfillment', 'encoding'].includes(status);
@@ -57,6 +71,21 @@ export function OrderFulfillment({
     setTimeout(() => setError(null), 5000);
   }
 
+  function notify(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  const statusLabels: Record<OrderStatus, string> = {
+    pending_payment:     'En attente de paiement',
+    pending_fulfillment: 'En attente de préparation',
+    encoding:            'En cours d\'encodage',
+    ready_to_ship:       'Prêt à expédier',
+    shipped:             'Expédié',
+    delivered:           'Livré',
+    canceled:            'Annulé',
+  };
+
   return (
     <section>
       <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>
@@ -66,6 +95,11 @@ export function OrderFulfillment({
       {error && (
         <div style={{ padding: 10, marginBottom: 12, borderRadius: 'var(--radius-sm)', background: 'var(--error-bg)', color: 'var(--error)', fontSize: 12 }}>
           {error}
+        </div>
+      )}
+      {toast && (
+        <div style={{ padding: 10, marginBottom: 12, borderRadius: 'var(--radius-sm)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: 12 }}>
+          {toast}
         </div>
       )}
 
@@ -155,6 +189,65 @@ export function OrderFulfillment({
           </button>
         ) : (
           <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('nothingToDo')}</div>
+        )}
+      </div>
+
+      {/* ── Forcer le statut manuellement ── */}
+      <div style={{
+        marginTop: 20,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: 16,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+          Forcer le statut (super admin)
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 5 }}>Nouveau statut</div>
+            <select
+              value={forceStatus}
+              onChange={(e) => setForceStatus(e.target.value as OrderStatus)}
+              style={input}
+            >
+              {ALL_STATUSES.map((s) => (
+                <option key={s} value={s}>{statusLabels[s]}</option>
+              ))}
+            </select>
+          </div>
+          {(forceStatus === 'shipped') && (
+            <div style={{ flex: '1 1 200px' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 5 }}>N° de suivi (optionnel)</div>
+              <input
+                type="text"
+                value={forceTracking}
+                onChange={(e) => setForceTracking(e.target.value)}
+                placeholder="1Z999AA10123456784"
+                style={input}
+              />
+            </div>
+          )}
+          <button
+            style={{
+              ...secondaryBtn,
+              borderColor: 'var(--warning, #d97706)',
+              color: 'var(--warning, #d97706)',
+            }}
+            disabled={pending || forceStatus === status}
+            onClick={() => {
+              startTransition(async () => {
+                const res = await forceOrderStatus(orderId, forceStatus, forceTracking || undefined);
+                if (!res.ok) flash(res.error);
+                else { notify(`Statut → ${statusLabels[forceStatus]}`); router.refresh(); }
+              });
+            }}
+          >
+            {pending ? '…' : `Appliquer "${statusLabels[forceStatus]}"`}
+          </button>
+        </div>
+        {forceStatus === status && (
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8 }}>Statut actuel déjà "{statusLabels[status as OrderStatus]}"</div>
         )}
       </div>
     </section>

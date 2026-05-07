@@ -167,6 +167,49 @@ export async function markOrderShipped(
   return { ok: true, data: null };
 }
 
+const ORDER_STATUSES = [
+  'pending_payment',
+  'pending_fulfillment',
+  'encoding',
+  'ready_to_ship',
+  'shipped',
+  'delivered',
+  'canceled',
+] as const;
+type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+export async function forceOrderStatus(
+  orderId: string,
+  newStatus: OrderStatus,
+  trackingNumber?: string
+): Promise<Result<null>> {
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const service = createServiceClient();
+  const patch: Record<string, string | null> = { status: newStatus };
+
+  if (newStatus === 'shipped') {
+    patch.shipped_at = new Date().toISOString();
+    if (trackingNumber) patch.tracking_number = trackingNumber;
+  }
+  if (newStatus === 'delivered') {
+    patch.delivered_at = new Date().toISOString();
+  }
+
+  const { error } = await service
+    .from('smarttag_orders')
+    .update(patch)
+    .eq('id', orderId);
+
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction('orders.force_status', { orderId, newStatus });
+  revalidatePath('/dashboard/admin/orders');
+  revalidatePath(`/dashboard/admin/orders/${orderId}`);
+  return { ok: true, data: null };
+}
+
 export async function markOrderDelivered(orderId: string): Promise<Result<null>> {
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
