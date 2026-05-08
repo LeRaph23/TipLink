@@ -146,8 +146,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
 
   const visibleLinks = links.filter(l =>
     l.always ||
-    (l.roles && l.roles.some(r => hasRole(r))) ||
-    (l.showForGroupAdminWithStaff && hasStaffProfile && hasRole('group_admin'))
+    (l.roles && l.roles.some(r => hasRole(r)))
   );
   const isSuperAdmin = hasRole('super_admin');
 
