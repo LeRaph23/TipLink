@@ -57,6 +57,7 @@ function makeSlug(name: string): string {
     .slice(0, 80);
 }
 
+
 // Validates a single NFC short_id and returns its DB id if it's unassigned.
 export async function validateSmartTagCode(
   code: string

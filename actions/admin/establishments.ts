@@ -89,10 +89,11 @@ export async function deleteEstablishment(id: string): Promise<Result<null>> {
     .eq('establishment_id', id);
   if (rolesErr) return { ok: false, error: rolesErr.message };
 
-  // 4. Soft-delete l'établissement lui-même.
+  // 4. Soft-delete l'établissement lui-même + libérer le slug pour éviter
+  //    la contrainte unique si le même nom est réutilisé plus tard.
   const { error } = await service
     .from('establishments')
-    .update({ deleted_at: now })
+    .update({ deleted_at: now, slug: null } as never)
     .eq('id', id);
   if (error) return { ok: false, error: error.message };
 
