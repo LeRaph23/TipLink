@@ -512,8 +512,8 @@
     "notReadyTitle": "Not ready yet",
     "notReadyBack": "Back to Digitip",
     "group": {
-      "pickStaffTitle": "Tip a team member",
-      "pickStaffSubtitle": "Tap the person who served you to leave a tip.",
+      "pickStaffTitle": "Choose your stylist",
+      "pickStaffSubtitle": "Select the person who served you to leave them a tip.",
       "noStaff": "No team members are ready to receive tips yet.",
       "poweredBy": "Powered by Digitip"
     },
