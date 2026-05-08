@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         user_id: user.id,
         avatar_url: avatarUrl ?? null,
         is_active: true,
+        onboarding_status: 'not_started',
       })
       .eq('id', selectedProfileId);
 

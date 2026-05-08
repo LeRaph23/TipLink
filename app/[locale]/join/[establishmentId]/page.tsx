@@ -25,12 +25,14 @@ export default async function JoinPage({
 
   if (!est) notFound();
 
-  // Fetch all pending profiles (not yet joined) for the identity step
+  // Fetch profiles that haven't gone through the join form yet.
+  // onboarding_status IS NULL = invited or pre-created but never claimed via this form.
+  // It gets set to 'not_started' the moment someone completes the join flow.
   const { data: pendingProfiles } = await service
     .from('staff_profiles')
     .select('id, full_name, user_id')
     .eq('establishment_id', establishmentId)
-    .eq('is_active', false)
+    .is('onboarding_status', null)
     .is('deleted_at', null)
     .order('full_name');
 
