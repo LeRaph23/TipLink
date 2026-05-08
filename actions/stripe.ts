@@ -14,7 +14,7 @@ export async function createStripeConnectAccount(): Promise<
 
   const { data: profile } = await supabase
     .from('staff_profiles')
-    .select('id, stripe_account_id')
+    .select('id, stripe_account_id, full_name')
     .eq('user_id', user.id)
     .is('deleted_at', null)
     .single();
@@ -26,13 +26,27 @@ export async function createStripeConnectAccount(): Promise<
     return { accountId: profile.stripe_account_id };
   }
 
+  // Pre-split full_name into first/last for Stripe
+  const nameParts = (profile.full_name ?? '').trim().split(/\s+/);
+  const firstName = nameParts[0] ?? '';
+  const lastName = nameParts.slice(1).join(' ') || firstName;
+
   let accountId: string;
   try {
     const account = await stripe.accounts.create({
       type: 'express',
+      // Pre-set individual so Stripe skips the "type d'entreprise" screen
+      business_type: 'individual',
+      individual: {
+        first_name: firstName || undefined,
+        last_name: lastName || undefined,
+        email: user.email ?? undefined,
+      },
       capabilities: {
-        card_payments: { requested: true },
         transfers: { requested: true },
+      },
+      settings: {
+        payouts: { schedule: { interval: 'manual' } },
       },
       metadata: { staff_profile_id: profile.id, user_id: user.id },
     });
