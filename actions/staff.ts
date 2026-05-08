@@ -57,11 +57,13 @@ export async function inviteStaffMember(
 
   // Create the staff_profile through the user client so RLS verifies
   // the caller has permission on this establishment.
+  // is_active stays false until the person claims their profile via the join link.
   const { data: staff, error: staffErr } = await supabase
     .from('staff_profiles')
     .insert({
       full_name: input.fullName.trim(),
       establishment_id: input.establishmentId,
+      is_active: false,
     })
     .select('id')
     .single();

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 interface UnclaimedProfile {
   id: string;
   full_name: string;
+  email?: string;
 }
 
 const inp: React.CSSProperties = {
@@ -36,7 +37,7 @@ const btnPrimary: React.CSSProperties = {
   transition: 'opacity 150ms',
 };
 
-type Step = 'identity' | 'photo' | 'email' | 'password';
+type Step = 'identity' | 'name-photo' | 'email' | 'password';
 
 export function JoinForm({
   establishmentId,
@@ -47,12 +48,12 @@ export function JoinForm({
   establishmentName: string;
   unclaimedProfiles: UnclaimedProfile[];
 }) {
-  // Determine first step
-  const firstStep: Step = unclaimedProfiles.length > 0 ? 'identity' : 'photo';
+  const firstStep: Step = unclaimedProfiles.length > 0 ? 'identity' : 'name-photo';
 
   const [step, setStep] = useState<Step>(firstStep);
   const [selectedProfile, setSelectedProfile] = useState<UnclaimedProfile | null>(null);
-  const [newProfileName, setNewProfileName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -65,8 +66,11 @@ export function JoinForm({
 
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // The name we'll use for the profile
-  const effectiveName = selectedProfile ? selectedProfile.full_name : newProfileName.trim();
+  const effectiveName = selectedProfile
+    ? selectedProfile.full_name
+    : [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
+
+  const firstNameFilled = selectedProfile ? true : firstName.trim().length > 0;
 
   // ─── Photo upload ─────────────────────────────────────────────────────────
 
@@ -74,7 +78,6 @@ export function JoinForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview
     const reader = new FileReader();
     reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
@@ -196,7 +199,7 @@ export function JoinForm({
           Qui êtes-vous ?
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-          Sélectionnez votre nom pour rejoindre <strong>{establishmentName}</strong>.
+          Sélectionnez votre prénom pour rejoindre l&apos;équipe.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -206,7 +209,8 @@ export function JoinForm({
               type="button"
               onClick={() => {
                 setSelectedProfile(p);
-                setStep('photo');
+                if (p.email) setEmail(p.email);
+                setStep('name-photo');
               }}
               style={{
                 display: 'flex',
@@ -256,7 +260,7 @@ export function JoinForm({
             type="button"
             onClick={() => {
               setSelectedProfile(null);
-              setStep('photo');
+              setStep('name-photo');
             }}
             style={{
               padding: '14px 18px',
@@ -271,121 +275,137 @@ export function JoinForm({
               fontWeight: 500,
             }}
           >
-            Mon nom n&apos;est pas dans la liste →
+            Mon prénom n&apos;est pas dans la liste →
           </button>
         </div>
       </div>
     );
   }
 
-  // ─── Step: photo ──────────────────────────────────────────────────────────
+  // ─── Step: name-photo ─────────────────────────────────────────────────────
 
-  if (step === 'photo') {
+  if (step === 'name-photo') {
+    const showNameFields = !selectedProfile;
+
     return (
       <div>
-        {step === 'photo' && selectedProfile && (
-          <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 24 }}>
-            Bonjour, <strong style={{ color: 'var(--text)' }}>{selectedProfile.full_name}</strong> !
-          </p>
+        {selectedProfile ? (
+          <>
+            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 6 }}>
+              Bonjour, <strong style={{ color: 'var(--text)' }}>{selectedProfile.full_name}</strong> !
+            </p>
+            <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
+              Votre photo
+            </h1>
+          </>
+        ) : (
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
+            Votre prénom
+          </h1>
         )}
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          Votre photo
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 28 }}>
-          Ajoutez une photo pour que vos clients vous reconnaissent au moment de laisser un pourboire.
-        </p>
 
-        {/* Name field — only if creating a new profile */}
-        {!selectedProfile && (
+        {/* Name fields — only when not claiming an existing profile */}
+        {showNameFields && (
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
-              Votre prénom et nom
-            </label>
-            <input
-              autoFocus
-              type="text"
-              value={newProfileName}
-              onChange={(e) => setNewProfileName(e.target.value)}
-              style={inp}
-            />
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
+                Prénom <span style={{ color: 'var(--accent)' }}>*</span>
+              </label>
+              <input
+                autoFocus
+                type="text"
+                placeholder="ex : Océane"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                style={inp}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
+                Nom <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(facultatif)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="ex : Dupont"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                style={inp}
+              />
+            </div>
           </div>
         )}
 
-        {/* Photo upload zone */}
-        <div
-          onClick={() => fileRef.current?.click()}
-          style={{
-            position: 'relative',
-            width: 120,
-            height: 120,
-            borderRadius: '50%',
-            margin: '0 auto 20px',
-            cursor: 'pointer',
-            background: avatarPreview ? 'transparent' : 'var(--surface-2)',
-            border: avatarPreview ? 'none' : '2px dashed var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            transition: 'border-color 150ms',
-          }}
-        >
-          {avatarPreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 28, color: 'var(--text-3)', marginBottom: 4 }}>+</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>
-                {avatarUploading ? 'Envoi…' : 'Ajouter'}
+        {/* Photo section */}
+        <div style={{ marginBottom: 8 }}>
+          {showNameFields && (
+            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>
+              Ajoutez une photo — les profils avec photo reçoivent en moyenne <strong>3× plus de pourboires</strong>.
+            </p>
+          )}
+          {!showNameFields && (
+            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>
+              Les profils avec photo reçoivent en moyenne <strong>3× plus de pourboires</strong>. Photo facultative.
+            </p>
+          )}
+
+          <div
+            onClick={() => fileRef.current?.click()}
+            style={{
+              position: 'relative',
+              width: 110,
+              height: 110,
+              borderRadius: '50%',
+              margin: '0 auto 12px',
+              cursor: 'pointer',
+              background: avatarPreview ? 'transparent' : 'var(--surface-2)',
+              border: avatarPreview ? 'none' : '2px dashed var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              transition: 'border-color 150ms',
+            }}
+          >
+            {avatarPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 26, color: 'var(--text-3)', marginBottom: 4 }}>+</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>
+                  {avatarUploading ? 'Envoi…' : 'Ajouter une photo'}
+                </div>
               </div>
-            </div>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
+          <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-3)', marginBottom: avatarError ? 8 : 0 }}>
+            JPG, PNG ou WebP · 2 Mo max
+          </p>
+          {avatarError && (
+            <p style={{ fontSize: 12.5, color: 'var(--error)', textAlign: 'center', marginBottom: 4 }}>
+              {avatarError}
+            </p>
           )}
         </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={handleFileChange}
-          style={{ display: 'none' }}
-        />
-        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-3)', marginBottom: avatarError ? 8 : 28 }}>
-          JPG, PNG ou WebP · 2 Mo max
-        </p>
-        {avatarError && (
-          <p style={{ fontSize: 12.5, color: 'var(--error)', textAlign: 'center', marginBottom: 20 }}>
-            {avatarError}
-          </p>
-        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
           <button
             type="button"
             onClick={() => setStep('email')}
-            disabled={!selectedProfile && !newProfileName.trim()}
+            disabled={!firstNameFilled}
             style={{
               ...btnPrimary,
-              opacity: (!selectedProfile && !newProfileName.trim()) ? 0.4 : 1,
+              opacity: firstNameFilled ? 1 : 0.4,
             }}
           >
             Continuer →
-          </button>
-          <button
-            type="button"
-            onClick={() => setStep('email')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-3)',
-              fontSize: 13,
-              cursor: 'pointer',
-              fontFamily: 'var(--font)',
-              textDecoration: 'underline',
-              textUnderlineOffset: 3,
-              textAlign: 'center',
-            }}
-          >
-            Passer, ajouter plus tard
           </button>
           {unclaimedProfiles.length > 0 && (
             <button
@@ -415,6 +435,9 @@ export function JoinForm({
   // ─── Step: email ──────────────────────────────────────────────────────────
 
   if (step === 'email') {
+    const prefilledEmail = selectedProfile?.email;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
     return (
       <div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
@@ -424,6 +447,20 @@ export function JoinForm({
           Utilisé pour vous connecter à votre compte Digitip.
         </p>
 
+        {prefilledEmail && (
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: 10,
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border-subtle)',
+            fontSize: 12.5,
+            color: 'var(--text-3)',
+            marginBottom: 12,
+          }}>
+            Votre responsable a déjà renseigné votre adresse email.
+          </div>
+        )}
+
         {error && (
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>
             {error}
@@ -431,29 +468,35 @@ export function JoinForm({
         )}
 
         <input
-          autoFocus
+          autoFocus={!prefilledEmail}
           type="email"
           value={email}
+          readOnly={!!prefilledEmail}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && setStep('password')}
-          style={{ ...inp, marginBottom: 20 }}
+          onKeyDown={(e) => e.key === 'Enter' && emailValid && setStep('password')}
+          style={{
+            ...inp,
+            marginBottom: 20,
+            opacity: prefilledEmail ? 0.8 : 1,
+            cursor: prefilledEmail ? 'default' : 'text',
+          }}
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
             type="button"
             onClick={() => setStep('password')}
-            disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
+            disabled={!emailValid}
             style={{
               ...btnPrimary,
-              opacity: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 1 : 0.4,
+              opacity: emailValid ? 1 : 0.4,
             }}
           >
             Continuer →
           </button>
           <button
             type="button"
-            onClick={() => setStep('photo')}
+            onClick={() => setStep('name-photo')}
             style={{
               padding: '12px 20px',
               borderRadius: 12,

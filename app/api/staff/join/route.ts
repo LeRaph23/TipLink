@@ -32,19 +32,24 @@ export async function POST(req: Request) {
 
   if (!est) return NextResponse.json({ error: 'Establishment not found' }, { status: 404 });
 
-  // If claiming an existing unclaimed profile
+  // If claiming an existing pending profile (invited by email or added without email)
   if (selectedProfileId) {
     const { data: profile } = await service
       .from('staff_profiles')
-      .select('id, establishment_id')
+      .select('id, establishment_id, user_id')
       .eq('id', selectedProfileId)
       .eq('establishment_id', establishmentId)
-      .is('user_id', null)
+      .eq('is_active', false)
       .is('deleted_at', null)
       .single();
 
     if (!profile) {
       return NextResponse.json({ error: 'Profil introuvable ou déjà réclamé.' }, { status: 404 });
+    }
+
+    // If the profile is already linked to a different auth user, reject
+    if (profile.user_id && profile.user_id !== user.id) {
+      return NextResponse.json({ error: 'Ce profil a déjà été réclamé par quelqu\'un d\'autre.' }, { status: 409 });
     }
 
     const { error: patchErr } = await service

@@ -25,15 +25,31 @@ export default async function JoinPage({
 
   if (!est) notFound();
 
-  // Fetch unclaimed staff profiles so the employee can self-identify
-  const { data: unclaimedProfiles } = await service
+  // Fetch all pending profiles (not yet joined) for the identity step
+  const { data: pendingProfiles } = await service
     .from('staff_profiles')
-    .select('id, full_name')
+    .select('id, full_name, user_id')
     .eq('establishment_id', establishmentId)
-    .is('user_id', null)
+    .eq('is_active', false)
     .is('deleted_at', null)
-    .eq('is_active', true)
     .order('full_name');
+
+  // For profiles already linked to an auth user (invited by email), fetch their email
+  const profilesWithEmails: { id: string; full_name: string; email?: string }[] = [];
+  if (pendingProfiles && pendingProfiles.length > 0) {
+    await Promise.all(
+      pendingProfiles.map(async (p) => {
+        let email: string | undefined;
+        if (p.user_id) {
+          const { data } = await service.auth.admin.getUserById(p.user_id);
+          email = data?.user?.email ?? undefined;
+        }
+        profilesWithEmails.push({ id: p.id, full_name: p.full_name, email });
+      })
+    );
+    // Sort by full_name after async operations
+    profilesWithEmails.sort((a, b) => a.full_name.localeCompare(b.full_name, 'fr'));
+  }
 
   return (
     <main style={{
@@ -42,20 +58,40 @@ export default async function JoinPage({
       background: 'var(--bg)', padding: '40px 20px 60px',
     }}>
       <div style={{ width: '100%', maxWidth: 440 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 36, justifyContent: 'center' }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <rect width="24" height="24" rx="7" fill="var(--accent)" />
-            <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-            <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-            <circle cx="12" cy="12" r="1.8" fill="white" />
-          </svg>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-3)' }}>Digitip</span>
+        {/* Text logo — no image */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <span style={{
+            fontSize: 20,
+            fontWeight: 800,
+            color: 'var(--text)',
+            letterSpacing: '-0.04em',
+            fontFamily: 'var(--font)',
+          }}>
+            Digitip
+          </span>
+        </div>
+
+        {/* Salon invitation header */}
+        <div style={{
+          textAlign: 'center',
+          marginBottom: 32,
+          padding: '16px 20px',
+          background: 'var(--surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 16,
+        }}>
+          <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+            Vous êtes invité(e) à rejoindre
+          </p>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', margin: 0 }}>
+            {est.name}
+          </h2>
         </div>
 
         <JoinForm
           establishmentId={est.id}
           establishmentName={est.name}
-          unclaimedProfiles={unclaimedProfiles ?? []}
+          unclaimedProfiles={profilesWithEmails}
         />
 
         <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-3)', marginTop: 24 }}>

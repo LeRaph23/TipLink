@@ -172,16 +172,22 @@ export default async function StaffListPage({
                       {payoutLabel}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 600,
-                        background: s.is_active ? 'var(--success-bg)' : 'var(--neutral-bg)',
-                        color: s.is_active ? 'var(--success)' : 'var(--text-3)',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
-                        {s.is_active ? t('active') : t('inactive')}
-                      </span>
+                      {(() => {
+                        const isPending = !s.is_active && !s.deleted_at && s.user_id;
+                        const isActive = s.is_active;
+                        return (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 600,
+                            background: isActive ? 'var(--success-bg)' : isPending ? 'var(--warning-bg, #fff8e6)' : 'var(--neutral-bg)',
+                            color: isActive ? 'var(--success)' : isPending ? 'var(--warning, #b98900)' : 'var(--text-3)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
+                            {isActive ? t('active') : isPending ? 'En attente' : t('inactive')}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                       <Link href={`/dashboard/staff/${s.id}`} style={{
