@@ -1,7 +1,13 @@
 'use client';
 
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
+
+const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
+  solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
+  duo:  { src: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
+};
 
 export function formatPrice(cents: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-IE', {
@@ -31,6 +37,7 @@ export function OrderSummary({
 }) {
   const t = useTranslations('order.summary');
   const def = PACKS[pack];
+  const img = PACK_IMAGES[pack];
 
   return (
     <div style={{
@@ -45,6 +52,21 @@ export function OrderSummary({
         color: 'var(--text-3)',
       }}>
         {t('title')}
+      </div>
+
+      {/* Product image */}
+      <div style={{
+        position: 'relative', width: '100%', height: compact ? 120 : 160,
+        borderRadius: 10, overflow: 'hidden',
+        background: 'var(--surface-2)',
+      }}>
+        <Image
+          src={img.src}
+          alt={img.alt}
+          fill
+          sizes="(max-width: 900px) 100vw, 340px"
+          style={{ objectFit: 'cover' }}
+        />
       </div>
 
       <div style={{

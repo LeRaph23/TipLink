@@ -1,8 +1,14 @@
 'use client';
 
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
 import { formatPrice } from './OrderSummary';
+
+const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
+  solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
+  duo:  { src: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
+};
 
 export function StepPack({
   pack,
@@ -22,6 +28,7 @@ export function StepPack({
         const def = PACKS[p];
         const selected = p === pack;
         const popular = p === 'duo';
+        const img = PACK_IMAGES[p];
 
         return (
           <button
@@ -33,7 +40,7 @@ export function StepPack({
               display: 'flex',
               alignItems: 'center', justifyContent: 'space-between',
               textAlign: 'left',
-              padding: '18px 22px',
+              padding: '14px 18px',
               borderRadius: 14,
               background: selected ? 'rgba(99,102,241,0.08)' : 'var(--surface)',
               border: `1.5px solid ${selected ? 'var(--accent)' : 'var(--border-subtle)'}`,
@@ -41,6 +48,7 @@ export function StepPack({
               fontFamily: 'var(--font)',
               transition: 'all 160ms',
               boxShadow: selected ? '0 0 0 3px var(--accent-muted)' : 'none',
+              gap: 16,
             }}
           >
             {popular && !selected && (
@@ -53,27 +61,46 @@ export function StepPack({
                 Popular
               </div>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{
-                width: 22, height: 22, borderRadius: '50%',
-                border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                {selected && (
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)' }} />
-                )}
-              </span>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 3 }}>
-                  {t('quantity', { count: def.quantity })}
-                </div>
+
+            {/* Radio */}
+            <span style={{
+              width: 22, height: 22, borderRadius: '50%',
+              border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              {selected && (
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)' }} />
+              )}
+            </span>
+
+            {/* Product image */}
+            <div style={{
+              position: 'relative', width: 72, height: 72, flexShrink: 0,
+              borderRadius: 10, overflow: 'hidden',
+              background: 'var(--surface-2)',
+            }}>
+              <Image
+                src={img.src}
+                alt={img.alt}
+                fill
+                sizes="72px"
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+
+            {/* Name + quantity */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 3 }}>
+                {t('quantity', { count: def.quantity })}
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
+
+            {/* Price */}
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
                 {formatPrice(def.hardwareAmount, locale)}
               </div>
