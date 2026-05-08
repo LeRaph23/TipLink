@@ -9,7 +9,6 @@ import { PACKS, type PackId } from '@/lib/env';
 import {
   emptyOrder,
   parseStep,
-  stepIndex,
   STEPS,
   validateShipping,
   validateBilling,
@@ -85,18 +84,22 @@ function reducer(state: OrderState, action: Action): OrderState {
 }
 
 // Max step the user has legitimately reached (for progress-bar click safety).
-function maxReachable(state: OrderState): Step {
-  if (validateShipping(state)) return 'shipping';
-  if (validateBilling(state)) return 'billing';
-  if (validateAccount(state)) return 'account';
+function maxReachable(state: OrderState, activeSteps: readonly Step[]): Step {
+  if (validateShipping(state)) return activeSteps.includes('shipping') ? 'shipping' : activeSteps[0];
+  if (validateBilling(state)) return activeSteps.includes('billing') ? 'billing' : activeSteps[0];
+  if (activeSteps.includes('account') && validateAccount(state)) return 'account';
   return 'review';
 }
 
-export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) {
+export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: PackId; locale: string; isAuthenticated?: boolean }) {
   const t = useTranslations('order');
   const tErrors = useTranslations('order.errors');
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const activeSteps = isAuthenticated
+    ? (STEPS.filter(s => s !== 'account') as readonly Step[])
+    : STEPS;
 
   const [state, dispatch] = useReducer(reducer, pack, emptyOrder);
   const [hydrated, setHydrated] = useState(false);
@@ -179,7 +182,7 @@ export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) 
       case 'pack': return null;
       case 'shipping': return validateShipping(state);
       case 'billing': return validateBilling(state);
-      case 'account': return validateAccount(state);
+      case 'account': return isAuthenticated ? null : validateAccount(state);
       case 'review': return null;
     }
   };
@@ -191,15 +194,15 @@ export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) 
       return;
     }
     setError(null);
-    const idx = stepIndex(currentStep);
-    const next = STEPS[idx + 1];
+    const idx = activeSteps.indexOf(currentStep);
+    const next = activeSteps[idx + 1];
     if (next) goToStep(next);
   };
 
   const handleBack = () => {
     setError(null);
-    const idx = stepIndex(currentStep);
-    const prev = STEPS[idx - 1];
+    const idx = activeSteps.indexOf(currentStep);
+    const prev = activeSteps[idx - 1];
     if (prev) goToStep(prev);
   };
 
@@ -208,33 +211,35 @@ export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) 
     setSubmitting(true);
 
     try {
-      const supabase = createClient();
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: state.account.email,
-        password: state.account.password,
-        options: { data: { full_name: state.account.full_name } },
-      });
+      if (!isAuthenticated) {
+        const supabase = createClient();
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: state.account.email,
+          password: state.account.password,
+          options: { data: { full_name: state.account.full_name } },
+        });
 
-      if (signUpError) {
-        setError(`signup_failed::${signUpError.message}`);
-        setSubmitting(false);
-        goToStep('account');
-        return;
-      }
+        if (signUpError) {
+          setError(`signup_failed::${signUpError.message}`);
+          setSubmitting(false);
+          goToStep('account');
+          return;
+        }
 
-      // Supabase returns a user with empty identities[] when the email is already taken.
-      if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
-        setError('email_in_use');
-        setSubmitting(false);
-        goToStep('account');
-        return;
-      }
+        // Supabase returns a user with empty identities[] when the email is already taken.
+        if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
+          setError('email_in_use');
+          setSubmitting(false);
+          goToStep('account');
+          return;
+        }
 
-      // Email confirmation is enabled and no session was returned → payment would fail.
-      if (!signUpData.session) {
-        setError('email_confirmation_required');
-        setSubmitting(false);
-        return;
+        // Email confirmation is enabled and no session was returned → payment would fail.
+        if (!signUpData.session) {
+          setError('email_confirmation_required');
+          setSubmitting(false);
+          return;
+        }
       }
 
       const res = await fetch('/api/billing/checkout', {
@@ -358,7 +363,8 @@ export function OrderWizard({ pack, locale }: { pack: PackId; locale: string }) 
       pack={state.pack}
       locale={locale}
       step={currentStep}
-      reachable={maxReachable(state)}
+      reachable={maxReachable(state, activeSteps)}
+      steps={activeSteps}
       title={titles[currentStep].title}
       subtitle={titles[currentStep].subtitle}
       footer={footer}

@@ -1,27 +1,29 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { STEPS, type Step, stepIndex } from '@/lib/order-validation';
+import { STEPS, type Step } from '@/lib/order-validation';
 
 export function ProgressBar({
   current,
   onStepClick,
   reachable,
+  steps = STEPS,
 }: {
   current: Step;
   onStepClick: (s: Step) => void;
   reachable: Step;
+  steps?: readonly Step[];
 }) {
   const t = useTranslations('order.steps');
-  const currentIdx = stepIndex(current);
-  const reachableIdx = stepIndex(reachable);
+  const currentIdx = steps.indexOf(current);
+  const reachableIdx = steps.indexOf(reachable);
 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6, width: '100%',
       maxWidth: 620, margin: '0 auto',
     }}>
-      {STEPS.map((s, i) => {
+      {steps.map((s, i) => {
         const isDone = i < currentIdx;
         const isActive = i === currentIdx;
         const canClick = i <= reachableIdx;
@@ -68,7 +70,7 @@ export function ProgressBar({
                 {t(s)}
               </span>
             </button>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div style={{
                 flex: 1, height: 2, borderRadius: 1,
                 background: i < currentIdx ? 'var(--accent)' : 'var(--border-subtle)',

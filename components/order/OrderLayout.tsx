@@ -7,7 +7,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ProgressBar } from './ProgressBar';
 import { OrderSummary } from './OrderSummary';
 import type { PackId } from '@/lib/env';
-import type { Step } from '@/lib/order-validation';
+import { STEPS, type Step } from '@/lib/order-validation';
 
 
 export function OrderLayout({
@@ -15,6 +15,7 @@ export function OrderLayout({
   locale,
   step,
   reachable,
+  steps = STEPS,
   title,
   subtitle,
   children,
@@ -27,6 +28,7 @@ export function OrderLayout({
   locale: string;
   step: Step;
   reachable: Step;
+  steps?: readonly Step[];
   title: string;
   subtitle: string;
   children: ReactNode;
@@ -92,7 +94,7 @@ export function OrderLayout({
         padding: '18px 32px 10px', zIndex: 10, position: 'relative',
         borderBottom: '1px solid var(--border-subtle)',
       }}>
-        <ProgressBar current={step} onStepClick={onStepClick} reachable={reachable} />
+        <ProgressBar current={step} onStepClick={onStepClick} reachable={reachable} steps={steps} />
       </div>
 
       {/* Body */}
@@ -114,7 +116,7 @@ export function OrderLayout({
                 fontSize: 11, fontWeight: 700, color: 'var(--accent)',
                 textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10,
               }}>
-                {t('stepOf', { current: 1, total: 5 }).replace('1', String(['pack', 'shipping', 'billing', 'account', 'review'].indexOf(step) + 1))}
+                {t('stepOf', { current: steps.indexOf(step) + 1, total: steps.length })}
               </div>
               <h1 style={{
                 fontFamily: 'var(--font-display)',
