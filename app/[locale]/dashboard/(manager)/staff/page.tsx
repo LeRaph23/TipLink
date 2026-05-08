@@ -24,6 +24,7 @@ export default async function StaffListPage({
       full_name,
       avatar_url,
       is_active,
+      deleted_at,
       onboarding_status,
       stripe_account_id,
       user_id,
