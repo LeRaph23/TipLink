@@ -54,6 +54,15 @@ export function JoinForm({
   const [selectedProfile, setSelectedProfile] = useState<UnclaimedProfile | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+
+  function selectProfile(p: UnclaimedProfile) {
+    setSelectedProfile(p);
+    const parts = p.full_name.trim().split(/\s+/);
+    setFirstName(parts[0] ?? '');
+    setLastName(parts.slice(1).join(' '));
+    if (p.email) setEmail(p.email);
+    setStep('name-photo');
+  }
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -66,11 +75,8 @@ export function JoinForm({
 
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const effectiveName = selectedProfile
-    ? selectedProfile.full_name
-    : [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
-
-  const firstNameFilled = selectedProfile ? true : firstName.trim().length > 0;
+  const effectiveName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
+  const firstNameFilled = firstName.trim().length > 0;
 
   // ─── Photo upload ─────────────────────────────────────────────────────────
 
@@ -107,6 +113,8 @@ export function JoinForm({
     setLoading(true);
 
     const supabase = createClient();
+    let session: import('@supabase/supabase-js').Session | null = null;
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -120,12 +128,19 @@ export function JoinForm({
     }
 
     if (data.user && data.user.identities?.length === 0) {
-      setError('Un compte existe déjà avec cet email.');
-      setLoading(false);
-      return;
+      // Account already exists — try signing in with the provided password
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError || !signInData.session) {
+        setError('Un compte existe déjà avec cet email. Vérifiez votre mot de passe ou utilisez un autre email.');
+        setLoading(false);
+        return;
+      }
+      session = signInData.session;
+    } else {
+      session = data.session;
     }
 
-    if (!data.session) {
+    if (!session) {
       setDone(true);
       setLoading(false);
       return;
@@ -199,11 +214,7 @@ export function JoinForm({
             <button
               key={p.id}
               type="button"
-              onClick={() => {
-                setSelectedProfile(p);
-                if (p.email) setEmail(p.email);
-                setStep('name-photo');
-              }}
+              onClick={() => selectProfile(p)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -277,68 +288,51 @@ export function JoinForm({
   // ─── Step: name-photo ─────────────────────────────────────────────────────
 
   if (step === 'name-photo') {
-    const showNameFields = !selectedProfile;
-
     return (
       <div>
-        {selectedProfile ? (
-          <>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 6 }}>
-              Bonjour, <strong style={{ color: 'var(--text)' }}>{selectedProfile.full_name}</strong> !
-            </p>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-              Votre photo
-            </h1>
-          </>
-        ) : (
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-            Votre prénom
-          </h1>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
+          Votre prénom
+        </h1>
+        {selectedProfile && (
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 16, lineHeight: 1.6 }}>
+            Vérifiez et corrigez vos informations si nécessaire.
+          </p>
         )}
 
-        {/* Name fields — only when not claiming an existing profile */}
-        {showNameFields && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
-                Prénom <span style={{ color: 'var(--accent)' }}>*</span>
-              </label>
-              <input
-                autoFocus
-                type="text"
-                placeholder="ex : Océane"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                style={inp}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
-                Nom <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(facultatif)</span>
-              </label>
-              <input
-                type="text"
-                placeholder="ex : Dupont"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                style={inp}
-              />
-            </div>
+        {/* Name fields — always shown */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
+              Prénom <span style={{ color: 'var(--accent)' }}>*</span>
+            </label>
+            <input
+              autoFocus
+              type="text"
+              placeholder="ex : Océane"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              style={inp}
+            />
           </div>
-        )}
+          <div>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
+              Nom <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(facultatif)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="ex : Dupont"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              style={inp}
+            />
+          </div>
+        </div>
 
         {/* Photo section */}
         <div style={{ marginBottom: 8 }}>
-          {showNameFields && (
-            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>
-              Ajoutez une photo — les profils avec photo reçoivent en moyenne <strong>3× plus de pourboires</strong>.
-            </p>
-          )}
-          {!showNameFields && (
-            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>
-              Les profils avec photo reçoivent en moyenne <strong>3× plus de pourboires</strong>. Photo facultative.
-            </p>
-          )}
+          <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>
+            Ajoutez une photo — les profils avec photo reçoivent en moyenne <strong>3× plus de pourboires</strong>.
+          </p>
 
           <div
             onClick={() => fileRef.current?.click()}
@@ -449,7 +443,7 @@ export function JoinForm({
             color: 'var(--text-3)',
             marginBottom: 12,
           }}>
-            Votre responsable a déjà renseigné votre adresse email.
+            Votre responsable a pré-renseigné votre email. Vous pouvez le modifier si nécessaire.
           </div>
         )}
 
@@ -460,18 +454,12 @@ export function JoinForm({
         )}
 
         <input
-          autoFocus={!prefilledEmail}
+          autoFocus
           type="email"
           value={email}
-          readOnly={!!prefilledEmail}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && emailValid && setStep('password')}
-          style={{
-            ...inp,
-            marginBottom: 20,
-            opacity: prefilledEmail ? 0.8 : 1,
-            cursor: prefilledEmail ? 'default' : 'text',
-          }}
+          style={{ ...inp, marginBottom: 20 }}
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

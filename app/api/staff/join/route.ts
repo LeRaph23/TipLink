@@ -47,11 +47,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Profil introuvable ou déjà réclamé.' }, { status: 404 });
     }
 
-    // If the profile is already linked to a different auth user, reject
-    if (profile.user_id && profile.user_id !== user.id) {
-      return NextResponse.json({ error: 'Ce profil a déjà été réclamé par quelqu\'un d\'autre.' }, { status: 409 });
-    }
-
     const { error: patchErr } = await service
       .from('staff_profiles')
       .update({
@@ -59,6 +54,7 @@ export async function POST(req: Request) {
         avatar_url: avatarUrl ?? null,
         is_active: true,
         onboarding_status: 'not_started',
+        ...(fullName?.trim() ? { full_name: fullName.trim() } : {}),
       })
       .eq('id', selectedProfileId);
 
