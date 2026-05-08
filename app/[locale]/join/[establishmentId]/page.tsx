@@ -58,16 +58,16 @@ export default async function JoinPage({
       background: 'var(--bg)', padding: '40px 20px 60px',
     }}>
       <div style={{ width: '100%', maxWidth: 440 }}>
-        {/* Text logo — no image */}
+        {/* Brand wordmark */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <span style={{
             fontSize: 20,
             fontWeight: 800,
-            color: 'var(--text)',
-            letterSpacing: '-0.04em',
-            fontFamily: 'var(--font)',
+            color: '#E57A97',
+            letterSpacing: '-0.03em',
+            fontFamily: 'var(--font-poppins), sans-serif',
           }}>
-            Digitip
+            DigiTip
           </span>
         </div>
 

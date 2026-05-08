@@ -85,20 +85,12 @@ export function JoinForm({
     setAvatarUploading(true);
     setAvatarError(null);
     try {
-      const supabase = createClient();
-      const ext = file.name.split('.').pop() ?? 'jpg';
-      const path = `avatars/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { data, error: upErr } = await supabase.storage
-        .from('public-media')
-        .upload(path, file, { upsert: true });
-
-      if (upErr || !data) throw upErr;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('public-media')
-        .getPublicUrl(data.path);
-
-      setAvatarUrl(publicUrl);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/upload/avatar', { method: 'POST', body: form });
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !json.url) throw new Error(json.error ?? 'Upload failed');
+      setAvatarUrl(json.url);
     } catch {
       setAvatarUrl(null);
       setAvatarPreview(null);
