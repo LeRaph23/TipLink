@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { validatePack } from '@/lib/order-validation';
@@ -31,13 +32,16 @@ export default async function OrderPage({
     }
   }
 
-  return <OrderWizard pack={pack} locale={locale} />;
+  return (
+    <Suspense>
+      <OrderWizard pack={pack} locale={locale} />
+    </Suspense>
+  );
 }
 
 export function generateStaticParams() {
   return [
-    { pack: 's' },
-    { pack: 'm' },
-    { pack: 'l' },
+    { pack: 'solo' },
+    { pack: 'duo' },
   ];
 }
