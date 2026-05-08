@@ -26,22 +26,36 @@ export async function createStripeConnectAccount(): Promise<
     return { accountId: profile.stripe_account_id };
   }
 
-  const account = await stripe.accounts.create({
-    type: 'express',
-    capabilities: {
-      card_payments: { requested: true },
-      transfers: { requested: true },
-    },
-  });
+  let accountId: string;
+  try {
+    const account = await stripe.accounts.create({
+      type: 'express',
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      metadata: { staff_profile_id: profile.id, user_id: user.id },
+    });
+    accountId = account.id;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Stripe account creation failed';
+    console.error('createStripeConnectAccount: stripe.accounts.create failed', err);
+    return { error: message };
+  }
 
-  await supabase
+  const { error: updateErr } = await supabase
     .from('staff_profiles')
     .update({
-      stripe_account_id: account.id,
+      stripe_account_id: accountId,
       onboarding_status: 'pending',
     })
     .eq('id', profile.id);
 
+  if (updateErr) {
+    console.error('createStripeConnectAccount: failed to persist account id', updateErr);
+    return { error: 'Failed to save Stripe account' };
+  }
+
   revalidatePath('/dashboard/onboarding');
-  return { accountId: account.id };
+  return { accountId };
 }
