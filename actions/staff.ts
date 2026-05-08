@@ -208,7 +208,6 @@ export async function joinAsStaffMember(): Promise<{ ok: true } | { error: strin
   if (error) return { error: error.message };
 
   revalidatePath('/dashboard/staff');
-  revalidatePath('/dashboard/onboarding');
   return { ok: true };
 }
 

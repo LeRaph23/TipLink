@@ -8,6 +8,8 @@ import {
   completeNfcOnboarding,
   completeExpressOnboarding,
 } from '@/actions/onboarding';
+import { setupAdminPayments } from '@/actions/stripe';
+import type { BankingData } from '@/actions/stripe';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { getBaseUrl } from '@/lib/env';
 
@@ -29,11 +31,11 @@ interface WizardState {
 }
 
 type ScanStep = 'codes' | 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team';
-type AuthStep = 'salon' | 'address' | 'admin-name' | 'team';
+type AuthStep = 'salon' | 'address' | 'admin-name' | 'team' | 'tips-opt-in' | 'banking';
 type ExpressStep = 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team';
 
 const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'address', 'admin-name', 'email', 'password', 'team'];
-const AUTH_STEPS: AuthStep[] = ['salon', 'address', 'admin-name', 'team'];
+const AUTH_STEPS: AuthStep[] = ['salon', 'address', 'admin-name', 'team', 'tips-opt-in', 'banking'];
 const EXPRESS_STEPS: ExpressStep[] = ['salon', 'address', 'admin-name', 'email', 'password', 'team'];
 
 type Props =
@@ -331,6 +333,17 @@ export function OnboardingWizard(props: Props) {
   const [done, setDone] = useState(false);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
 
+  // Banking state (tips-opt-in + banking steps, postpurchase mode only)
+  const [wantsTips, setWantsTips] = useState<boolean | null>(null);
+  const [dobDay, setDobDay] = useState('');
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobYear, setDobYear] = useState('');
+  const [bankingAddress, setBankingAddress] = useState('');
+  const [iban, setIban] = useState('');
+  const [tosAccepted, setTosAccepted] = useState(false);
+
+  const bankingFilled = dobDay && dobMonth && dobYear && bankingAddress.trim() && iban.trim().length >= 15 && tosAccepted;
+
   const goTo = useCallback(
     (step: string) => {
       setError(null);
@@ -341,35 +354,46 @@ export function OnboardingWizard(props: Props) {
     [router, locale, searchParams]
   );
 
+  const canAdvance = (): boolean => {
+    switch (currentStep) {
+      case 'codes': return state.nfcCodes.length > 0;
+      case 'salon': return state.establishmentName.trim().length > 0;
+      case 'address': return state.address.trim().length > 0;
+      case 'admin-name': return state.adminFullName.trim().length > 0;
+      case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
+      case 'password': return state.password.length >= 8;
+      case 'team': return true;
+      case 'tips-opt-in': return wantsTips !== null;
+      case 'banking': return !!bankingFilled;
+      default: return true;
+    }
+  };
+
+  // In postpurchase mode, skip banking step if admin said no
   const next = () => {
-    const s = steps[stepIndex + 1];
+    let nextIdx = stepIndex + 1;
+    const s = steps[nextIdx];
+    // Skip 'banking' if wantsTips is false
+    if (s === 'banking' && wantsTips === false) {
+      nextIdx += 1;
+      const s2 = steps[nextIdx];
+      if (s2) goTo(s2);
+      return;
+    }
     if (s) goTo(s);
   };
 
   const back = () => {
-    const s = steps[stepIndex - 1];
-    if (s) goTo(s);
-  };
-
-  const canAdvance = (): boolean => {
-    switch (currentStep) {
-      case 'codes':
-        return state.nfcCodes.length > 0;
-      case 'salon':
-        return state.establishmentName.trim().length > 0;
-      case 'address':
-        return state.address.trim().length > 0;
-      case 'admin-name':
-        return state.adminFullName.trim().length > 0;
-      case 'email':
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
-      case 'password':
-        return state.password.length >= 8;
-      case 'team':
-        return true;
-      default:
-        return true;
+    let prevIdx = stepIndex - 1;
+    const s = steps[prevIdx];
+    // Skip 'banking' going backwards if wantsTips is false
+    if (s === 'banking' && wantsTips === false) {
+      prevIdx -= 1;
+      const s2 = steps[prevIdx];
+      if (s2) goTo(s2);
+      return;
     }
+    if (s) goTo(s);
   };
 
   async function handleSubmit() {
@@ -481,6 +505,33 @@ export function OnboardingWizard(props: Props) {
         setError(result.error);
         setSubmitting(false);
         return;
+      }
+
+      // If admin wants to receive tips, set up their banking
+      if (wantsTips && bankingFilled) {
+        const commaIdx = bankingAddress.lastIndexOf(',');
+        const line1 = commaIdx !== -1 ? bankingAddress.slice(0, commaIdx).trim() : bankingAddress;
+        const rest = commaIdx !== -1 ? bankingAddress.slice(commaIdx + 1).trim() : '';
+        const spaceIdx = rest.indexOf(' ');
+        const postal_code = spaceIdx !== -1 ? rest.slice(0, spaceIdx).trim() : '';
+        const city = spaceIdx !== -1 ? rest.slice(spaceIdx + 1).trim() : rest;
+
+        const nameParts = state.adminFullName.trim().split(/\s+/);
+
+        const bankResult = await setupAdminPayments({
+          firstName: nameParts[0] ?? state.adminFullName,
+          lastName: nameParts.slice(1).join(' ') || (nameParts[0] ?? ''),
+          dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
+          address: { line1, city, postal_code, country: 'FR' },
+          iban: iban.replace(/\s/g, '').toUpperCase(),
+          tosTimestamp: Math.floor(Date.now() / 1000),
+        } as Parameters<typeof setupAdminPayments>[0]);
+
+        if ('error' in bankResult) {
+          setError(bankResult.error);
+          setSubmitting(false);
+          return;
+        }
       }
     }
 
@@ -599,10 +650,22 @@ export function OnboardingWizard(props: Props) {
       title: 'Votre équipe',
       subtitle: 'Invitez vos collègues pour qu\'ils puissent eux aussi recevoir des pourboires.',
     },
+    'tips-opt-in': {
+      title: 'Et vous ?',
+      subtitle: 'Souhaitez-vous aussi recevoir des pourboires personnellement ?',
+    },
+    banking: {
+      title: 'Vos informations bancaires',
+      subtitle: 'Pour virer vos pourboires directement sur votre compte. Votre IBAN ne sera jamais visible par votre équipe.',
+    },
   };
 
   const config = stepConfig[currentStep] ?? { title: '', subtitle: '' };
-  const isLastStep = stepIndex === steps.length - 1;
+  // For postpurchase: if admin said no to tips, last step is tips-opt-in
+  const effectiveLastIdx = (mode === 'postpurchase' && wantsTips === false)
+    ? steps.indexOf('tips-opt-in' as never)
+    : steps.length - 1;
+  const isLastStep = stepIndex === effectiveLastIdx;
   const totalSteps = steps.length;
 
   function renderStepBody() {
@@ -683,6 +746,116 @@ export function OnboardingWizard(props: Props) {
             onChange={(colleagues) => dispatch({ colleagues })}
           />
         );
+
+      case 'tips-opt-in':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { value: true, label: 'Oui, je veux recevoir des pourboires', icon: '💸' },
+              { value: false, label: 'Non, je gère uniquement mon équipe', icon: '👔' },
+            ].map(({ value, label, icon }) => (
+              <button
+                key={String(value)}
+                type="button"
+                onClick={() => setWantsTips(value)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '16px 18px', borderRadius: 14,
+                  border: `1.5px solid ${wantsTips === value ? 'var(--accent)' : 'var(--border)'}`,
+                  background: wantsTips === value ? 'var(--surface-2)' : 'var(--surface)',
+                  cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
+                  transition: 'border-color 150ms, background 150ms',
+                }}
+              >
+                <span style={{ fontSize: 22 }}>{icon}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
+              </button>
+            ))}
+          </div>
+        );
+
+      case 'banking': {
+        const selectStyle: React.CSSProperties = {
+          ...inp,
+          appearance: 'none' as const,
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%23888\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E")',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 14px center',
+          paddingRight: 36,
+        };
+        const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+        const MONTHS = [
+          { value: 1, label: 'Janvier' }, { value: 2, label: 'Février' },
+          { value: 3, label: 'Mars' }, { value: 4, label: 'Avril' },
+          { value: 5, label: 'Mai' }, { value: 6, label: 'Juin' },
+          { value: 7, label: 'Juillet' }, { value: 8, label: 'Août' },
+          { value: 9, label: 'Septembre' }, { value: 10, label: 'Octobre' },
+          { value: 11, label: 'Novembre' }, { value: 12, label: 'Décembre' },
+        ];
+        const curYear = new Date().getFullYear();
+        const YEARS = Array.from({ length: curYear - 1924 }, (_, i) => curYear - 18 - i);
+
+        return (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
+                Date de naissance <span style={{ color: 'var(--accent)' }}>*</span>
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr', gap: 8 }}>
+                <select value={dobDay} onChange={(e) => setDobDay(e.target.value)} style={selectStyle}>
+                  <option value="">Jour</option>
+                  {DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select value={dobMonth} onChange={(e) => setDobMonth(e.target.value)} style={selectStyle}>
+                  <option value="">Mois</option>
+                  {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+                <select value={dobYear} onChange={(e) => setDobYear(e.target.value)} style={selectStyle}>
+                  <option value="">Année</option>
+                  {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
+                Adresse personnelle <span style={{ color: 'var(--accent)' }}>*</span>
+              </label>
+              <AddressAutocomplete value={bankingAddress} onChange={setBankingAddress} style={inp} />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
+                IBAN <span style={{ color: 'var(--accent)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={iban}
+                onChange={(e) => setIban(e.target.value.toUpperCase())}
+                placeholder="FR76 3000 4000 0312 3456 7890 143"
+                style={{ ...inp, fontFamily: 'monospace', letterSpacing: '0.05em' }}
+                autoComplete="off"
+              />
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={tosAccepted}
+                onChange={(e) => setTosAccepted(e.target.checked)}
+                style={{ marginTop: 2, flexShrink: 0, accentColor: '#E57A97', width: 16, height: 16 }}
+              />
+              <span style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
+                J&apos;accepte les{' '}
+                <a href="https://stripe.com/fr/legal/connect-account" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                  Conditions d&apos;utilisation de Stripe
+                </a>
+                {' '}pour la réception de paiements.
+              </span>
+            </label>
+          </div>
+        );
+      }
 
       default:
         return null;
@@ -781,21 +954,15 @@ export function OnboardingWizard(props: Props) {
           </button>
         )}
 
-        {/* "Skip" for team step */}
-        {currentStep === 'team' && !isLastStep && (
+        {/* "Skip" for team and banking steps */}
+        {(currentStep === 'team' || currentStep === 'banking') && !isLastStep && (
           <button
             type="button"
             onClick={next}
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-3)',
-              fontSize: 13,
-              cursor: 'pointer',
-              fontFamily: 'var(--font)',
-              textDecoration: 'underline',
-              textUnderlineOffset: 3,
-              textAlign: 'center',
+              background: 'none', border: 'none', color: 'var(--text-3)',
+              fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+              textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
             }}
           >
             Passer cette étape

@@ -129,25 +129,6 @@ export default async function DashboardPage({
         </>
       )}
 
-      {staffProfile && staffProfile.onboarding_status !== 'complete' && (
-        <div style={{
-          padding: '14px 18px', borderRadius: 'var(--radius)',
-          background: 'var(--warning-bg)',
-          border: '1px solid color-mix(in oklch, var(--warning) 30%, transparent)',
-          marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <p style={{ fontSize: 13, color: 'var(--warning)', fontWeight: 500 }}>
-            {t('onboardingBanner')}
-          </p>
-          <Link href="/dashboard/onboarding" style={{
-            fontSize: 12.5, fontWeight: 600, color: 'var(--warning)',
-            border: '1px solid color-mix(in oklch, var(--warning) 40%, transparent)',
-            padding: '4px 12px', borderRadius: 6, textDecoration: 'none', flexShrink: 0, marginLeft: 16,
-          }}>
-            {t('onboardingCta')} →
-          </Link>
-        </div>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
         <StatCard label={t('totalEarned')}   value={fmt.format(totalEarnings / 100)} sub={t('allTime')} />
