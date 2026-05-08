@@ -15,7 +15,7 @@ import { getBaseUrl } from '@/lib/env';
 
 interface Colleague {
   fullName: string;
-  email: string;
+  email: string; // optional — empty string means no email invite
 }
 
 interface WizardState {
@@ -403,7 +403,7 @@ export function OnboardingWizard(props: Props) {
         establishmentName: state.establishmentName,
         address: state.address,
         adminFullName: state.adminFullName,
-        colleagues: state.colleagues.filter((c) => c.fullName.trim() && c.email.trim()),
+        colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         locale: locale as 'fr' | 'en',
       });
 
@@ -456,7 +456,7 @@ export function OnboardingWizard(props: Props) {
         establishmentName: state.establishmentName,
         address: state.address,
         adminFullName: state.adminFullName,
-        colleagues: state.colleagues.filter((c) => c.fullName.trim() && c.email.trim()),
+        colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         locale: locale as 'fr' | 'en',
       });
 
@@ -473,7 +473,7 @@ export function OnboardingWizard(props: Props) {
         establishmentName: state.establishmentName,
         address: state.address,
         adminFullName: state.adminFullName,
-        colleagues: state.colleagues.filter((c) => c.fullName.trim() && c.email.trim()),
+        colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         locale: locale as 'fr' | 'en',
       });
 

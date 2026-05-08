@@ -24,6 +24,7 @@ export async function createStaffMember(
       full_name: input.fullName,
       establishment_id: input.establishmentId,
       avatar_url: input.avatarUrl ?? null,
+      is_active: false, // stays pending until they claim via join link
     })
     .select('id')
     .single();

@@ -8,8 +8,26 @@ import { inviteStaffMember } from './staff';
 
 const ColleagueSchema = z.object({
   fullName: z.string().min(1).max(200),
-  email: z.string().email(),
+  email: z.string().email().optional().or(z.literal('')),
 });
+
+async function addColleague(
+  service: ReturnType<typeof createServiceClient>,
+  { fullName, email, establishmentId, locale }: {
+    fullName: string; email?: string; establishmentId: string; locale: 'fr' | 'en';
+  }
+) {
+  const trimmedEmail = email?.trim();
+  if (trimmedEmail) {
+    await inviteStaffMember({ fullName, email: trimmedEmail, establishmentId, role: 'staff', locale });
+  } else {
+    await service.from('staff_profiles').insert({
+      full_name: fullName,
+      establishment_id: establishmentId,
+      is_active: false,
+    });
+  }
+}
 
 const PostPurchaseSchema = z.object({
   establishmentName: z.string().min(1).max(200),
@@ -117,13 +135,7 @@ export async function completePostPurchaseOnboarding(
   if (colleagues.length > 0) {
     await Promise.allSettled(
       colleagues.map((c) =>
-        inviteStaffMember({
-          fullName: c.fullName,
-          email: c.email,
-          establishmentId: est.id,
-          role: 'staff',
-          locale,
-        })
+        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, locale })
       )
     );
   }
@@ -235,13 +247,7 @@ export async function completeExpressOnboarding(
   if (colleagues.length > 0) {
     await Promise.allSettled(
       colleagues.map((c) =>
-        inviteStaffMember({
-          fullName: c.fullName,
-          email: c.email,
-          establishmentId: est.id,
-          role: 'staff',
-          locale,
-        })
+        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, locale })
       )
     );
   }
@@ -350,13 +356,7 @@ export async function completeNfcOnboarding(
   if (colleagues.length > 0) {
     await Promise.allSettled(
       colleagues.map((c) =>
-        inviteStaffMember({
-          fullName: c.fullName,
-          email: c.email,
-          establishmentId: est.id,
-          role: 'staff',
-          locale,
-        })
+        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, locale })
       )
     );
   }
