@@ -117,7 +117,7 @@ export async function deleteEstablishment(
 
   const { error } = await service
     .from('establishments')
-    .update({ deleted_at: new Date().toISOString(), slug: null } as never)
+    .update({ deleted_at: new Date().toISOString(), slug: `__deleted__${estId}` } as never)
     .eq('id', estId);
 
   if (error) return { error: error.message };
