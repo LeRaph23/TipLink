@@ -1,14 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import dynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-
-// Dynamic import with ssr:false prevents @stripe/connect-js from being evaluated
-// on the server where it would try to access browser globals and crash.
-const StripeConnectEmbed = dynamic(
-  () => import('@/components/onboarding/StripeConnectEmbed').then((m) => m.StripeConnectEmbed),
-  { ssr: false }
-);
+import { StripeConnectEmbedClient } from '@/components/onboarding/StripeConnectEmbedClient';
 
 export default async function OnboardingPage({
   params,
@@ -40,7 +33,7 @@ export default async function OnboardingPage({
           {t('subtitle')}
         </p>
       </div>
-      <StripeConnectEmbed
+      <StripeConnectEmbedClient
         hasAccount={!!profile?.stripe_account_id}
         isComplete={profile?.onboarding_status === 'complete'}
         showManagement={profile?.onboarding_status === 'complete'}
