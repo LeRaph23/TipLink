@@ -38,6 +38,8 @@ export function StripeConnectEmbed({ hasAccount, isComplete, showManagement = fa
         }
       }
 
+      const isDark = document.documentElement.dataset.theme === 'dark';
+
       const instance = loadConnectAndInitialize({
         publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
         fetchClientSecret: async () => {
@@ -48,7 +50,7 @@ export function StripeConnectEmbed({ hasAccount, isComplete, showManagement = fa
         },
         appearance: {
           overlays: 'dialog',
-          variables: {
+          variables: isDark ? {
             borderRadius: '10px',
             spacingUnit: '4px',
             colorPrimary: '#E57A97',
@@ -56,6 +58,14 @@ export function StripeConnectEmbed({ hasAccount, isComplete, showManagement = fa
             colorText: '#f2f2f5',
             colorSecondaryText: '#9898a8',
             colorBorder: '#2e2e38',
+          } : {
+            borderRadius: '10px',
+            spacingUnit: '4px',
+            colorPrimary: '#E57A97',
+            colorBackground: '#ffffff',
+            colorText: '#111118',
+            colorSecondaryText: '#6b6b7b',
+            colorBorder: '#e2e2e8',
           },
         },
       });
