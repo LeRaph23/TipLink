@@ -35,12 +35,17 @@ export async function createStripeConnectAccount(): Promise<
   try {
     const account = await stripe.accounts.create({
       type: 'express',
-      // Pre-set individual so Stripe skips the "type d'entreprise" screen
       business_type: 'individual',
       individual: {
         first_name: firstName || undefined,
         last_name: lastName || undefined,
         email: user.email ?? undefined,
+      },
+      // Pre-fill business profile so Stripe skips the "website" screen
+      business_profile: {
+        url: 'https://digitip.app',
+        product_description: 'Réception de pourboires via la plateforme DigiTip',
+        mcc: '7230', // beauty salons / barbers
       },
       capabilities: {
         transfers: { requested: true },
