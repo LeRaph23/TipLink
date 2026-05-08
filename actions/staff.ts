@@ -152,6 +152,65 @@ export async function updateStaffMember(
   return { success: true };
 }
 
+export async function joinAsStaffMember(): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  // Verify group_admin role and get group_id
+  const { data: roleRow } = await supabase
+    .from('user_roles')
+    .select('group_id')
+    .eq('user_id', user.id)
+    .eq('role', 'group_admin')
+    .not('group_id', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (!roleRow?.group_id) return { error: 'Not a group admin' };
+
+  const service = createServiceClient();
+
+  // Already has a staff profile?
+  const { data: existing } = await service
+    .from('staff_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (existing) return { error: 'Already a staff member' };
+
+  const { data: est } = await service
+    .from('establishments')
+    .select('id')
+    .eq('group_id', roleRow.group_id)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (!est) return { error: 'No establishment found' };
+
+  const fullName =
+    (user.user_metadata?.full_name as string | undefined)?.trim() ||
+    user.email?.split('@')[0] ||
+    'Admin';
+
+  const { error } = await service.from('staff_profiles').insert({
+    user_id: user.id,
+    establishment_id: est.id,
+    full_name: fullName,
+    is_active: true,
+    onboarding_status: 'not_started',
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard/staff');
+  revalidatePath('/dashboard/onboarding');
+  return { ok: true };
+}
+
 export async function deactivateStaffMember(
   staffId: string
 ): Promise<{ success: true } | { error: string }> {

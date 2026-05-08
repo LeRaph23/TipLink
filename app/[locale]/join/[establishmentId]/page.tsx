@@ -25,15 +25,15 @@ export default async function JoinPage({
 
   if (!est) notFound();
 
-  // Fetch profiles that haven't gone through the join form yet.
-  // onboarding_status IS NULL = invited or pre-created but never claimed via this form.
-  // It gets set to 'not_started' the moment someone completes the join flow.
+  // Fetch profiles that haven't completed the join flow yet:
+  // - is_active = false → invited via email after the current fix (not yet claimed)
+  // - user_id IS NULL   → pre-created by admin without sending an email invite
   const { data: pendingProfiles } = await service
     .from('staff_profiles')
     .select('id, full_name, user_id')
     .eq('establishment_id', establishmentId)
-    .is('onboarding_status', null)
     .is('deleted_at', null)
+    .or('is_active.eq.false,user_id.is.null')
     .order('full_name');
 
   // For profiles already linked to an auth user (invited by email), fetch their email

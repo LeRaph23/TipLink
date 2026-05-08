@@ -153,6 +153,43 @@ export default async function GroupTipPage({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* "Whole team" option */}
+            {payableStaff.length > 1 && (
+              <Link
+                href={`/pay/group/${establishmentId}/team`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '16px 18px',
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, rgba(229,122,151,0.12), rgba(236,151,176,0.06))',
+                  border: '1.5px solid rgba(229,122,151,0.3)',
+                  textDecoration: 'none',
+                  color: 'var(--text)',
+                  minHeight: 72,
+                  transition: 'transform 120ms, border-color 120ms',
+                }}
+              >
+                <div style={{
+                  width: 48, height: 48, borderRadius: '50%',
+                  background: 'var(--accent)', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, flexShrink: 0,
+                }}>
+                  👥
+                </div>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: '-0.01em', display: 'block' }}>
+                    Toute l&apos;équipe
+                  </span>
+                  <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
+                    Réparti équitablement entre {payableStaff.length} membres
+                  </span>
+                </div>
+                <span aria-hidden style={{ fontSize: 18, color: 'var(--accent)', opacity: 0.8 }}>→</span>
+              </Link>
+            )}
             {payableStaff.map((s) => (
               <Link
                 key={s.staff_id!}

@@ -1,9 +1,11 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { getBaseUrl } from '@/lib/env';
 import { StaffInviteCopy } from './StaffInviteCopy';
+import { joinAsStaffMember } from '@/actions/staff';
 
 export default async function StaffListPage({
   params,
@@ -58,6 +60,18 @@ export default async function StaffListPage({
 
   const joinUrl = est ? `${getBaseUrl()}/join/${est.id}` : null;
 
+  // Check if the current group admin already has a staff profile
+  const isGroupAdmin = !!(roleRow?.group_id);
+  const { data: adminStaffProfile } = user && isGroupAdmin
+    ? await service
+        .from('staff_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .maybeSingle()
+    : { data: null };
+  const adminHasStaffProfile = !!adminStaffProfile;
+
   // Fetch emails for staff who have joined (have a user_id)
   const userIds = (staffMembers ?? []).filter((s) => s.user_id).map((s) => s.user_id!);
   const emailMap = new Map<string, string>();
@@ -101,6 +115,40 @@ export default async function StaffListPage({
             Lien d&apos;invitation équipe
           </div>
           <StaffInviteCopy url={joinUrl} establishmentName={est?.name ?? ''} />
+        </div>
+      )}
+
+      {/* CTA for group admin to join as staff member */}
+      {isGroupAdmin && !adminHasStaffProfile && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.05))',
+          border: '1px solid rgba(229,122,151,0.25)',
+          borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 16,
+          display: 'flex', alignItems: 'center', gap: 14,
+        }}>
+          <div style={{ fontSize: 22 }}>💳</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+              Recevez vous aussi des pourboires
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
+              Configurez votre compte bancaire pour apparaître dans la liste et recevoir vos pourboires directement.
+            </div>
+          </div>
+          <form action={async () => {
+            'use server';
+            const result = await joinAsStaffMember();
+            if ('ok' in result) redirect('/dashboard/onboarding');
+          }}>
+            <button type="submit" style={{
+              padding: '8px 14px', borderRadius: 10, border: 'none',
+              background: 'var(--accent)', color: '#fff',
+              fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'var(--font)', whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              Configurer →
+            </button>
+          </form>
         </div>
       )}
 

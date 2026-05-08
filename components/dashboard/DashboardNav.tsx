@@ -14,6 +14,7 @@ interface Props {
   userRoles: Pick<UserRole, 'role' | 'group_id' | 'establishment_id'>[];
   userEmail: string;
   userName: string;
+  hasStaffProfile?: boolean;
 }
 
 
@@ -90,7 +91,7 @@ function Avatar({ name, size = 28 }: { name: string; size?: number }) {
   );
 }
 
-export function DashboardNav({ userRoles, userEmail, userName }: Props) {
+export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile = false }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const tn = useTranslations('dashboard.nav');
@@ -122,7 +123,7 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
     { href: '/dashboard',               label: tn('overview'),     icon: <HomeIcon />,   always: true },
     { href: '/dashboard/transactions',  label: tn('transactions'), icon: <TxIcon />,     always: true },
     { href: '/dashboard/billing',       label: tn('billing'),      icon: <PayoutIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
-    { href: '/dashboard/onboarding',    label: td('payouts'),      icon: <PayoutIcon />, roles: ['staff'] as UserRole['role'][] },
+    { href: '/dashboard/onboarding',    label: td('payouts'),      icon: <PayoutIcon />, roles: ['staff'] as UserRole['role'][], showForGroupAdminWithStaff: true },
     { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/establishments', label: tn('establishments'), icon: <EstIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/stickers',      label: tn('stickers'),     icon: <NfcIcon />,    roles: ['manager', 'group_admin'] as UserRole['role'][] },
@@ -144,7 +145,11 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
     { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
   ];
 
-  const visibleLinks = links.filter(l => l.always || (l.roles && l.roles.some(r => hasRole(r))));
+  const visibleLinks = links.filter(l =>
+    l.always ||
+    (l.roles && l.roles.some(r => hasRole(r))) ||
+    (l.showForGroupAdminWithStaff && hasStaffProfile && hasRole('group_admin'))
+  );
   const isSuperAdmin = hasRole('super_admin');
 
   const displayName = userName || userEmail;

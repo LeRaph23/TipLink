@@ -97,6 +97,42 @@ async function handleEvent(
         .eq('id', transactionId)
         .eq('status', 'pending');
 
+      // For group tips: create Stripe transfers to each payable staff member equally
+      if (intent.metadata?.group_tip === 'true') {
+        const netForStaff = parseInt(intent.metadata.net_for_staff ?? '0', 10);
+        const transferGroup = intent.metadata.transfer_group;
+        const establishmentId = intent.metadata.establishment_id;
+        const chargeId = typeof intent.latest_charge === 'string'
+          ? intent.latest_charge
+          : (intent.latest_charge as Stripe.Charge | null)?.id;
+
+        if (netForStaff > 0 && transferGroup && establishmentId && chargeId) {
+          const { data: staffMembers } = await supabase
+            .from('staff_profiles')
+            .select('id, stripe_account_id')
+            .eq('establishment_id', establishmentId)
+            .eq('is_active', true)
+            .eq('onboarding_status', 'complete')
+            .is('deleted_at', null)
+            .not('stripe_account_id', 'is', null);
+
+          if (staffMembers && staffMembers.length > 0) {
+            const shareAmount = Math.floor(netForStaff / staffMembers.length);
+            await Promise.allSettled(
+              staffMembers.map((s) =>
+                stripe.transfers.create({
+                  amount: shareAmount,
+                  currency: intent.currency,
+                  destination: s.stripe_account_id!,
+                  transfer_group: transferGroup,
+                  source_transaction: chargeId,
+                })
+              )
+            );
+          }
+        }
+      }
+
       // Send receipt email if customer provided their email
       if (intent.receipt_email) {
         const { data: txn } = await supabase
