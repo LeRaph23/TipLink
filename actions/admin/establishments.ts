@@ -93,7 +93,7 @@ export async function deleteEstablishment(id: string): Promise<Result<null>> {
   //    la contrainte unique si le même nom est réutilisé plus tard.
   const { error } = await service
     .from('establishments')
-    .update({ deleted_at: now, slug: null } as never)
+    .update({ deleted_at: now, slug: `__deleted__${id}` } as never)
     .eq('id', id);
   if (error) return { ok: false, error: error.message };
 
