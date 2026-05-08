@@ -512,8 +512,8 @@
     "notReadyTitle": "Pas encore actif",
     "notReadyBack": "Retour à Digitip",
     "group": {
-      "pickStaffTitle": "Laissez un pourboire",
-      "pickStaffSubtitle": "Touchez la personne qui vous a servi pour lui laisser un pourboire.",
+      "pickStaffTitle": "Choisissez votre praticien·ne",
+      "pickStaffSubtitle": "Sélectionnez la personne qui vous a servi·e pour lui laisser un pourboire.",
       "noStaff": "Aucun membre de l'équipe n'est encore prêt à recevoir des pourboires.",
       "poweredBy": "Propulsé par Digitip"
     },

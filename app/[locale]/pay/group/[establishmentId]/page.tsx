@@ -62,79 +62,85 @@ export default async function GroupTipPage({
 
   const header = rows[0]!;
   const payableStaff = rows.filter((r) => r.staff_id && r.is_payable);
+  const salonName = header.establishment_name ?? 'Digitip';
 
   return (
     <main
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-start',
         background: 'var(--bg)',
-        padding: '32px 20px 48px',
-        position: 'relative',
-        overflow: 'hidden',
+        padding: '48px 16px 72px',
       }}
     >
-      <div
-        style={{
-          position: 'fixed',
-          top: '-15%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 600,
-          height: 400,
-          borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(99,102,241,0.1) 0%, transparent 70%)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      />
+      <div className="fade-up" style={{ width: '100%', maxWidth: 400 }}>
 
-      <div className="fade-up" style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 24 }}>
-          {header.group_logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={header.group_logo_url}
-              alt={header.establishment_name ?? ''}
-              style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }}
-            />
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect width="24" height="24" rx="7" fill="var(--accent)" />
-              <path d="M7 12c0-2.8 2.2-5 5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-              <path d="M17 12c0 2.8-2.2 5-5 5" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-              <circle cx="12" cy="12" r="1.8" fill="white" />
-            </svg>
-          )}
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '-0.02em' }}>
-            {header.establishment_name ?? 'Digitip'}
+        {/* Brand mark */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <span
+            style={{
+              fontFamily: 'Poppins, var(--font-display), sans-serif',
+              fontSize: 15,
+              fontWeight: 800,
+              color: 'var(--accent)',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            DigiTip
           </span>
         </div>
 
-        <h1
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 26,
-            fontWeight: 800,
-            textAlign: 'center',
-            color: 'var(--text)',
-            letterSpacing: '-0.02em',
-            marginBottom: 8,
-          }}
-        >
-          {t('group.pickStaffTitle')}
-        </h1>
-        <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-3)', marginBottom: 24 }}>
-          {t('group.pickStaffSubtitle')}
-        </p>
+        {/* Salon identity */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, marginBottom: 36 }}>
+          {header.group_logo_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={header.group_logo_url}
+              alt={salonName}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 20,
+                objectFit: 'cover',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+              }}
+            />
+          )}
+          <div style={{ textAlign: 'center' }}>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 32,
+                fontWeight: 800,
+                color: 'var(--text)',
+                letterSpacing: '-0.03em',
+                lineHeight: 1.15,
+                marginBottom: 10,
+              }}
+            >
+              {salonName}
+            </h1>
+            <p
+              style={{
+                fontSize: 15,
+                color: 'var(--text-3)',
+                lineHeight: 1.5,
+                maxWidth: 280,
+                margin: '0 auto',
+              }}
+            >
+              {t('group.pickStaffSubtitle')}
+            </p>
+          </div>
+        </div>
 
+        {/* Staff list */}
         {payableStaff.length === 0 ? (
           <div
             style={{
-              padding: 24,
+              padding: '28px 24px',
               borderRadius: 16,
               background: 'var(--surface)',
               border: '1px solid var(--border-subtle)',
@@ -146,7 +152,7 @@ export default async function GroupTipPage({
             {t('group.noStaff')}
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {payableStaff.map((s) => (
               <Link
                 key={s.staff_id!}
@@ -154,13 +160,14 @@ export default async function GroupTipPage({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
-                  borderRadius: 14,
+                  gap: 16,
+                  padding: '16px 18px',
+                  borderRadius: 16,
                   background: 'var(--surface)',
                   border: '1px solid var(--border-subtle)',
                   textDecoration: 'none',
                   color: 'var(--text)',
+                  minHeight: 72,
                   transition: 'transform 120ms, border-color 120ms',
                 }}
               >
@@ -169,13 +176,13 @@ export default async function GroupTipPage({
                   <img
                     src={s.avatar_url}
                     alt={s.full_name ?? ''}
-                    style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
+                    style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                   />
                 ) : (
                   <div
                     style={{
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       borderRadius: '50%',
                       background: 'var(--accent)',
                       color: '#fff',
@@ -183,14 +190,19 @@ export default async function GroupTipPage({
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 800,
-                      fontSize: 18,
+                      fontSize: 20,
+                      flexShrink: 0,
                     }}
                   >
                     {(s.full_name ?? '?').charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div style={{ flex: 1, fontWeight: 600, fontSize: 15 }}>{s.full_name}</div>
-                <span aria-hidden style={{ fontSize: 18, color: 'var(--text-3)' }}>→</span>
+                <span style={{ flex: 1, fontWeight: 600, fontSize: 16, letterSpacing: '-0.01em' }}>
+                  {s.full_name}
+                </span>
+                <span aria-hidden style={{ fontSize: 18, color: 'var(--text-3)', opacity: 0.6 }}>
+                  →
+                </span>
               </Link>
             ))}
           </div>
@@ -201,7 +213,9 @@ export default async function GroupTipPage({
             textAlign: 'center',
             fontSize: 11,
             color: 'var(--text-3)',
-            marginTop: 20,
+            opacity: 0.5,
+            marginTop: 28,
+            letterSpacing: '0.02em',
           }}
         >
           {t('group.poweredBy')}
