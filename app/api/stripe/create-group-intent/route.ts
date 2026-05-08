@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
   const platformFee = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000));
   // Platform keeps: platformFee + SERVICE_FEE. Staff receive the rest split equally.
 
-  const idempotencyKey = generateIdempotencyKey({ establishmentId, amount, nonce });
+  const idempotencyKey = generateIdempotencyKey({ staffId: establishmentId, amount, nonce });
 
   const { data: txn, error: txnError } = await supabase
     .from('transactions')
