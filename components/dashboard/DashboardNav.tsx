@@ -122,6 +122,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
   const links = [
     { href: '/dashboard',               label: tn('overview'),     icon: <HomeIcon />,   always: true },
     { href: '/dashboard/transactions',  label: tn('transactions'), icon: <TxIcon />,     always: true },
+    { href: '/dashboard/banking',       label: 'Virements',        icon: <PayoutIcon />, roles: ['staff', 'group_admin'] as UserRole['role'][] },
     { href: '/dashboard/billing',       label: tn('billing'),      icon: <PayoutIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/establishments', label: tn('establishments'), icon: <EstIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },

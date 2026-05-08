@@ -138,7 +138,7 @@ export default async function StaffListPage({
           <form action={async () => {
             'use server';
             const result = await joinAsStaffMember();
-            if ('ok' in result) redirect('/dashboard/staff');
+            if ('ok' in result) redirect('/dashboard/banking');
           }}>
             <button type="submit" style={{
               padding: '8px 14px', borderRadius: 10, border: 'none',

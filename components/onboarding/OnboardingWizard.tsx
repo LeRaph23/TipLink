@@ -606,9 +606,24 @@ export function OnboardingWizard(props: Props) {
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
           Votre espace est prêt !
         </h1>
-        <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 32 }}>
+        <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 24 }}>
           {state.establishmentName} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.
         </p>
+        {(mode === 'scan' || mode === 'express') && (
+          <div style={{
+            background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+            borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'left',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
+              💳 Configurer vos virements
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
+              Pour recevoir vos pourboires, rendez-vous dans{' '}
+              <strong style={{ color: 'var(--text)' }}>Dashboard → Virements</strong>{' '}
+              pour renseigner votre IBAN.
+            </div>
+          </div>
+        )}
         <button
           onClick={() => router.push(`/${locale}/dashboard`)}
           style={{ ...btnPrimary, maxWidth: 320, margin: '0 auto', display: 'block' }}

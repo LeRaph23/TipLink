@@ -63,7 +63,7 @@ export default async function DashboardPage({
 
   const { data: staffProfile } = await supabase
     .from('staff_profiles')
-    .select('id, full_name, onboarding_status')
+    .select('id, full_name, onboarding_status, stripe_account_id')
     .eq('user_id', user!.id)
     .is('deleted_at', null)
     .maybeSingle();
@@ -129,6 +129,32 @@ export default async function DashboardPage({
         </>
       )}
 
+      {staffProfile && !staffProfile.stripe_account_id && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.05))',
+          border: '1px solid rgba(229,122,151,0.25)',
+          borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 22, flexShrink: 0 }}>💳</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+              Configurez votre compte bancaire
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
+              Ajoutez votre IBAN pour commencer à recevoir vos pourboires directement sur votre compte.
+            </div>
+          </div>
+          <Link href="/dashboard/banking" style={{
+            padding: '8px 14px', borderRadius: 10, border: 'none',
+            background: 'var(--accent)', color: '#fff',
+            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            Configurer →
+          </Link>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
         <StatCard label={t('totalEarned')}   value={fmt.format(totalEarnings / 100)} sub={t('allTime')} />

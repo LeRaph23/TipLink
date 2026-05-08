@@ -17,6 +17,7 @@ interface PublicStaffRow {
   establishment_currency: string | null;
   tip_thresholds: number[] | null;
   is_payable: boolean;
+  group_logo_url: string | null;
 }
 
 async function fetchPublicStaff(staffId: string): Promise<PublicStaffRow | null> {
@@ -155,9 +156,17 @@ export default async function StaffTipPage({
       <div style={{ position: 'fixed', top: '-15%', left: '50%', transform: 'translateX(-50%)', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(99,102,241,0.1) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
 
       <div className="fade-up" style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1 }}>
-        {/* Wordmark */}
+        {/* Logo or wordmark */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
-          <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
+          {staff.group_logo_url ? (
+            <img
+              src={staff.group_logo_url}
+              alt=""
+              style={{ height: 36, maxWidth: 140, objectFit: 'contain' }}
+            />
+          ) : (
+            <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
+          )}
         </div>
 
         {/* Staff card */}
