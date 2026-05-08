@@ -1,6 +1,14 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import dynamic from 'next/dynamic';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { StripeConnectEmbed } from '@/components/onboarding/StripeConnectEmbed';
+
+// Dynamic import with ssr:false prevents @stripe/connect-js from being evaluated
+// on the server where it would try to access browser globals and crash.
+const StripeConnectEmbed = dynamic(
+  () => import('@/components/onboarding/StripeConnectEmbed').then((m) => m.StripeConnectEmbed),
+  { ssr: false }
+);
 
 export default async function OnboardingPage({
   params,
@@ -13,13 +21,14 @@ export default async function OnboardingPage({
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login`);
 
   const { data: profile } = await supabase
     .from('staff_profiles')
     .select('stripe_account_id, onboarding_status')
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .is('deleted_at', null)
-    .single();
+    .maybeSingle();
 
   return (
     <div style={{ maxWidth: 520 }}>
