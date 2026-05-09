@@ -6,6 +6,18 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
 
+function toUserFacingError(err: unknown, fallback = 'Une erreur est survenue. Veuillez réessayer.'): string {
+  const raw = err instanceof Error ? err.message : '';
+  // Stripe platform-configuration errors are technical and meant for the developer, not the end user.
+  if (raw.includes('platform-profile') || raw.includes('responsibilities of collecting')) {
+    return 'Une erreur de configuration est survenue. Veuillez contacter le support.';
+  }
+  if (raw.includes('routing_number') || raw.includes('account_number') || raw.includes('invalid iban')) {
+    return 'IBAN invalide. Vérifiez le numéro et réessayez.';
+  }
+  return raw || fallback;
+}
+
 export interface BankingData {
   firstName: string;
   lastName: string;
@@ -48,9 +60,8 @@ export async function createCustomStripeAccount(
     });
     accountId = account.id;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Stripe account creation failed';
     console.error('createCustomStripeAccount: create failed', err);
-    return { error: msg };
+    return { error: toUserFacingError(err) };
   }
 
   const ibanClean = data.iban.replace(/\s/g, '').toUpperCase();
@@ -68,9 +79,8 @@ export async function createCustomStripeAccount(
   } catch (err) {
     // Clean up the account if IBAN fails
     await stripe.accounts.del(accountId).catch(() => null);
-    const msg = err instanceof Error ? err.message : 'IBAN invalide';
     console.error('createCustomStripeAccount: external account failed', err);
-    return { error: msg };
+    return { error: toUserFacingError(err, 'IBAN invalide') };
   }
 
   const service = createServiceClient();
@@ -174,8 +184,7 @@ export async function updateBankAccountIBAN(
     });
     newBankId = newBank.id;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'IBAN invalide';
-    return { error: msg };
+    return { error: toUserFacingError(err, 'IBAN invalide') };
   }
 
   // Set new bank account as default
