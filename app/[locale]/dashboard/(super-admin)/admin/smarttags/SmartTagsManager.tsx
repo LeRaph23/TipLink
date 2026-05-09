@@ -730,7 +730,7 @@ function RangeModal({
       <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 14 }}>
         {t('rangeHelp')}
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+      <div className="dash-modal-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
         <label>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{t('firstShortId')}</div>
           <input value={first} onChange={(e) => setFirst(e.target.value)} style={input} />

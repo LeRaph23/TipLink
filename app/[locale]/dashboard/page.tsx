@@ -116,7 +116,7 @@ export default async function DashboardPage({
           {t('home.dashboard')}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          {t('welcome')} {staffProfile?.full_name ?? user!.email}
+          {t('welcome')} {staffProfile?.full_name ?? (user!.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? ''}
         </p>
       </div>
 
@@ -156,7 +156,7 @@ export default async function DashboardPage({
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
+      <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
         <StatCard label={t('totalEarned')}   value={fmt.format(totalEarnings / 100)} sub={t('allTime')} />
         <StatCard
           label={t('thisWeek')}

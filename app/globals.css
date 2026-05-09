@@ -223,4 +223,10 @@ input, select, textarea, button { font-family: var(--font); }
   }
   /* Main content padding on mobile */
   .dash-main-pad { padding: 20px 16px !important; }
+
+  /* Dashboard stats grid — 1 column on mobile */
+  .dash-stats-grid { grid-template-columns: 1fr !important; }
+
+  /* Admin smarttags modal range grid — stack on mobile */
+  .dash-modal-grid-2col { grid-template-columns: 1fr !important; }
 }

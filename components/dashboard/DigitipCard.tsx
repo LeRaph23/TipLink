@@ -44,7 +44,7 @@ export function DigitipCard({ staffId, locale }: Props) {
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <code style={{
-          flex: 1, fontSize: 11.5, fontFamily: 'ui-monospace, monospace',
+          flex: 1, minWidth: 0, fontSize: 11.5, fontFamily: 'ui-monospace, monospace',
           color: 'var(--text-2)', background: 'var(--surface-2)',
           padding: '7px 10px', borderRadius: 6, overflow: 'hidden',
           textOverflow: 'ellipsis', whiteSpace: 'nowrap',
