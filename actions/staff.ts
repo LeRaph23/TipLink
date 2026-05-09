@@ -93,7 +93,7 @@ export async function inviteStaffMember(
     const { data: inviteData, error: inviteErr } = await anyService.auth.admin.inviteUserByEmail(
       normalizedEmail,
       {
-        redirectTo: `${base}/auth/callback?next=/dashboard&locale=${locale}`,
+        redirectTo: `${base}/auth/callback?next=/join/${input.establishmentId}&locale=${locale}`,
         data: {
           full_name: input.fullName.trim(),
           staff_profile_id: staff.id,
