@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { AddressAutocomplete } from '@/components/onboarding/AddressAutocomplete';
 
@@ -114,6 +114,30 @@ export function JoinForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: import('@supabase/supabase-js').User | null } }) => {
+      if (!user) return;
+      setIsAuthenticated(true);
+      const profileId = user.user_metadata?.staff_profile_id as string | undefined;
+      const byId = profileId ? unclaimedProfiles.find((p) => p.id === profileId) : undefined;
+      const byEmail = user.email ? unclaimedProfiles.find((p) => p.email === user.email) : undefined;
+      const match = byId ?? byEmail;
+      if (match) {
+        const parts = match.full_name.trim().split(/\s+/);
+        setFirstName(parts[0] ?? '');
+        setLastName(parts.slice(1).join(' '));
+        if (match.email) setEmail(match.email);
+        setSelectedProfile(match);
+        setStep('name-photo');
+      } else {
+        setStep('name-photo');
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const effectiveName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
   const firstNameFilled = firstName.trim().length > 0;
@@ -152,10 +176,48 @@ export function JoinForm({
     setAvatarUploading(false);
   }
 
+  async function submitJoin() {
+    const parsed = parseAddressLabel(addressLabel);
+    const tosTimestamp = Math.floor(Date.now() / 1000);
+
+    const res = await fetch('/api/staff/join', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        establishmentId,
+        fullName: effectiveName,
+        selectedProfileId: selectedProfile?.id ?? null,
+        avatarUrl,
+        bankingData: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
+          address: { ...parsed, country: 'FR' },
+          iban: iban.replace(/\s/g, '').toUpperCase(),
+          tosTimestamp,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(body.error ?? 'Erreur lors de la création du profil.');
+      setLoading(false);
+      return;
+    }
+
+    window.location.href = '/dashboard';
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (isAuthenticated) {
+      await submitJoin();
+      return;
+    }
 
     const supabase = createClient();
     let session: import('@supabase/supabase-js').Session | null = null;
@@ -190,36 +252,7 @@ export function JoinForm({
       return;
     }
 
-    const parsed = parseAddressLabel(addressLabel);
-    const tosTimestamp = Math.floor(Date.now() / 1000);
-
-    const res = await fetch('/api/staff/join', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        establishmentId,
-        fullName: effectiveName,
-        selectedProfileId: selectedProfile?.id ?? null,
-        avatarUrl,
-        bankingData: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
-          address: { ...parsed, country: 'FR' },
-          iban: iban.replace(/\s/g, '').toUpperCase(),
-          tosTimestamp,
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(body.error ?? 'Erreur lors de la création du profil.');
-      setLoading(false);
-      return;
-    }
-
-    window.location.href = '/dashboard';
+    await submitJoin();
   }
 
   // ─── Done (email verification pending) ───────────────────────────────────
@@ -561,11 +594,19 @@ export function JoinForm({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
             type="button"
-            onClick={() => setStep('email')}
-            disabled={!bankingFilled}
-            style={{ ...btnPrimary, opacity: bankingFilled ? 1 : 0.4 }}
+            onClick={async () => {
+              if (isAuthenticated) {
+                setError(null);
+                setLoading(true);
+                await submitJoin();
+              } else {
+                setStep('email');
+              }
+            }}
+            disabled={!bankingFilled || loading}
+            style={{ ...btnPrimary, opacity: bankingFilled && !loading ? 1 : 0.4 }}
           >
-            Continuer →
+            {loading ? 'Création du compte…' : 'Continuer →'}
           </button>
           <button type="button" onClick={() => { setError(null); setStep('payment-intro'); }} style={btnSecondary}>
             ← Retour

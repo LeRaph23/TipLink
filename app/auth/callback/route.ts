@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { routing } from '@/i18n/routing';
 import { createServiceClient } from '@/lib/supabase/service';
 
-const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact', '/onboarding', '/login'];
+const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact', '/onboarding', '/login', '/join'];
 
 function sanitizeNext(raw: string | null): string {
   if (!raw) return '/dashboard';
