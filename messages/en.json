@@ -467,7 +467,10 @@
       "today": "Due today",
       "taxNotice": "VAT will be calculated by Stripe at the next step based on your country.",
       "securedBy": "Secured by Stripe",
-      "edit": "Edit"
+      "edit": "Edit",
+      "promoCodeLabel": "Promo code (optional)",
+      "promoCodePlaceholder": "SUMMER20",
+      "promoCodeHint": "The code will be applied automatically at checkout."
     },
     "summary": {
       "title": "Your order",
@@ -758,7 +761,8 @@
         "orders": "Orders",
         "transactions": "Transactions",
         "establishments": "Establishments",
-        "groups": "Groups"
+        "groups": "Groups",
+        "promoCodes": "Promo codes"
       },
       "overview": {
         "title": "SaaS overview",

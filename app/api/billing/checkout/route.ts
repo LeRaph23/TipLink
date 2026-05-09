@@ -18,6 +18,7 @@ type Address = {
 type Body = {
   pack: PackId;
   locale?: string;
+  promoCode?: string | null;
   business?: {
     legal_name: string;
     vat_number?: string | null;
@@ -168,6 +169,23 @@ export async function POST(request: NextRequest) {
   const base = getBaseUrl();
   const locale = body.locale === 'fr' ? 'fr' : 'en';
 
+  // Resolve promo code: look up our DB and get the Stripe promotion_code ID
+  let stripePromoCodeId: string | undefined;
+  if (body.promoCode) {
+    const { data: promoRow } = await service
+      .from('promo_codes')
+      .select('stripe_promo_code_id, is_active, expires_at, max_redemptions, times_redeemed')
+      .eq('code', body.promoCode.toUpperCase().trim())
+      .maybeSingle();
+    if (promoRow?.is_active) {
+      const expired = promoRow.expires_at ? new Date(promoRow.expires_at) < new Date() : false;
+      const exhausted = promoRow.max_redemptions !== null && promoRow.times_redeemed >= promoRow.max_redemptions;
+      if (!expired && !exhausted) {
+        stripePromoCodeId = promoRow.stripe_promo_code_id;
+      }
+    }
+  }
+
   // One-shot hardware purchase. Ongoing revenue comes from
   // per-tip commission (groups.platform_fee_bps), not from subscription.
   const session = await stripe.checkout.sessions.create({
@@ -195,7 +213,10 @@ export async function POST(request: NextRequest) {
     shipping_address_collection: {
       allowed_countries: [...ALLOWED_SHIPPING_COUNTRIES],
     },
-    allow_promotion_codes: true,
+    // If a valid promo code was provided, apply it directly; otherwise allow manual entry at checkout
+    ...(stripePromoCodeId
+      ? { discounts: [{ promotion_code: stripePromoCodeId }] }
+      : { allow_promotion_codes: true }),
     success_url: `${base}/${locale}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${base}/${locale}/pricing`,
     metadata: {
@@ -203,6 +224,7 @@ export async function POST(request: NextRequest) {
       pack: body.pack,
       quantity: String(pack.quantity),
       user_id: user.id,
+      ...(body.promoCode ? { promo_code: body.promoCode.toUpperCase().trim() } : {}),
     },
   });
 

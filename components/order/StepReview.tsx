@@ -53,10 +53,14 @@ export function StepReview({
   state,
   locale,
   onEdit,
+  promoCode,
+  onPromoChange,
 }: {
   state: OrderState;
   locale: string;
   onEdit: (s: Step) => void;
+  promoCode?: string;
+  onPromoChange?: (code: string) => void;
 }) {
   const t = useTranslations('order.review');
   const def = PACKS[state.pack];
@@ -138,6 +142,38 @@ export function StepReview({
         <div style={{ fontWeight: 600, marginBottom: 2 }}>{state.account.full_name}</div>
         <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{state.account.email}</div>
       </Row>
+
+      {/* Promo code input */}
+      {onPromoChange !== undefined && (
+        <div style={{
+          padding: 16, borderRadius: 12,
+          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+        }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+            {t('promoCodeLabel')}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              value={promoCode ?? ''}
+              onChange={e => onPromoChange(e.target.value.toUpperCase())}
+              placeholder={t('promoCodePlaceholder')}
+              maxLength={30}
+              style={{
+                flex: 1, padding: '9px 12px', borderRadius: 8,
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+                color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)',
+                letterSpacing: '0.05em', textTransform: 'uppercase',
+              }}
+            />
+          </div>
+          {promoCode && promoCode.trim().length > 1 && (
+            <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>
+              {t('promoCodeHint')}
+            </div>
+          )}
+        </div>
+      )}
 
       <p style={{
         fontSize: 12, color: 'var(--text-3)',

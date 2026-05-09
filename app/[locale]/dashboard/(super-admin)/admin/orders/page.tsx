@@ -49,7 +49,7 @@ export default async function AdminOrdersPage({
 
   let query = supabase
     .from('smarttag_orders')
-    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, created_at, groups(id, name)')
+    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, created_at, promo_code, discount_amount, groups(id, name)')
     .order('created_at', { ascending: false })
     .limit(200);
   if (status) query = query.eq('status', status as (typeof STATUS_ORDER)[number]);
@@ -116,12 +116,25 @@ export default async function AdminOrdersPage({
             <tbody>
               {orders.map((o) => {
                 const group = o.groups as { id: string; name: string } | null;
+                const hasPromo = !!o.promo_code;
                 return (
                   <tr key={o.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '11px 14px' }}>
-                      <Link href={`/dashboard/admin/orders/${o.id}`} style={{ color: 'var(--text)', fontWeight: 500 }}>
-                        {group?.name ?? '—'}
-                      </Link>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                        <Link href={`/dashboard/admin/orders/${o.id}`} style={{ color: 'var(--text)', fontWeight: 500 }}>
+                          {group?.name ?? '—'}
+                        </Link>
+                        {hasPromo && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 100,
+                            background: 'var(--success-bg)', color: 'var(--success)',
+                            border: '1px solid var(--success)',
+                          }}>
+                            {o.promo_code}
+                            {(o.discount_amount ?? 0) > 0 && ` -${((o.discount_amount ?? 0) / 100).toFixed(0)}€`}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '11px 14px', color: 'var(--text-2)', textTransform: 'uppercase' }}>{o.pack}</td>
                     <td style={{ padding: '11px 14px', color: 'var(--text-2)' }}>{o.quantity}</td>

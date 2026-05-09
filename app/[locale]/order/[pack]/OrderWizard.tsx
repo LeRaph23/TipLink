@@ -105,6 +105,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
 
   const currentStep = parseStep(searchParams.get('step'));
 
@@ -248,6 +249,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
         body: JSON.stringify({
           pack: state.pack,
           locale,
+          promoCode: promoCode.trim() || null,
           business: {
             legal_name: state.business.legal_name,
             vat_number: state.business.vat_number || null,
@@ -319,7 +321,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
       case 'account':
         return <StepAccount value={state.account} onChange={(v) => dispatch({ type: 'setAccount', value: v })} />;
       case 'review':
-        return <StepReview state={state} locale={locale} onEdit={goToStep} />;
+        return <StepReview state={state} locale={locale} onEdit={goToStep} promoCode={promoCode} onPromoChange={setPromoCode} />;
     }
   };
 

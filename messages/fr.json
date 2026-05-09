@@ -467,7 +467,10 @@
       "today": "À payer aujourd'hui",
       "taxNotice": "TVA calculée par Stripe à l'étape suivante selon votre pays.",
       "securedBy": "Paiement sécurisé par Stripe",
-      "edit": "Modifier"
+      "edit": "Modifier",
+      "promoCodeLabel": "Code promo (optionnel)",
+      "promoCodePlaceholder": "SUMMER20",
+      "promoCodeHint": "Le code sera appliqué automatiquement lors du paiement."
     },
     "summary": {
       "title": "Votre commande",
@@ -758,7 +761,8 @@
         "orders": "Commandes",
         "transactions": "Transactions",
         "establishments": "Établissements",
-        "groups": "Groupes"
+        "groups": "Groupes",
+        "promoCodes": "Codes promo"
       },
       "overview": {
         "title": "Vue d'ensemble SaaS",

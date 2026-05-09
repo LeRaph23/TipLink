@@ -16,7 +16,7 @@ export default async function AdminOrderDetailPage({
 
   const { data: order } = await supabase
     .from('smarttag_orders')
-    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, shipping_address, shipped_at, delivered_at, fulfilled_at, created_at, group_id, groups(id, name)')
+    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, shipping_address, shipped_at, delivered_at, fulfilled_at, created_at, group_id, promo_code, discount_amount, stripe_checkout_session_id, stripe_invoice_id, groups(id, name)')
     .eq('id', id)
     .maybeSingle();
 
@@ -79,7 +79,40 @@ export default async function AdminOrderDetailPage({
         <InfoCell label={t('fieldStatus')} value={t(`status.${order.status}`)} />
         <InfoCell label={t('fieldProgress')} value={`${order.tags_encoded_count} / ${order.quantity}`} />
         <InfoCell label={t('fieldTracking')} value={order.tracking_number ?? '—'} />
+        {order.promo_code && (
+          <InfoCell label="Code promo" value={order.promo_code} accent />
+        )}
+        {(order.discount_amount ?? 0) > 0 && (
+          <InfoCell label="Remise accordée" value={`-${((order.discount_amount ?? 0) / 100).toFixed(2)} €`} accent />
+        )}
+        {order.stripe_checkout_session_id && (
+          <InfoCell label="Session Stripe" value={order.stripe_checkout_session_id.slice(0, 20) + '…'} mono />
+        )}
       </div>
+
+      {/* Shipping address */}
+      {order.shipping_address && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius)', padding: 16, marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
+            Adresse de livraison
+          </div>
+          {(() => {
+            const addr = order.shipping_address as Record<string, string>;
+            return (
+              <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>
+                {addr.name && <div style={{ fontWeight: 600 }}>{addr.name}</div>}
+                {addr.line1 && <div>{addr.line1}</div>}
+                {addr.line2 && <div>{addr.line2}</div>}
+                {(addr.postal_code || addr.city) && <div>{[addr.postal_code, addr.city].filter(Boolean).join(' ')}</div>}
+                {addr.country && <div>{addr.country}</div>}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <OrderFulfillment
         orderId={order.id}
@@ -131,14 +164,19 @@ export default async function AdminOrderDetailPage({
   );
 }
 
-function InfoCell({ label, value }: { label: string; value: string }) {
+function InfoCell({ label, value, accent, mono }: { label: string; value: string; accent?: boolean; mono?: boolean }) {
   return (
     <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+      background: accent ? 'var(--success-bg, #f0fdf4)' : 'var(--surface)',
+      border: `1px solid ${accent ? 'var(--success)' : 'var(--border-subtle)'}`,
       borderRadius: 'var(--radius)', padding: 14,
     }}>
-      <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{value}</div>
+      <div style={{ fontSize: 10.5, fontWeight: 600, color: accent ? 'var(--success)' : 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{label}</div>
+      <div style={{
+        fontSize: 14, fontWeight: 600,
+        color: accent ? 'var(--success)' : 'var(--text)',
+        fontFamily: mono ? 'var(--font-mono, monospace)' : undefined,
+      }}>{value}</div>
     </div>
   );
 }

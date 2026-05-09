@@ -251,6 +251,14 @@ async function handleEvent(
           } catch { /* non-blocking */ }
         }
 
+        // Extract discount info for express checkout
+        const expressPromoCode = session.metadata?.promo_code ?? null;
+        const expressDiscount = session.total_details?.amount_discount ?? 0;
+        const expressFirstDiscount = session.total_details?.breakdown?.discounts?.[0];
+        const expressDiscountId = expressFirstDiscount
+          ? (typeof expressFirstDiscount.discount === 'string' ? expressFirstDiscount.discount : (expressFirstDiscount.discount as { id?: string } | null)?.id ?? null)
+          : null;
+
         const { data: newOrder } = await supabase.from('smarttag_orders').insert({
           group_id: newGroup.id,
           pack,
@@ -261,6 +269,9 @@ async function handleEvent(
           shipping_address: shipping
             ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
             : null,
+          promo_code: expressPromoCode,
+          discount_amount: expressDiscount,
+          stripe_discount_id: expressDiscountId,
         }).select('id').single();
 
         // Auto-provision establishment for the express checkout group
@@ -336,6 +347,30 @@ async function handleEvent(
       }
 
       const quantity = Number(session.metadata?.quantity ?? 0) || null;
+
+      // Extract discount info from the Stripe session
+      const promoCodeStr = session.metadata?.promo_code ?? null;
+      const totalDiscount = session.total_details?.amount_discount ?? 0;
+      const firstDiscount = session.total_details?.breakdown?.discounts?.[0];
+      const stripeDiscountId = firstDiscount
+        ? (typeof firstDiscount.discount === 'string' ? firstDiscount.discount : (firstDiscount.discount as { id?: string } | null)?.id ?? null)
+        : null;
+
+      // Resolve our internal promo_code_id if we know the code
+      let promoCodeId: string | null = null;
+      if (promoCodeStr) {
+        const { data: pc } = await supabase
+          .from('promo_codes')
+          .select('id')
+          .eq('code', promoCodeStr)
+          .maybeSingle();
+        promoCodeId = pc?.id ?? null;
+        // Increment times_redeemed
+        if (promoCodeId) {
+          await supabase.rpc('increment_promo_redeemed' as never, { promo_id: promoCodeId } as never).catch(() => {});
+        }
+      }
+
       const { data: upsertedOrder } = await supabase
         .from('smarttag_orders')
         .upsert(
@@ -352,6 +387,10 @@ async function handleEvent(
                   ...shipping.address,
                 } as unknown as import('@/types/database').Json)
               : null,
+            promo_code: promoCodeStr,
+            promo_code_id: promoCodeId,
+            discount_amount: totalDiscount,
+            stripe_discount_id: stripeDiscountId,
           },
           { onConflict: 'stripe_checkout_session_id' }
         ).select('id').single();

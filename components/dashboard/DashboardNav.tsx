@@ -56,6 +56,9 @@ function ListIcon() {
 function CardIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="1.5" y="3" width="13" height="10" rx="1.5" /><path d="M1.5 6.5h13" /></svg>;
 }
+function TagIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 2h5l7 7-5 5-7-7V2z" /><circle cx="5" cy="5" r="1" fill="currentColor" stroke="none" /></svg>;
+}
 
 function NavLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
   const [hov, setHov] = useState(false);
@@ -143,6 +146,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
     { href: '/dashboard/admin/transactions',   label: ta('transactions'), icon: <TxIcon /> },
     { href: '/dashboard/admin/establishments', label: ta('establishments'), icon: <EstIcon /> },
     { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
+    { href: '/dashboard/admin/promo-codes',   label: ta('promoCodes'),  icon: <TagIcon /> },
   ];
 
   const visibleLinks = links.filter(l =>
