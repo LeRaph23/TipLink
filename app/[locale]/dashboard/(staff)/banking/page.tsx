@@ -1,7 +1,9 @@
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getStaffStripeBalance } from '@/actions/stripe';
 import { BankingSetupForm } from './BankingSetupForm';
+import { PayoutSection } from './PayoutSection';
 
 export default async function BankingPage({
   params,
@@ -26,6 +28,8 @@ export default async function BankingPage({
   const mode = hasStripeAccount ? 'update' : 'setup';
   const fullName = staffProfile?.full_name ?? user.email?.split('@')[0] ?? 'Utilisateur';
 
+  const balance = hasStripeAccount ? await getStaffStripeBalance() : null;
+
   return (
     <div style={{ maxWidth: 520 }}>
       <div style={{ marginBottom: 24 }}>
@@ -38,6 +42,10 @@ export default async function BankingPage({
             : 'Configurez votre compte bancaire pour recevoir vos pourboires.'}
         </p>
       </div>
+
+      {balance && !('error' in balance) && (
+        <PayoutSection available={balance.available} pending={balance.pending} />
+      )}
 
       {!staffProfile ? (
         <div style={{
