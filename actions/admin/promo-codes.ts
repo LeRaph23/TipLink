@@ -79,7 +79,7 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
       return { ok: false, error: `Erreur DB: ${dbErr?.message ?? 'unknown'}` };
     }
 
-    await logAdminAction(user.id, 'promo_codes.create', {
+    await logAdminAction('promo_codes.create', {
       id: saved.id, code: code.toUpperCase(), percentageOff, maxRedemptions, expiresAt,
     });
 
@@ -95,7 +95,7 @@ export async function togglePromoCode(
   isActive: boolean
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    const user = await requireSuperAdminUser();
+    await requireSuperAdminUser();
     const service = createServiceClient();
 
     const { data: promo } = await service
@@ -111,7 +111,7 @@ export async function togglePromoCode(
 
     await service.from('promo_codes').update({ is_active: isActive }).eq('id', id);
 
-    await logAdminAction(user.id, isActive ? 'promo_codes.activate' : 'promo_codes.deactivate', {
+    await logAdminAction(isActive ? 'promo_codes.activate' : 'promo_codes.deactivate', {
       id, code: promo.code,
     });
 
