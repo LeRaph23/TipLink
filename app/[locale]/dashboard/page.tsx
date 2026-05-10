@@ -61,12 +61,20 @@ export default async function DashboardPage({
   const { data: { user } } = await supabase.auth.getUser();
   const t = await getTranslations('dashboard');
 
-  const { data: staffProfile } = await supabase
-    .from('staff_profiles')
-    .select('id, full_name, onboarding_status, stripe_account_id')
-    .eq('user_id', user!.id)
-    .is('deleted_at', null)
-    .maybeSingle();
+  const [{ data: staffProfile }, { data: roles }] = await Promise.all([
+    supabase
+      .from('staff_profiles')
+      .select('id, full_name, onboarding_status, stripe_account_id')
+      .eq('user_id', user!.id)
+      .is('deleted_at', null)
+      .maybeSingle(),
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user!.id),
+  ]);
+
+  const isGroupAdmin = roles?.some((r) => r.role === 'group_admin' || r.role === 'super_admin') ?? false;
 
   const { data: recentTransactions } = await supabase
     .from('transactions')
@@ -129,6 +137,35 @@ export default async function DashboardPage({
         </>
       )}
 
+      {/* Group admin without any staff profile yet → invite them to join as staff */}
+      {isGroupAdmin && !staffProfile && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.05))',
+          border: '1px solid rgba(229,122,151,0.25)',
+          borderRadius: 'var(--radius)', padding: '16px 18px', marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 24, flexShrink: 0 }}>💸</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
+              Recevez vous aussi des pourboires
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5 }}>
+              En tant qu&apos;administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires directement sur votre compte.
+            </div>
+          </div>
+          <Link href="/dashboard/staff" style={{
+            padding: '9px 16px', borderRadius: 10, border: 'none',
+            background: 'var(--accent)', color: '#fff',
+            fontSize: 13, fontWeight: 600, textDecoration: 'none',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            Configurer →
+          </Link>
+        </div>
+      )}
+
+      {/* Staff profile exists but banking not set up */}
       {staffProfile && !staffProfile.stripe_account_id && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 14,
@@ -139,7 +176,7 @@ export default async function DashboardPage({
           <div style={{ fontSize: 22, flexShrink: 0 }}>💳</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
-              Configurez votre compte bancaire
+              {isGroupAdmin ? 'Finalisez votre configuration de virements' : 'Configurez votre compte bancaire'}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
               Ajoutez votre IBAN pour commencer à recevoir vos pourboires directement sur votre compte.

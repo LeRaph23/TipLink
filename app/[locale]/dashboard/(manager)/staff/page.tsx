@@ -121,34 +121,35 @@ export default async function StaffListPage({
       {/* CTA for group admin to join as staff member */}
       {isGroupAdmin && !adminHasStaffProfile && (
         <div style={{
-          background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.05))',
-          border: '1px solid rgba(229,122,151,0.25)',
-          borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 16,
-          display: 'flex', alignItems: 'center', gap: 14,
+          background: 'linear-gradient(135deg, rgba(229,122,151,0.12), rgba(236,151,176,0.07))',
+          border: '1.5px solid rgba(229,122,151,0.35)',
+          borderRadius: 'var(--radius)', padding: '18px 20px', marginBottom: 16,
         }}>
-          <div style={{ fontSize: 22 }}>💳</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
-              Recevez vous aussi des pourboires
-            </div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-              Configurez votre compte bancaire pour apparaître dans la liste et recevoir vos pourboires directement.
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div style={{ fontSize: 26, flexShrink: 0, marginTop: 2 }}>💸</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                Vous aussi, recevez des pourboires directement
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 14 }}>
+                En tant qu&apos;administrateur, vous pouvez apparaître dans la liste de l&apos;équipe et recevoir des pourboires sur votre compte personnel. Il suffit de renseigner votre IBAN une seule fois.
+              </div>
+              <form action={async () => {
+                'use server';
+                const result = await joinAsStaffMember();
+                if ('ok' in result) redirect('/dashboard/banking');
+              }}>
+                <button type="submit" style={{
+                  padding: '10px 18px', borderRadius: 10, border: 'none',
+                  background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
+                  color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: 'var(--font)', boxShadow: '0 4px 14px rgba(229,122,151,0.3)',
+                }}>
+                  Configurer mes virements →
+                </button>
+              </form>
             </div>
           </div>
-          <form action={async () => {
-            'use server';
-            const result = await joinAsStaffMember();
-            if ('ok' in result) redirect('/dashboard/banking');
-          }}>
-            <button type="submit" style={{
-              padding: '8px 14px', borderRadius: 10, border: 'none',
-              background: 'var(--accent)', color: '#fff',
-              fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-              fontFamily: 'var(--font)', whiteSpace: 'nowrap', flexShrink: 0,
-            }}>
-              Configurer →
-            </button>
-          </form>
         </div>
       )}
 
