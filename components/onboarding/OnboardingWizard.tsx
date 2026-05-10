@@ -30,13 +30,13 @@ interface WizardState {
   colleagues: Colleague[];
 }
 
-type ScanStep = 'codes' | 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team';
+type ScanStep = 'codes' | 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
 type AuthStep = 'salon' | 'address' | 'admin-name' | 'team' | 'tips-opt-in' | 'banking';
-type ExpressStep = 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team';
+type ExpressStep = 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
 
-const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'address', 'admin-name', 'email', 'password', 'team'];
+const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'address', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
 const AUTH_STEPS: AuthStep[] = ['salon', 'address', 'admin-name', 'team', 'tips-opt-in', 'banking'];
-const EXPRESS_STEPS: ExpressStep[] = ['salon', 'address', 'admin-name', 'email', 'password', 'team'];
+const EXPRESS_STEPS: ExpressStep[] = ['salon', 'address', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
 
 type Props =
   | {
@@ -332,6 +332,7 @@ export function OnboardingWizard(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
+  const [bankingConfigured, setBankingConfigured] = useState(false);
 
   // Banking state (tips-opt-in + banking steps, postpurchase mode only)
   const [wantsTips, setWantsTips] = useState<boolean | null>(null);
@@ -396,13 +397,37 @@ export function OnboardingWizard(props: Props) {
     if (s) goTo(s);
   };
 
-  async function handleSubmit() {
+  async function attemptBankingSetup(): Promise<{ ok: boolean; bankingErr?: string }> {
+    if (!wantsTips || !bankingFilled) return { ok: true };
+
+    const commaIdx = bankingAddress.lastIndexOf(',');
+    const line1 = commaIdx !== -1 ? bankingAddress.slice(0, commaIdx).trim() : bankingAddress;
+    const rest = commaIdx !== -1 ? bankingAddress.slice(commaIdx + 1).trim() : '';
+    const spaceIdx = rest.indexOf(' ');
+    const postal_code = spaceIdx !== -1 ? rest.slice(0, spaceIdx).trim() : '';
+    const city = spaceIdx !== -1 ? rest.slice(spaceIdx + 1).trim() : rest;
+    const nameParts = state.adminFullName.trim().split(/\s+/);
+
+    const bankResult = await setupAdminPayments({
+      firstName: nameParts[0] ?? state.adminFullName,
+      lastName: nameParts.slice(1).join(' ') || (nameParts[0] ?? ''),
+      dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
+      address: { line1, city, postal_code, country: 'FR' },
+      iban: iban.replace(/\s/g, '').toUpperCase(),
+      tosTimestamp: Math.floor(Date.now() / 1000),
+    } as Parameters<typeof setupAdminPayments>[0]);
+
+    if ('error' in bankResult) return { ok: false, bankingErr: bankResult.error };
+    setBankingConfigured(true);
+    return { ok: true };
+  }
+
+  async function handleSubmit(opts?: { skipBankingSetup?: boolean }) {
     setSubmitting(true);
     setError(null);
 
     if (mode === 'scan') {
-      // 1. Create Supabase account client-side with emailRedirectTo so the
-      //    verification link lands on the login page with a success banner.
+      // 1. Create Supabase account client-side
       const supabase = createClient();
       const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/login?verified=true`)}`;
       const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
@@ -437,13 +462,18 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
-      // 3. Sign out if no session (email confirmation pending), otherwise keep logged in
-      if (!signUpData.session) {
-        setNeedsEmailVerification(true);
-      } else {
-        await supabase.auth.signOut();
-        setNeedsEmailVerification(true);
+      // 3. If session exists (email auto-confirmed), set up banking before signing out
+      if (signUpData.session && !opts?.skipBankingSetup) {
+        const { ok, bankingErr } = await attemptBankingSetup();
+        if (!ok) {
+          setError(bankingErr ?? 'Erreur bancaire');
+          setSubmitting(false);
+          return;
+        }
       }
+
+      setNeedsEmailVerification(true);
+      if (signUpData.session) await supabase.auth.signOut();
     } else if (mode === 'express') {
       // Express flow: account created here, group already exists in DB
       const supabase = createClient();
@@ -458,7 +488,6 @@ export function OnboardingWizard(props: Props) {
       });
 
       if (signUpErr) {
-        // Email already registered → ask them to log in instead
         if (signUpErr.message.toLowerCase().includes('already') || signUpErr.status === 400) {
           setError('Un compte existe déjà avec cet email. Connectez-vous sur digitip.app/login pour accéder à votre espace.');
         } else {
@@ -490,6 +519,15 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
+      if (!opts?.skipBankingSetup) {
+        const { ok, bankingErr } = await attemptBankingSetup();
+        if (!ok) {
+          setError(bankingErr ?? 'Erreur bancaire');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       await supabase.auth.signOut();
       setNeedsEmailVerification(true);
     } else {
@@ -507,28 +545,10 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
-      // If admin wants to receive tips, set up their banking
-      if (wantsTips && bankingFilled) {
-        const commaIdx = bankingAddress.lastIndexOf(',');
-        const line1 = commaIdx !== -1 ? bankingAddress.slice(0, commaIdx).trim() : bankingAddress;
-        const rest = commaIdx !== -1 ? bankingAddress.slice(commaIdx + 1).trim() : '';
-        const spaceIdx = rest.indexOf(' ');
-        const postal_code = spaceIdx !== -1 ? rest.slice(0, spaceIdx).trim() : '';
-        const city = spaceIdx !== -1 ? rest.slice(spaceIdx + 1).trim() : rest;
-
-        const nameParts = state.adminFullName.trim().split(/\s+/);
-
-        const bankResult = await setupAdminPayments({
-          firstName: nameParts[0] ?? state.adminFullName,
-          lastName: nameParts.slice(1).join(' ') || (nameParts[0] ?? ''),
-          dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
-          address: { line1, city, postal_code, country: 'FR' },
-          iban: iban.replace(/\s/g, '').toUpperCase(),
-          tosTimestamp: Math.floor(Date.now() / 1000),
-        } as Parameters<typeof setupAdminPayments>[0]);
-
-        if ('error' in bankResult) {
-          setError(bankResult.error);
+      if (!opts?.skipBankingSetup) {
+        const { ok, bankingErr } = await attemptBankingSetup();
+        if (!ok) {
+          setError(bankingErr ?? 'Erreur bancaire');
           setSubmitting(false);
           return;
         }
@@ -609,18 +629,30 @@ export function OnboardingWizard(props: Props) {
         <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 24 }}>
           {state.establishmentName} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.
         </p>
-        {(mode === 'scan' || mode === 'express') && (
+        {bankingConfigured && (
           <div style={{
-            background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+            background: 'var(--success-bg)', border: '1px solid rgba(0,180,100,0.2)',
+            borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'left',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>✓</span>
+            <div style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600 }}>
+              Compte bancaire configuré — vous recevrez vos pourboires directement.
+            </div>
+          </div>
+        )}
+        {wantsTips && !bankingConfigured && (
+          <div style={{
+            background: 'var(--surface-2)', border: '1px solid rgba(229,122,151,0.25)',
             borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'left',
           }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
-              💳 Configurer vos virements
+              💳 Finalisez vos virements
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
-              Pour recevoir vos pourboires, rendez-vous dans{' '}
+              Après avoir confirmé votre email, rendez-vous dans{' '}
               <strong style={{ color: 'var(--text)' }}>Dashboard → Virements</strong>{' '}
-              pour renseigner votre IBAN.
+              pour renseigner votre IBAN et commencer à recevoir des pourboires.
             </div>
           </div>
         )}
@@ -676,8 +708,8 @@ export function OnboardingWizard(props: Props) {
   };
 
   const config = stepConfig[currentStep] ?? { title: '', subtitle: '' };
-  // For postpurchase: if admin said no to tips, last step is tips-opt-in
-  const effectiveLastIdx = (mode === 'postpurchase' && wantsTips === false)
+  // If admin declined tips, last real step is tips-opt-in (skip banking)
+  const effectiveLastIdx = (wantsTips === false)
     ? steps.indexOf('tips-opt-in' as never)
     : steps.length - 1;
   const isLastStep = stepIndex === effectiveLastIdx;
@@ -952,9 +984,9 @@ export function OnboardingWizard(props: Props) {
         {isLastStep ? (
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={submitting}
-            style={{ ...btnPrimary, opacity: submitting ? 0.6 : 1 }}
+            onClick={() => handleSubmit()}
+            disabled={submitting || !canAdvance()}
+            style={{ ...btnPrimary, opacity: (submitting || !canAdvance()) ? 0.5 : 1 }}
           >
             {submitting ? 'Finalisation…' : 'Terminer la configuration →'}
           </button>
@@ -969,8 +1001,39 @@ export function OnboardingWizard(props: Props) {
           </button>
         )}
 
-        {/* "Skip" for team and banking steps */}
-        {(currentStep === 'team' || currentStep === 'banking') && !isLastStep && (
+        {/* "Skip" for team step (not last) */}
+        {currentStep === 'team' && !isLastStep && (
+          <button
+            type="button"
+            onClick={next}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-3)',
+              fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+              textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
+            }}
+          >
+            Passer cette étape
+          </button>
+        )}
+
+        {/* "Configure later" for banking step (last step) */}
+        {currentStep === 'banking' && isLastStep && (
+          <button
+            type="button"
+            onClick={() => handleSubmit({ skipBankingSetup: true })}
+            disabled={submitting}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-3)',
+              fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+              textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
+            }}
+          >
+            Configurer plus tard
+          </button>
+        )}
+
+        {/* "Skip" for banking step (not last — shouldn't normally happen) */}
+        {currentStep === 'banking' && !isLastStep && (
           <button
             type="button"
             onClick={next}
