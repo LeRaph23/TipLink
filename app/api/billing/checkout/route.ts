@@ -169,19 +169,19 @@ export async function POST(request: NextRequest) {
   const base = getBaseUrl();
   const locale = body.locale === 'fr' ? 'fr' : 'en';
 
-  // Resolve promo code: look up our DB and get the Stripe promotion_code ID
-  let stripePromoCodeId: string | undefined;
+  // Resolve promo code: look up our DB and get the Stripe coupon ID to apply directly
+  let stripeCouponId: string | undefined;
   if (body.promoCode) {
     const { data: promoRow } = await service
       .from('promo_codes')
-      .select('stripe_promo_code_id, is_active, expires_at, max_redemptions, times_redeemed')
+      .select('stripe_coupon_id, is_active, expires_at, max_redemptions, times_redeemed')
       .eq('code', body.promoCode.toUpperCase().trim())
       .maybeSingle();
     if (promoRow?.is_active) {
       const expired = promoRow.expires_at ? new Date(promoRow.expires_at) < new Date() : false;
       const exhausted = promoRow.max_redemptions !== null && promoRow.times_redeemed >= promoRow.max_redemptions;
       if (!expired && !exhausted) {
-        stripePromoCodeId = promoRow.stripe_promo_code_id;
+        stripeCouponId = promoRow.stripe_coupon_id;
       }
     }
   }
@@ -213,9 +213,9 @@ export async function POST(request: NextRequest) {
     shipping_address_collection: {
       allowed_countries: [...ALLOWED_SHIPPING_COUNTRIES],
     },
-    // If a valid promo code was provided, apply it directly; otherwise allow manual entry at checkout
-    ...(stripePromoCodeId
-      ? { discounts: [{ promotion_code: stripePromoCodeId }] }
+    // Apply coupon directly if a valid promo code was provided; otherwise allow Stripe's native field
+    ...(stripeCouponId
+      ? { discounts: [{ coupon: stripeCouponId }] }
       : { allow_promotion_codes: true }),
     success_url: `${base}/${locale}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${base}/${locale}/pricing`,

@@ -38,34 +38,28 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
     if (!code || code.trim().length < 2) return { ok: false, error: 'Code trop court (min 2 caractères).' };
     if (percentageOff < 1 || percentageOff > 100) return { ok: false, error: 'Pourcentage invalide (1-100).' };
 
-    // Check uniqueness in our DB first
-    const { data: existing } = await service.from('promo_codes').select('id').eq('code', code.toUpperCase().trim()).maybeSingle();
-    if (existing) return { ok: false, error: `Le code "${code.toUpperCase()}" existe déjà.` };
+    const normalizedCode = code.trim().toUpperCase();
 
-    // Create Stripe coupon
+    // Check uniqueness in our DB first
+    const { data: existing } = await service.from('promo_codes').select('id').eq('code', normalizedCode).maybeSingle();
+    if (existing) return { ok: false, error: `Le code "${normalizedCode}" existe déjà.` };
+
+    // Create Stripe coupon — we use the coupon ID directly at checkout (no promotion code needed)
     const coupon = await stripe.coupons.create({
       percent_off: percentageOff,
       duration: 'once',
-      name: `TipLink ${percentageOff}% — ${code.toUpperCase()}`,
+      name: `TipLink ${percentageOff}% — ${normalizedCode}`,
       ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
       ...(expiresAt ? { redeem_by: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
     });
 
-    // Create Stripe promotion code (v22 API: coupon is nested inside `promotion`)
-    const promoCode = await stripe.promotionCodes.create({
-      promotion: { type: 'coupon', coupon: coupon.id },
-      code: code.toUpperCase().trim(),
-      ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
-      ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
-    });
-
-    // Save to our DB
+    // Save to our DB. stripe_promo_code_id stores the coupon id (no separate promo code object needed)
     const { data: saved, error: dbErr } = await service
       .from('promo_codes')
       .insert({
-        code: code.toUpperCase().trim(),
+        code: normalizedCode,
         stripe_coupon_id: coupon.id,
-        stripe_promo_code_id: promoCode.id,
+        stripe_promo_code_id: coupon.id, // reuse coupon id — promo code applied via coupon at checkout
         percentage_off: percentageOff,
         max_redemptions: maxRedemptions ?? null,
         expires_at: expiresAt ?? null,
@@ -80,7 +74,7 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
     }
 
     await logAdminAction('promo_codes.create', {
-      id: saved.id, code: code.toUpperCase(), percentageOff, maxRedemptions, expiresAt,
+      id: saved.id, code: normalizedCode, percentageOff, maxRedemptions, expiresAt,
     });
 
     return { ok: true, id: saved.id };
@@ -100,15 +94,14 @@ export async function togglePromoCode(
 
     const { data: promo } = await service
       .from('promo_codes')
-      .select('stripe_promo_code_id, code')
+      .select('stripe_coupon_id, code')
       .eq('id', id)
       .single();
 
     if (!promo) return { ok: false, error: 'Code promo introuvable.' };
 
-    // Update Stripe promotion code active state
-    await stripe.promotionCodes.update(promo.stripe_promo_code_id, { active: isActive });
-
+    // Stripe coupons can't be activated/deactivated directly — we toggle in our DB only.
+    // The checkout API checks is_active before applying the coupon.
     await service.from('promo_codes').update({ is_active: isActive }).eq('id', id);
 
     await logAdminAction(isActive ? 'promo_codes.activate' : 'promo_codes.deactivate', {
