@@ -365,9 +365,14 @@ async function handleEvent(
           .eq('code', promoCodeStr)
           .maybeSingle();
         promoCodeId = pc?.id ?? null;
-        // Increment times_redeemed
+        // Increment times_redeemed (best effort — never break the webhook)
         if (promoCodeId) {
-          await supabase.rpc('increment_promo_redeemed' as never, { promo_id: promoCodeId } as never).catch(() => {});
+          try {
+            await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)(
+              'increment_promo_redeemed',
+              { promo_id: promoCodeId }
+            );
+          } catch { /* ignore */ }
         }
       }
 
