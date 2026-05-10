@@ -196,6 +196,80 @@ export async function updateBankAccountIBAN(
   return { ok: true };
 }
 
+const MIN_PAYOUT_CENTS = 3_000; // 30 €
+
+export async function getStaffStripeBalance(): Promise<
+  { available: number; pending: number } | { error: string }
+> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const service = createServiceClient();
+  const { data: profile } = await service
+    .from('staff_profiles')
+    .select('stripe_account_id')
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (!profile?.stripe_account_id) return { error: 'Aucun compte Stripe trouvé' };
+
+  try {
+    const balance = await stripe.balance.retrieve(
+      {},
+      { stripeAccount: profile.stripe_account_id }
+    );
+    const available = balance.available.find((b) => b.currency === 'eur')?.amount ?? 0;
+    const pending   = balance.pending.find((b) => b.currency === 'eur')?.amount ?? 0;
+    return { available, pending };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erreur Stripe';
+    console.error('getStaffStripeBalance:', err);
+    return { error: msg };
+  }
+}
+
+export async function requestPayout(): Promise<{ ok: true; amount: number } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const service = createServiceClient();
+  const { data: profile } = await service
+    .from('staff_profiles')
+    .select('stripe_account_id')
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (!profile?.stripe_account_id) return { error: 'Aucun compte Stripe trouvé' };
+
+  const accountId = profile.stripe_account_id;
+
+  try {
+    const balance = await stripe.balance.retrieve({}, { stripeAccount: accountId });
+    const available = balance.available.find((b) => b.currency === 'eur')?.amount ?? 0;
+
+    if (available < MIN_PAYOUT_CENTS) {
+      return {
+        error: `Solde disponible insuffisant (${(available / 100).toFixed(2)} €). Le minimum pour un virement est de 30 €.`,
+      };
+    }
+
+    const payout = await stripe.payouts.create(
+      { amount: available, currency: 'eur', method: 'standard' },
+      { stripeAccount: accountId }
+    );
+
+    return { ok: true, amount: payout.amount };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erreur lors du virement';
+    console.error('requestPayout:', err);
+    return { error: msg };
+  }
+}
+
 // Called from OnboardingWizard (postpurchase mode) when the admin wants to receive tips too.
 // Creates the admin's staff_profile + Stripe Custom account in one shot.
 export async function setupAdminPayments(
