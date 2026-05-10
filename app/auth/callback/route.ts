@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { routing } from '@/i18n/routing';
 import { createServiceClient } from '@/lib/supabase/service';
+import type { EmailOtpType } from '@supabase/supabase-js';
 
 const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact', '/onboarding', '/login', '/join'];
 
@@ -49,6 +50,8 @@ function withLocale(target: string, locale: string): string {
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const tokenHash = requestUrl.searchParams.get('token_hash');
+  const type = requestUrl.searchParams.get('type') as EmailOtpType | null;
   const cookieStore = await cookies();
   const locale = resolveLocale(request, cookieStore);
 
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
   const safeNext = sanitizeNext(rawNext);
   const nextWithLocale = withLocale(safeNext, locale);
 
-  if (!code) {
+  if (!code && !tokenHash) {
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }
 
@@ -77,9 +80,19 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  let authError: { message: string } | null = null;
 
-  if (error) {
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    authError = error;
+  } else if (tokenHash && type) {
+    // Email invite / magic-link flow: Supabase redirects with token_hash + type
+    // instead of a PKCE code — verify the OTP directly.
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    authError = error;
+  }
+
+  if (authError) {
     return NextResponse.redirect(new URL(`/${locale}/login?error=auth_callback_failed`, request.url));
   }
 
