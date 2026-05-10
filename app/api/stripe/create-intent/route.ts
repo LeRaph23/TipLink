@@ -138,10 +138,9 @@ export async function POST(request: NextRequest) {
       amount,
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true },
-      // `on_behalf_of` makes the connected account the settlement
-      // merchant (staff bears Stripe fees). `application_fee_amount`
-      // is the platform commission, routed to Digitip's balance.
-      on_behalf_of: staff.stripe_account_id,
+      // Destination charge: platform is the merchant of record and bears
+      // Stripe's processing fees. Staff receives exactly
+      // amount - application_fee_amount (no hidden Stripe deductions).
       transfer_data: { destination: staff.stripe_account_id },
       ...(applicationFeeAmount > 0 ? { application_fee_amount: applicationFeeAmount } : {}),
       ...(validatedEmail ? { receipt_email: validatedEmail } : {}),
