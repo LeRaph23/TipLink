@@ -51,9 +51,9 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
       ...(expiresAt ? { redeem_by: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
     });
 
-    // Create Stripe promotion code
+    // Create Stripe promotion code (v22 API: coupon is nested inside `promotion`)
     const promoCode = await stripe.promotionCodes.create({
-      coupon: coupon.id,
+      promotion: { type: 'coupon', coupon: coupon.id },
       code: code.toUpperCase().trim(),
       ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
       ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
