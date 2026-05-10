@@ -7,7 +7,7 @@ ALTER TABLE public.groups
   ADD COLUMN IF NOT EXISTS platform_fee_bps INTEGER NOT NULL DEFAULT 200;
 
 COMMENT ON COLUMN public.groups.platform_fee_bps IS
-  'Platform commission on each tip, in basis points (200 = 2%). Applied via Stripe application_fee_amount.';
+  'Platform commission on each tip, in basis points. Default raised to 500 (5%) in migration 00025.';
 
 -- Sanity bounds: between 0% and 15%.
 ALTER TABLE public.groups
