@@ -274,6 +274,14 @@ async function handleEvent(
           stripe_discount_id: expressDiscountId,
         }).select('id').single();
 
+        // Ambassador attribution for express checkout
+        if (newOrder?.id && expressPromoCode) {
+          await attributeAmbassadorSale(
+            supabase, expressPromoCode,
+            newOrder.id, pack, session.customer_details?.name ?? ''
+          );
+        }
+
         // Auto-provision establishment for the express checkout group
         const expressSlug = legalName.toLowerCase()
           .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -426,6 +434,14 @@ async function handleEvent(
         } catch { /* non-blocking */ }
       }
 
+      // Ambassador attribution for authenticated checkout
+      if (upsertedOrder?.id && promoCodeStr) {
+        await attributeAmbassadorSale(
+          supabase, promoCodeStr,
+          upsertedOrder.id, pack, session.customer_details?.name ?? ''
+        );
+      }
+
       // Auto-provision first establishment for new groups so the tip flow works immediately
       const { data: existingEst } = await supabase
         .from('establishments')
@@ -474,4 +490,62 @@ async function handleEvent(
       // Unknown event types are logged but not errored
       break;
   }
+}
+
+// ─── Ambassador helpers ───────────────────────────────────────────────────────
+
+async function attributeAmbassadorSale(
+  supabase: ReturnType<typeof createServiceClient>,
+  promoCodeStr: string,
+  orderId: string,
+  pack: 'solo' | 'duo',
+  rawSalonName: string
+): Promise<void> {
+  try {
+    const { data: pc } = await supabase
+      .from('promo_codes')
+      .select('id')
+      .eq('code', promoCodeStr.toUpperCase())
+      .maybeSingle();
+
+    if (!pc) return;
+
+    const { data: ambassador } = await supabase
+      .from('ambassadors')
+      .select('id, name')
+      .eq('promo_code_id', pc.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!ambassador) return;
+
+    const commissionAmount = pack === 'duo' ? 3500 : 2500;
+    const trimmed = rawSalonName.trim();
+    const salonPartial = trimmed.length >= 3 ? `***${trimmed.slice(-3)}` : '***';
+
+    await supabase.from('ambassador_sales').insert({
+      ambassador_id: ambassador.id,
+      smarttag_order_id: orderId,
+      pack,
+      commission_amount: commissionAmount,
+      salon_name_partial: salonPartial,
+    });
+
+    void notifyTelegram(ambassador.name, salonPartial, pack).catch(() => {});
+  } catch {
+    // Never break the webhook — ambassador attribution is best-effort
+  }
+}
+
+async function notifyTelegram(ambassadorName: string, salon: string, pack: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+  const packLabel = pack === 'duo' ? 'Pack Duo (+35€)' : 'Pack Solo (+25€)';
+  const text = `🔥 BOOM ! ${ambassadorName} vient de vendre un ${packLabel} à ${salon} !`;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
 }
