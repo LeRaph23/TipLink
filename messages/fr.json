@@ -762,7 +762,8 @@
         "transactions": "Transactions",
         "establishments": "Établissements",
         "groups": "Groupes",
-        "promoCodes": "Codes promo"
+        "promoCodes": "Codes promo",
+        "ambassadeurs": "Ambassadeurs"
       },
       "overview": {
         "title": "Vue d'ensemble SaaS",
