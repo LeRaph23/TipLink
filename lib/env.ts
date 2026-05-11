@@ -33,6 +33,10 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(10),
   STRIPE_SECRET_KEY: z.string().min(10),
   STRIPE_WEBHOOK_SECRET: z.string().min(10),
+  // Ambassador system (optional — features degrade gracefully when absent)
+  TELEGRAM_BOT_TOKEN: z.string().min(10).optional(),
+  TELEGRAM_CHAT_ID: z.string().min(1).optional(),
+  AMBASSADOR_SESSION_SECRET: z.string().min(32).optional(),
 });
 
 let serverCache: z.infer<typeof serverSchema> | null = null;
