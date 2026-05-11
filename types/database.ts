@@ -78,6 +78,10 @@ export type Database = {
           delivered_at: string | null;
           tags_encoded_count: number;
           fulfilled_at: string | null;
+          promo_code: string | null;
+          promo_code_id: string | null;
+          discount_amount: number;
+          stripe_discount_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -95,13 +99,17 @@ export type Database = {
           delivered_at?: string | null;
           tags_encoded_count?: number;
           fulfilled_at?: string | null;
+          promo_code?: string | null;
+          promo_code_id?: string | null;
+          discount_amount?: number;
+          stripe_discount_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           group_id?: string;
-          pack?: 's' | 'm' | 'l';
+          pack?: 'solo' | 'duo';
           quantity?: number;
           stripe_checkout_session_id?: string | null;
           stripe_invoice_id?: string | null;
@@ -112,6 +120,10 @@ export type Database = {
           delivered_at?: string | null;
           tags_encoded_count?: number;
           fulfilled_at?: string | null;
+          promo_code?: string | null;
+          promo_code_id?: string | null;
+          discount_amount?: number;
+          stripe_discount_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -470,6 +482,49 @@ export type Database = {
         };
         Relationships: [];
       };
+      promo_codes: {
+        Row: {
+          id: string;
+          code: string;
+          stripe_coupon_id: string;
+          stripe_promo_code_id: string;
+          percentage_off: number;
+          max_redemptions: number | null;
+          times_redeemed: number;
+          expires_at: string | null;
+          is_active: boolean;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          stripe_coupon_id: string;
+          stripe_promo_code_id: string;
+          percentage_off: number;
+          max_redemptions?: number | null;
+          times_redeemed?: number;
+          expires_at?: string | null;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          stripe_coupon_id?: string;
+          stripe_promo_code_id?: string;
+          percentage_off?: number;
+          max_redemptions?: number | null;
+          times_redeemed?: number;
+          expires_at?: string | null;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      ambassadors: {
         Row: {
           id: string;
           name: string;
