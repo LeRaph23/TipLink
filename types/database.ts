@@ -524,6 +524,107 @@ export type Database = {
         };
         Relationships: [];
       };
+      ambassadors: {
+        Row: {
+          id: string;
+          name: string;
+          promo_code_id: string;
+          pin_hash: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          promo_code_id: string;
+          pin_hash: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          promo_code_id?: string;
+          pin_hash?: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassadors_promo_code_id_fkey';
+            columns: ['promo_code_id'];
+            isOneToOne: true;
+            referencedRelation: 'promo_codes';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ambassador_sales: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          smarttag_order_id: string;
+          pack: 'solo' | 'duo';
+          commission_amount: number;
+          salon_name_partial: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          smarttag_order_id: string;
+          pack: 'solo' | 'duo';
+          commission_amount: number;
+          salon_name_partial?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          smarttag_order_id?: string;
+          pack?: 'solo' | 'duo';
+          commission_amount?: number;
+          salon_name_partial?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_sales_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ambassador_sales_smarttag_order_id_fkey';
+            columns: ['smarttag_order_id'];
+            isOneToOne: false;
+            referencedRelation: 'smarttag_orders';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ambassador_pin_attempts: {
+        Row: {
+          id: string;
+          ip_hash: string;
+          code: string;
+          attempted_at: string;
+        };
+        Insert: {
+          id?: string;
+          ip_hash: string;
+          code: string;
+          attempted_at?: string;
+        };
+        Update: {
+          id?: string;
+          ip_hash?: string;
+          code?: string;
+          attempted_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
