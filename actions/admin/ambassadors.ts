@@ -66,9 +66,9 @@ export async function createAmbassador(
       return { ok: false, error: 'Ce code promo est déjà lié à un ambassadeur.' };
     }
 
-    // Pre-generate the UUID to use it as the scrypt salt
     const id = crypto.randomUUID();
-    const pinHash = crypto.scryptSync(pin, id, 64).toString('hex');
+    const pinSalt = crypto.randomBytes(32).toString('hex');
+    const pinHash = crypto.scryptSync(pin, pinSalt, 64).toString('hex');
 
     const { data: saved, error: dbErr } = await service
       .from('ambassadors')
@@ -77,6 +77,7 @@ export async function createAmbassador(
         name: name.trim(),
         promo_code_id: promoCodeId,
         pin_hash: pinHash,
+        pin_salt: pinSalt,
         is_active: true,
       })
       .select('id')
@@ -138,11 +139,12 @@ export async function resetAmbassadorPin(
       return { ok: false, error: 'Le PIN doit contenir exactement 4 chiffres.' };
     }
 
-    const pinHash = crypto.scryptSync(newPin, id, 64).toString('hex');
+    const pinSalt = crypto.randomBytes(32).toString('hex');
+    const pinHash = crypto.scryptSync(newPin, pinSalt, 64).toString('hex');
 
     const { error: dbErr } = await service
       .from('ambassadors')
-      .update({ pin_hash: pinHash })
+      .update({ pin_hash: pinHash, pin_salt: pinSalt })
       .eq('id', id);
 
     if (dbErr) return { ok: false, error: dbErr.message };
