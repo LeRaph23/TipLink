@@ -57,7 +57,7 @@ describe('NFC Redirect Middleware', () => {
     expect(response.headers.get('location')).toContain('/not-found');
   });
 
-  it('redirects to /not-found when establishment_id is null', async () => {
+  it('redirects to /onboarding when establishment_id is null (unassigned NFC)', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => [{ establishment_id: null }],
@@ -67,7 +67,8 @@ describe('NFC Redirect Middleware', () => {
     const request = new NextRequest('https://digitip.app/s/ORPHAN01');
     const response = await middleware(request);
 
-    expect(response.headers.get('location')).toContain('/not-found');
+    // Unassigned stickers launch the onboarding wizard, not a 404.
+    expect(response.headers.get('location')).toContain('/onboarding');
   });
 
   it('redirects to /not-found when PostgREST returns error', async () => {
@@ -96,16 +97,13 @@ describe('NFC Redirect Middleware', () => {
     expect(fetchCall[1].headers['Authorization']).toContain('Bearer test-service-role-key');
   });
 
-  it('passes short_id as URL-encoded query parameter', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [{ establishment_id: 'est-uuid-456' }],
-    });
-
+  it('rejects short_id with non-alphanumeric characters (blocks ILIKE wildcards)', async () => {
+    // shortIds with characters outside [a-z0-9_-] are rejected before hitting
+    // PostgREST to prevent ILIKE wildcard injection (e.g. "%%%%").
     const { middleware } = await import('@/middleware');
-    await middleware(new NextRequest('https://digitip.app/s/AB+CD'));
+    const response = await middleware(new NextRequest('https://digitip.app/s/AB+CD'));
 
-    const fetchUrl = mockFetch.mock.calls[0][0] as string;
-    expect(fetchUrl).toContain('AB%2BCD');
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(response.headers.get('location')).toContain('/not-found');
   });
 });

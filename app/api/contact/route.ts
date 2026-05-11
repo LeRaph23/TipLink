@@ -14,7 +14,7 @@ type Body = {
   locale?: string;
 };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(request: NextRequest) {
   // Rate limit: 3 / minute / IP (lead form is public)

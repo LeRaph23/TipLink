@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const SERVICE_FEE = 25;
 
   // Validate optional email
-  const validatedEmail = customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)
+  const validatedEmail = customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(customerEmail)
     ? customerEmail
     : undefined;
 

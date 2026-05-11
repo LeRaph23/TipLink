@@ -109,7 +109,7 @@ export async function POST(
 
   const { data: ambassador } = await supabase
     .from('ambassadors')
-    .select('id, name, pin_hash')
+    .select('id, name, pin_hash, pin_salt')
     .eq('promo_code_id', promoCode.id)
     .eq('is_active', true)
     .maybeSingle();
@@ -118,8 +118,10 @@ export async function POST(
     return NextResponse.json({ error: 'Code introuvable' }, { status: 404 });
   }
 
-  // Verify PIN with constant-time comparison
-  const candidateHash = crypto.scryptSync(pin, ambassador.id, 64);
+  // Derive the salt: use stored random salt when available, fall back to
+  // ambassador.id for rows created before the pin_salt migration.
+  const salt = ambassador.pin_salt ?? ambassador.id;
+  const candidateHash = crypto.scryptSync(pin, salt, 64);
   const storedHash = Buffer.from(ambassador.pin_hash, 'hex');
   const pinValid =
     candidateHash.length === storedHash.length &&
@@ -127,6 +129,17 @@ export async function POST(
 
   if (!pinValid) {
     return NextResponse.json({ error: 'PIN incorrect' }, { status: 401 });
+  }
+
+  // If this ambassador still uses the legacy salt (ambassador.id), re-hash
+  // with a fresh random salt now that we know the PIN is correct.
+  if (!ambassador.pin_salt) {
+    const newSalt = crypto.randomBytes(32).toString('hex');
+    const newHash = crypto.scryptSync(pin, newSalt, 64).toString('hex');
+    await supabase
+      .from('ambassadors')
+      .update({ pin_salt: newSalt, pin_hash: newHash })
+      .eq('id', ambassador.id);
   }
 
   // Clear rate-limit attempts on success
