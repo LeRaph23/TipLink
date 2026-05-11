@@ -33,9 +33,11 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(10),
   STRIPE_SECRET_KEY: z.string().min(10),
   STRIPE_WEBHOOK_SECRET: z.string().min(10),
-  // Ambassador system (optional — features degrade gracefully when absent)
+  // Ambassador system (optional — ambassador routes degrade to 500 when absent)
   TELEGRAM_BOT_TOKEN: z.string().min(10).optional(),
   TELEGRAM_CHAT_ID: z.string().min(1).optional(),
+  // If ambassadors are active, set this to a >=32-char random hex string:
+  // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
   AMBASSADOR_SESSION_SECRET: z.string().min(32).optional(),
 });
 
@@ -46,6 +48,9 @@ export function serverEnv() {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+    TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
+    AMBASSADOR_SESSION_SECRET: process.env.AMBASSADOR_SESSION_SECRET,
   });
   if (!res.success) {
     const issues = res.error.issues

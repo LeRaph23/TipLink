@@ -43,13 +43,15 @@ export async function updateGroup(
 
   if (Object.keys(patch).length === 0) return { success: true };
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('groups')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update(patch as any)
-    .eq('id', input.groupId);
+    .eq('id', input.groupId)
+    .select('id');
 
   if (error) return { error: error.message };
+  if (!updated || updated.length === 0) return { error: 'Forbidden' };
 
   revalidatePath('/dashboard/settings');
   return { success: true };

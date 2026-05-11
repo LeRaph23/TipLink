@@ -530,6 +530,7 @@ export type Database = {
           name: string;
           promo_code_id: string;
           pin_hash: string;
+          pin_salt: string | null;
           is_active: boolean;
           created_at: string;
         };
@@ -538,6 +539,7 @@ export type Database = {
           name: string;
           promo_code_id: string;
           pin_hash: string;
+          pin_salt?: string | null;
           is_active?: boolean;
           created_at?: string;
         };
@@ -546,6 +548,7 @@ export type Database = {
           name?: string;
           promo_code_id?: string;
           pin_hash?: string;
+          pin_salt?: string | null;
           is_active?: boolean;
           created_at?: string;
         };

@@ -21,8 +21,10 @@ export async function middleware(request: NextRequest) {
       (cookieLocale && (routing.locales as readonly string[]).includes(cookieLocale) && cookieLocale) ||
       (acceptLang.toLowerCase().startsWith('fr') ? 'fr' : routing.defaultLocale);
 
-    if (!shortId || shortId.length < 4) {
-      return NextResponse.redirect(new URL(`/${preferredLocale}`, request.url));
+    // Reject short, empty, or non-alphanumeric shortIds before hitting PostgREST.
+    // Without this, ILIKE wildcards (e.g. "%%%%") would match any NFC sticker.
+    if (!shortId || shortId.length < 4 || !/^[a-z0-9_-]+$/.test(shortId)) {
+      return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

@@ -140,13 +140,15 @@ export async function updateStaffMember(
   if (input.avatarUrl !== undefined) patch.avatar_url = input.avatarUrl;
   if (Object.keys(patch).length === 0) return { success: true };
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('staff_profiles')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update(patch as any)
-    .eq('id', staffId);
+    .eq('id', staffId)
+    .select('id');
 
   if (error) return { error: error.message };
+  if (!updated || updated.length === 0) return { error: 'Forbidden' };
 
   revalidatePath('/dashboard/staff');
   revalidatePath(`/dashboard/staff/${staffId}`);
@@ -218,12 +220,14 @@ export async function deactivateStaffMember(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('staff_profiles')
     .update({ is_active: false, deleted_at: new Date().toISOString() })
-    .eq('id', staffId);
+    .eq('id', staffId)
+    .select('id');
 
   if (error) return { error: error.message };
+  if (!updated || updated.length === 0) return { error: 'Forbidden' };
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/staff');
