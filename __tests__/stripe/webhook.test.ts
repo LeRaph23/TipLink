@@ -355,7 +355,11 @@ describe('Stripe Webhook Handler', () => {
 
     const { createServiceClient } = await import('@/lib/supabase/service');
     const groupUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
-    const orderUpsert = vi.fn().mockResolvedValue({ error: null });
+    const orderUpsert = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: { id: 'order-1' }, error: null }),
+      }),
+    });
 
     const mockSupabase = {
       from: vi.fn((table: string) => {
@@ -370,6 +374,22 @@ describe('Stripe Webhook Handler', () => {
         }
         if (table === 'smarttag_orders') {
           return { upsert: orderUpsert };
+        }
+        if (table === 'nfc_stickers') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+            update: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: null }) }),
+          };
+        }
+        if (table === 'user_roles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+          };
         }
         if (table === 'establishments') {
           // Return existing establishment so auto-create branch is skipped

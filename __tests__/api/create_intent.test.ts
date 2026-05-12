@@ -136,7 +136,7 @@ describe('POST /api/stripe/create-intent', () => {
     const { POST } = await import('@/app/api/stripe/create-intent/route');
     const res = await POST(
       buildRequest(
-        { staffId: 'missing', amount: 500, currency: 'EUR', nonce: 'n' },
+        { staffId: 'missing', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'n' },
         '10.0.0.3'
       )
     );
@@ -164,7 +164,7 @@ describe('POST /api/stripe/create-intent', () => {
     const { POST } = await import('@/app/api/stripe/create-intent/route');
     const res = await POST(
       buildRequest(
-        { staffId: 'staff-1', amount: 500, currency: 'EUR', nonce: 'nonce-1' },
+        { staffId: 'staff-1', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-1' },
         '10.0.0.4'
       )
     );
@@ -172,18 +172,16 @@ describe('POST /api/stripe/create-intent', () => {
     const body = await res.json();
     expect(body.clientSecret).toBe('pi_1_secret_abc');
 
-    // Stripe fees must be borne by the connected account, not the
-    // platform. `on_behalf_of` + `transfer_data.destination` on the
-    // same account is the contract we rely on. No `application_fee_amount`.
+    // Destination charge: the connected staff account receives the tip and
+    // pays the Stripe fees; the platform takes a fixed SERVICE_FEE (25 cents)
+    // as application_fee_amount (plus optional bps-based platform fee).
     expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        on_behalf_of: 'acct_1',
         transfer_data: { destination: 'acct_1' },
+        application_fee_amount: 25,
       }),
       expect.objectContaining({ idempotencyKey: expect.any(String) })
     );
-    const [intentArgs] = vi.mocked(stripe.paymentIntents.create).mock.calls[0]!;
-    expect((intentArgs as { application_fee_amount?: number }).application_fee_amount).toBeUndefined();
   });
 
   it('on unique_violation (23505), reuses existing pending transaction', async () => {
@@ -209,7 +207,7 @@ describe('POST /api/stripe/create-intent', () => {
     const { POST } = await import('@/app/api/stripe/create-intent/route');
     const res = await POST(
       buildRequest(
-        { staffId: 'staff-1', amount: 500, currency: 'EUR', nonce: 'nonce-dup' },
+        { staffId: 'staff-1', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-dup' },
         '10.0.0.5'
       )
     );
@@ -242,7 +240,7 @@ describe('POST /api/stripe/create-intent', () => {
     const ip = '99.99.99.99';
     const mkReq = (i: number) =>
       buildRequest(
-        { staffId: 'staff-1', amount: 500, currency: 'EUR', nonce: `n-${i}` },
+        { staffId: 'staff-1', amount: 525, tipAmount: 500, currency: 'EUR', nonce: `n-${i}` },
         ip
       );
 

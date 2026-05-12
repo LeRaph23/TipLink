@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[stripe webhook] handler failed:', err);
 
     await supabase
       .from('webhook_events')
