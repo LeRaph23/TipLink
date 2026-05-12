@@ -495,6 +495,8 @@ export type Database = {
           is_active: boolean;
           created_by: string | null;
           created_at: string;
+          deleted_at: string | null;
+          notes: string | null;
         };
         Insert: {
           id?: string;
@@ -508,6 +510,8 @@ export type Database = {
           is_active?: boolean;
           created_by?: string | null;
           created_at?: string;
+          deleted_at?: string | null;
+          notes?: string | null;
         };
         Update: {
           id?: string;
@@ -521,6 +525,8 @@ export type Database = {
           is_active?: boolean;
           created_by?: string | null;
           created_at?: string;
+          deleted_at?: string | null;
+          notes?: string | null;
         };
         Relationships: [];
       };
