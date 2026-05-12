@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -9,7 +10,7 @@ type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 async function assertSuperAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { supabase, ok: false as const, error: 'Unauthorized' };
+  if (!user) return { ok: false as const, error: 'Unauthorized' };
 
   const { data: roles } = await supabase
     .from('user_roles')
@@ -17,9 +18,9 @@ async function assertSuperAdmin() {
     .eq('user_id', user.id);
 
   const isSuperAdmin = (roles ?? []).some((r) => r.role === 'super_admin');
-  if (!isSuperAdmin) return { supabase, ok: false as const, error: 'Forbidden' };
+  if (!isSuperAdmin) return { ok: false as const, error: 'Forbidden' };
 
-  return { supabase, ok: true as const };
+  return { ok: true as const };
 }
 
 export async function updateGroupName(
@@ -32,7 +33,8 @@ export async function updateGroupName(
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  const { error } = await auth.supabase
+  const service = createServiceClient();
+  const { error } = await service
     .from('groups')
     .update({ name: trimmed })
     .eq('id', groupId);
@@ -48,7 +50,8 @@ export async function deleteGroup(groupId: string): Promise<Result<null>> {
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  const { error } = await auth.supabase
+  const service = createServiceClient();
+  const { error } = await service
     .from('groups')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', groupId);
@@ -71,7 +74,8 @@ export async function updateGroupFeeBps(
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  const { error } = await auth.supabase
+  const service = createServiceClient();
+  const { error } = await service
     .from('groups')
     .update({ platform_fee_bps: Math.round(bps) })
     .eq('id', groupId);
