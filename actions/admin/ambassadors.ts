@@ -127,6 +127,69 @@ export async function toggleAmbassador(
   }
 }
 
+export async function markAmbassadorPayoutPaid(
+  payoutId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+    const { data: payout } = await service
+      .from('ambassador_payouts')
+      .select('id, ambassador_id, amount_cents, status')
+      .eq('id', payoutId)
+      .maybeSingle();
+    if (!payout) return { ok: false, error: 'Versement introuvable.' };
+    if (payout.status === 'paid') return { ok: false, error: 'Déjà marqué payé.' };
+
+    const { error } = await service
+      .from('ambassador_payouts')
+      .update({ status: 'paid', paid_at: new Date().toISOString() })
+      .eq('id', payoutId);
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('ambassadors.payout_paid', {
+      payoutId,
+      ambassadorId: payout.ambassador_id,
+      amountCents: payout.amount_cents,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+export async function cancelAmbassadorPayout(
+  payoutId: string,
+  reason?: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+    const { data: payout } = await service
+      .from('ambassador_payouts')
+      .select('id, ambassador_id, status')
+      .eq('id', payoutId)
+      .maybeSingle();
+    if (!payout) return { ok: false, error: 'Versement introuvable.' };
+    if (payout.status === 'paid') return { ok: false, error: 'Impossible d\'annuler un versement déjà payé.' };
+
+    const { error } = await service
+      .from('ambassador_payouts')
+      .update({ status: 'canceled', failure_reason: reason ?? null })
+      .eq('id', payoutId);
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('ambassadors.payout_canceled', {
+      payoutId,
+      ambassadorId: payout.ambassador_id,
+      reason,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
 export async function resetAmbassadorPin(
   id: string,
   newPin: string

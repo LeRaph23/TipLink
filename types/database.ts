@@ -533,6 +533,12 @@ export type Database = {
           pin_salt: string | null;
           is_active: boolean;
           created_at: string;
+          siret: string | null;
+          stripe_account_id: string | null;
+          onboarding_status: string;
+          email: string | null;
+          phone: string | null;
+          city: string | null;
         };
         Insert: {
           id?: string;
@@ -542,6 +548,12 @@ export type Database = {
           pin_salt?: string | null;
           is_active?: boolean;
           created_at?: string;
+          siret?: string | null;
+          stripe_account_id?: string | null;
+          onboarding_status?: string;
+          email?: string | null;
+          phone?: string | null;
+          city?: string | null;
         };
         Update: {
           id?: string;
@@ -551,6 +563,12 @@ export type Database = {
           pin_salt?: string | null;
           is_active?: boolean;
           created_at?: string;
+          siret?: string | null;
+          stripe_account_id?: string | null;
+          onboarding_status?: string;
+          email?: string | null;
+          phone?: string | null;
+          city?: string | null;
         };
         Relationships: [
           {
@@ -625,6 +643,98 @@ export type Database = {
           ip_hash?: string;
           code?: string;
           attempted_at?: string;
+        };
+        Relationships: [];
+      };
+      ambassador_payouts: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          amount_cents: number;
+          status: 'pending' | 'paid' | 'failed' | 'canceled';
+          stripe_transfer_id: string | null;
+          stripe_payout_id: string | null;
+          failure_reason: string | null;
+          requested_at: string;
+          paid_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          amount_cents: number;
+          status?: 'pending' | 'paid' | 'failed' | 'canceled';
+          stripe_transfer_id?: string | null;
+          stripe_payout_id?: string | null;
+          failure_reason?: string | null;
+          requested_at?: string;
+          paid_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          amount_cents?: number;
+          status?: 'pending' | 'paid' | 'failed' | 'canceled';
+          stripe_transfer_id?: string | null;
+          stripe_payout_id?: string | null;
+          failure_reason?: string | null;
+          requested_at?: string;
+          paid_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_payouts_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ambassador_recruitment_applications: {
+        Row: {
+          id: string;
+          first_name: string;
+          last_name: string;
+          city: string;
+          phone: string;
+          email: string;
+          siret: string;
+          no_fraud_pledge: boolean;
+          notes: string | null;
+          status: 'pending' | 'accepted' | 'rejected';
+          reviewed_at: string | null;
+          ip_hash: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          first_name: string;
+          last_name: string;
+          city: string;
+          phone: string;
+          email: string;
+          siret: string;
+          no_fraud_pledge: boolean;
+          notes?: string | null;
+          status?: 'pending' | 'accepted' | 'rejected';
+          reviewed_at?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          first_name?: string;
+          last_name?: string;
+          city?: string;
+          phone?: string;
+          email?: string;
+          siret?: string;
+          no_fraud_pledge?: boolean;
+          notes?: string | null;
+          status?: 'pending' | 'accepted' | 'rejected';
+          reviewed_at?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };

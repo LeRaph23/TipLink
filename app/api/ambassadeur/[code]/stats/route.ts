@@ -6,6 +6,7 @@ import {
   getMonthBounds,
   getWeeklyTier,
   computeTotalBaseCommission,
+  computeClosedWeekBonuses,
   WEEKLY_TIERS,
   MONTHLY_CHALLENGE,
 } from '@/lib/ambassador-tiers';
@@ -96,6 +97,23 @@ export async function GET(
   const leaderboardRank = leaderboard.findIndex(([id]) => id === ambassadorId) + 1;
   const leaderboardTotal = leaderboard.length;
 
+  // Top 3 first names + counts, for live competition display
+  const topIds = leaderboard.slice(0, 3).map(([id]) => id);
+  const { data: topAmbassadors } = topIds.length > 0
+    ? await supabase.from('ambassadors').select('id, name').in('id', topIds)
+    : { data: [] };
+  const nameById = new Map((topAmbassadors ?? []).map((a) => [a.id, a.name.split(' ')[0]]));
+  const top3 = leaderboard.slice(0, 3).map(([id, count], idx) => ({
+    rank: idx + 1,
+    firstName: id === ambassadorId ? 'Toi' : (nameById.get(id) ?? '—'),
+    count,
+    isYou: id === ambassadorId,
+  }));
+
+  // Closed weekly bonuses (past weeks only, current week excluded — still in play)
+  const closedWeeklyBonuses = computeClosedWeekBonuses(allSales, now);
+  const earnedTotal = totalBaseCommission + closedWeeklyBonuses;
+
   return NextResponse.json({
     name: ambassador.name,
     allTimeSalesCount: allSales.length,
@@ -121,7 +139,10 @@ export async function GET(
     leaderboard: {
       rank: leaderboardRank || leaderboardTotal + 1,
       total: Math.max(leaderboardTotal, 1),
+      top3,
     },
+    closedWeeklyBonuses,
+    earnedTotal,
     recentSales: allSales.slice(0, 10).map((s) => ({
       id: s.id,
       pack: s.pack,

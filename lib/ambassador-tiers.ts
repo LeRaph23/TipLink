@@ -11,12 +11,39 @@ export const WEEKLY_TIERS = [
 
 export type WeeklyTier = typeof WEEKLY_TIERS[number];
 
-// Monthly challenge — independent of weekly bonuses
+// Monthly challenge — 200€ to whoever finishes #1 of the leaderboard
 export const MONTHLY_CHALLENGE = {
   threshold: 15,
   bonus: 20000, // 200€ in cents
-  prize: '200€ de bonus',
+  prize: '200€ pour le #1 du classement',
 } as const;
+
+// Minimum amount an ambassador can withdraw in a single payout (30€).
+export const MIN_PAYOUT_CENTS = 3000;
+
+/** Sum of weekly bonuses earned across all COMPLETED weeks (past, not the current one). */
+export function computeClosedWeekBonuses(
+  sales: Array<{ created_at: string }>,
+  now: Date = new Date()
+): number {
+  const currentWeekStart = getWeekBounds(now).start.getTime();
+  const buckets = new Map<number, number>(); // weekStartMs -> count
+
+  for (const s of sales) {
+    const d = new Date(s.created_at);
+    if (isNaN(d.getTime())) continue;
+    const weekStart = getWeekBounds(d).start.getTime();
+    if (weekStart >= currentWeekStart) continue; // skip current week
+    buckets.set(weekStart, (buckets.get(weekStart) ?? 0) + 1);
+  }
+
+  let total = 0;
+  for (const count of buckets.values()) {
+    const tier = getWeeklyTier(count);
+    if (tier) total += tier.bonus;
+  }
+  return total;
+}
 
 /**
  * Returns the Monday 00:00 and Sunday 23:59:59 of the current week in Paris

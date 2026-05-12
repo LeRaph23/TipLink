@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { AmbassadeurPayoutPanel } from './AmbassadeurBanking';
 
 type AuthState = 'loading' | 'pin-required' | 'authenticated';
 
@@ -19,12 +20,18 @@ interface StatsData {
   weekCount: number;
   monthCount: number;
   totalBaseCommission: number;
+  closedWeeklyBonuses: number;
+  earnedTotal: number;
   weeklyTier: { id: string; label: string; bonus: number } | null;
   weeklyBonusCents: number;
   monthlyBonusUnlocked: boolean;
   monthlyChallenge: { threshold: number; bonus: number; prize: string };
   tiers: TierInfo[];
-  leaderboard: { rank: number; total: number };
+  leaderboard: {
+    rank: number;
+    total: number;
+    top3: Array<{ rank: number; firstName: string; count: number; isYou: boolean }>;
+  };
   recentSales: Array<{
     id: string;
     pack: string;
@@ -32,6 +39,23 @@ interface StatsData {
     salon_name_partial: string | null;
     created_at: string;
   }>;
+}
+
+interface BankingState {
+  hasStripeAccount: boolean;
+  onboardingStatus: string;
+  siret: string | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+}
+
+interface PayoutState {
+  available: number;
+  earnedTotal: number;
+  paidOrPendingTotal: number;
+  minPayoutCents: number;
+  history: Array<{ id: string; amount_cents: number; status: string; requested_at: string; paid_at: string | null }>;
 }
 
 // Maps tier id → DigiTip CSS variables
@@ -197,6 +221,19 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
   const [pinLoading, setPinLoading] = useState(false);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [banking, setBanking] = useState<BankingState | null>(null);
+  const [payoutData, setPayoutData] = useState<PayoutState | null>(null);
+
+  const refreshBankingAndPayout = useCallback(() => {
+    fetch(`/api/ambassadeur/${encodeURIComponent(code)}/banking`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setBanking(d); })
+      .catch(() => {});
+    fetch(`/api/ambassadeur/${encodeURIComponent(code)}/payout`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setPayoutData(d); })
+      .catch(() => {});
+  }, [code]);
 
   useEffect(() => {
     fetch(`/api/ambassadeur/${encodeURIComponent(code)}/auth`)
@@ -222,7 +259,8 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
         setAmbassadorName(prev => data.name?.split(' ')[0] ?? prev);
       })
       .catch(() => setStatsError('Impossible de charger les stats.'));
-  }, [authState, code]);
+    refreshBankingAndPayout();
+  }, [authState, code, refreshBankingAndPayout]);
 
   const handlePin = useCallback(async (pin: string) => {
     setPinLoading(true);
@@ -326,12 +364,13 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
 
   // ── Dashboard ─────────────────────────────────────────────────────────────────
   const { weekCount, monthCount, totalBaseCommission, weeklyBonusCents,
-    monthlyBonusUnlocked, monthlyChallenge, tiers, leaderboard, recentSales } = stats;
+    tiers, leaderboard, recentSales } = stats;
 
-  const monthlyRemaining = Math.max(0, monthlyChallenge.threshold - monthCount);
-  const monthlyPct = Math.min(100, (monthCount / monthlyChallenge.threshold) * 100);
   const rankLabel = leaderboard.rank === 1 ? '🏆' : `#${leaderboard.rank}`;
   const firstName = ambassadorName.split(' ')[0];
+  const top3 = leaderboard.top3 ?? [];
+  const leader = top3[0];
+  const gapToLeader = leader && !leader.isYou ? Math.max(0, leader.count - monthCount) : 0;
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', fontFamily: 'var(--font)' }}>
@@ -422,10 +461,20 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           </div>
         </div>
 
-        {/* Challenge du mois */}
+        {/* Virements */}
+        {banking && (
+          <AmbassadeurPayoutPanel
+            code={code}
+            banking={banking}
+            payout={payoutData}
+            onChanged={refreshBankingAndPayout}
+          />
+        )}
+
+        {/* Leaderboard du mois — 200€ au #1 */}
         <div style={{
-          background: monthlyBonusUnlocked ? 'var(--warning-bg)' : 'var(--surface)',
-          border: `1px solid ${monthlyBonusUnlocked ? 'var(--warning)' : 'var(--border-subtle)'}`,
+          background: leaderboard.rank === 1 ? 'var(--warning-bg)' : 'var(--surface)',
+          border: `1px solid ${leaderboard.rank === 1 ? 'var(--warning)' : 'var(--border-subtle)'}`,
           borderRadius: 'var(--radius)',
           padding: 18,
           marginBottom: 16,
@@ -433,37 +482,60 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-                Challenge du mois
+                Classement du mois
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: monthlyBonusUnlocked ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
-                {monthlyBonusUnlocked ? '🎉 200€ débloqué !' : `🏆 ${monthlyChallenge.prize}`}
+              <div style={{ fontSize: 15, fontWeight: 700, color: leaderboard.rank === 1 ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
+                🏆 200€ pour le #1
               </div>
             </div>
             <div style={{
               background: 'var(--surface-2)', border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)', padding: '8px 12px', textAlign: 'center', flexShrink: 0,
             }}>
-              <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.03em', color: monthlyBonusUnlocked ? 'var(--warning)' : 'var(--text)', lineHeight: 1 }}>
-                {monthCount}
+              <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', color: leaderboard.rank === 1 ? 'var(--warning)' : 'var(--text)', lineHeight: 1 }}>
+                {rankLabel}
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>/ {monthlyChallenge.threshold}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>/ {leaderboard.total}</div>
             </div>
           </div>
 
-          <ProgressBar
-            value={monthCount}
-            max={monthlyChallenge.threshold}
-            color={monthlyBonusUnlocked ? 'var(--warning)' : 'var(--accent)'}
-          />
+          {/* Top 3 podium */}
+          {top3.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+              {top3.map((entry) => {
+                const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉';
+                const max = top3[0]?.count ?? 1;
+                const pct = max > 0 ? (entry.count / max) * 100 : 0;
+                return (
+                  <div key={entry.rank} style={{
+                    display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: 8, alignItems: 'center',
+                    padding: '6px 8px', borderRadius: 8,
+                    background: entry.isYou ? 'var(--accent-muted)' : 'transparent',
+                    border: entry.isYou ? '1px solid var(--accent-border)' : '1px solid transparent',
+                  }}>
+                    <span style={{ fontSize: 14 }}>{medal}</span>
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: entry.isYou ? 'var(--accent)' : 'var(--text-2)' }}>
+                        {entry.firstName}
+                      </div>
+                      <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, marginTop: 3, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: entry.rank === 1 ? 'var(--warning)' : 'var(--accent)', borderRadius: 99 }} />
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{entry.count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
             <span style={{ color: 'var(--text-3)' }}>
-              {monthlyBonusUnlocked
-                ? 'Objectif atteint !'
-                : `Plus que ${monthlyRemaining} vente${monthlyRemaining !== 1 ? 's' : ''} !`}
-            </span>
-            <span style={{ fontWeight: 700, color: leaderboard.rank === 1 ? 'var(--warning)' : 'var(--text-2)' }}>
-              {rankLabel} / {leaderboard.total} ambassadeur{leaderboard.total !== 1 ? 's' : ''}
+              {leaderboard.rank === 1
+                ? `🔥 Tu es en tête (${monthCount} ventes) !`
+                : gapToLeader === 0
+                  ? `Égalité avec le leader (${monthCount} ventes)`
+                  : `${gapToLeader} vente${gapToLeader !== 1 ? 's' : ''} de retard sur le #1`}
             </span>
           </div>
         </div>

@@ -2,6 +2,14 @@ import { setRequestLocale } from 'next-intl/server';
 import { requireSuperAdmin } from '@/lib/auth/require-super-admin';
 import { createServiceClient } from '@/lib/supabase/service';
 import { AmbassadeursManager } from './AmbassadeursManager';
+import { AmbassadeursOverview, type AmbassadorOverviewRow, type PendingPayoutRow } from './AmbassadeursOverview';
+import {
+  getWeekBounds,
+  getMonthBounds,
+  getWeeklyTier,
+  computeTotalBaseCommission,
+  computeClosedWeekBonuses,
+} from '@/lib/ambassador-tiers';
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -26,16 +34,45 @@ export default async function AdminAmbassadeursPage({
 
   const service = createServiceClient();
 
-  // Fetch ambassadors with their promo code info
+  // Fetch ambassadors with their promo code info + banking fields
   const { data: ambassadors } = await service
     .from('ambassadors')
-    .select('id, name, is_active, created_at, promo_codes(id, code, percentage_off)')
+    .select('id, name, is_active, created_at, stripe_account_id, siret, promo_codes(id, code, percentage_off)')
     .order('created_at', { ascending: false });
 
-  // Aggregate sales per ambassador
+  // Aggregate sales per ambassador (full rows needed for week/month/bonus computation)
   const { data: salesRows } = await service
     .from('ambassador_sales')
-    .select('ambassador_id, commission_amount');
+    .select('ambassador_id, commission_amount, created_at');
+
+  const { data: payoutsRows } = await service
+    .from('ambassador_payouts')
+    .select('id, ambassador_id, amount_cents, status, requested_at')
+    .in('status', ['pending', 'paid']);
+
+  const now = new Date();
+  const { start: weekStart, end: weekEnd } = getWeekBounds(now);
+  const { start: monthStart, end: monthEnd } = getMonthBounds(now);
+
+  const weekCountByAmb: Record<string, number> = {};
+  const monthCountByAmb: Record<string, number> = {};
+  const salesByAmb: Record<string, Array<{ commission_amount: number; created_at: string }>> = {};
+  for (const s of salesRows ?? []) {
+    if (!salesByAmb[s.ambassador_id]) salesByAmb[s.ambassador_id] = [];
+    salesByAmb[s.ambassador_id].push({ commission_amount: s.commission_amount, created_at: s.created_at });
+    const d = new Date(s.created_at);
+    if (d >= weekStart && d <= weekEnd) {
+      weekCountByAmb[s.ambassador_id] = (weekCountByAmb[s.ambassador_id] ?? 0) + 1;
+    }
+    if (d >= monthStart && d <= monthEnd) {
+      monthCountByAmb[s.ambassador_id] = (monthCountByAmb[s.ambassador_id] ?? 0) + 1;
+    }
+  }
+
+  const paidOrPendingByAmb: Record<string, number> = {};
+  for (const p of payoutsRows ?? []) {
+    paidOrPendingByAmb[p.ambassador_id] = (paidOrPendingByAmb[p.ambassador_id] ?? 0) + p.amount_cents;
+  }
 
   const salesByAmbassador: Record<string, { count: number; totalCommission: number }> = {};
   for (const s of salesRows ?? []) {
@@ -84,6 +121,57 @@ export default async function AdminAmbassadeursPage({
     };
   });
 
+  // Overview rows
+  const overviewRows: AmbassadorOverviewRow[] = (ambassadors ?? []).map((a) => {
+    const allSales = salesByAmb[a.id] ?? [];
+    const wkCount = weekCountByAmb[a.id] ?? 0;
+    const mthCount = monthCountByAmb[a.id] ?? 0;
+    const tier = getWeeklyTier(wkCount);
+    const base = computeTotalBaseCommission(allSales);
+    const closed = computeClosedWeekBonuses(allSales, now);
+    const earned = base + closed;
+    const paid = paidOrPendingByAmb[a.id] ?? 0;
+    return {
+      id: a.id,
+      name: a.name,
+      weekCount: wkCount,
+      monthCount: mthCount,
+      weeklyTier: tier ? { label: tier.label, emoji: tier.emoji, bonus: tier.bonus } : null,
+      earnedTotalCents: earned,
+      paidOrPendingCents: paid,
+      availableCents: Math.max(0, earned - paid),
+      hasStripeAccount: !!a.stripe_account_id,
+      siret: a.siret ?? null,
+    };
+  });
+
+  const monthLeaderboard = Object.entries(monthCountByAmb)
+    .map(([id, count]) => {
+      const amb = (ambassadors ?? []).find((x) => x.id === id);
+      return { id, name: amb?.name ?? '—', count };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Pending payouts list (with ambassador name)
+  const { data: pendingRowsRaw } = await service
+    .from('ambassador_payouts')
+    .select('id, ambassador_id, amount_cents, status, requested_at')
+    .eq('status', 'pending')
+    .order('requested_at', { ascending: true });
+
+  const pendingPayouts: PendingPayoutRow[] = (pendingRowsRaw ?? []).map((p) => {
+    const amb = (ambassadors ?? []).find((x) => x.id === p.ambassador_id);
+    return {
+      id: p.id,
+      ambassador_id: p.ambassador_id,
+      ambassador_name: amb?.name ?? '—',
+      amount_cents: p.amount_cents,
+      status: p.status,
+      requested_at: p.requested_at,
+    };
+  });
+
   return (
     <div>
       <div style={{ marginBottom: 22 }}>
@@ -100,6 +188,12 @@ export default async function AdminAmbassadeursPage({
         <StatCard label="Ventes totales" value={String(totalSales)} />
         <StatCard label="Commissions dues" value={`${(totalCommission / 100).toFixed(0)} €`} />
       </div>
+
+      <AmbassadeursOverview
+        rows={overviewRows}
+        monthLeaderboard={monthLeaderboard}
+        pendingPayouts={pendingPayouts}
+      />
 
       <AmbassadeursManager
         ambassadors={ambassadorsWithStats}
