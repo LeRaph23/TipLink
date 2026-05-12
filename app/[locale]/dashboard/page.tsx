@@ -148,10 +148,10 @@ export default async function DashboardPage({
           <div style={{ fontSize: 24, flexShrink: 0 }}>💸</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
-              Recevez vous aussi des pourboires
+              {t('home.adminReceiveTipsTitle')}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5 }}>
-              En tant qu&apos;administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires directement sur votre compte.
+              {t('home.adminReceiveTipsBody')}
             </div>
           </div>
           <Link href="/dashboard/staff" style={{
@@ -160,7 +160,7 @@ export default async function DashboardPage({
             fontSize: 13, fontWeight: 600, textDecoration: 'none',
             whiteSpace: 'nowrap', flexShrink: 0,
           }}>
-            Configurer →
+            {t('home.adminReceiveTipsCta')}
           </Link>
         </div>
       )}
@@ -176,10 +176,10 @@ export default async function DashboardPage({
           <div style={{ fontSize: 22, flexShrink: 0 }}>💳</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
-              {isGroupAdmin ? 'Finalisez votre configuration de virements' : 'Configurez votre compte bancaire'}
+              {isGroupAdmin ? t('home.bankingSetupTitleAdmin') : t('home.bankingSetupTitleStaff')}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-              Ajoutez votre IBAN pour commencer à recevoir vos pourboires directement sur votre compte.
+              {t('home.bankingSetupBody')}
             </div>
           </div>
           <Link href="/dashboard/banking" style={{
@@ -188,7 +188,7 @@ export default async function DashboardPage({
             fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
             whiteSpace: 'nowrap', flexShrink: 0,
           }}>
-            Configurer →
+            {t('home.bankingSetupCta')}
           </Link>
         </div>
       )}

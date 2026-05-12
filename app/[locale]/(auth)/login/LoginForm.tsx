@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/navigation';
+import { useTranslations, useLocale } from 'next-intl';
+import { useRouter, Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const inputStyle = (focused: boolean, error?: boolean): React.CSSProperties => ({
@@ -23,8 +23,23 @@ const labelStyle: React.CSSProperties = {
   fontSize: 12.5, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 5,
 };
 
-export function LoginForm({ verified }: { verified?: boolean }) {
+function mapAuthError(msg: string, t: (key: string) => string): string {
+  const lower = msg.toLowerCase();
+  if (lower.includes('invalid login') || lower.includes('invalid credentials') || lower.includes('email not confirmed')) {
+    return t('errorInvalidCredentials');
+  }
+  if (lower.includes('too many requests') || lower.includes('rate limit')) {
+    return t('errorTooManyRequests');
+  }
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return t('errorNetwork');
+  }
+  return msg;
+}
+
+export function LoginForm({ verified, reset }: { verified?: boolean; reset?: boolean }) {
   const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations('auth');
   const tc = useTranslations('common');
   const [email, setEmail] = useState('');
@@ -40,7 +55,12 @@ export function LoginForm({ verified }: { verified?: boolean }) {
     setError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError(error.message); setIsLoading(false); return; }
+    if (error) {
+      setError(mapAuthError(error.message, t));
+      setIsLoading(false);
+      return;
+    }
+    // Keep loading state active until navigation completes
     router.push('/dashboard');
     router.refresh();
   };
@@ -49,15 +69,22 @@ export function LoginForm({ verified }: { verified?: boolean }) {
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {verified && (
         <div style={{
-          padding: '10px 14px',
-          borderRadius: 8,
+          padding: '10px 14px', borderRadius: 8,
           background: 'rgba(22, 163, 74, 0.08)',
           border: '1px solid rgba(22, 163, 74, 0.35)',
-          color: '#16a34a',
-          fontSize: 13.5,
-          fontWeight: 500,
+          color: '#16a34a', fontSize: 13.5, fontWeight: 500,
         }}>
-          ✓ Email vérifié — connectez-vous pour accéder à votre espace.
+          ✓ {t('emailVerifiedBanner')}
+        </div>
+      )}
+      {reset && (
+        <div style={{
+          padding: '10px 14px', borderRadius: 8,
+          background: 'rgba(22, 163, 74, 0.08)',
+          border: '1px solid rgba(22, 163, 74, 0.35)',
+          color: '#16a34a', fontSize: 13.5, fontWeight: 500,
+        }}>
+          ✓ {t('resetPasswordSuccess')}
         </div>
       )}
       <div>
@@ -70,7 +97,15 @@ export function LoginForm({ verified }: { verified?: boolean }) {
         />
       </div>
       <div>
-        <label style={labelStyle}>{t('password')}</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+          <label style={{ ...labelStyle, marginBottom: 0 }}>{t('password')}</label>
+          <Link
+            href="/forgot-password"
+            style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}
+          >
+            {t('forgotPassword')}
+          </Link>
+        </div>
         <input
           type="password" value={password} onChange={e => setPassword(e.target.value)}
           required autoComplete="current-password"

@@ -43,6 +43,13 @@
     "home": "Retour à l'accueil",
     "login": "Se connecter"
   },
+  "error": {
+    "title": "Une erreur est survenue",
+    "description": "Une erreur inattendue s'est produite. Réessayez ou revenez à l'accueil.",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil",
+    "ref": "Référence :"
+  },
   "legal": {
     "lastUpdated": "Dernière mise à jour",
     "updatedDate": "5 mai 2026",
@@ -393,6 +400,32 @@
     "termsPrefix": "En vous inscrivant, vous acceptez nos",
     "and": "et",
     "checkEmail": "Vérifiez votre email pour confirmer votre compte.",
+    "emailVerifiedBanner": "Email vérifié — connectez-vous pour accéder à votre espace.",
+    "checkEmailResend": "Vous n'avez pas reçu l'email ?",
+    "resendEmail": "Renvoyer l'email",
+    "resendEmailSending": "Envoi…",
+    "resendEmailSent": "Email renvoyé !",
+    "correctEmail": "Corriger l'adresse",
+    "forgotPassword": "Mot de passe oublié ?",
+    "forgotPasswordTitle": "Mot de passe oublié",
+    "forgotPasswordSubtitle": "Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "forgotPasswordSubmit": "Envoyer le lien",
+    "forgotPasswordSending": "Envoi…",
+    "forgotPasswordSuccess": "Vérifiez votre email — un lien de réinitialisation vient d'être envoyé.",
+    "backToLogin": "Retour à la connexion",
+    "resetPasswordTitle": "Nouveau mot de passe",
+    "resetPasswordSubtitle": "Choisissez un nouveau mot de passe pour votre compte.",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "resetPasswordSubmit": "Réinitialiser le mot de passe",
+    "resetPasswordSubmitting": "Réinitialisation…",
+    "resetPasswordSuccess": "Mot de passe mis à jour — vous pouvez maintenant vous connecter.",
+    "resetPasswordError": "Lien expiré ou invalide. Demandez un nouveau lien.",
+    "errorInvalidCredentials": "Email ou mot de passe incorrect.",
+    "errorTooManyRequests": "Trop de tentatives. Réessayez dans quelques minutes.",
+    "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
+    "errorEmailInUse": "Un compte existe déjà avec cet email.",
     "business": {
       "stepTitle": "Informations entreprise",
       "stepSubtitle": "Nécessaire pour la facturation. Modifiable plus tard.",
@@ -514,6 +547,7 @@
     "failedBody": "Votre carte a été refusée ou le paiement n'a pas abouti.",
     "notReadyTitle": "Pas encore actif",
     "notReadyBack": "Retour à Digitip",
+    "notReadyTipGroup": "Laisser un pourboire à l'équipe →",
     "group": {
       "pickStaffTitle": "Choisissez votre praticien·ne",
       "pickStaffSubtitle": "Sélectionnez la personne qui vous a servi·e pour lui laisser un pourboire.",
@@ -529,7 +563,9 @@
     "processingButton": "Traitement…",
     "successStatus": "Statut",
     "successReference": "Référence",
+    "successAmount": "Montant",
     "successBack": "Retour à Digitip",
+    "failedRetry": "Réessayer le paiement",
     "yourEmail": "Votre email (optionnel)",
     "emailPlaceholder": "email@exemple.com",
     "receiptNote": "Un reçu sera envoyé à cette adresse",
@@ -560,7 +596,12 @@
       "settings": "Paramètres",
       "establishments": "Établissements",
       "groups": "Groupes",
-      "signOut": "Déconnexion"
+      "payouts": "Virements",
+      "signOut": "Déconnexion",
+      "roleStaff": "Membre d'équipe",
+      "roleAdmin": "Administrateur",
+      "roleManager": "Manager",
+      "roleSuperAdmin": "Super admin"
     },
     "billing": {
       "title": "Facturation & commissions",
@@ -612,7 +653,14 @@
     "home": {
       "dashboard": "Dashboard",
       "last7days": "7 derniers jours",
-      "trendVsPrev": "vs sem. préc."
+      "trendVsPrev": "vs sem. préc.",
+      "adminReceiveTipsTitle": "Recevez vous aussi des pourboires",
+      "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires directement sur votre compte.",
+      "adminReceiveTipsCta": "Configurer →",
+      "bankingSetupTitleAdmin": "Finalisez votre configuration de virements",
+      "bankingSetupTitleStaff": "Configurez votre compte bancaire",
+      "bankingSetupBody": "Ajoutez votre IBAN pour commencer à recevoir vos pourboires directement sur votre compte.",
+      "bankingSetupCta": "Configurer →"
     },
     "txs": {
       "title": "Transactions",

@@ -59,6 +59,9 @@ function CardIcon() {
 function TagIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 2h5l7 7-5 5-7-7V2z" /><circle cx="5" cy="5" r="1" fill="currentColor" stroke="none" /></svg>;
 }
+function InvoiceIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5" /><path d="M5 5h6M5 8h6M5 11h4" /></svg>;
+}
 
 function NavLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
   const [hov, setHov] = useState(false);
@@ -125,8 +128,8 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
   const links = [
     { href: '/dashboard',               label: tn('overview'),     icon: <HomeIcon />,   always: true },
     { href: '/dashboard/transactions',  label: tn('transactions'), icon: <TxIcon />,     always: true },
-    { href: '/dashboard/banking',       label: 'Virements',        icon: <PayoutIcon />, roles: ['staff', 'group_admin'] as UserRole['role'][] },
-    { href: '/dashboard/billing',       label: tn('billing'),      icon: <PayoutIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/banking',       label: tn('payouts'),      icon: <PayoutIcon />, roles: ['staff', 'group_admin'] as UserRole['role'][] },
+    { href: '/dashboard/billing',       label: tn('billing'),      icon: <InvoiceIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/establishments', label: tn('establishments'), icon: <EstIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/stickers',      label: tn('stickers'),     icon: <NfcIcon />,    roles: ['manager', 'group_admin'] as UserRole['role'][] },
@@ -157,7 +160,13 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
   const isSuperAdmin = hasRole('super_admin');
 
   const displayName = userName || userEmail;
-  const topRole = userRoles[0]?.role?.replace('_', ' ') ?? 'staff';
+  const roleLabels: Record<string, string> = {
+    super_admin: tn('roleSuperAdmin'),
+    group_admin: tn('roleAdmin'),
+    manager: tn('roleManager'),
+    staff: tn('roleStaff'),
+  };
+  const topRole = roleLabels[userRoles[0]?.role ?? ''] ?? tn('roleStaff');
 
   return (
     <aside style={{

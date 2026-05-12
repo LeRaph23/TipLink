@@ -43,6 +43,13 @@
     "home": "Back to home",
     "login": "Sign in"
   },
+  "error": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Please try again or go back to the home page.",
+    "retry": "Try again",
+    "home": "Back to home",
+    "ref": "Reference:"
+  },
   "legal": {
     "lastUpdated": "Last updated",
     "updatedDate": "May 5, 2026",
@@ -393,6 +400,32 @@
     "termsPrefix": "By signing up you agree to our",
     "and": "and",
     "checkEmail": "Check your email to confirm your account.",
+    "emailVerifiedBanner": "Email verified — sign in to access your account.",
+    "checkEmailResend": "Didn't receive the email?",
+    "resendEmail": "Resend email",
+    "resendEmailSending": "Sending…",
+    "resendEmailSent": "Email sent!",
+    "correctEmail": "Correct email address",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Forgot your password?",
+    "forgotPasswordSubtitle": "Enter your email and we'll send you a link to reset your password.",
+    "forgotPasswordSubmit": "Send reset link",
+    "forgotPasswordSending": "Sending…",
+    "forgotPasswordSuccess": "Check your email — a reset link has just been sent.",
+    "backToLogin": "Back to sign in",
+    "resetPasswordTitle": "New password",
+    "resetPasswordSubtitle": "Choose a new password for your account.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords don't match.",
+    "resetPasswordSubmit": "Reset password",
+    "resetPasswordSubmitting": "Resetting…",
+    "resetPasswordSuccess": "Password updated — you can now sign in.",
+    "resetPasswordError": "Link expired or invalid. Please request a new one.",
+    "errorInvalidCredentials": "Incorrect email or password.",
+    "errorTooManyRequests": "Too many attempts. Please try again in a few minutes.",
+    "errorNetwork": "Network error. Check your connection.",
+    "errorEmailInUse": "An account already exists with this email.",
     "business": {
       "stepTitle": "Business details",
       "stepSubtitle": "Required for invoicing. You can edit later.",
@@ -514,6 +547,7 @@
     "failedBody": "Your card was declined or the payment couldn't be completed.",
     "notReadyTitle": "Not ready yet",
     "notReadyBack": "Back to Digitip",
+    "notReadyTipGroup": "Tip the team instead →",
     "group": {
       "pickStaffTitle": "Choose your stylist",
       "pickStaffSubtitle": "Select the person who served you to leave them a tip.",
@@ -529,7 +563,9 @@
     "processingButton": "Processing…",
     "successStatus": "Status",
     "successReference": "Reference",
+    "successAmount": "Amount",
     "successBack": "Back to Digitip",
+    "failedRetry": "Try payment again",
     "yourEmail": "Your email (optional)",
     "emailPlaceholder": "email@example.com",
     "receiptNote": "A receipt will be sent to this address",
@@ -560,7 +596,12 @@
       "settings": "Settings",
       "establishments": "Establishments",
       "groups": "Groups",
-      "signOut": "Sign out"
+      "payouts": "Payouts",
+      "signOut": "Sign out",
+      "roleStaff": "Staff member",
+      "roleAdmin": "Admin",
+      "roleManager": "Manager",
+      "roleSuperAdmin": "Super admin"
     },
     "billing": {
       "title": "Billing & commission",
@@ -612,7 +653,14 @@
     "home": {
       "dashboard": "Dashboard",
       "last7days": "Last 7 days",
-      "trendVsPrev": "vs prev. week"
+      "trendVsPrev": "vs prev. week",
+      "adminReceiveTipsTitle": "Receive tips too",
+      "adminReceiveTipsBody": "As an admin, you can also appear in the list and receive tips directly on your account.",
+      "adminReceiveTipsCta": "Set up →",
+      "bankingSetupTitleAdmin": "Complete your payout setup",
+      "bankingSetupTitleStaff": "Set up your bank account",
+      "bankingSetupBody": "Add your IBAN to start receiving tips directly to your account.",
+      "bankingSetupCta": "Set up →"
     },
     "txs": {
       "title": "Transactions",

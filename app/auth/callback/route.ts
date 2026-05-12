@@ -5,7 +5,7 @@ import { routing } from '@/i18n/routing';
 import { createServiceClient } from '@/lib/supabase/service';
 import type { EmailOtpType } from '@supabase/supabase-js';
 
-const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact', '/onboarding', '/login', '/join'];
+const ALLOWED_NEXT_PREFIXES = ['/dashboard', '/pay', '/order', '/pricing', '/contact', '/onboarding', '/login', '/join', '/reset-password'];
 
 function sanitizeNext(raw: string | null): string {
   if (!raw) return '/dashboard';

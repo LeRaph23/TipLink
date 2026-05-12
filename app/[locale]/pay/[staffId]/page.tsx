@@ -49,6 +49,32 @@ async function fetchPublicStaff(staffId: string): Promise<PublicStaffRow | null>
   return rows[0] ?? null;
 }
 
+async function fetchEstablishmentId(staffId: string): Promise<string | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !anonKey) return null;
+
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/staff_profiles?id=eq.${encodeURIComponent(staffId)}&select=establishment_id&limit=1`,
+      {
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+          Accept: 'application/json',
+        },
+        cache: 'no-store',
+      }
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json()) as Array<{ establishment_id: string | null }>;
+    return rows[0]?.establishment_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function StaffTipPage({
   params,
 }: {
@@ -67,6 +93,8 @@ export default async function StaffTipPage({
   const t = await getTranslations('pay');
 
   if (!staff.is_payable) {
+    const establishmentId = await fetchEstablishmentId(staffId);
+
     return (
       <main
         style={{
@@ -120,21 +148,41 @@ export default async function StaffTipPage({
           <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20, lineHeight: 1.5 }}>
             {t('notReady')}
           </p>
-          <Link
-            href="/"
-            style={{
-              display: 'inline-block',
-              padding: '10px 18px',
-              borderRadius: 10,
-              background: 'var(--accent)',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: 14,
-              textDecoration: 'none',
-            }}
-          >
-            {t('notReadyBack')}
-          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {establishmentId && (
+              <Link
+                href={`/pay/group/${establishmentId}`}
+                style={{
+                  display: 'inline-block',
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  textDecoration: 'none',
+                }}
+              >
+                {t('notReadyTipGroup')}
+              </Link>
+            )}
+            <Link
+              href="/"
+              style={{
+                display: 'inline-block',
+                padding: '10px 18px',
+                borderRadius: 10,
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-2)',
+                fontWeight: 500,
+                fontSize: 14,
+                textDecoration: 'none',
+              }}
+            >
+              {t('notReadyBack')}
+            </Link>
+          </div>
         </div>
       </main>
     );

@@ -21,6 +21,20 @@ const labelStyle: React.CSSProperties = {
   fontSize: 12.5, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 5,
 };
 
+function mapSignupError(msg: string, t: (key: string) => string): string {
+  const lower = msg.toLowerCase();
+  if (lower.includes('already registered') || lower.includes('already in use') || lower.includes('email_address_invalid')) {
+    return t('errorEmailInUse');
+  }
+  if (lower.includes('too many requests') || lower.includes('rate limit')) {
+    return t('errorTooManyRequests');
+  }
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return t('errorNetwork');
+  }
+  return msg;
+}
+
 export function SignupForm() {
   const t = useTranslations('auth');
   const tc = useTranslations('common');
@@ -30,6 +44,8 @@ export function SignupForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resent, setResent] = useState(false);
   const [emailConfirm, setEmailConfirm] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
   const f = (k: string) => focus === k;
@@ -46,21 +62,59 @@ export function SignupForm() {
     });
     setIsLoading(false);
     if (signUpError) {
-      setError(signUpError.message);
+      setError(mapSignupError(signUpError.message, t));
       return;
     }
     setEmailConfirm(true);
   };
 
+  const handleResend = async () => {
+    setIsResending(true);
+    const supabase = createClient();
+    await supabase.auth.resend({ type: 'signup', email });
+    setIsResending(false);
+    setResent(true);
+    setTimeout(() => setResent(false), 4000);
+  };
+
   if (emailConfirm) {
     return (
-      <div style={{
-        padding: '16px 20px', borderRadius: 'var(--radius)',
-        background: 'var(--success-bg)',
-        border: '1px solid color-mix(in oklch, var(--success) 30%, transparent)',
-        color: 'var(--success)', fontSize: 13.5, textAlign: 'center', lineHeight: 1.6,
-      }}>
-        {t('checkEmail')}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{
+          padding: '16px 20px', borderRadius: 'var(--radius)',
+          background: 'var(--success-bg)',
+          border: '1px solid color-mix(in oklch, var(--success) 30%, transparent)',
+          color: 'var(--success)', fontSize: 13.5, textAlign: 'center', lineHeight: 1.6,
+        }}>
+          ✓ {t('checkEmail')}
+        </div>
+
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-3)' }}>
+          {t('checkEmailResend')}{' '}
+          <button
+            onClick={handleResend}
+            disabled={isResending || resent}
+            style={{
+              background: 'none', border: 'none', cursor: (isResending || resent) ? 'default' : 'pointer',
+              color: resent ? 'var(--success)' : 'var(--accent)', fontSize: 13,
+              fontFamily: 'var(--font)', padding: 0, textDecoration: 'underline',
+              opacity: isResending ? 0.6 : 1,
+            }}
+          >
+            {resent ? `✓ ${t('resendEmailSent')}` : isResending ? t('resendEmailSending') : t('resendEmail')}
+          </button>
+        </div>
+
+        <button
+          onClick={() => setEmailConfirm(false)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-3)', fontSize: 13, fontFamily: 'var(--font)',
+            textDecoration: 'underline',
+          }}
+        >
+          ← {t('correctEmail')}
+        </button>
       </div>
     );
   }
