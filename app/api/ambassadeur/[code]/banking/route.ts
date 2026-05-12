@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
 import { verifyCookieValue } from '../auth/route';
+import { sendAmbassadorBankingConfirmation } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
@@ -154,6 +155,11 @@ export async function POST(
     console.error('ambassador banking db update failed', dbErr);
     return NextResponse.json({ error: 'Erreur enregistrement' }, { status: 500 });
   }
+
+  await sendAmbassadorBankingConfirmation({
+    to: email,
+    firstName,
+  }).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

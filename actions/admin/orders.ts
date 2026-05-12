@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 import { sendOrderShipped, sendOrderDelivered } from '@/lib/email';
+import { stripe } from '@/lib/stripe/client';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -151,17 +152,49 @@ export async function markOrderShipped(
   await logAdminAction('orders.mark_shipped', { orderId });
 
   if (order) {
-    getGroupAdminEmail(order.group_id).then((contact) => {
-      if (!contact) return;
-      sendOrderShipped({
-        to: contact.email,
-        pack: order.pack,
-        quantity: order.quantity,
-        orderId: order.id,
-        trackingNumber: trackingNumber ?? null,
-        locale: contact.locale,
-      }).catch(() => {});
-    }).catch(() => {});
+    (async () => {
+      try {
+        const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
+        let to: string | null = null;
+        let locale = 'fr';
+        let onboardingUrl: string | null = null;
+
+        const adminContact = await getGroupAdminEmail(order.group_id);
+        if (adminContact) {
+          to = adminContact.email;
+          locale = adminContact.locale;
+          onboardingUrl = `${base}/dashboard`;
+        } else {
+          // Express checkout group — retrieve customer email from Stripe
+          const service = createServiceClient();
+          const { data: grp } = await service
+            .from('groups')
+            .select('stripe_customer_id')
+            .eq('id', order.group_id)
+            .single();
+
+          if (grp?.stripe_customer_id) {
+            const customer = await stripe.customers.retrieve(grp.stripe_customer_id);
+            if (!customer.deleted && customer.email) {
+              to = customer.email;
+              onboardingUrl = `${base}/fr/onboarding?group=${order.group_id}`;
+            }
+          }
+        }
+
+        if (to) {
+          await sendOrderShipped({
+            to,
+            pack: order.pack,
+            quantity: order.quantity,
+            orderId: order.id,
+            trackingNumber: trackingNumber ?? null,
+            locale,
+            onboardingUrl,
+          });
+        }
+      } catch { /* never break the action */ }
+    })();
   }
 
   return { ok: true, data: null };

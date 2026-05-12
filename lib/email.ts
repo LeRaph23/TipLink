@@ -201,10 +201,11 @@ export async function sendOrderShipped(opts: {
   orderId: string;
   trackingNumber?: string | null;
   locale?: string;
+  onboardingUrl?: string | null;
 }): Promise<void> {
   if (!resend) return;
 
-  const { to, pack, quantity, orderId, trackingNumber, locale = 'fr' } = opts;
+  const { to, pack, quantity, orderId, trackingNumber, locale = 'fr', onboardingUrl } = opts;
   const isFr = locale === 'fr';
   const shortRef = orderId.slice(0, 8).toUpperCase();
   const label = packLabel(pack, locale);
@@ -226,6 +227,24 @@ export async function sendOrderShipped(opts: {
   const footer = isFr
     ? 'Questions ? Répondez à cet email ou écrivez à support@digitip.app.'
     : 'Questions? Reply to this email or write to support@digitip.app.';
+
+  const onboardingSection = onboardingUrl
+    ? `<tr><td style="padding:0 32px 24px">
+        <div style="background:#1a1a2e;border:1px solid #3b3b6e;border-radius:12px;padding:20px 24px">
+          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px">
+            ${isFr ? 'Vous voulez prendre de l\'avance ?' : 'Want a head start?'}
+          </div>
+          <div style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.6">
+            ${isFr
+              ? 'Vous pouvez configurer votre espace Digitip maintenant — ou attendre la réception de vos SmartTags et simplement scanner l\'un des QR codes. Les deux fonctionnent parfaitement.'
+              : 'You can set up your Digitip space now — or wait until your SmartTags arrive and simply scan one of the QR codes. Both work perfectly.'}
+          </div>
+          <a href="${onboardingUrl}" style="display:inline-block;padding:10px 20px;background:#fff;color:#000;font-size:13px;font-weight:600;border-radius:8px;text-decoration:none">
+            ${isFr ? 'Configurer maintenant (optionnel) →' : 'Set up now (optional) →'}
+          </a>
+        </div>
+      </td></tr>`
+    : '';
 
   await resend.emails.send({
     from: FROM,
@@ -252,8 +271,230 @@ export async function sendOrderShipped(opts: {
         ${infoRow(estDelivery, estDays)}
       </table>
     </td></tr>
+    ${onboardingSection}
     <tr><td style="padding:0 32px 32px">
       <p style="font-size:12px;color:#444;margin:0;line-height:1.6">${footer}</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Payment failed (tipper) ──────────────────────────────────────────────────
+
+export async function sendPaymentFailed(opts: {
+  to: string;
+  amount: number;
+  currency: string;
+  staffName: string;
+  establishmentName: string;
+}): Promise<void> {
+  if (!resend) return;
+
+  const { to, amount, currency, staffName, establishmentName } = opts;
+  const fmt = new Intl.NumberFormat('en', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 });
+  const formatted = fmt.format(amount / 100);
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Your tip payment did not go through — ${formatted}`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Payment issue</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Payment failed</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:10px">We couldn't process your tip</div>
+      <div style="font-size:14px;color:#888">Your tip of <strong style="color:#ccc">${formatted}</strong> to <strong style="color:#ccc">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} was not completed.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:13px;color:#888;margin:0;line-height:1.6">No charge was made to your card. If you'd like to try again, simply scan the NFC tag or visit the tip page again.</p>
+      <p style="font-size:12px;color:#444;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Tip refunded (tipper) ────────────────────────────────────────────────────
+
+export async function sendTipRefunded(opts: {
+  to: string;
+  amount: number;
+  currency: string;
+  staffName?: string;
+  establishmentName?: string;
+}): Promise<void> {
+  if (!resend) return;
+
+  const { to, amount, currency, staffName, establishmentName } = opts;
+  const fmt = new Intl.NumberFormat('en', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 });
+  const formatted = fmt.format(amount / 100);
+  const contextLine = staffName
+    ? `Your tip to <strong style="color:#ccc">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} has been refunded.`
+    : 'Your tip has been refunded.';
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Your tip has been refunded — ${formatted}`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Refund confirmation</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#f59e0b22;color:#fbbf24;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Refunded</div>
+      <div style="font-size:40px;font-weight:800;letter-spacing:-0.04em;color:#fff;margin-bottom:4px">${formatted}</div>
+      <div style="font-size:14px;color:#888">${contextLine}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:13px;color:#888;margin:0;line-height:1.6">The refunded amount will appear on your original payment method within 5–10 business days, depending on your bank.</p>
+      <p style="font-size:12px;color:#444;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Ambassador recruitment — applicant confirmation ──────────────────────────
+
+export async function sendAmbassadorApplicationConfirmation(opts: {
+  to: string;
+  firstName: string;
+}): Promise<void> {
+  if (!resend) return;
+
+  const { to, firstName } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Candidature ambassadeur reçue — Digitip`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Candidature reçue</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:10px">Merci ${firstName} !</div>
+      <div style="font-size:14px;color:#888">Ta candidature au programme ambassadeur Digitip a bien été reçue.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Notre équipe l'examine et revient vers toi très prochainement. En attendant, n'hésite pas à répondre à cet email si tu as des questions.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Ambassador recruitment — internal admin alert ────────────────────────────
+
+export async function sendAmbassadorApplicationAdmin(opts: {
+  firstName: string;
+  lastName: string;
+  city: string;
+  phone: string;
+  email: string;
+  siret: string;
+  notes?: string | null;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (!resend || !adminEmail) return;
+
+  const { firstName, lastName, city, phone, email, siret, notes } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    replyTo: email,
+    subject: `Nouvelle candidature ambassadeur — ${firstName} ${lastName}`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip Admin</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Nouvelle candidature ambassadeur</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:4px">${firstName} ${lastName}</div>
+      <div style="font-size:14px;color:#888">${city}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+        ${infoRow('Email', `<a href="mailto:${email}" style="color:#60a5fa;text-decoration:none">${email}</a>`)}
+        ${infoRow('Téléphone', phone)}
+        ${infoRow('Ville', city)}
+        ${infoRow('SIRET', `<span style="font-family:monospace">${siret}</span>`)}
+        ${notes ? infoRow('Notes', notes) : ''}
+      </table>
+    </td></tr>`),
+  });
+}
+
+// ─── Ambassador banking — setup confirmation ──────────────────────────────────
+
+export async function sendAmbassadorBankingConfirmation(opts: {
+  to: string;
+  firstName: string;
+}): Promise<void> {
+  if (!resend) return;
+
+  const { to, firstName } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Compte bancaire configuré — Digitip Ambassadeur`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Compte configuré</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:10px">Tout est prêt, ${firstName} !</div>
+      <div style="font-size:14px;color:#888">Ton compte bancaire Stripe a bien été enregistré. Tu recevras tes commissions directement sur ton IBAN lors de chaque virement.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Les virements sont déclenchés manuellement par notre équipe après validation. Tu seras notifié par email à chaque paiement.</p>
+      <p style="font-size:12px;color:#444;margin:16px 0 0;line-height:1.6">Questions ? Réponds à cet email ou écris à support@digitip.app.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Admin — new SmartTag order alert ─────────────────────────────────────────
+
+export async function sendAdminNewOrder(opts: {
+  customerName: string;
+  customerEmail?: string | null;
+  pack: string;
+  quantity: number;
+  orderId: string;
+  promoCode?: string | null;
+  locale: string;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (!resend || !adminEmail) return;
+
+  const { customerName, customerEmail, pack, quantity, orderId, promoCode, locale } = opts;
+  const shortRef = orderId.slice(0, 8).toUpperCase();
+  const label = packLabel(pack, locale);
+
+  await resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    ...(customerEmail ? { replyTo: customerEmail } : {}),
+    subject: `Nouvelle commande — ${label} · ${customerName}`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip Admin</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Nouvelle commande SmartTag</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:4px">${customerName}</div>
+      ${customerEmail ? `<div style="font-size:14px;color:#888">${customerEmail}</div>` : ''}
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+        ${infoRow('Pack', label)}
+        ${infoRow('Quantité', String(quantity))}
+        ${infoRow('Référence', `<span style="font-family:monospace">${shortRef}</span>`)}
+        ${promoCode ? infoRow('Code promo', promoCode) : ''}
+      </table>
     </td></tr>`),
   });
 }
