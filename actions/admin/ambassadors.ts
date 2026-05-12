@@ -23,30 +23,41 @@ async function requireSuperAdminUser() {
 export type CreateAmbassadorInput = {
   name: string;
   promoCodeId: string;
-  pin: string;
   referrerAmbassadorId?: string | null;
 };
 
+export type CreateAmbassadorResult =
+  | { ok: true; id: string; setupToken: string; setupUrl: string; expiresAt: string }
+  | { ok: false; error: string };
+
+const SETUP_TOKEN_TTL_DAYS = 14;
+
+function generateSetupToken(): string {
+  // URL-safe 32-byte token (43 chars base64url).
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+function buildSetupUrl(promoCode: string, token: string): string {
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://digitip.app').replace(/\/$/, '');
+  return `${base}/fr/ambassadeur/${promoCode.toLowerCase()}?setup=${encodeURIComponent(token)}`;
+}
+
 export async function createAmbassador(
   input: CreateAmbassadorInput
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+): Promise<CreateAmbassadorResult> {
   try {
-    const user = await requireSuperAdminUser();
+    await requireSuperAdminUser();
     const service = createServiceClient();
 
-    const { name, promoCodeId, pin, referrerAmbassadorId } = input;
+    const { name, promoCodeId, referrerAmbassadorId } = input;
 
     if (!name || name.trim().length < 2) {
       return { ok: false, error: 'Nom trop court (min 2 caractères).' };
-    }
-    if (!/^\d{4}$/.test(pin)) {
-      return { ok: false, error: 'Le PIN doit contenir exactement 4 chiffres.' };
     }
     if (!promoCodeId) {
       return { ok: false, error: 'Code promo requis.' };
     }
 
-    // Verify promo code exists and is not already linked to an ambassador
     const { data: promoCode } = await service
       .from('promo_codes')
       .select('id, code')
@@ -69,8 +80,8 @@ export async function createAmbassador(
     }
 
     const id = crypto.randomUUID();
-    const pinSalt = crypto.randomBytes(32).toString('hex');
-    const pinHash = crypto.scryptSync(pin, pinSalt, 64).toString('hex');
+    const setupToken = generateSetupToken();
+    const expiresAt = new Date(Date.now() + SETUP_TOKEN_TTL_DAYS * 86400000).toISOString();
     const referralCode = await generateUniqueReferralCode(service, name.trim());
 
     const { data: saved, error: dbErr } = await service
@@ -79,11 +90,13 @@ export async function createAmbassador(
         id,
         name: name.trim(),
         promo_code_id: promoCodeId,
-        pin_hash: pinHash,
-        pin_salt: pinSalt,
+        pin_hash: null,
+        pin_salt: null,
         is_active: true,
         referral_code: referralCode,
         referrer_ambassador_id: referrerAmbassadorId ?? null,
+        pin_setup_token: setupToken,
+        pin_setup_expires_at: expiresAt,
       })
       .select('id')
       .single();
@@ -98,10 +111,90 @@ export async function createAmbassador(
       promoCode: promoCode.code,
     });
 
-    return { ok: true, id: saved.id };
+    return {
+      ok: true,
+      id: saved.id,
+      setupToken,
+      setupUrl: buildSetupUrl(promoCode.code, setupToken),
+      expiresAt,
+    };
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erreur inconnue';
     return { ok: false, error: msg };
+  }
+}
+
+export async function regenerateAmbassadorSetupToken(
+  id: string
+): Promise<{ ok: true; setupUrl: string; expiresAt: string } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: amb } = await service
+      .from('ambassadors')
+      .select('id, name, pin_hash, promo_codes(code)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!amb) return { ok: false, error: 'Ambassadeur introuvable.' };
+    if (amb.pin_hash) return { ok: false, error: 'L\'ambassadeur a déjà défini son PIN. Utilise "Réinitialiser PIN".' };
+
+    const promoCode = (amb.promo_codes as { code?: string } | { code?: string }[] | null);
+    const code = Array.isArray(promoCode) ? promoCode[0]?.code : promoCode?.code;
+    if (!code) return { ok: false, error: 'Code promo introuvable.' };
+
+    const setupToken = generateSetupToken();
+    const expiresAt = new Date(Date.now() + SETUP_TOKEN_TTL_DAYS * 86400000).toISOString();
+
+    const { error } = await service
+      .from('ambassadors')
+      .update({ pin_setup_token: setupToken, pin_setup_expires_at: expiresAt })
+      .eq('id', id);
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('ambassadors.regenerate_setup_token', { id });
+    return { ok: true, setupUrl: buildSetupUrl(code, setupToken), expiresAt };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+export async function deleteAmbassador(
+  id: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: amb } = await service
+      .from('ambassadors')
+      .select('id, name')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!amb) return { ok: false, error: 'Ambassadeur introuvable.' };
+
+    const { count: salesCount } = await service
+      .from('ambassador_sales')
+      .select('id', { count: 'exact', head: true })
+      .eq('ambassador_id', id);
+
+    if ((salesCount ?? 0) > 0) {
+      return {
+        ok: false,
+        error: `Suppression impossible : ${salesCount} vente(s) enregistrée(s). Désactive plutôt l'ambassadeur pour préserver l'historique.`,
+      };
+    }
+
+    const { error } = await service.from('ambassadors').delete().eq('id', id);
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('ambassadors.delete', { id, name: amb.name });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }
 }
 

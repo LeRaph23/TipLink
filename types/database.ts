@@ -548,12 +548,14 @@ export type Database = {
           referrer_ambassador_id: string | null;
           referral_code: string | null;
           referral_validated_at: string | null;
+          pin_setup_token: string | null;
+          pin_setup_expires_at: string | null;
         };
         Insert: {
           id?: string;
           name: string;
           promo_code_id: string;
-          pin_hash: string;
+          pin_hash?: string | null;
           pin_salt?: string | null;
           is_active?: boolean;
           created_at?: string;
@@ -566,12 +568,14 @@ export type Database = {
           referrer_ambassador_id?: string | null;
           referral_code?: string | null;
           referral_validated_at?: string | null;
+          pin_setup_token?: string | null;
+          pin_setup_expires_at?: string | null;
         };
         Update: {
           id?: string;
           name?: string;
           promo_code_id?: string;
-          pin_hash?: string;
+          pin_hash?: string | null;
           pin_salt?: string | null;
           is_active?: boolean;
           created_at?: string;
@@ -584,6 +588,8 @@ export type Database = {
           referrer_ambassador_id?: string | null;
           referral_code?: string | null;
           referral_validated_at?: string | null;
+          pin_setup_token?: string | null;
+          pin_setup_expires_at?: string | null;
         };
         Relationships: [
           {

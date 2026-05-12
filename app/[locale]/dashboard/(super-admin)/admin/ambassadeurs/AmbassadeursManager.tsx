@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { createAmbassador, toggleAmbassador, resetAmbassadorPin } from '@/actions/admin/ambassadors';
+import {
+  createAmbassador,
+  toggleAmbassador,
+  resetAmbassadorPin,
+  deleteAmbassador,
+  regenerateAmbassadorSetupToken,
+} from '@/actions/admin/ambassadors';
 
 interface Ambassador {
   id: string;
@@ -35,40 +41,43 @@ export function AmbassadeursManager({
   const [ambassadors, setAmbassadors] = useState(initialAmbassadors);
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [createdSetupUrl, setCreatedSetupUrl] = useState<{ name: string; url: string; expiresAt: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // New ambassador form state
+  // Create form
   const [name, setName] = useState('');
   const [promoCodeId, setPromoCodeId] = useState('');
-  const [pin, setPin] = useState('');
-  const [pinConfirm, setPinConfirm] = useState('');
 
   // Reset PIN modal state
   const [resetTarget, setResetTarget] = useState<string | null>(null);
   const [resetPin, setResetPin] = useState('');
   const [resetError, setResetError] = useState<string | null>(null);
 
+  // Delete confirmation modal
+  const [deleteTarget, setDeleteTarget] = useState<Ambassador | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Regenerate setup token modal
+  const [regenResult, setRegenResult] = useState<{ name: string; url: string; expiresAt: string } | null>(null);
+
   const handleCreate = () => {
     setFormError(null);
-    setFormSuccess(null);
+    setCreatedSetupUrl(null);
 
     if (!name.trim()) { setFormError('Nom requis.'); return; }
     if (!promoCodeId) { setFormError('Sélectionne un code promo.'); return; }
-    if (!/^\d{4}$/.test(pin)) { setFormError('PIN : exactement 4 chiffres.'); return; }
-    if (pin !== pinConfirm) { setFormError('Les PINs ne correspondent pas.'); return; }
 
+    const ambName = name.trim();
     startTransition(async () => {
-      const result = await createAmbassador({ name: name.trim(), promoCodeId, pin });
+      const result = await createAmbassador({ name: ambName, promoCodeId });
       if (!result.ok) {
         setFormError(result.error);
         return;
       }
-      // Optimistic update: add placeholder row (page will reload on next visit)
       const promoCode = availablePromoCodes.find(p => p.id === promoCodeId);
       setAmbassadors(prev => [{
         id: result.id,
-        name: name.trim(),
+        name: ambName,
         is_active: true,
         created_at: new Date().toISOString(),
         promoCodeId,
@@ -77,8 +86,8 @@ export function AmbassadeursManager({
         salesCount: 0,
         totalCommission: 0,
       }, ...prev]);
-      setFormSuccess(`Ambassadeur "${name.trim()}" créé avec succès !`);
-      setName(''); setPromoCodeId(''); setPin(''); setPinConfirm('');
+      setCreatedSetupUrl({ name: ambName, url: result.setupUrl, expiresAt: result.expiresAt });
+      setName(''); setPromoCodeId('');
       setShowForm(false);
     });
   };
@@ -105,34 +114,57 @@ export function AmbassadeursManager({
     });
   };
 
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    const targetId = deleteTarget.id;
+    startTransition(async () => {
+      const result = await deleteAmbassador(targetId);
+      if (!result.ok) { setDeleteError(result.error); return; }
+      setAmbassadors(prev => prev.filter(a => a.id !== targetId));
+      setDeleteTarget(null);
+    });
+  };
+
+  const handleRegenerateToken = (id: string, ambName: string) => {
+    startTransition(async () => {
+      const result = await regenerateAmbassadorSetupToken(id);
+      if (!result.ok) { alert(result.error); return; }
+      setRegenResult({ name: ambName, url: result.setupUrl, expiresAt: result.expiresAt });
+    });
+  };
+
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 8,
     border: '1px solid var(--border)', background: 'var(--surface)',
     color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box',
   };
-
   const btnPrimary: React.CSSProperties = {
     padding: '9px 20px', borderRadius: 8, border: 'none',
     background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600,
     cursor: 'pointer',
   };
-
   const btnSecondary: React.CSSProperties = {
     padding: '7px 14px', borderRadius: 8,
     border: '1px solid var(--border)', background: 'transparent',
     color: 'var(--text-3)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
   };
+  const btnDanger: React.CSSProperties = {
+    ...btnSecondary,
+    color: 'var(--error, #ef4444)',
+    borderColor: 'var(--error, #ef4444)',
+  };
 
   return (
     <div>
-      {/* Create form toggle */}
+      {createdSetupUrl && (
+        <SetupUrlBanner data={createdSetupUrl} onDismiss={() => setCreatedSetupUrl(null)} />
+      )}
+
       <div style={{ marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
-        <button style={btnPrimary} onClick={() => { setShowForm(v => !v); setFormError(null); setFormSuccess(null); }}>
+        <button style={btnPrimary} onClick={() => { setShowForm(v => !v); setFormError(null); }}>
           {showForm ? 'Annuler' : '+ Nouvel ambassadeur'}
         </button>
-        {formSuccess && (
-          <span style={{ fontSize: 13, color: 'var(--success)', fontWeight: 500 }}>{formSuccess}</span>
-        )}
       </div>
 
       {showForm && (
@@ -166,29 +198,16 @@ export function AmbassadeursManager({
                 </p>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>PIN (4 chiffres)</label>
-              <input
-                style={inputStyle} type="password" inputMode="numeric" maxLength={4}
-                value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="••••"
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>Confirmer le PIN</label>
-              <input
-                style={inputStyle} type="password" inputMode="numeric" maxLength={4}
-                value={pinConfirm} onChange={e => setPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="••••"
-              />
-            </div>
           </div>
-          <div style={{ marginTop: 6 }}>
+          <div style={{ marginTop: 10 }}>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 4px' }}>
               Commissions : <strong>25 € / vente Solo</strong> · <strong>35 € / vente Duo</strong>
             </p>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 4px' }}>
+              Bonus hebdo : 5 ventes +15€ · 8 ventes +30€ · 10 ventes +50€ (non cumulatifs)
+            </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0 }}>
-              Bonus hebdo : 5 ventes +25€ · 8 ventes +50€ · 10 ventes +100€ (non cumulatifs)
+              <strong>Le PIN sera défini par l&apos;ambassadeur</strong> via le lien d&apos;activation généré à la création.
             </p>
           </div>
           {formError && (
@@ -205,7 +224,6 @@ export function AmbassadeursManager({
         </div>
       )}
 
-      {/* Ambassadors table */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
         {ambassadors.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -258,7 +276,7 @@ export function AmbassadeursManager({
                     </span>
                   </td>
                   <td style={{ padding: '11px 14px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <button
                         style={btnSecondary}
                         onClick={() => handleToggle(a.id, a.is_active)}
@@ -272,6 +290,20 @@ export function AmbassadeursManager({
                       >
                         PIN
                       </button>
+                      <button
+                        style={btnSecondary}
+                        onClick={() => handleRegenerateToken(a.id, a.name)}
+                        disabled={isPending}
+                        title="Génère un nouveau lien d'activation (utile si l'ambassadeur n'a pas encore défini son PIN)"
+                      >
+                        🔗 Lien
+                      </button>
+                      <button
+                        style={btnDanger}
+                        onClick={() => { setDeleteTarget(a); setDeleteError(null); }}
+                      >
+                        Supprimer
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -281,7 +313,10 @@ export function AmbassadeursManager({
         )}
       </div>
 
-      {/* Reset PIN modal */}
+      {regenResult && (
+        <SetupUrlModal data={regenResult} onClose={() => setRegenResult(null)} />
+      )}
+
       {resetTarget && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
@@ -314,6 +349,106 @@ export function AmbassadeursManager({
           </div>
         </div>
       )}
+
+      {deleteTarget && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }}>
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)', padding: 24, width: 380,
+          }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 10px', color: 'var(--error, #ef4444)' }}>
+              Supprimer définitivement
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 14, lineHeight: 1.5 }}>
+              Supprimer <strong>{deleteTarget.name}</strong> (code <code>{deleteTarget.promoCode}</code>) ?
+              Cette action est <strong>irréversible</strong> et efface aussi ses payouts, parrainages, contrats et logs email.
+              {deleteTarget.salesCount > 0 && (
+                <span style={{ color: 'var(--warning)', display: 'block', marginTop: 8 }}>
+                  ⚠️ Cet ambassadeur a {deleteTarget.salesCount} vente(s). La suppression sera refusée — désactive-le plutôt.
+                </span>
+              )}
+            </p>
+            {deleteError && (
+              <div style={{ marginTop: 8, color: 'var(--error)', fontSize: 12 }}>{deleteError}</div>
+            )}
+            <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+              <button style={{ ...btnPrimary, background: 'var(--error, #ef4444)' }} onClick={handleDelete} disabled={isPending}>
+                {isPending ? '…' : 'Supprimer définitivement'}
+              </button>
+              <button style={btnSecondary} onClick={() => setDeleteTarget(null)}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SetupUrlBanner({ data, onDismiss }: { data: { name: string; url: string; expiresAt: string }; onDismiss: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(data.url); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
+  };
+  return (
+    <div style={{
+      background: 'var(--success-bg)', border: '1px solid var(--success)',
+      borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 20,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>
+            ✓ {data.name} créé. Envoie-lui ce lien d&apos;activation :
+          </div>
+          <code style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', wordBreak: 'break-all', background: 'var(--surface-2)', padding: '6px 8px', borderRadius: 4, marginTop: 6 }}>
+            {data.url}
+          </code>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>
+            Le lien expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}.
+            L&apos;ambassadeur définira lui-même son PIN à la première connexion.
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button onClick={copy} style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--success)', borderRadius: 6, background: 'transparent', color: 'var(--success)', cursor: 'pointer', fontWeight: 600 }}>
+            {copied ? '✓ Copié' : 'Copier'}
+          </button>
+          <button onClick={onDismiss} style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'transparent', color: 'var(--text-3)', cursor: 'pointer' }}>
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SetupUrlModal({ data, onClose }: { data: { name: string; url: string; expiresAt: string }; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(data.url); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
+  };
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24, width: 460 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 10px', color: 'var(--text)' }}>
+          Nouveau lien d&apos;activation pour {data.name}
+        </h3>
+        <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>
+          L&apos;ancien lien est invalidé. Envoie-lui ce nouveau lien (expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}) :
+        </p>
+        <code style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', wordBreak: 'break-all', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: 6 }}>
+          {data.url}
+        </code>
+        <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+          <button onClick={copy} style={{ padding: '8px 16px', fontSize: 13, border: 'none', borderRadius: 6, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+            {copied ? '✓ Copié' : 'Copier le lien'}
+          </button>
+          <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, background: 'transparent', color: 'var(--text-3)', cursor: 'pointer' }}>
+            Fermer
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

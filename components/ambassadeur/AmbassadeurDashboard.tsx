@@ -5,7 +5,7 @@ import { AmbassadeurPayoutPanel } from './AmbassadeurBanking';
 import { AmbassadeurContracts } from './AmbassadeurContracts';
 import { AmbassadeurReferralPanel } from './AmbassadeurReferralPanel';
 
-type AuthState = 'loading' | 'pin-required' | 'authenticated';
+type AuthState = 'loading' | 'pin-required' | 'pin-setup' | 'pin-setup-invalid' | 'authenticated';
 
 interface TierInfo {
   id: string;
@@ -237,7 +237,30 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       .catch(() => {});
   }, [code]);
 
+  const [setupToken, setSetupToken] = useState<string | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
+
   useEffect(() => {
+    const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
+    const tok = url?.searchParams.get('setup');
+
+    if (tok) {
+      setSetupToken(tok);
+      fetch(`/api/ambassadeur/${encodeURIComponent(code)}/set-pin?token=${encodeURIComponent(tok)}`)
+        .then(r => r.json().then(d => ({ status: r.status, d })))
+        .then(({ status, d }) => {
+          if (status === 200 && d.valid) {
+            setAmbassadorName(d.name ?? '');
+            setAuthState('pin-setup');
+          } else {
+            setSetupError(d.error ?? 'Lien invalide');
+            setAuthState('pin-setup-invalid');
+          }
+        })
+        .catch(() => { setSetupError('Erreur réseau'); setAuthState('pin-setup-invalid'); });
+      return;
+    }
+
     fetch(`/api/ambassadeur/${encodeURIComponent(code)}/auth`)
       .then(r => r.json())
       .then(data => {
@@ -250,6 +273,36 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       })
       .catch(() => setAuthState('pin-required'));
   }, [code]);
+
+  const handleSetupPin = useCallback(async (pin: string) => {
+    if (!setupToken) return;
+    setPinLoading(true);
+    setPinError(null);
+    try {
+      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/set-pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, token: setupToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPinError(data.error ?? 'Échec de la configuration');
+      } else {
+        // Strip the ?setup= param from the URL and switch to authenticated state
+        if (typeof window !== 'undefined') {
+          const u = new URL(window.location.href);
+          u.searchParams.delete('setup');
+          window.history.replaceState({}, '', u.pathname + (u.search ? '?' + u.searchParams.toString() : ''));
+        }
+        setAmbassadorName(data.name ?? '');
+        setAuthState('authenticated');
+      }
+    } catch {
+      setPinError('Erreur réseau. Réessaie.');
+    } finally {
+      setPinLoading(false);
+    }
+  }, [code, setupToken]);
 
   useEffect(() => {
     if (authState !== 'authenticated') return;
@@ -298,6 +351,56 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
           animation: 'spin 0.7s linear infinite',
         }} />
+      </div>
+    );
+  }
+
+  // ── PIN setup (first login via admin link) ───────────────────────────────────
+  if (authState === 'pin-setup') {
+    return (
+      <div style={{
+        minHeight: '100dvh', background: 'var(--bg)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '24px 20px', fontFamily: 'var(--font)',
+      }}>
+        <div style={{ width: '100%', maxWidth: 360 }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent)', letterSpacing: '-0.03em', marginBottom: 6 }}>
+              DigiTip
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+              Première connexion · {code.toUpperCase()}
+            </div>
+          </div>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '28px 24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+                Bienvenue {ambassadorName} 👋
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                Choisis ton <strong>PIN à 4 chiffres</strong>. Tu l&apos;utiliseras à chaque connexion — note-le quelque part.
+              </div>
+            </div>
+            <PinInput onSubmit={handleSetupPin} error={pinError} loading={pinLoading} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authState === 'pin-setup-invalid') {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', fontFamily: 'var(--font)' }}>
+        <div style={{ maxWidth: 360, textAlign: 'center', padding: 28, background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+            Lien d&apos;activation invalide
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
+            {setupError ?? 'Ce lien n\'est plus valable.'} Contacte Digitip pour en recevoir un nouveau.
+          </div>
+        </div>
       </div>
     );
   }

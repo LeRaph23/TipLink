@@ -118,6 +118,13 @@ export async function POST(
     return NextResponse.json({ error: 'Code introuvable' }, { status: 404 });
   }
 
+  if (!ambassador.pin_hash) {
+    return NextResponse.json(
+      { error: 'PIN non défini. Utilise le lien d\'activation reçu de Digitip.', needsSetup: true },
+      { status: 409 }
+    );
+  }
+
   // Derive the salt: use stored random salt when available, fall back to
   // ambassador.id for rows created before the pin_salt migration.
   const salt = ambassador.pin_salt ?? ambassador.id;
