@@ -150,8 +150,7 @@
   "orderSuccess": {
     "title": "Order confirmed!",
     "body": "Thank you for your purchase. We hand-program your SmartTags and ship within 3 business days. You'll receive a confirmation by email.",
-    "nextStep": "Create your account to access your dashboard and track your tips.",
-    "ctaSignup": "Create my Digitip account",
+    "nextStep": "Check your email for the link to set up your space.",
     "ctaHome": "Back to home",
     "steps": {
       "s1": "Payment received",

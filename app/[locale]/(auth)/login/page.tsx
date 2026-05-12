@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
-import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LoginForm } from './LoginForm';
 
@@ -52,10 +51,6 @@ export default async function LoginPage({
           <LoginForm verified={verified} reset={reset} />
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-3)', marginTop: 18 }}>
-          {t('noAccount')}{' '}
-          <Link href="/signup" style={{ color: 'var(--accent)' }}>{t('createAccount')}</Link>
-        </p>
       </div>
     </main>
   );

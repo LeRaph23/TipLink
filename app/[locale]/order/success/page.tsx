@@ -63,27 +63,21 @@ export default async function OrderSuccessPage({
         </div>
 
         {/* CTA */}
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 20 }}>
+        <div style={{
+          padding: '16px 20px', borderRadius: 12,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 20,
+        }}>
           {t('nextStep')}
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <Link href="/signup" style={{
-            display: 'block', padding: '14px', borderRadius: 12,
-            background: '#E57A97', color: '#fff',
-            fontSize: 15, fontWeight: 700, textDecoration: 'none', textAlign: 'center',
-            boxShadow: '0 4px 20px rgba(229,122,151,0.30)',
-          }}>
-            {t('ctaSignup')}
-          </Link>
-          <Link href="/" style={{
-            display: 'block', padding: '12px',
-            borderRadius: 12, border: '1px solid var(--border)',
-            background: 'transparent', color: 'var(--text-2)',
-            fontSize: 14, fontWeight: 500, textDecoration: 'none', textAlign: 'center',
-          }}>
-            {t('ctaHome')}
-          </Link>
         </div>
+        <Link href="/" style={{
+          display: 'block', padding: '12px',
+          borderRadius: 12, border: '1px solid var(--border)',
+          background: 'transparent', color: 'var(--text-2)',
+          fontSize: 14, fontWeight: 500, textDecoration: 'none', textAlign: 'center',
+        }}>
+          {t('ctaHome')}
+        </Link>
       </div>
     </div>
   );

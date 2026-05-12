@@ -274,6 +274,11 @@ async function handleEvent(
           stripe_discount_id: expressDiscountId,
         }).select('id').single();
 
+        // Best-effort: auto-assign available unencoded tags from pool to this order
+        if (newOrder?.id) {
+          await autoAssignTagsToOrder(supabase, newOrder.id, quantity);
+        }
+
         // Ambassador attribution for express checkout
         if (newOrder?.id && expressPromoCode) {
           await attributeAmbassadorSale(
@@ -408,6 +413,12 @@ async function handleEvent(
           { onConflict: 'stripe_checkout_session_id' }
         ).select('id').single();
 
+      // Best-effort: auto-assign available tags from pool to this order
+      if (upsertedOrder?.id) {
+        const orderQty = quantity ?? (pack === 'solo' ? 1 : 2);
+        await autoAssignTagsToOrder(supabase, upsertedOrder.id, orderQty);
+      }
+
       // Send order confirmation email to the group admin
       if (upsertedOrder) {
         try {
@@ -489,6 +500,45 @@ async function handleEvent(
     default:
       // Unknown event types are logged but not errored
       break;
+  }
+}
+
+// ─── SmartTag auto-assignment ─────────────────────────────────────────────────
+
+// Picks `needed` unassigned tags from the pool and links them to the order.
+// Best-effort: silently skips if the pool is empty or partially full.
+async function autoAssignTagsToOrder(
+  supabase: ReturnType<typeof createServiceClient>,
+  orderId: string,
+  needed: number
+): Promise<void> {
+  try {
+    // Find IDs of tags already claimed by any order (to exclude them)
+    const { data: claimed } = await supabase
+      .from('smarttag_order_tags')
+      .select('sticker_id');
+
+    const claimedIds = (claimed ?? []).map((r) => r.sticker_id);
+
+    // Pick `needed` free tags
+    const query = supabase
+      .from('nfc_stickers')
+      .select('id')
+      .is('establishment_id', null)
+      .limit(needed);
+
+    const freeTagsQuery = claimedIds.length > 0
+      ? query.not('id', 'in', `(${claimedIds.join(',')})`)
+      : query;
+
+    const { data: freeTags } = await freeTagsQuery;
+    if (!freeTags?.length) return;
+
+    await supabase.from('smarttag_order_tags').insert(
+      freeTags.map((t) => ({ order_id: orderId, sticker_id: t.id }))
+    );
+  } catch {
+    // Never break the webhook — tag assignment is best-effort
   }
 }
 
