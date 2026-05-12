@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
-import { sendTipReceipt, sendOrderConfirmation } from '@/lib/email';
+import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -170,6 +170,26 @@ async function handleEvent(
         })
         .eq('id', transactionId)
         .eq('status', 'pending');
+
+      if (intent.receipt_email) {
+        const { data: txn } = await supabase
+          .from('transactions')
+          .select('amount, currency, staff_profiles(full_name, establishments(name))')
+          .eq('id', transactionId)
+          .single();
+
+        if (txn) {
+          const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
+          await sendPaymentFailed({
+            to: intent.receipt_email,
+            amount: intent.amount,
+            currency: intent.currency,
+            staffName: staff?.full_name ?? 'the staff member',
+            establishmentName: staff?.establishments?.name ?? '',
+          }).catch(() => {});
+        }
+      }
+
       break;
     }
 
@@ -187,6 +207,27 @@ async function handleEvent(
         .update({ status: 'refunded' })
         .eq('stripe_payment_intent_id', paymentIntentId)
         .eq('status', 'succeeded');
+
+      const customerEmail = charge.receipt_email ?? charge.billing_details.email;
+      if (customerEmail) {
+        const { data: txn } = await supabase
+          .from('transactions')
+          .select('amount, currency, staff_profiles(full_name, establishments(name))')
+          .eq('stripe_payment_intent_id', paymentIntentId)
+          .single();
+
+        if (txn) {
+          const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
+          await sendTipRefunded({
+            to: customerEmail,
+            amount: charge.amount_refunded,
+            currency: charge.currency,
+            staffName: staff?.full_name ?? undefined,
+            establishmentName: staff?.establishments?.name ?? undefined,
+          }).catch(() => {});
+        }
+      }
+
       break;
     }
 
@@ -318,6 +359,16 @@ async function handleEvent(
             setupUrl,
             locale: expressLocale,
           }).catch(() => {});
+
+          await sendAdminNewOrder({
+            customerName: legalName,
+            customerEmail: email,
+            pack,
+            quantity,
+            orderId: newOrder.id,
+            promoCode: expressPromoCode,
+            locale: expressLocale,
+          }).catch(() => {});
         }
 
         break;
@@ -443,6 +494,22 @@ async function handleEvent(
             }
           }
         } catch { /* non-blocking */ }
+      }
+
+      // Admin alert for new order
+      if (upsertedOrder?.id) {
+        const authLocale = session.locale?.startsWith('fr') ? 'fr' : 'en';
+        const authQty = quantity ?? (pack === 'solo' ? 1 : 2);
+        const customerName = session.customer_details?.name ?? session.customer_details?.email ?? 'Unknown';
+        await sendAdminNewOrder({
+          customerName,
+          customerEmail: session.customer_details?.email ?? undefined,
+          pack,
+          quantity: authQty,
+          orderId: upsertedOrder.id,
+          promoCode: promoCodeStr,
+          locale: authLocale,
+        }).catch(() => {});
       }
 
       // Ambassador attribution for authenticated checkout

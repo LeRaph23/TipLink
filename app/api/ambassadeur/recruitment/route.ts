@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createServiceClient } from '@/lib/supabase/service';
+import { sendAmbassadorApplicationConfirmation, sendAmbassadorApplicationAdmin } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
@@ -70,6 +71,23 @@ export async function POST(req: NextRequest) {
     console.error('recruitment insert failed', error);
     return NextResponse.json({ error: 'Erreur enregistrement' }, { status: 500 });
   }
+
+  const firstNameStr = String(firstName).trim();
+  await Promise.all([
+    sendAmbassadorApplicationConfirmation({
+      to: String(email).trim(),
+      firstName: firstNameStr,
+    }).catch(() => {}),
+    sendAmbassadorApplicationAdmin({
+      firstName: firstNameStr,
+      lastName: String(lastName).trim(),
+      city: String(city).trim(),
+      phone: String(phone).trim(),
+      email: String(email).trim(),
+      siret: siretClean,
+      notes: notes ? String(notes) : null,
+    }).catch(() => {}),
+  ]);
 
   return NextResponse.json({ ok: true });
 }
