@@ -40,11 +40,9 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
 
     const normalizedCode = code.trim().toUpperCase();
 
-    // Check uniqueness in our DB first
-    const { data: existing } = await service.from('promo_codes').select('id').eq('code', normalizedCode).maybeSingle();
+    const { data: existing } = await service.from('promo_codes').select('id').eq('code', normalizedCode).is('deleted_at', null).maybeSingle();
     if (existing) return { ok: false, error: `Le code "${normalizedCode}" existe déjà.` };
 
-    // Create Stripe coupon — used for direct application at checkout
     const coupon = await stripe.coupons.create({
       percent_off: percentageOff,
       duration: 'once',
@@ -53,8 +51,6 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
       ...(expiresAt ? { redeem_by: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
     });
 
-    // Create a Stripe Promotion Code so users can enter the code at Stripe checkout natively.
-    // Stripe SDK v22: coupon is nested under promotion.{ type, coupon }.
     const promotionCode = await stripe.promotionCodes.create({
       promotion: { type: 'coupon', coupon: coupon.id },
       code: normalizedCode,
@@ -63,7 +59,6 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
       ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
     });
 
-    // Save to our DB. stripe_promo_code_id stores the Stripe Promotion Code ID for toggling.
     const { data: saved, error: dbErr } = await service
       .from('promo_codes')
       .insert({
@@ -110,9 +105,6 @@ export async function togglePromoCode(
 
     if (!promo) return { ok: false, error: 'Code promo introuvable.' };
 
-    // Update Stripe Promotion Code active status (so Stripe-native promo code field respects it).
-    // Stripe coupons can't be toggled directly, but Promotion Codes can.
-    // Silently ignore if the stored ID is a legacy coupon ID (pre-fix codes).
     try {
       await stripe.promotionCodes.update(promo.stripe_promo_code_id, { active: isActive });
     } catch {
@@ -124,6 +116,150 @@ export async function togglePromoCode(
     await logAdminAction(isActive ? 'promo_codes.activate' : 'promo_codes.deactivate', {
       id, code: promo.code,
     });
+
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur inconnue';
+    return { ok: false, error: msg };
+  }
+}
+
+export type UpdatePromoCodeInput = {
+  code: string;
+  percentageOff: number;
+  maxRedemptions: number | null;
+  expiresAt: string | null;
+};
+
+export async function updatePromoCode(
+  id: string,
+  input: UpdatePromoCodeInput
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: promo } = await service
+      .from('promo_codes')
+      .select('*')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single();
+
+    if (!promo) return { ok: false, error: 'Code promo introuvable.' };
+
+    const { code, percentageOff, maxRedemptions, expiresAt } = input;
+    const normalizedCode = code.trim().toUpperCase();
+
+    if (!normalizedCode || normalizedCode.length < 2) return { ok: false, error: 'Code trop court (min 2 caractères).' };
+    if (percentageOff < 1 || percentageOff > 100) return { ok: false, error: 'Pourcentage invalide (1-100).' };
+
+    if (normalizedCode !== promo.code) {
+      const { data: existing } = await service
+        .from('promo_codes')
+        .select('id')
+        .eq('code', normalizedCode)
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (existing) return { ok: false, error: `Le code "${normalizedCode}" existe déjà.` };
+    }
+
+    let newStripeCouponId = promo.stripe_coupon_id;
+    let newStripePromoCodeId = promo.stripe_promo_code_id;
+
+    if (percentageOff !== promo.percentage_off) {
+      // Recreate Stripe resources when percentage changes
+      try {
+        await stripe.promotionCodes.update(promo.stripe_promo_code_id, { active: false });
+      } catch { /* ignore */ }
+
+      try {
+        await stripe.coupons.del(promo.stripe_coupon_id);
+      } catch { /* ignore */ }
+
+      const newCoupon = await stripe.coupons.create({
+        percent_off: percentageOff,
+        duration: 'once',
+        name: `TipLink ${percentageOff}% — ${normalizedCode}`,
+        ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
+        ...(expiresAt ? { redeem_by: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
+      });
+      newStripeCouponId = newCoupon.id;
+
+      // Create new Stripe promo code only if code string changed (old string is still "taken" in Stripe even when deactivated)
+      if (normalizedCode !== promo.code) {
+        try {
+          const newPromo = await stripe.promotionCodes.create({
+            promotion: { type: 'coupon', coupon: newCoupon.id },
+            code: normalizedCode,
+            active: promo.is_active,
+            ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
+            ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
+          });
+          newStripePromoCodeId = newPromo.id;
+        } catch { /* keep old reference */ }
+      }
+    } else if (normalizedCode !== promo.code) {
+      // Only code name changed — update Stripe coupon display name
+      try {
+        await stripe.coupons.update(promo.stripe_coupon_id, {
+          name: `TipLink ${percentageOff}% — ${normalizedCode}`,
+        });
+      } catch { /* ignore */ }
+    }
+
+    const { error: dbErr } = await service.from('promo_codes').update({
+      code: normalizedCode,
+      percentage_off: percentageOff,
+      max_redemptions: maxRedemptions ?? null,
+      expires_at: expiresAt ?? null,
+      stripe_coupon_id: newStripeCouponId,
+      stripe_promo_code_id: newStripePromoCodeId,
+    }).eq('id', id);
+
+    if (dbErr) return { ok: false, error: `Erreur DB: ${dbErr.message}` };
+
+    await logAdminAction('promo_codes.update', {
+      id, code: normalizedCode, percentageOff, maxRedemptions, expiresAt,
+    });
+
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur inconnue';
+    return { ok: false, error: msg };
+  }
+}
+
+export async function deletePromoCode(
+  id: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: promo } = await service
+      .from('promo_codes')
+      .select('stripe_coupon_id, stripe_promo_code_id, code, times_redeemed')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single();
+
+    if (!promo) return { ok: false, error: 'Code promo introuvable.' };
+
+    // Deactivate Stripe promotion code
+    try {
+      await stripe.promotionCodes.update(promo.stripe_promo_code_id, { active: false });
+    } catch { /* ignore */ }
+
+    // Delete Stripe coupon
+    try {
+      await stripe.coupons.del(promo.stripe_coupon_id);
+    } catch { /* ignore */ }
+
+    // Soft delete in DB
+    await service.from('promo_codes').update({ deleted_at: new Date().toISOString(), is_active: false }).eq('id', id);
+
+    await logAdminAction('promo_codes.delete', { id, code: promo.code, timesRedeemed: promo.times_redeemed });
 
     return { ok: true };
   } catch (e) {
