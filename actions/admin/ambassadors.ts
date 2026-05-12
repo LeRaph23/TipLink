@@ -190,6 +190,38 @@ export async function cancelAmbassadorPayout(
   }
 }
 
+export async function reviewRecruitmentApplication(
+  id: string,
+  status: 'accepted' | 'rejected'
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: app } = await service
+      .from('ambassador_recruitment_applications')
+      .select('id, status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!app) return { ok: false, error: 'Candidature introuvable.' };
+    if (app.status !== 'pending') return { ok: false, error: 'Cette candidature a déjà été traitée.' };
+
+    const { error } = await service
+      .from('ambassador_recruitment_applications')
+      .update({ status, reviewed_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction(`ambassadors.recruitment_${status}`, { id });
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
 export async function resetAmbassadorPin(
   id: string,
   newPin: string
