@@ -3,6 +3,7 @@ import { requireSuperAdmin } from '@/lib/auth/require-super-admin';
 import { createServiceClient } from '@/lib/supabase/service';
 import { AmbassadeursManager } from './AmbassadeursManager';
 import { AmbassadeursOverview, type AmbassadorOverviewRow, type PendingPayoutRow } from './AmbassadeursOverview';
+import { RecruitmentApplications, type RecruitmentApplicationRow } from './RecruitmentApplications';
 import {
   getWeekBounds,
   getMonthBounds,
@@ -153,6 +154,27 @@ export default async function AdminAmbassadeursPage({
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
+  // Recruitment applications
+  const { data: recruitmentRaw } = await service
+    .from('ambassador_recruitment_applications')
+    .select('id, first_name, last_name, city, phone, email, siret, no_fraud_pledge, notes, status, reviewed_at, created_at')
+    .order('created_at', { ascending: false });
+
+  const recruitmentApplications: RecruitmentApplicationRow[] = (recruitmentRaw ?? []).map((r) => ({
+    id: r.id,
+    first_name: r.first_name,
+    last_name: r.last_name,
+    city: r.city,
+    phone: r.phone,
+    email: r.email,
+    siret: r.siret,
+    no_fraud_pledge: r.no_fraud_pledge,
+    notes: r.notes,
+    status: r.status as 'pending' | 'accepted' | 'rejected',
+    reviewed_at: r.reviewed_at,
+    created_at: r.created_at,
+  }));
+
   // Pending payouts list (with ambassador name)
   const { data: pendingRowsRaw } = await service
     .from('ambassador_payouts')
@@ -188,6 +210,8 @@ export default async function AdminAmbassadeursPage({
         <StatCard label="Ventes totales" value={String(totalSales)} />
         <StatCard label="Commissions dues" value={`${(totalCommission / 100).toFixed(0)} €`} />
       </div>
+
+      <RecruitmentApplications applications={recruitmentApplications} />
 
       <AmbassadeursOverview
         rows={overviewRows}
