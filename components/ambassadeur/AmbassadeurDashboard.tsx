@@ -8,8 +8,6 @@ interface TierInfo {
   id: string;
   label: string;
   emoji: string;
-  color: string;
-  bg: string;
   threshold: number;
   bonus: number;
   unlocked: boolean;
@@ -36,73 +34,88 @@ interface StatsData {
   }>;
 }
 
+// Maps tier id → DigiTip CSS variables
+const TIER_VARS: Record<string, { color: string; bg: string; border: string }> = {
+  gold:   { color: 'var(--warning)',  bg: 'var(--warning-bg)',  border: 'var(--warning)' },
+  silver: { color: 'var(--neutral)',  bg: 'var(--neutral-bg)',  border: 'var(--neutral)' },
+  bronze: { color: 'var(--accent)',   bg: 'var(--accent-muted)', border: 'var(--accent-border)' },
+};
+
 function fmtEuros(cents: number) {
-  return `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}€`;
+  return `${Math.round(cents / 100)}€`;
+}
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = Math.min(100, max > 0 ? (value / max) * 100 : 0);
   return (
-    <div style={{
-      height: 8, borderRadius: 99, background: 'rgba(255,255,255,0.1)',
-      overflow: 'hidden', position: 'relative',
-    }}>
+    <div style={{ height: 6, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
       <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0,
+        height: '100%',
         width: `${pct}%`,
         background: color,
         borderRadius: 99,
         transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1)',
-        boxShadow: pct > 0 ? `0 0 8px ${color}88` : 'none',
       }} />
     </div>
   );
 }
 
 function TierCard({ tier, weekCount }: { tier: TierInfo; weekCount: number }) {
+  const vars = TIER_VARS[tier.id] ?? TIER_VARS.bronze;
   const remaining = Math.max(0, tier.threshold - weekCount);
+
   return (
     <div style={{
-      background: tier.unlocked ? tier.bg : 'rgba(255,255,255,0.04)',
-      border: `1px solid ${tier.unlocked ? tier.color + '60' : 'rgba(255,255,255,0.08)'}`,
-      borderRadius: 16, padding: '18px 16px', flex: 1,
-      transition: 'all 0.3s ease',
-      boxShadow: tier.unlocked ? `0 0 20px ${tier.bg}` : 'none',
+      background: tier.unlocked ? vars.bg : 'var(--surface)',
+      border: `1px solid ${tier.unlocked ? vars.border : 'var(--border-subtle)'}`,
+      borderRadius: 'var(--radius)',
+      padding: '14px 10px',
+      flex: 1,
       minWidth: 0,
+      transition: 'all 200ms',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 22 }}>{tier.emoji}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 18 }}>{tier.emoji}</span>
         {tier.unlocked && (
           <span style={{
-            fontSize: 10, fontWeight: 700, color: tier.color,
-            background: tier.bg, padding: '2px 8px', borderRadius: 99,
-            border: `1px solid ${tier.color}40`, letterSpacing: '0.05em',
-          }}>DÉBLOQUÉ</span>
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+            color: vars.color, background: vars.bg,
+            border: `1px solid ${vars.border}`,
+            padding: '2px 6px', borderRadius: 99,
+          }}>✓</span>
         )}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: tier.unlocked ? tier.color : 'rgba(255,255,255,0.5)', marginBottom: 2 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: tier.unlocked ? vars.color : 'var(--text-3)', marginBottom: 2, letterSpacing: '-0.01em' }}>
         {tier.label}
       </div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: 'white', letterSpacing: '-0.03em', marginBottom: 10 }}>
+      <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.03em', color: tier.unlocked ? vars.color : 'var(--text)', marginBottom: 8 }}>
         +{fmtEuros(tier.bonus)}
       </div>
-      <ProgressBar value={weekCount} max={tier.threshold} color={tier.color} />
-      <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.45)', display: 'flex', justifyContent: 'space-between' }}>
-        <span>{Math.min(weekCount, tier.threshold)} / {tier.threshold} ventes</span>
-        {!tier.unlocked && <span>{remaining} restante{remaining > 1 ? 's' : ''}</span>}
+      <ProgressBar value={weekCount} max={tier.threshold} color={tier.unlocked ? vars.color : 'var(--border)'} />
+      <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text-3)', display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+        <span>{Math.min(weekCount, tier.threshold)}/{tier.threshold}</span>
+        {!tier.unlocked && <span>{remaining} rest.</span>}
       </div>
     </div>
   );
 }
 
-// PIN input: 4 separate digit boxes
 function PinInput({ onSubmit, error, loading }: {
   onSubmit: (pin: string) => void;
   error: string | null;
   loading: boolean;
 }) {
   const [digits, setDigits] = useState(['', '', '', '']);
-  const refs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+  const refs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
   useEffect(() => { refs[0].current?.focus(); }, []);
 
@@ -112,39 +125,26 @@ function PinInput({ onSubmit, error, loading }: {
     next[i] = digit;
     setDigits(next);
     if (digit && i < 3) refs[i + 1].current?.focus();
-    if (next.every(d => d !== '')) {
-      onSubmit(next.join(''));
-    }
+    if (next.every(d => d !== '')) onSubmit(next.join(''));
   };
 
   const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !digits[i] && i > 0) {
-      refs[i - 1].current?.focus();
-    }
+    if (e.key === 'Backspace' && !digits[i] && i > 0) refs[i - 1].current?.focus();
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
     if (pasted.length === 4) {
-      const next = pasted.split('');
-      setDigits(next);
+      setDigits(pasted.split(''));
       refs[3].current?.focus();
       onSubmit(pasted);
     }
     e.preventDefault();
   };
 
-  const digitStyle = (filled: boolean): React.CSSProperties => ({
-    width: 56, height: 64, borderRadius: 12, border: `2px solid ${filled ? 'rgba(167,139,250,0.8)' : 'rgba(255,255,255,0.15)'}`,
-    background: filled ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
-    color: 'white', fontSize: 28, fontWeight: 700, textAlign: 'center',
-    outline: 'none', transition: 'all 0.15s ease',
-    caretColor: 'transparent',
-  });
-
   return (
     <div>
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
         {digits.map((d, i) => (
           <input
             key={i}
@@ -153,25 +153,36 @@ function PinInput({ onSubmit, error, loading }: {
             inputMode="numeric"
             maxLength={1}
             value={d}
-            onChange={(e) => handleChange(i, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(i, e)}
-            onPaste={handlePaste}
-            style={digitStyle(d !== '')}
             disabled={loading}
+            onChange={e => handleChange(i, e.target.value)}
+            onKeyDown={e => handleKeyDown(i, e)}
+            onPaste={handlePaste}
+            style={{
+              width: 56, height: 64,
+              textAlign: 'center',
+              fontSize: 26, fontWeight: 700,
+              background: 'var(--surface-2)',
+              border: `2px solid ${d ? 'var(--accent)' : 'var(--border)'}`,
+              borderRadius: 'var(--radius)',
+              color: 'var(--text)',
+              outline: 'none',
+              caretColor: 'transparent',
+              transition: 'border-color 150ms',
+            }}
           />
         ))}
       </div>
       {error && (
         <div style={{
-          color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 16,
-          padding: '8px 16px', background: 'rgba(248,113,113,0.1)',
-          borderRadius: 8, border: '1px solid rgba(248,113,113,0.2)',
+          background: 'var(--error-bg)', color: 'var(--error)',
+          borderRadius: 'var(--radius-sm)', padding: '10px 14px',
+          fontSize: 13, fontWeight: 500, textAlign: 'center', marginBottom: 16,
         }}>
           {error}
         </div>
       )}
       {loading && (
-        <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
           Vérification…
         </div>
       )}
@@ -187,7 +198,6 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
 
-  // Check existing session on mount
   useEffect(() => {
     fetch(`/api/ambassadeur/${encodeURIComponent(code)}/auth`)
       .then(r => r.json())
@@ -202,7 +212,6 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       .catch(() => setAuthState('pin-required'));
   }, [code]);
 
-  // Fetch stats when authenticated
   useEffect(() => {
     if (authState !== 'authenticated') return;
     fetch(`/api/ambassadeur/${encodeURIComponent(code)}/stats`)
@@ -210,7 +219,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       .then(data => {
         if (data.error) { setStatsError(data.error); return; }
         setStats(data);
-        setAmbassadorName(data.name?.split(' ')[0] ?? ambassadorName);
+        setAmbassadorName(prev => data.name?.split(' ')[0] ?? prev);
       })
       .catch(() => setStatsError('Impossible de charger les stats.'));
   }, [authState, code]);
@@ -228,7 +237,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       if (res.status === 429) {
         setPinError(data.error ?? 'Trop de tentatives. Réessaie dans 15 min.');
       } else if (!res.ok) {
-        setPinError(data.error ?? 'PIN incorrect');
+        setPinError(data.error ?? 'PIN incorrect.');
       } else {
         setAmbassadorName(data.name ?? '');
         setAuthState('authenticated');
@@ -240,225 +249,268 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
     }
   }, [code]);
 
-  const pageStyle: React.CSSProperties = {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #0f0c29 0%, #1a1040 50%, #0f0c29 100%)',
-    color: 'white',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  };
-
-  // ── Loading ──────────────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────────
   if (authState === 'loading') {
     return (
-      <div style={{ ...pageStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Chargement…</div>
+      <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          width: 20, height: 20, borderRadius: '50%',
+          border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+          animation: 'spin 0.7s linear infinite',
+        }} />
       </div>
     );
   }
 
-  // ── PIN required ─────────────────────────────────────────────────────────────
+  // ── PIN required ──────────────────────────────────────────────────────────────
   if (authState === 'pin-required') {
     return (
-      <div style={{ ...pageStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{
+        minHeight: '100dvh', background: 'var(--bg)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '24px 20px',
+        fontFamily: 'var(--font)',
+      }}>
         <div style={{ width: '100%', maxWidth: 360 }}>
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🔐</div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, letterSpacing: '-0.03em' }}>
-              Dashboard Ambassadeur
-            </h1>
-            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, marginTop: 8, margin: '8px 0 0' }}>
-              Entre ton code PIN à 4 chiffres
-            </p>
-            <p style={{ color: 'rgba(167,139,250,0.8)', fontSize: 13, fontWeight: 600, marginTop: 4 }}>
-              {code.toUpperCase()}
-            </p>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent)', letterSpacing: '-0.03em', marginBottom: 6 }}>
+              DigiTip
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+              Ambassadeur · {code.toUpperCase()}
+            </div>
           </div>
-          <PinInput onSubmit={handlePin} error={pinError} loading={pinLoading} />
+
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '28px 24px',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                Ton PIN à 4 chiffres
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
+                Pour accéder à ton dashboard
+              </div>
+            </div>
+
+            <PinInput onSubmit={handlePin} error={pinError} loading={pinLoading} />
+
+            <button
+              onClick={() => {/* auto-submitted via PinInput */}}
+              disabled
+              style={{
+                display: 'none', // bouton caché, auto-submit au 4e chiffre
+              }}
+            />
+          </div>
         </div>
       </div>
     );
   }
 
-  // ── Authenticated — no stats yet ──────────────────────────────────────────────
+  // ── Authenticated — stats loading ─────────────────────────────────────────────
   if (!stats) {
     return (
-      <div style={{ ...pageStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font)' }}>
         {statsError
-          ? <div style={{ color: '#f87171', fontSize: 14 }}>{statsError}</div>
-          : <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Chargement des stats…</div>}
+          ? <div style={{ color: 'var(--error)', fontSize: 14, padding: '0 20px', textAlign: 'center' }}>{statsError}</div>
+          : <div style={{ color: 'var(--text-3)', fontSize: 14 }}>Chargement…</div>
+        }
       </div>
     );
   }
 
   // ── Dashboard ─────────────────────────────────────────────────────────────────
   const { weekCount, monthCount, totalBaseCommission, weeklyBonusCents,
-          monthlyBonusUnlocked, monthlyChallenge, tiers, leaderboard, recentSales } = stats;
+    monthlyBonusUnlocked, monthlyChallenge, tiers, leaderboard, recentSales } = stats;
 
   const monthlyRemaining = Math.max(0, monthlyChallenge.threshold - monthCount);
   const monthlyPct = Math.min(100, (monthCount / monthlyChallenge.threshold) * 100);
-
-  const rankEmoji = leaderboard.rank === 1 ? '🏆' : leaderboard.rank === 2 ? '🥈' : leaderboard.rank === 3 ? '🥉' : '🎯';
+  const rankLabel = leaderboard.rank === 1 ? '🏆' : `#${leaderboard.rank}`;
+  const firstName = ambassadorName.split(' ')[0];
 
   return (
-    <div style={pageStyle}>
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 16px 60px' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', fontFamily: 'var(--font)' }}>
 
-        {/* ── Hero ── */}
+      {/* Top bar */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border-subtle)',
+        padding: '12px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Ambassadeur · {code.toUpperCase()}
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: '-0.03em', lineHeight: 1.2, marginTop: 1 }}>
+            Bonjour {firstName} 👋
+          </div>
+        </div>
         <div style={{
-          background: 'linear-gradient(135deg, rgba(167,139,250,0.2) 0%, rgba(236,72,153,0.15) 100%)',
-          border: '1px solid rgba(167,139,250,0.2)',
-          borderRadius: 20, padding: '28px 24px', marginBottom: 20, marginTop: 20,
+          width: 36, height: 36, borderRadius: '50%',
+          background: 'var(--accent-muted)',
+          border: '2px solid var(--accent-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 14, fontWeight: 700, color: 'var(--accent)',
+          flexShrink: 0,
         }}>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: '0 0 4px' }}>
-            Dashboard Ambassadeur · {code.toUpperCase()}
-          </p>
-          <h1 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 20px', letterSpacing: '-0.03em' }}>
-            Bonjour {ambassadorName} 👋
-          </h1>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.06)', borderRadius: 14,
-              padding: '16px', border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-                Cette semaine
-              </div>
-              <div style={{ fontSize: 40, fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1 }}>
-                {weekCount}
-              </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
-                vente{weekCount > 1 ? 's' : ''}
-              </div>
+          {firstName.charAt(0).toUpperCase()}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 48px' }}>
+
+        {/* Hero stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          {/* Cette semaine */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+              Cette semaine
             </div>
-            <div style={{
-              background: 'rgba(255,255,255,0.06)', borderRadius: 14,
-              padding: '16px', border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-                Commissions dues
-              </div>
-              <div style={{ fontSize: 34, fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, color: '#a78bfa' }}>
-                {fmtEuros(totalBaseCommission)}
-              </div>
-              {weeklyBonusCents > 0 && (
-                <div style={{ fontSize: 12, color: '#4ade80', marginTop: 4, fontWeight: 600 }}>
-                  + {fmtEuros(weeklyBonusCents)} bonus semaine
-                </div>
-              )}
+            <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1 }}>
+              {weekCount}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
+              vente{weekCount !== 1 ? 's' : ''}
             </div>
           </div>
-          <div style={{ marginTop: 12, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-            {stats.allTimeSalesCount} vente{stats.allTimeSalesCount > 1 ? 's' : ''} au total · paiement chaque vendredi
+
+          {/* Commissions */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+              Commissions
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.04em', lineHeight: 1 }}>
+              {fmtEuros(totalBaseCommission)}
+            </div>
+            {weeklyBonusCents > 0 ? (
+              <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4, fontWeight: 600 }}>
+                +{fmtEuros(weeklyBonusCents)} bonus
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                {stats.allTimeSalesCount} vente{stats.allTimeSalesCount !== 1 ? 's' : ''} total
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── Weekly tiers ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+        {/* Paiement note */}
+        <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginBottom: 20 }}>
+          Paiement chaque vendredi · {stats.allTimeSalesCount} vente{stats.allTimeSalesCount !== 1 ? 's' : ''} au total
+        </div>
+
+        {/* Paliers de la semaine */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
             Paliers de la semaine
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 12, fontStyle: 'italic' }}>
-            Un seul bonus par semaine — le palier le plus élevé atteint
+          <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic', marginBottom: 10 }}>
+            Un seul bonus — le palier le plus élevé atteint
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {tiers.map((tier) => (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {tiers.map(tier => (
               <TierCard key={tier.id} tier={tier} weekCount={weekCount} />
             ))}
           </div>
         </div>
 
-        {/* ── Monthly challenge ── */}
+        {/* Challenge du mois */}
         <div style={{
-          background: monthlyBonusUnlocked
-            ? 'linear-gradient(135deg, rgba(250,204,21,0.15), rgba(234,179,8,0.08))'
-            : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${monthlyBonusUnlocked ? 'rgba(250,204,21,0.4)' : 'rgba(255,255,255,0.08)'}`,
-          borderRadius: 20, padding: '20px', marginBottom: 20,
-          boxShadow: monthlyBonusUnlocked ? '0 0 30px rgba(250,204,21,0.1)' : 'none',
+          background: monthlyBonusUnlocked ? 'var(--warning-bg)' : 'var(--surface)',
+          border: `1px solid ${monthlyBonusUnlocked ? 'var(--warning)' : 'var(--border-subtle)'}`,
+          borderRadius: 'var(--radius)',
+          padding: 18,
+          marginBottom: 16,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                Challenge du Mois
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+                Challenge du mois
               </div>
-              <div style={{ fontSize: 17, fontWeight: 800, marginTop: 2 }}>
-                {monthlyBonusUnlocked ? '🎉 BONUS 200€ DÉBLOQUÉ !' : `🏆 ${monthlyChallenge.prize}`}
+              <div style={{ fontSize: 15, fontWeight: 700, color: monthlyBonusUnlocked ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
+                {monthlyBonusUnlocked ? '🎉 200€ débloqué !' : `🏆 ${monthlyChallenge.prize}`}
               </div>
             </div>
             <div style={{
-              background: monthlyBonusUnlocked ? 'rgba(250,204,21,0.2)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${monthlyBonusUnlocked ? 'rgba(250,204,21,0.4)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 12, padding: '8px 14px', textAlign: 'center',
+              background: 'var(--surface-2)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', padding: '8px 12px', textAlign: 'center', flexShrink: 0,
             }}>
-              <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', color: monthlyBonusUnlocked ? '#fde047' : 'white' }}>
+              <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.03em', color: monthlyBonusUnlocked ? 'var(--warning)' : 'var(--text)', lineHeight: 1 }}>
                 {monthCount}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>/ {monthlyChallenge.threshold}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>/ {monthlyChallenge.threshold}</div>
             </div>
           </div>
-          <ProgressBar value={monthCount} max={monthlyChallenge.threshold} color={monthlyBonusUnlocked ? '#fde047' : '#a78bfa'} />
-          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {monthlyBonusUnlocked ? 'Objectif atteint !' : `Plus que ${monthlyRemaining} vente${monthlyRemaining > 1 ? 's' : ''} !`}
+
+          <ProgressBar
+            value={monthCount}
+            max={monthlyChallenge.threshold}
+            color={monthlyBonusUnlocked ? 'var(--warning)' : 'var(--accent)'}
+          />
+
+          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+            <span style={{ color: 'var(--text-3)' }}>
+              {monthlyBonusUnlocked
+                ? 'Objectif atteint !'
+                : `Plus que ${monthlyRemaining} vente${monthlyRemaining !== 1 ? 's' : ''} !`}
             </span>
-            <span style={{
-              color: rankEmoji === '🏆' ? '#fde047' : 'rgba(255,255,255,0.5)',
-              fontWeight: 700,
-            }}>
-              {rankEmoji} #{leaderboard.rank} sur {leaderboard.total} ambassadeur{leaderboard.total > 1 ? 's' : ''}
+            <span style={{ fontWeight: 700, color: leaderboard.rank === 1 ? 'var(--warning)' : 'var(--text-2)' }}>
+              {rankLabel} / {leaderboard.total} ambassadeur{leaderboard.total !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
 
-        {/* ── Recent sales ── */}
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 20, overflow: 'hidden',
-        }}>
+        {/* Dernières ventes */}
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           <div style={{
-            padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-            fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
-            textTransform: 'uppercase', letterSpacing: '0.1em',
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--border)',
+            fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
+            textTransform: 'uppercase', letterSpacing: '0.07em',
           }}>
             Dernières ventes
           </div>
+
           {recentSales.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+            <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
               Aucune vente pour l&apos;instant. Continue ! 💪
             </div>
           ) : (
-            <div>
-              {recentSales.map((sale) => (
-                <div key={sale.id} style={{
-                  display: 'grid', gridTemplateColumns: '1fr auto auto',
-                  gap: 12, padding: '12px 20px',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  alignItems: 'center',
-                }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-                      {new Date(sale.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>
-                      {sale.salon_name_partial ?? '***'}
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99,
-                    background: sale.pack === 'duo' ? 'rgba(167,139,250,0.15)' : 'rgba(96,165,250,0.15)',
-                    color: sale.pack === 'duo' ? '#a78bfa' : '#60a5fa',
-                    border: `1px solid ${sale.pack === 'duo' ? 'rgba(167,139,250,0.3)' : 'rgba(96,165,250,0.3)'}`,
-                    textTransform: 'uppercase', letterSpacing: '0.05em',
-                  }}>
-                    {sale.pack}
-                  </span>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', textAlign: 'right' }}>
-                    +{fmtEuros(sale.commission_amount)}
+            recentSales.map((sale, idx) => (
+              <div key={sale.id} style={{
+                display: 'grid', gridTemplateColumns: '1fr auto auto',
+                gap: 10, padding: '12px 16px', alignItems: 'center',
+                borderBottom: idx < recentSales.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{fmtDate(sale.created_at)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', marginTop: 1 }}>
+                    {sale.salon_name_partial ?? '***'}
                   </div>
                 </div>
-              ))}
-            </div>
+                <span style={{
+                  fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 99,
+                  textTransform: 'uppercase', letterSpacing: '0.05em',
+                  background: sale.pack === 'duo' ? 'var(--accent-muted)' : 'var(--success-bg)',
+                  color: sale.pack === 'duo' ? 'var(--accent)' : 'var(--success)',
+                  border: `1px solid ${sale.pack === 'duo' ? 'var(--accent-border)' : 'var(--success)'}`,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {sale.pack}
+                </span>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  +{fmtEuros(sale.commission_amount)}
+                </div>
+              </div>
+            ))
           )}
         </div>
 
