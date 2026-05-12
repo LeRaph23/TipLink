@@ -105,6 +105,12 @@ CREATE POLICY "cold_email_prospects_super_admin_all" ON public.cold_email_prospe
   FOR ALL TO authenticated
   USING (is_super_admin()) WITH CHECK (is_super_admin());
 
+-- ─── Backfill referral_code for existing ambassadors ────────────────────────
+UPDATE public.ambassadors
+SET referral_code = 'AMB-' || UPPER(REGEXP_REPLACE(name, '[^a-zA-Z]', '', 'g')) || '-' ||
+                    UPPER(SUBSTR(encode(gen_random_bytes(2), 'hex'), 1, 3))
+WHERE referral_code IS NULL;
+
 -- ─── Update seeded email template to reflect new bonus amounts ──────────────
 UPDATE public.ambassador_email_templates
 SET body_html = '<h2 style="color:#fff;font-size:20px;margin:0 0 12px">Bienvenue {{first_name}} !</h2>

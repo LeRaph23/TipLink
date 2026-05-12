@@ -1,5 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import { ColdEmailImporter } from './ColdEmailImporter';
+import { SireneScraperForm } from './SireneScraperForm';
+import { EmailEnrichmentImporter } from './EmailEnrichmentImporter';
 import { getColdEmailStats } from '@/actions/admin/cold-email';
 
 export const dynamic = 'force-dynamic';
@@ -37,6 +39,8 @@ export default async function ColdEmailPage({
         </div>
       )}
 
+      <SireneScraperForm />
+      <EmailEnrichmentImporter />
       <ColdEmailImporter />
     </div>
   );

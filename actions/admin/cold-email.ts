@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
+import { searchSirene, estimateBirthYearFromFirstName, type SireneSearchOptions } from '@/lib/sirene';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -45,20 +46,8 @@ function parseCsvLine(line: string): string[] {
   return out;
 }
 
-// Rough heuristic: a first name's birth year estimate based on common
-// French naming trends. Returns null when unknown. The exact mapping is
-// pragmatic, not authoritative — used only as a filter signal.
-const YOUNG_FIRST_NAMES = new Set([
-  'EMMA','LEA','LÉA','LOUISE','CHLOE','CHLOÉ','INES','INÈS','LINA','MILA','JADE','JULIA','JULIETTE','ROSE','EVA','ELENA','ALICE','LILOU','LOLA','MIA',
-  'LUCAS','GABRIEL','RAPHAEL','RAPHAËL','ADAM','ARTHUR','LOUIS','JULES','LIAM','HUGO','LEO','LÉO','NOAH','TIMEO','TIMÉO','MAEL','MAËL','TOM','ETHAN','NATHAN','THEO','THÉO','SACHA','AARON','ELIAS','ELIOTT','ENZO',
-]);
-
-function estimateBirthYear(firstName: string | null | undefined): number | null {
-  if (!firstName) return null;
-  const upper = firstName.toUpperCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-  if (YOUNG_FIRST_NAMES.has(upper)) return 2003;
-  return null;
-}
+// Birth-year heuristic shared with the SIRENE scraper (see lib/sirene.ts).
+const estimateBirthYear = estimateBirthYearFromFirstName;
 
 export type CsvRow = {
   siret?: string; company_name?: string; email?: string;
@@ -126,6 +115,144 @@ export async function importColdEmailProspects(
     await logAdminAction('cold_email.import', { inserted, skipped, errorCount: errors.length });
 
     return { ok: true, inserted, skipped, errors: errors.slice(0, 20) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+export async function enrichProspectEmails(
+  csvText: string
+): Promise<
+  | { ok: true; updated: number; notFound: number; errors: string[] }
+  | { ok: false; error: string }
+> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length === 0) return { ok: false, error: 'CSV vide.' };
+
+    let updated = 0;
+    let notFound = 0;
+    const errors: string[] = [];
+
+    const startIdx = /siret/i.test(lines[0]) ? 1 : 0;
+    for (let i = startIdx; i < lines.length; i++) {
+      const cells = parseCsvLine(lines[i]);
+      const siret = validateSiret(cells[0] ?? '');
+      const email = (cells[1] ?? '').trim().toLowerCase();
+      if (!siret) { errors.push(`Ligne ${i + 1} : SIRET invalide`); continue; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errors.push(`Ligne ${i + 1} : email invalide`); continue; }
+
+      const { count, error } = await service
+        .from('cold_email_prospects')
+        .update({ email })
+        .eq('siret', siret)
+        .is('email', null);
+
+      if (error) errors.push(`SIRET ${siret} : ${error.message}`);
+      else if ((count ?? 0) === 0) notFound++;
+      else updated += count ?? 0;
+    }
+
+    await logAdminAction('cold_email.enrich_emails', { updated, notFound, errorCount: errors.length });
+    return { ok: true, updated, notFound, errors: errors.slice(0, 10) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+export type SireneScrapeInput = {
+  nafCodes: string[];
+  monthsBack: number;          // creation_date >= NOW - monthsBack months
+  postalCodePrefix?: string;
+  maxPages: number;            // pages to fetch (each ~100 results)
+  youngOnly?: boolean;         // if true, only keep prospects with birth_year_estimate set
+};
+
+export async function scrapeSireneProspects(
+  input: SireneScrapeInput
+): Promise<
+  | { ok: true; fetched: number; inserted: number; skippedYoung: number; skippedDuplicates: number; errors: string[] }
+  | { ok: false; error: string }
+> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    if (!input.nafCodes.length) return { ok: false, error: 'Aucun code NAF sélectionné.' };
+    const maxPages = Math.min(Math.max(1, input.maxPages), 20);
+    const monthsBack = Math.min(Math.max(1, input.monthsBack), 36);
+
+    const createdAfter = new Date(Date.now() - monthsBack * 30 * 86400000)
+      .toISOString().slice(0, 10);
+
+    const baseQuery: SireneSearchOptions = {
+      nafCodes: input.nafCodes,
+      createdAfter,
+      postalCodePrefix: input.postalCodePrefix?.trim() || undefined,
+      personnePhysiqueOnly: true,
+      pageSize: 100,
+    };
+
+    const errors: string[] = [];
+    let fetched = 0;
+    let inserted = 0;
+    let skippedYoung = 0;
+    let skippedDuplicates = 0;
+
+    for (let page = 0; page < maxPages; page++) {
+      let pageResult;
+      try {
+        pageResult = await searchSirene({ ...baseQuery, page });
+      } catch (e) {
+        errors.push(`Page ${page} : ${e instanceof Error ? e.message : 'erreur SIRENE'}`);
+        break;
+      }
+      fetched += pageResult.results.length;
+
+      for (const item of pageResult.results) {
+        const birthYear = estimateBirthYear(item.firstName);
+        if (input.youngOnly && birthYear === null) { skippedYoung++; continue; }
+
+        const row = {
+          siret: item.siret,
+          company_name: item.companyName,
+          email: null as string | null,
+          first_name: item.firstName,
+          city: item.city,
+          naf_code: item.nafCode,
+          creation_date: item.creationDate,
+          birth_year_estimate: birthYear,
+          notes: `Source: SIRENE INSEE · NAF ${item.nafCode ?? '?'} · ${item.postalCode ?? ''}`,
+        };
+
+        const { error, count } = await service
+          .from('cold_email_prospects')
+          .upsert(row, { onConflict: 'siret', ignoreDuplicates: true, count: 'exact' });
+
+        if (error) errors.push(`SIRET ${item.siret} : ${error.message}`);
+        else if ((count ?? 0) === 0) skippedDuplicates++;
+        else inserted++;
+      }
+
+      if (!pageResult.hasMore) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    await logAdminAction('cold_email.scrape_sirene', {
+      nafCodes: input.nafCodes,
+      monthsBack,
+      maxPages,
+      fetched,
+      inserted,
+      skippedYoung,
+      skippedDuplicates,
+      errorCount: errors.length,
+    });
+
+    return { ok: true, fetched, inserted, skippedYoung, skippedDuplicates, errors: errors.slice(0, 10) };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }
