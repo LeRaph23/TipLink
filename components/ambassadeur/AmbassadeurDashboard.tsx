@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AmbassadeurPayoutPanel } from './AmbassadeurBanking';
 import { AmbassadeurContracts } from './AmbassadeurContracts';
+import { AmbassadeurReferralPanel } from './AmbassadeurReferralPanel';
 
 type AuthState = 'loading' | 'pin-required' | 'authenticated';
 
@@ -462,6 +463,9 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           </div>
         </div>
 
+        {/* Parrainage */}
+        <AmbassadeurReferralPanel code={code} />
+
         {/* Contrats à signer / signés */}
         <AmbassadeurContracts code={code} />
 
@@ -475,7 +479,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           />
         )}
 
-        {/* Leaderboard du mois — 200€ au #1 */}
+        {/* Leaderboard du mois */}
         <div style={{
           background: leaderboard.rank === 1 ? 'var(--warning-bg)' : 'var(--surface)',
           border: `1px solid ${leaderboard.rank === 1 ? 'var(--warning)' : 'var(--border-subtle)'}`,
@@ -489,7 +493,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
                 Classement du mois
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: leaderboard.rank === 1 ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
-                🏆 200€ pour le #1
+                🏆 {stats.monthlyChallenge.prize}
               </div>
             </div>
             <div style={{

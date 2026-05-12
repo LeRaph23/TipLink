@@ -649,6 +649,15 @@ async function attributeAmbassadorSale(
     });
 
     void notifyTelegram(ambassador.name, salonPartial, pack).catch(() => {});
+
+    const { checkAndValidateReferral } = await import('@/lib/referrals');
+    void checkAndValidateReferral(supabase, ambassador.id)
+      .then(async (event) => {
+        if (!event) return;
+        const { sendReferralValidatedToParrain } = await import('@/lib/email');
+        await sendReferralValidatedToParrain(supabase, event.referrerId, ambassador.name, event.amountCents).catch(() => {});
+      })
+      .catch(() => {});
   } catch {
     // Never break the webhook — ambassador attribution is best-effort
   }

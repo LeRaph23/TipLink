@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
+import { generateUniqueReferralCode } from '@/lib/referrals';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -23,6 +24,7 @@ export type CreateAmbassadorInput = {
   name: string;
   promoCodeId: string;
   pin: string;
+  referrerAmbassadorId?: string | null;
 };
 
 export async function createAmbassador(
@@ -32,7 +34,7 @@ export async function createAmbassador(
     const user = await requireSuperAdminUser();
     const service = createServiceClient();
 
-    const { name, promoCodeId, pin } = input;
+    const { name, promoCodeId, pin, referrerAmbassadorId } = input;
 
     if (!name || name.trim().length < 2) {
       return { ok: false, error: 'Nom trop court (min 2 caractères).' };
@@ -69,6 +71,7 @@ export async function createAmbassador(
     const id = crypto.randomUUID();
     const pinSalt = crypto.randomBytes(32).toString('hex');
     const pinHash = crypto.scryptSync(pin, pinSalt, 64).toString('hex');
+    const referralCode = await generateUniqueReferralCode(service, name.trim());
 
     const { data: saved, error: dbErr } = await service
       .from('ambassadors')
@@ -79,6 +82,8 @@ export async function createAmbassador(
         pin_hash: pinHash,
         pin_salt: pinSalt,
         is_active: true,
+        referral_code: referralCode,
+        referrer_ambassador_id: referrerAmbassadorId ?? null,
       })
       .select('id')
       .single();

@@ -2,21 +2,30 @@
 export const COMMISSION_BY_PACK = { solo: 2500, duo: 3500 } as const;
 
 // Weekly bonus tiers — NON-cumulative: only the highest reached tier pays out.
-// Ordered highest → lowest so the first match is the best tier.
+// Reduced from previous values (25/50/100€) to fund the referral program.
 export const WEEKLY_TIERS = [
-  { id: 'gold',   threshold: 10, bonus: 10000, label: 'Or',     emoji: '🥇', color: '#f5c518', bg: 'rgba(245,197,24,0.12)' },
-  { id: 'silver', threshold: 8,  bonus: 5000,  label: 'Argent', emoji: '🥈', color: '#a8b8c8', bg: 'rgba(168,184,200,0.12)' },
-  { id: 'bronze', threshold: 5,  bonus: 2500,  label: 'Bronze', emoji: '🥉', color: '#cd7f32', bg: 'rgba(205,127,50,0.12)'  },
+  { id: 'gold',   threshold: 10, bonus: 5000, label: 'Or',     emoji: '🥇', color: '#f5c518', bg: 'rgba(245,197,24,0.12)' },
+  { id: 'silver', threshold: 8,  bonus: 3000, label: 'Argent', emoji: '🥈', color: '#a8b8c8', bg: 'rgba(168,184,200,0.12)' },
+  { id: 'bronze', threshold: 5,  bonus: 1500, label: 'Bronze', emoji: '🥉', color: '#cd7f32', bg: 'rgba(205,127,50,0.12)'  },
 ] as const;
 
 export type WeeklyTier = typeof WEEKLY_TIERS[number];
 
-// Monthly challenge — 200€ to whoever finishes #1 of the leaderboard
 export const MONTHLY_CHALLENGE = {
   threshold: 15,
-  bonus: 20000, // 200€ in cents
-  prize: '200€ pour le #1 du classement',
+  bonus: 10000,
+  prize: '100€ pour le #1 du classement',
 } as const;
+
+// Referral rewards — paid to the parrain when filleul (a) is approved by
+// super-admin AND (b) completes >=2 sales. Milestones are one-shot lifetime.
+export const REFERRAL_REWARDS = {
+  validation:    2500,  // 25€ per validated filleul
+  milestone_5:   10000, // +100€ once parrain reaches 5 validated filleuls
+  milestone_10:  25000, // +250€ once parrain reaches 10 validated filleuls
+} as const;
+
+export const REFERRAL_VALIDATION_MIN_SALES = 2;
 
 // Minimum amount an ambassador can withdraw in a single payout (30€).
 export const MIN_PAYOUT_CENTS = 3000;

@@ -1,10 +1,14 @@
 import { Resend } from 'resend';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
 const FROM = 'Digitip <noreply@digitip.app>';
+const FROM_AMBASSADOR = process.env.RESEND_FROM_AMBASSADOR_OUTREACH ?? 'Digitip <ambassadeur@digitip.app>';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://digitip.app';
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -685,4 +689,198 @@ export async function sendSignedContractCopy(opts: {
       <p style="font-size:12px;color:#444;margin:18px 0 0;line-height:1.6">Conserve cet email comme preuve. Le contenu intégral du contrat reste accessible depuis ton dashboard et ne peut plus être modifié.</p>
     </td></tr>`),
   });
+}
+
+// ─── Ambassador application — reminder cron ──────────────────────────────────
+
+export async function sendAmbassadorApplicationReminder(opts: {
+  to: string;
+  firstName: string;
+  step: 1 | 2;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, step } = opts;
+  const subject = step === 1
+    ? `${firstName}, ta candidature ambassadeur Digitip nous attend`
+    : `Dernière relance — ta candidature ambassadeur expire bientôt`;
+  const headline = step === 1
+    ? `On a vu ta candidature, ${firstName} 👀`
+    : `Dernière chance, ${firstName} ⏳`;
+  const body = step === 1
+    ? `Ton dossier est en cours d'examen. Pour accélérer, assure-toi que ton SIRET et ton RIB sont à jour. Tu n'as pas encore de SIRET ? <a href="https://autoentrepreneur.urssaf.fr" style="color:#60a5fa">Crée-le gratuitement ici</a> (10 min, c'est instantané).`
+    : `Sans nouvelle de ta part dans les prochains jours, on devra archiver ta candidature. Si tu es toujours motivé(e), réponds à cet email — un humain te recontactera dans la journée.`;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">${headline}</div>
+      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">${body}</p>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:12px;color:#666;margin:0">Une question ? Réponds simplement à ce mail.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Referral — welcome to candidate who signed up via parrain ──────────────
+
+export async function sendReferralWelcomeToCandidate(opts: {
+  to: string;
+  firstName: string;
+  parrainName: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, parrainName } = opts;
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `${parrainName} t'a recommandé(e) — Bienvenue chez Digitip`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Recommandé par ${parrainName}</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Candidature reçue</div>
+      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">Salut ${firstName} !</div>
+      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">Ta candidature au programme ambassadeur Digitip vient d'arriver via la recommandation de <strong style="color:#fff">${parrainName}</strong>. On l'examine et on revient vers toi rapidement.</p>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Pas de SIRET ? C'est gratuit et instantané : <a href="https://autoentrepreneur.urssaf.fr" style="color:#60a5fa">autoentrepreneur.urssaf.fr</a></p>
+    </td></tr>`),
+  });
+}
+
+// ─── Referral — ambassador emails a buddy from their dashboard ───────────────
+
+export async function sendReferralEmailFromAmbassador(opts: {
+  to: string;
+  parrainName: string;
+  referralCode: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, parrainName, referralCode } = opts;
+  const link = `${APP_URL}/devenir-ambassadeur?ref=${encodeURIComponent(referralCode)}`;
+  await resend.emails.send({
+    from: FROM_AMBASSADOR,
+    to,
+    subject: `${parrainName} t'invite à devenir ambassadeur Digitip`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Invitation perso</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">${parrainName} pense à toi</div>
+      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip — placer des SmartTags NFC chez des restos et toucher 25 à 35 € par vente. ${parrainName} pense que tu pourrais cartonner.</p>
+      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">Pas d'engagement, pas de stock à avancer — juste un SIRET (auto-entrepreneur) et l'envie de prospecter.</p>
+    </td></tr>
+    <tr><td style="padding:8px 32px 32px">
+      <p><a href="${link}" style="display:inline-block;padding:12px 22px;background:#22c55e;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">Découvrir le programme →</a></p>
+      <p style="font-size:12px;color:#555;margin:16px 0 0">Tu reçois ce mail parce que ${parrainName} t'a explicitement invité(e). Pour ne pas être recontacté(e), réponds simplement "stop".</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Referral — validated, notify the parrain ────────────────────────────────
+
+export async function sendReferralValidatedToParrain(
+  service: SupabaseClient<Database>,
+  parrainId: string,
+  filleulName: string,
+  amountCents: number,
+): Promise<void> {
+  if (!resend) return;
+  const { data: parrain } = await service
+    .from('ambassadors')
+    .select('email, name')
+    .eq('id', parrainId)
+    .maybeSingle();
+  if (!parrain?.email) return;
+
+  const euros = (amountCents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 0 });
+  await resend.emails.send({
+    from: FROM,
+    to: parrain.email,
+    subject: `🎉 Parrainage validé : +${euros}€ pour toi`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Parrainage validé</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="font-size:28px;font-weight:800;color:#22c55e;margin-bottom:10px">+${euros}€</div>
+      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">Ton filleul <strong style="color:#fff">${filleulName}</strong> vient de réaliser sa 2ᵉ vente. Ton bonus de parrainage est crédité sur ton solde et payable lors de ta prochaine demande de virement.</p>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Continue à inviter des potes — 5 filleuls validés = +100€ supplémentaires. 10 filleuls = +250€.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Cold email B2B sequence ────────────────────────────────────────────────
+
+function coldEmailFooter(unsubscribeUrl: string): string {
+  return `<tr><td style="padding:24px 32px;border-top:1px solid #1e1e1e;font-size:11px;color:#555;line-height:1.6">
+    Vous recevez cet email car votre SIRET figure dans la base publique SIRENE de l'INSEE avec un code NAF compatible avec une activité commerciale. Conformément au RGPD et à notre intérêt légitime de recrutement B2B, vous pouvez vous opposer à tout traitement futur :
+    <a href="${unsubscribeUrl}" style="color:#60a5fa">se désinscrire</a> · Digitip · privacy@digitip.app
+  </td></tr>`;
+}
+
+export async function sendColdEmailStep(opts: {
+  to: string;
+  firstName: string | null;
+  city: string | null;
+  step: 1 | 2 | 3;
+  unsubscribeUrl: string;
+  landingUrl: string;
+}): Promise<{ ok: boolean; id?: string }> {
+  if (!resend) return { ok: false };
+  const { to, firstName, city, step, unsubscribeUrl, landingUrl } = opts;
+  const greet = firstName ? `Salut ${firstName}` : 'Salut';
+  const cityFragment = city ? ` à ${city}` : '';
+
+  const variants: Record<1 | 2 | 3, { subject: string; body: string }> = {
+    1: {
+      subject: `${firstName ? firstName + ', ' : ''}une idée pour ton activité`,
+      body: `<p style="font-size:14px;color:#ccc;line-height:1.6">${greet},</p>
+        <p style="font-size:14px;color:#aaa;line-height:1.6">Je tombe sur ton SIRET dans la base SIRENE — tu es enregistré(e) en activité commerciale${cityFragment}. On lance un programme ambassadeur Digitip : tu places des SmartTags NFC (pourboires sans contact) dans les restos, et tu touches <strong style="color:#fff">25 à 35€ par vente</strong>. Pas de stock, pas d'avance.</p>
+        <p style="font-size:14px;color:#aaa;line-height:1.6">Si ça te dit d'en savoir plus, jette un œil :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#22c55e;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Voir le programme →</a></p>`,
+    },
+    2: {
+      subject: `${firstName ? firstName + ', ' : ''}exemple concret — un amba a fait 12 ventes en 3 sem`,
+      body: `<p style="font-size:14px;color:#ccc;line-height:1.6">${greet},</p>
+        <p style="font-size:14px;color:#aaa;line-height:1.6">Petit suivi sur mon mail précédent. Concrètement : un de nos ambassadeurs Lyon (BTS NDRC en alternance) vient de faire <strong style="color:#fff">12 ventes en 3 semaines</strong>, soit ~360€ en plus de sa formation. Il bosse ~5h/semaine.</p>
+        <p style="font-size:14px;color:#aaa;line-height:1.6">Si tu veux essayer, le SIRET que tu as déjà suffit :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#22c55e;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Postuler en 2 min →</a></p>`,
+    },
+    3: {
+      subject: `Dernier mail`,
+      body: `<p style="font-size:14px;color:#ccc;line-height:1.6">${greet},</p>
+        <p style="font-size:14px;color:#aaa;line-height:1.6">Je te promets, c'est mon dernier mail. Si le sujet ne t'intéresse pas, pas de souci — désinscris-toi en 1 clic en bas du mail.</p>
+        <p style="font-size:14px;color:#aaa;line-height:1.6">Si tu hésites encore, voilà le lien :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #333">Découvrir Digitip Ambassadeur</a></p>`,
+    },
+  };
+
+  const v = variants[step];
+  const result = await resend.emails.send({
+    from: FROM_AMBASSADOR,
+    to,
+    subject: v.subject,
+    html: darkLayout(`
+    <tr><td style="padding:28px 32px 20px">
+      ${v.body}
+    </td></tr>
+    ${coldEmailFooter(unsubscribeUrl)}`),
+  });
+  return { ok: !result.error, id: result.data?.id };
 }

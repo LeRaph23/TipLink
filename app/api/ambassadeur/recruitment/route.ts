@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createServiceClient } from '@/lib/supabase/service';
-import { sendAmbassadorApplicationConfirmation, sendAmbassadorApplicationAdmin } from '@/lib/email';
+import {
+  sendAmbassadorApplicationConfirmation,
+  sendAmbassadorApplicationAdmin,
+  sendReferralWelcomeToCandidate,
+} from '@/lib/email';
+import { resolveReferralCode } from '@/lib/referrals';
 
 export const runtime = 'nodejs';
 
@@ -21,19 +26,20 @@ function validateSiret(raw: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const expectedToken = process.env.AMBASSADOR_RECRUITMENT_TOKEN;
-  if (!expectedToken) {
-    return NextResponse.json({ error: 'Recrutement non configuré' }, { status: 503 });
-  }
-
   const body = await req.json().catch(() => ({}));
   const {
     token, firstName, lastName, city, phone, email, siret, noFraudPledge, notes,
+    referrerCode, source,
   } = body as Record<string, string | boolean | undefined>;
 
-  if (token !== expectedToken) {
+  const expectedToken = process.env.AMBASSADOR_RECRUITMENT_TOKEN;
+  const isPrivateInvite = expectedToken && token === expectedToken;
+  const isPublicLanding = !token;
+
+  if (!isPrivateInvite && !isPublicLanding) {
     return NextResponse.json({ error: 'Lien invalide' }, { status: 403 });
   }
+
   if (!firstName || !lastName || !city || !phone || !email || !siret) {
     return NextResponse.json({ error: 'Tous les champs sont obligatoires.' }, { status: 400 });
   }
@@ -55,6 +61,27 @@ export async function POST(req: NextRequest) {
   const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
 
   const service = createServiceClient();
+
+  if (isPublicLanding) {
+    const { count } = await service
+      .from('ambassador_recruitment_applications')
+      .select('id', { count: 'exact', head: true })
+      .eq('ip_hash', ipHash)
+      .gte('created_at', new Date(Date.now() - 86400000).toISOString());
+    if ((count ?? 0) >= 3) {
+      return NextResponse.json({ error: 'Trop de candidatures depuis cette adresse, réessaie demain.' }, { status: 429 });
+    }
+  }
+
+  let referrer: { id: string; name: string } | null = null;
+  if (typeof referrerCode === 'string' && referrerCode.trim()) {
+    referrer = await resolveReferralCode(service, referrerCode);
+  }
+
+  const resolvedSource = typeof source === 'string' && source
+    ? source
+    : isPrivateInvite ? 'private_token' : referrer ? 'referral' : 'landing';
+
   const { error } = await service.from('ambassador_recruitment_applications').insert({
     first_name: String(firstName).trim(),
     last_name: String(lastName).trim(),
@@ -65,6 +92,9 @@ export async function POST(req: NextRequest) {
     no_fraud_pledge: true,
     notes: notes ? String(notes).slice(0, 1000) : null,
     ip_hash: ipHash,
+    referrer_ambassador_id: referrer?.id ?? null,
+    referrer_code_used: referrer ? String(referrerCode).trim().toUpperCase() : null,
+    source: resolvedSource,
   });
 
   if (error) {
@@ -73,17 +103,21 @@ export async function POST(req: NextRequest) {
   }
 
   const firstNameStr = String(firstName).trim();
+  const lastNameStr = String(lastName).trim();
+  const cityStr = String(city).trim();
+  const phoneStr = String(phone).trim();
+  const emailStr = String(email).trim();
+
   await Promise.all([
-    sendAmbassadorApplicationConfirmation({
-      to: String(email).trim(),
-      firstName: firstNameStr,
-    }).catch(() => {}),
+    referrer
+      ? sendReferralWelcomeToCandidate({ to: emailStr, firstName: firstNameStr, parrainName: referrer.name }).catch(() => {})
+      : sendAmbassadorApplicationConfirmation({ to: emailStr, firstName: firstNameStr }).catch(() => {}),
     sendAmbassadorApplicationAdmin({
       firstName: firstNameStr,
-      lastName: String(lastName).trim(),
-      city: String(city).trim(),
-      phone: String(phone).trim(),
-      email: String(email).trim(),
+      lastName: lastNameStr,
+      city: cityStr,
+      phone: phoneStr,
+      email: emailStr,
       siret: siretClean,
       notes: notes ? String(notes) : null,
     }).catch(() => {}),

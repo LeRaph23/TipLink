@@ -545,6 +545,9 @@ export type Database = {
           email: string | null;
           phone: string | null;
           city: string | null;
+          referrer_ambassador_id: string | null;
+          referral_code: string | null;
+          referral_validated_at: string | null;
         };
         Insert: {
           id?: string;
@@ -560,6 +563,9 @@ export type Database = {
           email?: string | null;
           phone?: string | null;
           city?: string | null;
+          referrer_ambassador_id?: string | null;
+          referral_code?: string | null;
+          referral_validated_at?: string | null;
         };
         Update: {
           id?: string;
@@ -575,6 +581,9 @@ export type Database = {
           email?: string | null;
           phone?: string | null;
           city?: string | null;
+          referrer_ambassador_id?: string | null;
+          referral_code?: string | null;
+          referral_validated_at?: string | null;
         };
         Relationships: [
           {
@@ -711,6 +720,11 @@ export type Database = {
           reviewed_at: string | null;
           ip_hash: string | null;
           created_at: string;
+          referrer_ambassador_id: string | null;
+          referrer_code_used: string | null;
+          source: string;
+          reminder_count: number;
+          last_reminder_at: string | null;
         };
         Insert: {
           id?: string;
@@ -726,6 +740,11 @@ export type Database = {
           reviewed_at?: string | null;
           ip_hash?: string | null;
           created_at?: string;
+          referrer_ambassador_id?: string | null;
+          referrer_code_used?: string | null;
+          source?: string;
+          reminder_count?: number;
+          last_reminder_at?: string | null;
         };
         Update: {
           id?: string;
@@ -741,6 +760,122 @@ export type Database = {
           reviewed_at?: string | null;
           ip_hash?: string | null;
           created_at?: string;
+          referrer_ambassador_id?: string | null;
+          referrer_code_used?: string | null;
+          source?: string;
+          reminder_count?: number;
+          last_reminder_at?: string | null;
+        };
+        Relationships: [];
+      };
+      referral_payouts: {
+        Row: {
+          id: string;
+          referrer_ambassador_id: string;
+          referred_ambassador_id: string;
+          amount_cents: number;
+          reason: 'validation' | 'milestone_5' | 'milestone_10';
+          status: 'pending' | 'credited' | 'voided';
+          credited_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          referrer_ambassador_id: string;
+          referred_ambassador_id: string;
+          amount_cents: number;
+          reason: 'validation' | 'milestone_5' | 'milestone_10';
+          status?: 'pending' | 'credited' | 'voided';
+          credited_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          referrer_ambassador_id?: string;
+          referred_ambassador_id?: string;
+          amount_cents?: number;
+          reason?: 'validation' | 'milestone_5' | 'milestone_10';
+          status?: 'pending' | 'credited' | 'voided';
+          credited_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      referral_email_log: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          recipient_email: string;
+          sent_at: string;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          recipient_email: string;
+          sent_at?: string;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          recipient_email?: string;
+          sent_at?: string;
+        };
+        Relationships: [];
+      };
+      cold_email_prospects: {
+        Row: {
+          id: string;
+          siret: string;
+          company_name: string | null;
+          email: string | null;
+          first_name: string | null;
+          city: string | null;
+          naf_code: string | null;
+          creation_date: string | null;
+          birth_year_estimate: number | null;
+          imported_at: string;
+          sequence_step: number;
+          last_sent_at: string | null;
+          replied_at: string | null;
+          unsubscribed_at: string | null;
+          clicked_landing_at: string | null;
+          notes: string | null;
+        };
+        Insert: {
+          id?: string;
+          siret: string;
+          company_name?: string | null;
+          email?: string | null;
+          first_name?: string | null;
+          city?: string | null;
+          naf_code?: string | null;
+          creation_date?: string | null;
+          birth_year_estimate?: number | null;
+          imported_at?: string;
+          sequence_step?: number;
+          last_sent_at?: string | null;
+          replied_at?: string | null;
+          unsubscribed_at?: string | null;
+          clicked_landing_at?: string | null;
+          notes?: string | null;
+        };
+        Update: {
+          id?: string;
+          siret?: string;
+          company_name?: string | null;
+          email?: string | null;
+          first_name?: string | null;
+          city?: string | null;
+          naf_code?: string | null;
+          creation_date?: string | null;
+          birth_year_estimate?: number | null;
+          imported_at?: string;
+          sequence_step?: number;
+          last_sent_at?: string | null;
+          replied_at?: string | null;
+          unsubscribed_at?: string | null;
+          clicked_landing_at?: string | null;
+          notes?: string | null;
         };
         Relationships: [];
       };
