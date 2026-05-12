@@ -196,13 +196,25 @@ export default async function AdminAmbassadeursPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          Ambassadeurs
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          Gérez les étudiants apporteurs d&apos;affaires et leurs commissions.
-        </p>
+      <div style={{ marginBottom: 22, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
+            Ambassadeurs
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
+            Gérez les étudiants apporteurs d&apos;affaires et leurs commissions.
+          </p>
+        </div>
+        <a
+          href={`/${locale}/dashboard/admin/ambassadeurs/communications`}
+          style={{
+            padding: '9px 16px', borderRadius: 8,
+            background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600,
+            textDecoration: 'none', whiteSpace: 'nowrap',
+          }}
+        >
+          Communications →
+        </a>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 28 }}>

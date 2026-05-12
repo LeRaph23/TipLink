@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AmbassadeurPayoutPanel } from './AmbassadeurBanking';
+import { AmbassadeurContracts } from './AmbassadeurContracts';
 
 type AuthState = 'loading' | 'pin-required' | 'authenticated';
 
@@ -460,6 +461,9 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             ))}
           </div>
         </div>
+
+        {/* Contrats à signer / signés */}
+        <AmbassadeurContracts code={code} />
 
         {/* Virements */}
         {banking && (

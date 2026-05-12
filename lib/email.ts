@@ -582,3 +582,107 @@ export async function sendOrderDelivered(opts: {
     </td></tr>`),
   });
 }
+
+// ─── Ambassador — templated email sent by super admin ─────────────────────────
+// `bodyHtml` is the rendered HTML body (placeholders already substituted by
+// the caller via renderTemplate). It is wrapped in the Digitip dark layout.
+
+export async function sendAmbassadorTemplatedEmail(opts: {
+  to: string;
+  subject: string;
+  bodyHtml: string;
+  replyTo?: string;
+}): Promise<{ id: string | null }> {
+  if (!resend) return { id: null };
+  const { to, subject, bodyHtml, replyTo } = opts;
+
+  const html = darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 16px;color:#ddd;font-size:14px;line-height:1.6">
+      ${bodyHtml}
+    </td></tr>`);
+
+  const result = await resend.emails.send({
+    from: FROM,
+    to,
+    subject,
+    html,
+    ...(replyTo ? { replyTo } : {}),
+  });
+  return { id: result.data?.id ?? null };
+}
+
+// ─── Ambassador — contract invitation (admin → ambassador) ────────────────────
+
+export async function sendAmbassadorContractInvitation(opts: {
+  to: string;
+  firstName: string;
+  contractTitle: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, contractTitle, dashboardUrl } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Contrat à signer — ${contractTitle}`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Contrat ambassadeur</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:8px">${firstName}, un contrat t'attend</div>
+      <div style="font-size:14px;color:#888;line-height:1.6">Tu peux le lire et le signer en ligne, depuis ton dashboard sécurisé par PIN. Aucune impression ni signature manuscrite requise.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p><a href="${dashboardUrl}" style="display:inline-block;padding:12px 22px;background:#22c55e;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Lire &amp; signer le contrat →</a></p>
+      <p style="font-size:12px;color:#444;margin:18px 0 0;line-height:1.6">Pour ta protection, la signature s'effectue après lecture intégrale et acceptation explicite. Une copie te sera envoyée par email après signature.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Ambassador — signed contract copy (both parties) ─────────────────────────
+
+export async function sendSignedContractCopy(opts: {
+  to: string;
+  firstName: string;
+  contractTitle: string;
+  signedAt: string;
+  contentHash: string;
+  downloadUrl: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, contractTitle, signedAt, contentHash, downloadUrl } = opts;
+  const shortHash = contentHash.slice(0, 16);
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Contrat signé — ${contractTitle}`,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">Contrat signé</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Signé</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:8px">${firstName}, ton contrat est signé ✓</div>
+      <div style="font-size:14px;color:#888;line-height:1.6">${contractTitle}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+        ${infoRow('Signé le', new Date(signedAt).toLocaleString('fr-FR'))}
+        ${infoRow('Empreinte SHA-256', `<span style="font-family:monospace">${shortHash}…</span>`)}
+      </table>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p><a href="${downloadUrl}" style="display:inline-block;padding:10px 18px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #333">Télécharger / imprimer →</a></p>
+      <p style="font-size:12px;color:#444;margin:18px 0 0;line-height:1.6">Conserve cet email comme preuve. Le contenu intégral du contrat reste accessible depuis ton dashboard et ne peut plus être modifié.</p>
+    </td></tr>`),
+  });
+}

@@ -744,6 +744,251 @@ export type Database = {
         };
         Relationships: [];
       };
+      ambassador_email_templates: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          subject: string;
+          body_html: string;
+          is_seeded: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name: string;
+          subject: string;
+          body_html: string;
+          is_seeded?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          name?: string;
+          subject?: string;
+          body_html?: string;
+          is_seeded?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      ambassador_email_logs: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          template_id: string | null;
+          template_slug: string | null;
+          subject: string;
+          body_html: string;
+          to_email: string;
+          sent_by: string;
+          resend_id: string | null;
+          status: 'sent' | 'failed';
+          error: string | null;
+          sent_at: string;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          template_id?: string | null;
+          template_slug?: string | null;
+          subject: string;
+          body_html: string;
+          to_email: string;
+          sent_by: string;
+          resend_id?: string | null;
+          status: 'sent' | 'failed';
+          error?: string | null;
+          sent_at?: string;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          template_id?: string | null;
+          template_slug?: string | null;
+          subject?: string;
+          body_html?: string;
+          to_email?: string;
+          sent_by?: string;
+          resend_id?: string | null;
+          status?: 'sent' | 'failed';
+          error?: string | null;
+          sent_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_email_logs_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ambassador_email_logs_template_id_fkey';
+            columns: ['template_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassador_email_templates';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ambassador_contract_templates: {
+        Row: {
+          id: string;
+          name: string;
+          version: number;
+          body_html: string;
+          consent_text: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          version?: number;
+          body_html: string;
+          consent_text: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          version?: number;
+          body_html?: string;
+          consent_text?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      ambassador_contracts: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          template_id: string | null;
+          title: string;
+          content_snapshot: string;
+          content_hash: string;
+          consent_text: string;
+          status: 'sent' | 'viewed' | 'signed' | 'revoked';
+          sent_by: string;
+          sent_at: string;
+          viewed_at: string | null;
+          signed_at: string | null;
+          signature_image_path: string | null;
+          signer_ip_hash: string | null;
+          signer_user_agent: string | null;
+          revoked_at: string | null;
+          revoked_reason: string | null;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          template_id?: string | null;
+          title: string;
+          content_snapshot: string;
+          content_hash: string;
+          consent_text: string;
+          status?: 'sent' | 'viewed' | 'signed' | 'revoked';
+          sent_by: string;
+          sent_at?: string;
+          viewed_at?: string | null;
+          signed_at?: string | null;
+          signature_image_path?: string | null;
+          signer_ip_hash?: string | null;
+          signer_user_agent?: string | null;
+          revoked_at?: string | null;
+          revoked_reason?: string | null;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          template_id?: string | null;
+          title?: string;
+          content_snapshot?: string;
+          content_hash?: string;
+          consent_text?: string;
+          status?: 'sent' | 'viewed' | 'signed' | 'revoked';
+          sent_by?: string;
+          sent_at?: string;
+          viewed_at?: string | null;
+          signed_at?: string | null;
+          signature_image_path?: string | null;
+          signer_ip_hash?: string | null;
+          signer_user_agent?: string | null;
+          revoked_at?: string | null;
+          revoked_reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_contracts_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ambassador_contracts_template_id_fkey';
+            columns: ['template_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassador_contract_templates';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ambassador_contract_audit_log: {
+        Row: {
+          id: string;
+          contract_id: string;
+          action: 'sent' | 'viewed' | 'signed' | 'revoked' | 'downloaded';
+          actor_type: 'admin' | 'ambassador' | 'system';
+          actor_id: string | null;
+          ip_hash: string | null;
+          user_agent: string | null;
+          details: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          contract_id: string;
+          action: 'sent' | 'viewed' | 'signed' | 'revoked' | 'downloaded';
+          actor_type: 'admin' | 'ambassador' | 'system';
+          actor_id?: string | null;
+          ip_hash?: string | null;
+          user_agent?: string | null;
+          details?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          contract_id?: string;
+          action?: 'sent' | 'viewed' | 'signed' | 'revoked' | 'downloaded';
+          actor_type?: 'admin' | 'ambassador' | 'system';
+          actor_id?: string | null;
+          ip_hash?: string | null;
+          user_agent?: string | null;
+          details?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_contract_audit_log_contract_id_fkey';
+            columns: ['contract_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassador_contracts';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
