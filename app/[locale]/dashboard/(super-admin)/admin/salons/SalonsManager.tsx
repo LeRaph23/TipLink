@@ -92,6 +92,41 @@ export function SalonsManager({
     });
   };
 
+  // Compute empty-zones list eagerly so the button can advertise the count.
+  const salonsCountByZone = salons.reduce<Record<string, number>>((acc, s) => {
+    if (s.zoneId) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
+    return acc;
+  }, {});
+  const emptyZones = zones.filter((z) => z.isActive && (salonsCountByZone[z.id] ?? 0) === 0);
+
+  const runImportAllEmptyZones = () => {
+    if (emptyZones.length === 0) return;
+    if (!confirm(
+      `Importer les salons des ${emptyZones.length} zones encore vides ? Cela peut prendre ~${Math.ceil(emptyZones.length * 1.5 / 60)} min.`
+    )) return;
+
+    setFeedback({ type: 'ok', msg: `Import en cours sur ${emptyZones.length} zones…` });
+    startTransition(async () => {
+      let totalInserted = 0;
+      let totalSkipped = 0;
+      let failed = 0;
+      for (const z of emptyZones) {
+        try {
+          const r = await importSalonsForZone(z.id);
+          if (r.ok) { totalInserted += r.inserted; totalSkipped += r.skipped; }
+          else failed += 1;
+        } catch {
+          failed += 1;
+        }
+        await new Promise((r) => setTimeout(r, 800));
+      }
+      setFeedback({
+        type: failed === 0 ? 'ok' : 'err',
+        msg: `${emptyZones.length - failed}/${emptyZones.length} zones traitées · ${totalInserted} salons importés, ${totalSkipped} ignorés${failed ? ` · ${failed} échec(s)` : ''}.`,
+      });
+    });
+  };
+
   const runImportSalons = (zoneId: string) => {
     setFeedback(null);
     startTransition(async () => {
@@ -248,6 +283,30 @@ export function SalonsManager({
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
           Ville → arrondissements ou commune entière selon la taille. Département → toutes ses communes.
         </div>
+
+        {emptyZones.length > 0 && (
+          <div style={{
+            marginTop: 12, paddingTop: 12,
+            borderTop: '1px dashed var(--border-subtle)',
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          }}>
+            <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
+              <strong style={{ color: 'var(--accent)' }}>{emptyZones.length}</strong> zone
+              {emptyZones.length > 1 ? 's' : ''} sans aucun salon importé pour l&apos;instant.
+            </div>
+            <button
+              onClick={runImportAllEmptyZones}
+              disabled={pending}
+              style={{
+                padding: '8px 14px', background: 'var(--accent-muted)', color: 'var(--accent)',
+                border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-sm)',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              ⚡ Importer les salons des zones vides ({emptyZones.length})
+            </button>
+          </div>
+        )}
       </div>
 
       {feedback && (
