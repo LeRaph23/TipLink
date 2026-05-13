@@ -37,7 +37,7 @@ export async function importZonesFromOsm(
 
     const zones = await fetchZonesForCity(trimmed);
     if (zones.length === 0) {
-      return { ok: false, error: 'Aucune zone trouvée pour cette ville sur OpenStreetMap.' };
+      return { ok: false, error: 'Aucune zone trouvée pour cette ville ou ce département sur OpenStreetMap.' };
     }
 
     const service = createServiceClient();
@@ -45,10 +45,14 @@ export async function importZonesFromOsm(
     let skipped = 0;
 
     for (const z of zones) {
+      // For a commune input, every zone shares the same city.
+      // For a département input, each commune is its own city.
+      const cityForZone = z.city || trimmed;
+
       const { data: existing } = await service
         .from('salon_zones')
         .select('id')
-        .eq('city', trimmed)
+        .eq('city', cityForZone)
         .eq('name', z.name)
         .maybeSingle();
 
@@ -58,7 +62,7 @@ export async function importZonesFromOsm(
       }
 
       const { error } = await service.from('salon_zones').insert({
-        city: trimmed,
+        city: cityForZone,
         name: z.name,
         osm_relation_id: z.osm_relation_id,
         bbox_min_lat: z.bbox.minLat,
@@ -69,7 +73,7 @@ export async function importZonesFromOsm(
       if (!error) inserted += 1;
     }
 
-    await logAdminAction('salons.import_zones', { city: trimmed, inserted, skipped });
+    await logAdminAction('salons.import_zones', { input: trimmed, inserted, skipped });
     revalidatePath('/dashboard/admin/salons', 'page');
     return { ok: true, inserted, skipped };
   } catch (e) {
