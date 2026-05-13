@@ -60,22 +60,28 @@ type RawResponse = {
 };
 
 function buildQuery(opts: SireneSearchOptions): string {
-  const parts: string[] = ['etatAdministratifUniteLegale:A'];
-
-  if (opts.personnePhysiqueOnly !== false) {
-    parts.push('categorieJuridiqueUniteLegale:1000');
-  }
+  // SIRENE 3.11 — historicized variables (etatAdministratif*,
+  // activitePrincipale*) MUST be wrapped in periode(). Non-historicized
+  // ones (categorieJuridiqueUniteLegale, dateCreationUniteLegale,
+  // codePostalEtablissement) sit outside.
+  const periodeInner: string[] = ['etatAdministratifUniteLegale:A'];
 
   if (opts.nafCodes && opts.nafCodes.length > 0) {
     const naf = opts.nafCodes
       .map(c => `activitePrincipaleUniteLegale:${c}`)
       .join(' OR ');
-    parts.push(`periode(${naf})`);
+    periodeInner.push(opts.nafCodes.length > 1 ? `(${naf})` : naf);
+  }
+
+  const parts: string[] = [`periode(${periodeInner.join(' AND ')})`];
+
+  if (opts.personnePhysiqueOnly !== false) {
+    parts.push('categorieJuridiqueUniteLegale:1000');
   }
 
   if (opts.createdAfter || opts.createdBefore) {
-    const after = opts.createdAfter ?? '1900-01-01';
-    const before = opts.createdBefore ?? '2100-01-01';
+    const after = opts.createdAfter ?? '*';
+    const before = opts.createdBefore ?? '*';
     parts.push(`dateCreationUniteLegale:[${after} TO ${before}]`);
   }
 
