@@ -831,7 +831,7 @@ export type Database = {
       cold_email_prospects: {
         Row: {
           id: string;
-          siret: string;
+          siret: string | null;
           company_name: string | null;
           email: string | null;
           first_name: string | null;
@@ -846,10 +846,12 @@ export type Database = {
           unsubscribed_at: string | null;
           clicked_landing_at: string | null;
           notes: string | null;
+          linkedin_url: string | null;
+          status: 'not_contacted' | 'contacted' | 'in_discussion' | 'accepted' | 'refused';
         };
         Insert: {
           id?: string;
-          siret: string;
+          siret?: string | null;
           company_name?: string | null;
           email?: string | null;
           first_name?: string | null;
@@ -864,10 +866,12 @@ export type Database = {
           unsubscribed_at?: string | null;
           clicked_landing_at?: string | null;
           notes?: string | null;
+          linkedin_url?: string | null;
+          status?: 'not_contacted' | 'contacted' | 'in_discussion' | 'accepted' | 'refused';
         };
         Update: {
           id?: string;
-          siret?: string;
+          siret?: string | null;
           company_name?: string | null;
           email?: string | null;
           first_name?: string | null;
@@ -882,6 +886,8 @@ export type Database = {
           unsubscribed_at?: string | null;
           clicked_landing_at?: string | null;
           notes?: string | null;
+          linkedin_url?: string | null;
+          status?: 'not_contacted' | 'contacted' | 'in_discussion' | 'accepted' | 'refused';
         };
         Relationships: [];
       };
