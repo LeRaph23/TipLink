@@ -27,6 +27,7 @@ function sleep(ms: number) {
 export type OsmZone = {
   osm_relation_id: number;
   name: string;
+  city: string;   // commune in which this zone lives (= name for a whole commune)
   admin_level: number;
   bbox: { minLat: number; minLon: number; maxLat: number; maxLon: number };
 };
@@ -114,24 +115,37 @@ function buildAddress(t: Record<string, string>): string | null {
 }
 
 /**
- * Fetch admin boundaries (arrondissements/communes) inside the given city.
- * Strategy:
- *  1. Pin the commune (admin_level=8) by exact name. This avoids matching
- *     EPCIs or other administrative entities that happen to share the name.
- *  2. List its admin sub-areas at admin_level 10 (or 9) inside the commune.
- *     For Paris/Lyon/Marseille this returns arrondissements; for smaller
- *     towns we fall back to the commune itself as a single zone.
- *  3. Defensive: drop any sub-zone whose bbox centroid is more than ~50 km
- *     from the commune centroid — guards against Overpass returning the
- *     wrong polygon when names are ambiguous (e.g. "Mulhouse" matching an
- *     entity that geographically overlaps Saint-Louis area).
+ * Fetch admin boundaries to use as work zones for a given location name.
+ *
+ * The name can be either:
+ *  - A commune (e.g. "Paris", "Mulhouse") — returns its arrondissements /
+ *    quartiers (admin_level 9/10) when they exist, otherwise the commune
+ *    itself as a single zone.
+ *  - A département (e.g. "Bas-Rhin", "Haut-Rhin", "Yvelines") — returns
+ *    every commune (admin_level 8) inside as a separate zone.
+ *
+ * Resolution order:
+ *  1. Try as commune (admin_level=8).
+ *  2. If no match, try as département (admin_level=6) and list its communes.
+ *
+ * Defensive: drop any sub-zone whose bbox centroid is more than ~50 km from
+ * the parent centroid (guard against ambiguous OSM names).
  */
 export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
   const safeCity = city.replace(/["\\]/g, ' ').trim();
   if (!safeCity) return [];
 
-  // Pin the commune precisely (admin_level=8) and map it to an area.
-  const query = `
+  function bboxCentre(b: { minlat: number; minlon: number; maxlat: number; maxlon: number }) {
+    return { lat: (b.minlat + b.maxlat) / 2, lon: (b.minlon + b.maxlon) / 2 };
+  }
+  function approxKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+    const dLat = (a.lat - b.lat) * 111;
+    const dLon = (a.lon - b.lon) * 111 * Math.cos((a.lat * Math.PI) / 180);
+    return Math.sqrt(dLat * dLat + dLon * dLon);
+  }
+
+  // ── 1) Try as a commune ──────────────────────────────────────────────────
+  const communeQuery = `
     [out:json][timeout:${OVERPASS_TIMEOUT_S}];
     relation["boundary"="administrative"]["admin_level"="8"]["name"="${safeCity}"]->.commune;
     .commune map_to_area->.searchArea;
@@ -143,84 +157,27 @@ export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
     out tags bb;
   `;
 
-  const data = await callOverpass(query);
+  const communeData = await callOverpass(communeQuery);
 
-  // The commune itself comes back as the first element (admin_level=8).
-  const communeEl = (data.elements ?? []).find(
+  const communeEl = (communeData.elements ?? []).find(
     (e) => e.type === 'relation' && e.tags?.admin_level === '8' && e.tags?.name === safeCity && e.bounds
   );
-  const communeCentre = communeEl?.bounds
-    ? {
-        lat: (communeEl.bounds.minlat + communeEl.bounds.maxlat) / 2,
-        lon: (communeEl.bounds.minlon + communeEl.bounds.maxlon) / 2,
-      }
-    : null;
 
-  function bboxCentre(b: { minlat: number; minlon: number; maxlat: number; maxlon: number }) {
-    return { lat: (b.minlat + b.maxlat) / 2, lon: (b.minlon + b.maxlon) / 2 };
-  }
-  function approxKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
-    const dLat = (a.lat - b.lat) * 111;
-    const dLon = (a.lon - b.lon) * 111 * Math.cos((a.lat * Math.PI) / 180);
-    return Math.sqrt(dLat * dLat + dLon * dLon);
-  }
-
-  let zones: OsmZone[] = (data.elements ?? [])
-    .filter((e) =>
-      e.type === 'relation' &&
-      e.tags?.name &&
-      e.bounds &&
-      (e.tags?.admin_level === '9' || e.tags?.admin_level === '10') &&
-      // Defensive: skip sub-zones whose centroid is suspiciously far from the
-      // commune (Overpass can return wrong relations for short ambiguous names).
-      (!communeCentre || approxKm(bboxCentre(e.bounds), communeCentre) < 50)
-    )
-    .map((e) => ({
-      osm_relation_id: e.id,
-      name: e.tags!.name,
-      admin_level: parseInt(e.tags!.admin_level ?? '10', 10),
-      bbox: {
-        minLat: e.bounds!.minlat,
-        minLon: e.bounds!.minlon,
-        maxLat: e.bounds!.maxlat,
-        maxLon: e.bounds!.maxlon,
-      },
-    }));
-
-  // If we got both level 9 and 10, prefer level 10 (smaller / arrondissements)
-  if (zones.some((z) => z.admin_level === 10)) {
-    zones = zones.filter((z) => z.admin_level === 10);
-  }
-
-  // Fallback: no sub-areas → use the commune itself as a single zone.
-  if (zones.length === 0 && communeEl?.bounds) {
-    zones = [{
-      osm_relation_id: communeEl.id,
-      name: communeEl.tags?.name ?? safeCity,
-      admin_level: 8,
-      bbox: {
-        minLat: communeEl.bounds.minlat,
-        minLon: communeEl.bounds.minlon,
-        maxLat: communeEl.bounds.maxlat,
-        maxLon: communeEl.bounds.maxlon,
-      },
-    }];
-  }
-
-  // Last-resort fallback: search by level 7 too (intercommunalité).
-  if (zones.length === 0) {
-    const fallback = `
-      [out:json][timeout:${OVERPASS_TIMEOUT_S}];
-      relation["boundary"="administrative"]["name"="${safeCity}"]["admin_level"~"^(7|8)$"];
-      out tags bb;
-    `;
-    const fb = await callOverpass(fallback);
-    zones = (fb.elements ?? [])
-      .filter((e) => e.type === 'relation' && e.bounds)
+  if (communeEl) {
+    const communeCentre = bboxCentre(communeEl.bounds!);
+    let zones: OsmZone[] = (communeData.elements ?? [])
+      .filter((e) =>
+        e.type === 'relation' &&
+        e.tags?.name &&
+        e.bounds &&
+        (e.tags?.admin_level === '9' || e.tags?.admin_level === '10') &&
+        approxKm(bboxCentre(e.bounds), communeCentre) < 50
+      )
       .map((e) => ({
         osm_relation_id: e.id,
-        name: e.tags?.name ?? safeCity,
-        admin_level: parseInt(e.tags?.admin_level ?? '8', 10),
+        name: e.tags!.name,
+        city: communeEl.tags?.name ?? safeCity,
+        admin_level: parseInt(e.tags!.admin_level ?? '10', 10),
         bbox: {
           minLat: e.bounds!.minlat,
           minLon: e.bounds!.minlon,
@@ -228,13 +185,103 @@ export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
           maxLon: e.bounds!.maxlon,
         },
       }));
+
+    // Prefer level 10 (smaller) when both levels coexist.
+    if (zones.some((z) => z.admin_level === 10)) {
+      zones = zones.filter((z) => z.admin_level === 10);
+    }
+
+    // No sub-zones → use the commune itself as a single zone.
+    if (zones.length === 0) {
+      zones = [{
+        osm_relation_id: communeEl.id,
+        name: communeEl.tags?.name ?? safeCity,
+        city: communeEl.tags?.name ?? safeCity,
+        admin_level: 8,
+        bbox: {
+          minLat: communeEl.bounds!.minlat,
+          minLon: communeEl.bounds!.minlon,
+          maxLat: communeEl.bounds!.maxlat,
+          maxLon: communeEl.bounds!.maxlon,
+        },
+      }];
+    }
+
+    zones.sort((a, b) =>
+      a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' })
+    );
+    return zones;
   }
 
-  // Sort by name for stable display
-  zones.sort((a, b) =>
-    a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' })
+  // ── 2) Try as a département (admin_level=6) ──────────────────────────────
+  // Every commune (admin_level=8) inside the département becomes a zone.
+  const deptQuery = `
+    [out:json][timeout:${OVERPASS_TIMEOUT_S}];
+    relation["boundary"="administrative"]["admin_level"="6"]["name"="${safeCity}"]->.dept;
+    .dept map_to_area->.searchArea;
+    .dept out tags bb;
+    relation["boundary"="administrative"]["admin_level"="8"](area.searchArea);
+    out tags bb;
+  `;
+
+  const deptData = await callOverpass(deptQuery);
+
+  const deptEl = (deptData.elements ?? []).find(
+    (e) => e.type === 'relation' && e.tags?.admin_level === '6' && e.tags?.name === safeCity && e.bounds
   );
-  return zones;
+
+  if (deptEl) {
+    const deptCentre = bboxCentre(deptEl.bounds!);
+    const communes: OsmZone[] = (deptData.elements ?? [])
+      .filter((e) =>
+        e.type === 'relation' &&
+        e.tags?.name &&
+        e.bounds &&
+        e.tags?.admin_level === '8' &&
+        // Defensive — département is typically < 100 km wide.
+        approxKm(bboxCentre(e.bounds), deptCentre) < 120
+      )
+      .map((e) => ({
+        osm_relation_id: e.id,
+        name: e.tags!.name,
+        // For a département import, each commune is its own city.
+        city: e.tags!.name,
+        admin_level: 8,
+        bbox: {
+          minLat: e.bounds!.minlat,
+          minLon: e.bounds!.minlon,
+          maxLat: e.bounds!.maxlat,
+          maxLon: e.bounds!.maxlon,
+        },
+      }));
+
+    communes.sort((a, b) =>
+      a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' })
+    );
+    return communes;
+  }
+
+  // ── 3) Last-resort fallback (level 7/8 by name) ──────────────────────────
+  const fallback = `
+    [out:json][timeout:${OVERPASS_TIMEOUT_S}];
+    relation["boundary"="administrative"]["name"="${safeCity}"]["admin_level"~"^(7|8)$"];
+    out tags bb;
+  `;
+  const fb = await callOverpass(fallback);
+  return (fb.elements ?? [])
+    .filter((e) => e.type === 'relation' && e.bounds)
+    .map((e) => ({
+      osm_relation_id: e.id,
+      name: e.tags?.name ?? safeCity,
+      city: e.tags?.name ?? safeCity,
+      admin_level: parseInt(e.tags?.admin_level ?? '8', 10),
+      bbox: {
+        minLat: e.bounds!.minlat,
+        minLon: e.bounds!.minlon,
+        maxLat: e.bounds!.maxlat,
+        maxLon: e.bounds!.maxlon,
+      },
+    }));
 }
 
 /**

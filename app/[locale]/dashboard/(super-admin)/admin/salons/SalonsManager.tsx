@@ -220,13 +220,13 @@ export function SalonsManager({
         borderRadius: 'var(--radius)', padding: 14, marginBottom: 18,
       }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-          Importer une ville depuis OpenStreetMap
+          Importer une ville ou un département depuis OpenStreetMap
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input
             value={importCity}
             onChange={(e) => setImportCity(e.target.value)}
-            placeholder="Ex: Paris, Lyon, Bordeaux…"
+            placeholder="Ex: Paris · Mulhouse · Bas-Rhin · Yvelines…"
             style={{
               flex: 1, minWidth: 200, padding: '8px 12px',
               border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
@@ -246,7 +246,7 @@ export function SalonsManager({
           </button>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
-          Récupère les arrondissements / communes via OSM, puis importe les salons par zone individuellement.
+          Ville → arrondissements ou commune entière selon la taille. Département → toutes ses communes.
         </div>
       </div>
 
