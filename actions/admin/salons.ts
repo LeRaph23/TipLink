@@ -277,7 +277,8 @@ export async function toggleSalonActive(
 // ─── Reverse-geocode missing addresses via Nominatim ─────────────────────────
 // Throttled to 1 req/s — Nominatim public-instance policy. Call per zone.
 export async function enrichSalonAddressesForZone(
-  zoneId: string
+  zoneId: string,
+  opts: { force?: boolean } = {}
 ): Promise<Result<{ enriched: number; total: number; skipped: number }>> {
   try {
     await requireSuperAdminUser();
@@ -293,8 +294,9 @@ export async function enrichSalonAddressesForZone(
       return { ok: true, enriched: 0, total: 0, skipped: 0 };
     }
 
+    // force=true ⇒ reverse-geocode every salon (overwrite stale addresses).
     const needsAddress = salons.filter(
-      (s) => !s.address && s.lat != null && s.lon != null
+      (s) => (opts.force || !s.address) && s.lat != null && s.lon != null
     );
 
     if (needsAddress.length === 0) {
@@ -339,7 +341,8 @@ export async function enrichSalonAddressesForZone(
 // Stores opening hours, business status, rating. Salons flagged
 // CLOSED_PERMANENTLY are deactivated (is_active = false).
 export async function enrichSalonsViaGoogleForZone(
-  zoneId: string
+  zoneId: string,
+  opts: { force?: boolean } = {}
 ): Promise<Result<{ enriched: number; matched: number; closed: number; missing: number; total: number; apiError: string | null }>> {
   try {
     await requireSuperAdminUser();
@@ -358,12 +361,14 @@ export async function enrichSalonsViaGoogleForZone(
       return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: 0, apiError: null };
     }
 
-    // Skip salons that were SUCCESSFULLY enriched (have a google_place_id)
-    // in the last 30 days. Salons without a place_id are retried on every
-    // call so we benefit from algorithm improvements without manual reset.
+    // When force=true, re-enrich every salon (used by the "Réenrichir" admin
+    // button). Otherwise: skip salons that were SUCCESSFULLY enriched (have a
+    // google_place_id) in the last 30 days, but always retry salons without
+    // a place_id so algorithm improvements take effect on the next click.
     const cutoff = Date.now() - 30 * 86400000;
     const candidates = salons.filter((s) => {
       if (s.lat == null || s.lon == null) return false;
+      if (opts.force) return true;
       const matched = !!s.google_place_id;
       if (matched && s.google_enriched_at && new Date(s.google_enriched_at).getTime() > cutoff) {
         return false;
