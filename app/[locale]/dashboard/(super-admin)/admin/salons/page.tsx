@@ -17,7 +17,7 @@ export default async function AdminSalonsPage({
   const [{ data: zones }, { data: salons }, { data: visits }, { data: claims }, { data: ambassadors }] =
     await Promise.all([
       service.from('salon_zones').select('id, city, name, is_active, created_at').order('city').order('name'),
-      service.from('salons').select('id, zone_id, city, name, address, postal_code, phone, is_active'),
+      service.from('salons').select('id, zone_id, city, name, address, postal_code, phone, is_active, google_enriched_at, business_status'),
       service.from('salon_visits').select('id, salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at'),
       service.from('ambassador_zone_claims').select('id, ambassador_id, zone_id, claimed_at, released_at').is('released_at', null),
       service.from('ambassadors').select('id, name'),
@@ -98,6 +98,8 @@ export default async function AdminSalonsPage({
           phone: s.phone,
           isActive: s.is_active,
           visitCount: visitCountBySalon.get(s.id) ?? 0,
+          googleEnriched: !!s.google_enriched_at,
+          businessStatus: (s.business_status as 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null) ?? null,
         }))}
         activeClaims={(claims ?? []).map((c) => ({
           zoneId: c.zone_id,

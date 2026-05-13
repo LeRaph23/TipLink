@@ -14,6 +14,14 @@ type SalonVisit = {
   myNotes: string | null;
 };
 
+type OpeningHours = {
+  weekdayDescriptions?: string[];
+  periods?: Array<{
+    open?: { day: number; hour: number; minute: number };
+    close?: { day: number; hour: number; minute: number };
+  }>;
+} | null;
+
 type Salon = {
   id: string;
   name: string;
@@ -23,8 +31,51 @@ type Salon = {
   website: string | null;
   lat: number | null;
   lon: number | null;
+  opening_hours: OpeningHours;
+  business_status: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
+  google_rating: number | null;
   visit: SalonVisit | null;
 };
+
+const WEEKDAYS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+/**
+ * Is the salon open right now according to its Google opening_hours?
+ * Returns null if we can't tell (no hours data).
+ */
+function isOpenNow(hours: OpeningHours): { open: boolean; nextChange: string | null } | null {
+  if (!hours?.periods?.length) return null;
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday, matching Google's day index
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+
+  for (const p of hours.periods) {
+    if (!p.open || !p.close) continue;
+    // Same-day period (most common)
+    if (p.open.day === day && p.close.day === day) {
+      const openM = p.open.hour * 60 + p.open.minute;
+      const closeM = p.close.hour * 60 + p.close.minute;
+      if (minutesNow >= openM && minutesNow < closeM) {
+        const h = Math.floor(closeM / 60);
+        const m = closeM % 60;
+        return { open: true, nextChange: `Ferme à ${h}h${m.toString().padStart(2, '0')}` };
+      }
+    }
+  }
+
+  // Find next opening today or after
+  for (const p of hours.periods) {
+    if (!p.open) continue;
+    if (p.open.day === day) {
+      const openM = p.open.hour * 60 + p.open.minute;
+      if (openM > minutesNow) {
+        return { open: false, nextChange: `Ouvre à ${p.open.hour}h${p.open.minute.toString().padStart(2, '0')}` };
+      }
+    }
+  }
+
+  return { open: false, nextChange: null };
+}
 
 const RATING_LABEL: Record<number, string> = {
   1: 'Peu probable',
@@ -295,6 +346,7 @@ function SalonRow({
   salon, onLogVisit, dimmed,
 }: { salon: Salon; onLogVisit: (() => void) | null; dimmed?: boolean }) {
   const v = salon.visit;
+  const openState = isOpenNow(salon.opening_hours);
   return (
     <div style={{
       padding: '12px 16px',
@@ -303,7 +355,30 @@ function SalonRow({
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{salon.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{salon.name}</span>
+            {openState && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
+                background: openState.open ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: openState.open ? 'var(--success)' : 'var(--error)',
+                border: `1px solid ${openState.open ? 'var(--success)' : 'var(--error)'}`,
+                whiteSpace: 'nowrap',
+              }}>
+                {openState.open ? '● Ouvert' : '○ Fermé'}
+              </span>
+            )}
+            {salon.google_rating != null && (
+              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
+                ⭐ {salon.google_rating.toFixed(1)}
+              </span>
+            )}
+          </div>
+          {openState?.nextChange && (
+            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>
+              {openState.nextChange}
+            </div>
+          )}
           {salon.address && (
             <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
               {salon.address}{salon.postal_code ? ` · ${salon.postal_code}` : ''}

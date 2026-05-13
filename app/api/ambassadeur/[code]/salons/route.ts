@@ -50,7 +50,7 @@ export async function GET(
 
   const { data: salons } = await supabase
     .from('salons')
-    .select('id, name, address, postal_code, phone, website, lat, lon')
+    .select('id, name, address, postal_code, phone, website, lat, lon, opening_hours, business_status, google_rating')
     .eq('zone_id', claim.zone_id)
     .eq('is_active', true)
     .order('name');
@@ -121,6 +121,9 @@ export async function GET(
       website: s.website,
       lat: s.lat,
       lon: s.lon,
+      opening_hours: s.opening_hours,
+      business_status: s.business_status,
+      google_rating: s.google_rating,
       visit: v
         ? {
             lastVisitAt: v.lastVisitAt,

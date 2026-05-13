@@ -1191,6 +1191,12 @@ export type Database = {
           osm_type: 'node' | 'way' | 'relation' | null;
           is_active: boolean;
           created_at: string;
+          google_place_id: string | null;
+          business_status: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
+          opening_hours: Json | null;
+          google_rating: number | null;
+          google_user_ratings_total: number | null;
+          google_enriched_at: string | null;
         };
         Insert: {
           id?: string;
@@ -1207,6 +1213,12 @@ export type Database = {
           osm_type?: 'node' | 'way' | 'relation' | null;
           is_active?: boolean;
           created_at?: string;
+          google_place_id?: string | null;
+          business_status?: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
+          opening_hours?: Json | null;
+          google_rating?: number | null;
+          google_user_ratings_total?: number | null;
+          google_enriched_at?: string | null;
         };
         Update: {
           id?: string;
@@ -1223,6 +1235,12 @@ export type Database = {
           osm_type?: 'node' | 'way' | 'relation' | null;
           is_active?: boolean;
           created_at?: string;
+          google_place_id?: string | null;
+          business_status?: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
+          opening_hours?: Json | null;
+          google_rating?: number | null;
+          google_user_ratings_total?: number | null;
+          google_enriched_at?: string | null;
         };
         Relationships: [
           {
