@@ -159,12 +159,16 @@ export function SalonsManager({
     startTransition(async () => {
       const res = await enrichSalonsViaGoogleForZone(zoneId);
       if (res.ok) {
-        setFeedback({
-          type: 'ok',
-          msg: res.total === 0
-            ? 'Tous les salons déjà enrichis (< 30 jours).'
-            : `${res.matched}/${res.total} salons enrichis. ${res.closed} fermé(s) définitivement → désactivés. ${res.missing} introuvable(s) sur Google.`,
-        });
+        if (res.total === 0) {
+          setFeedback({ type: 'ok', msg: 'Tous les salons déjà enrichis (< 30 jours).' });
+        } else {
+          const base = `${res.matched}/${res.total} salons enrichis. ${res.closed} fermé(s) définitivement → désactivés. ${res.missing} introuvable(s) sur Google.`;
+          const suffix = res.apiError ? ` ⚠ Erreur API : ${res.apiError}` : '';
+          setFeedback({
+            type: res.apiError ? 'err' : 'ok',
+            msg: base + suffix,
+          });
+        }
       } else {
         setFeedback({ type: 'err', msg: res.error });
       }
