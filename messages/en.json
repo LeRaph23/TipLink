@@ -173,7 +173,7 @@
       "h1c": "tips",
       "sub": "Place the plaque anywhere in 5 seconds. Your client taps their phone or scans the QR code, picks an amount — and the tip lands straight in your account. No app, no cash, no friction.",
       "social": "Trusted by 400+ teams",
-      "countries": "🇫🇷 🇧🇪 🇮🇪 🇩🇪 🇳🇱 🇪🇸",
+      "countries": "🇦🇩 🇩🇧 🇩🇨 🇩🇩 🇩🇨 🇩🇨",
       "cta": "Order now"
     },
     "claim": {
@@ -190,7 +190,7 @@
       "rating": "4.8",
       "reviewCount": "+150 verified reviews",
       "claim": "Lifetime hardware guarantee",
-      "frenchCompany": "French company 🇫🇷",
+      "frenchCompany": "French company 🇩🇧",
       "get3s": "Receive tips in 3 seconds!",
       "packS": "Solo · 1 epoxy plaque",
       "packM": "Duo · 2 epoxy plaques",
@@ -204,7 +204,7 @@
       "bullet1": "One-time purchase, no monthly fee",
       "bullet2": "5% commission on tips only",
       "bullet3": "Premium high-density epoxy resin — built to last",
-      "bullet4": "French company 🇫🇷",
+      "bullet4": "French company 🇩🇧",
       "bullet5": "Lifetime hardware replacement",
       "material": "Epoxy resin",
       "size": "10 × 10 cm",
@@ -810,7 +810,8 @@
         "establishments": "Establishments",
         "groups": "Groups",
         "promoCodes": "Promo codes",
-        "ambassadeurs": "Ambassadors"
+        "ambassadeurs": "Ambassadors",
+        "coldEmail": "Cold Email"
       },
       "overview": {
         "title": "SaaS overview",
