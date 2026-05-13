@@ -55,7 +55,8 @@ export async function GET(
     .select('id, name, address, postal_code, phone, website, lat, lon, opening_hours, business_status, google_rating')
     .eq('zone_id', claim.zone_id)
     .eq('is_active', true)
-    .order('name');
+    .order('name')
+    .range(0, 9999);
 
   const salonIds = (salons ?? []).map((s) => s.id);
 
@@ -64,6 +65,7 @@ export async function GET(
         .from('salon_visits')
         .select('salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes')
         .in('salon_id', salonIds)
+        .range(0, 99999)
         .order('visited_at', { ascending: false })
     : { data: [] as Array<{
         salon_id: string;

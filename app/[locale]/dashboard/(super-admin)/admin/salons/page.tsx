@@ -18,15 +18,19 @@ export default async function AdminSalonsPage({
     await Promise.all([
       service.from('salon_zones')
         .select('id, city, name, is_active, created_at, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
-        .order('city').order('name'),
+        .order('city').order('name')
+        .range(0, 9999),
       service.from('salons')
-        .select('id, zone_id, city, name, address, postal_code, phone, is_active, google_enriched_at, business_status, lat, lon, opening_hours, google_rating'),
+        .select('id, zone_id, city, name, address, postal_code, phone, is_active, google_enriched_at, business_status, lat, lon, opening_hours, google_rating')
+        .range(0, 99999),
       service.from('salon_visits')
-        .select('id, salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at'),
+        .select('id, salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at')
+        .range(0, 99999),
       service.from('ambassador_zone_claims')
         .select('id, ambassador_id, zone_id, claimed_at, released_at')
-        .is('released_at', null),
-      service.from('ambassadors').select('id, name'),
+        .is('released_at', null)
+        .range(0, 9999),
+      service.from('ambassadors').select('id, name').range(0, 9999),
     ]);
 
   // Aggregate per city
