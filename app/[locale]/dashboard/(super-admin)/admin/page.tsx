@@ -272,6 +272,7 @@ export default async function AdminOverviewPage({
               <QuickAction href="/dashboard/admin/smarttags" label="SmartTags" description="Gérer le stock NFC" />
               <QuickAction href="/dashboard/admin/users" label="Utilisateurs" description="Rôles et accès" />
               <QuickAction href="/dashboard/admin/ambassadeurs" label="Ambassadeurs" description="Candidatures et recrutements" />
+              <QuickAction href="/dashboard/admin/cold-email" label="Cold Email" description="Scraper SIRENE & prospection B2B" />
             </div>
           </section>
         </div>
