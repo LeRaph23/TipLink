@@ -116,20 +116,26 @@ function buildAddress(t: Record<string, string>): string | null {
 /**
  * Fetch admin boundaries (arrondissements/communes) inside the given city.
  * Strategy:
- *  1. Find the city relation by name.
- *  2. List its admin sub-areas at admin_level 9 (quartier) or 10 (arrond.).
+ *  1. Pin the commune (admin_level=8) by exact name. This avoids matching
+ *     EPCIs or other administrative entities that happen to share the name.
+ *  2. List its admin sub-areas at admin_level 10 (or 9) inside the commune.
  *     For Paris/Lyon/Marseille this returns arrondissements; for smaller
- *     towns we fall back to the city itself as a single zone.
+ *     towns we fall back to the commune itself as a single zone.
+ *  3. Defensive: drop any sub-zone whose bbox centroid is more than ~50 km
+ *     from the commune centroid — guards against Overpass returning the
+ *     wrong polygon when names are ambiguous (e.g. "Mulhouse" matching an
+ *     entity that geographically overlaps Saint-Louis area).
  */
 export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
   const safeCity = city.replace(/["\\]/g, ' ').trim();
   if (!safeCity) return [];
 
-  // Look for admin_level=9 or 10 boundaries inside the named city.
-  // The "area" trick: find the city as an area, then sub-relations.
+  // Pin the commune precisely (admin_level=8) and map it to an area.
   const query = `
     [out:json][timeout:${OVERPASS_TIMEOUT_S}];
-    area["boundary"="administrative"]["name"="${safeCity}"]->.searchArea;
+    relation["boundary"="administrative"]["admin_level"="8"]["name"="${safeCity}"]->.commune;
+    .commune map_to_area->.searchArea;
+    .commune out tags bb;
     (
       relation["boundary"="administrative"]["admin_level"="10"](area.searchArea);
       relation["boundary"="administrative"]["admin_level"="9"](area.searchArea);
@@ -138,8 +144,37 @@ export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
   `;
 
   const data = await callOverpass(query);
+
+  // The commune itself comes back as the first element (admin_level=8).
+  const communeEl = (data.elements ?? []).find(
+    (e) => e.type === 'relation' && e.tags?.admin_level === '8' && e.tags?.name === safeCity && e.bounds
+  );
+  const communeCentre = communeEl?.bounds
+    ? {
+        lat: (communeEl.bounds.minlat + communeEl.bounds.maxlat) / 2,
+        lon: (communeEl.bounds.minlon + communeEl.bounds.maxlon) / 2,
+      }
+    : null;
+
+  function bboxCentre(b: { minlat: number; minlon: number; maxlat: number; maxlon: number }) {
+    return { lat: (b.minlat + b.maxlat) / 2, lon: (b.minlon + b.maxlon) / 2 };
+  }
+  function approxKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+    const dLat = (a.lat - b.lat) * 111;
+    const dLon = (a.lon - b.lon) * 111 * Math.cos((a.lat * Math.PI) / 180);
+    return Math.sqrt(dLat * dLat + dLon * dLon);
+  }
+
   let zones: OsmZone[] = (data.elements ?? [])
-    .filter((e) => e.type === 'relation' && e.tags?.name && e.bounds)
+    .filter((e) =>
+      e.type === 'relation' &&
+      e.tags?.name &&
+      e.bounds &&
+      (e.tags?.admin_level === '9' || e.tags?.admin_level === '10') &&
+      // Defensive: skip sub-zones whose centroid is suspiciously far from the
+      // commune (Overpass can return wrong relations for short ambiguous names).
+      (!communeCentre || approxKm(bboxCentre(e.bounds), communeCentre) < 50)
+    )
     .map((e) => ({
       osm_relation_id: e.id,
       name: e.tags!.name,
@@ -157,7 +192,22 @@ export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
     zones = zones.filter((z) => z.admin_level === 10);
   }
 
-  // Fallback: no sub-areas → use the city itself as a single zone.
+  // Fallback: no sub-areas → use the commune itself as a single zone.
+  if (zones.length === 0 && communeEl?.bounds) {
+    zones = [{
+      osm_relation_id: communeEl.id,
+      name: communeEl.tags?.name ?? safeCity,
+      admin_level: 8,
+      bbox: {
+        minLat: communeEl.bounds.minlat,
+        minLon: communeEl.bounds.minlon,
+        maxLat: communeEl.bounds.maxlat,
+        maxLon: communeEl.bounds.maxlon,
+      },
+    }];
+  }
+
+  // Last-resort fallback: search by level 7 too (intercommunalité).
   if (zones.length === 0) {
     const fallback = `
       [out:json][timeout:${OVERPASS_TIMEOUT_S}];
