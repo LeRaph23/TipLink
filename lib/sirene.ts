@@ -59,19 +59,13 @@ type RawResponse = {
   etablissements?: RawEtablissement[];
 };
 
-function buildQuery(opts: SireneSearchOptions): string {
-  // SIRENE 3.11 — historicized variables (etatAdministratif*,
-  // activitePrincipale*) MUST be wrapped in periode(). Non-historicized
-  // ones (categorieJuridiqueUniteLegale, dateCreationUniteLegale,
-  // codePostalEtablissement) sit outside.
+// Build a query for a SINGLE NAF code. SIRENE 3.11's query parser is finicky
+// with OR clauses inside periode(); the safest approach is one NAF per call.
+// Pattern proven to work in production: dateCreationUniteLegale:X AND
+// periode(etatAdministratifUniteLegale:A AND activitePrincipaleUniteLegale:Y).
+function buildQueryForNaf(opts: SireneSearchOptions, nafCode: string | null): string {
   const periodeInner: string[] = ['etatAdministratifUniteLegale:A'];
-
-  if (opts.nafCodes && opts.nafCodes.length > 0) {
-    const naf = opts.nafCodes
-      .map(c => `activitePrincipaleUniteLegale:${c}`)
-      .join(' OR ');
-    periodeInner.push(opts.nafCodes.length > 1 ? `(${naf})` : naf);
-  }
+  if (nafCode) periodeInner.push(`activitePrincipaleUniteLegale:${nafCode}`);
 
   const parts: string[] = [`periode(${periodeInner.join(' AND ')})`];
 
@@ -109,17 +103,12 @@ function mapEtablissement(raw: RawEtablissement): SireneEtablissement | null {
   };
 }
 
-export async function searchSirene(opts: SireneSearchOptions): Promise<SireneSearchResult> {
-  const apiKey = process.env.INSEE_API_KEY;
-  if (!apiKey) {
-    throw new Error('INSEE_API_KEY missing. Register a free app at portail-api.insee.fr.');
-  }
-
-  const page = opts.page ?? 0;
-  const pageSize = Math.min(opts.pageSize ?? 100, 1000);
-  const debut = page * pageSize;
-
-  const query = buildQuery(opts);
+async function fetchOnePage(
+  query: string,
+  pageSize: number,
+  debut: number,
+  apiKey: string,
+): Promise<{ results: SireneEtablissement[]; total: number }> {
   const url = new URL(`${SIRENE_BASE}/siret`);
   url.searchParams.set('q', query);
   url.searchParams.set('nombre', String(pageSize));
@@ -133,6 +122,7 @@ export async function searchSirene(opts: SireneSearchOptions): Promise<SireneSea
     cache: 'no-store',
   });
 
+  if (res.status === 404) return { results: [], total: 0 };
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`SIRENE API ${res.status}: ${text.slice(0, 300)}`);
@@ -143,12 +133,43 @@ export async function searchSirene(opts: SireneSearchOptions): Promise<SireneSea
   const results = (json.etablissements ?? [])
     .map(mapEtablissement)
     .filter((e): e is SireneEtablissement => e !== null);
+  return { results, total };
+}
+
+export async function searchSirene(opts: SireneSearchOptions): Promise<SireneSearchResult> {
+  const apiKey = process.env.INSEE_API_KEY;
+  if (!apiKey) {
+    throw new Error('INSEE_API_KEY missing. Register a free app at portail-api.insee.fr.');
+  }
+
+  const page = opts.page ?? 0;
+  const pageSize = Math.min(opts.pageSize ?? 100, 1000);
+  const debut = page * pageSize;
+
+  // One SIRENE call per NAF code: the API's query parser rejects OR clauses
+  // mixing repeated field names inside periode(). Sequencing keeps the
+  // syntax minimal and reliable.
+  const nafCodes = opts.nafCodes && opts.nafCodes.length > 0 ? opts.nafCodes : [null];
+  const seen = new Set<string>();
+  const aggregated: SireneEtablissement[] = [];
+  let totalAcrossNaf = 0;
+
+  for (const naf of nafCodes) {
+    const query = buildQueryForNaf(opts, naf);
+    const { results, total } = await fetchOnePage(query, pageSize, debut, apiKey);
+    totalAcrossNaf += total;
+    for (const r of results) {
+      if (seen.has(r.siret)) continue;
+      seen.add(r.siret);
+      aggregated.push(r);
+    }
+  }
 
   return {
-    results,
-    total,
+    results: aggregated,
+    total: totalAcrossNaf,
     page,
-    hasMore: debut + results.length < total,
+    hasMore: debut + aggregated.length < totalAcrossNaf,
   };
 }
 
