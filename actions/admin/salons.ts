@@ -288,7 +288,8 @@ export async function enrichSalonAddressesForZone(
       .from('salons')
       .select('id, lat, lon, address, postal_code')
       .eq('zone_id', zoneId)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .range(0, 9999);
 
     if (!salons || salons.length === 0) {
       return { ok: true, enriched: 0, total: 0, skipped: 0 };
@@ -355,7 +356,8 @@ export async function enrichSalonsViaGoogleForZone(
       .from('salons')
       .select('id, name, city, lat, lon, is_active, google_enriched_at, google_place_id')
       .eq('zone_id', zoneId)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .range(0, 9999);
 
     if (!salons || salons.length === 0) {
       return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: 0, apiError: null };
