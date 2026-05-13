@@ -62,6 +62,9 @@ function TagIcon() {
 function InvoiceIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5" /><path d="M5 5h6M5 8h6M5 11h4" /></svg>;
 }
+function MailIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="3" width="13" height="10" rx="1.5" /><path d="M2 4l6 5 6-5" /></svg>;
+}
 
 function NavLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
   const [hov, setHov] = useState(false);
@@ -151,6 +154,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
     { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
     { href: '/dashboard/admin/promo-codes',   label: ta('promoCodes'),  icon: <TagIcon /> },
     { href: '/dashboard/admin/ambassadeurs',  label: ta('ambassadeurs'), icon: <UsersIcon /> },
+    { href: '/dashboard/admin/cold-email',    label: ta('coldEmail'),    icon: <MailIcon /> },
   ];
 
   const visibleLinks = links.filter(l =>
