@@ -33,7 +33,7 @@ export async function GET(
 
   const { data: claim } = await supabase
     .from('ambassador_zone_claims')
-    .select('zone_id, salon_zones(id, name, city)')
+    .select('zone_id, salon_zones(id, name, city, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon)')
     .eq('ambassador_id', ambassadorId)
     .is('released_at', null)
     .maybeSingle();
@@ -42,10 +42,12 @@ export async function GET(
     return NextResponse.json({ zone: null, salons: [] });
   }
 
-  const zone = claim.salon_zones as
-    | { id: string; name: string; city: string }
-    | { id: string; name: string; city: string }[]
-    | null;
+  type ZoneRow = {
+    id: string; name: string; city: string;
+    bbox_min_lat: number | null; bbox_min_lon: number | null;
+    bbox_max_lat: number | null; bbox_max_lon: number | null;
+  };
+  const zone = claim.salon_zones as ZoneRow | ZoneRow[] | null;
   const z = Array.isArray(zone) ? zone[0] : zone;
 
   const { data: salons } = await supabase
@@ -138,7 +140,21 @@ export async function GET(
   });
 
   return NextResponse.json({
-    zone: z ? { id: z.id, name: z.name, city: z.city } : null,
+    zone: z
+      ? {
+          id: z.id,
+          name: z.name,
+          city: z.city,
+          bbox: z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
+            ? {
+                minLat: Number(z.bbox_min_lat),
+                minLon: Number(z.bbox_min_lon),
+                maxLat: Number(z.bbox_max_lat),
+                maxLon: Number(z.bbox_max_lon),
+              }
+            : null,
+        }
+      : null,
     salons: enriched,
   });
 }

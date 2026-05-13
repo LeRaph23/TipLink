@@ -1,81 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import { isOpenNow, mapsLink as buildMapsLink } from '@/lib/salon-hours';
+import type { AmbassadorSalon } from '@/components/salons/SalonsMap';
+
+const SalonsMap = dynamic(
+  () => import('@/components/salons/SalonsMap').then((m) => m.SalonsMap),
+  { ssr: false, loading: () => (
+    <div style={{ height: '60vh', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13, background: 'var(--surface-2)', borderRadius: 'var(--radius)' }}>
+      Chargement de la carte…
+    </div>
+  ) }
+);
 
 type Zone = { id: string; city: string; name: string };
 type CurrentClaim = { zoneId: string; zoneName: string; city: string; claimedAt: string };
 
-type SalonVisit = {
-  lastVisitAt: string;
-  bestRating: number;
-  bestConvinced: 'yes' | 'maybe' | 'no';
-  flyerLeft: boolean;
-  visitedByMe: boolean;
-  myNotes: string | null;
-};
-
-type OpeningHours = {
-  weekdayDescriptions?: string[];
-  periods?: Array<{
-    open?: { day: number; hour: number; minute: number };
-    close?: { day: number; hour: number; minute: number };
-  }>;
-} | null;
-
-type Salon = {
-  id: string;
-  name: string;
-  address: string | null;
-  postal_code: string | null;
-  phone: string | null;
-  website: string | null;
-  lat: number | null;
-  lon: number | null;
-  opening_hours: OpeningHours;
-  business_status: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
-  google_rating: number | null;
-  visit: SalonVisit | null;
-};
-
-const WEEKDAYS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-
-/**
- * Is the salon open right now according to its Google opening_hours?
- * Returns null if we can't tell (no hours data).
- */
-function isOpenNow(hours: OpeningHours): { open: boolean; nextChange: string | null } | null {
-  if (!hours?.periods?.length) return null;
-  const now = new Date();
-  const day = now.getDay(); // 0 = Sunday, matching Google's day index
-  const minutesNow = now.getHours() * 60 + now.getMinutes();
-
-  for (const p of hours.periods) {
-    if (!p.open || !p.close) continue;
-    // Same-day period (most common)
-    if (p.open.day === day && p.close.day === day) {
-      const openM = p.open.hour * 60 + p.open.minute;
-      const closeM = p.close.hour * 60 + p.close.minute;
-      if (minutesNow >= openM && minutesNow < closeM) {
-        const h = Math.floor(closeM / 60);
-        const m = closeM % 60;
-        return { open: true, nextChange: `Ferme à ${h}h${m.toString().padStart(2, '0')}` };
-      }
-    }
-  }
-
-  // Find next opening today or after
-  for (const p of hours.periods) {
-    if (!p.open) continue;
-    if (p.open.day === day) {
-      const openM = p.open.hour * 60 + p.open.minute;
-      if (openM > minutesNow) {
-        return { open: false, nextChange: `Ouvre à ${p.open.hour}h${p.open.minute.toString().padStart(2, '0')}` };
-      }
-    }
-  }
-
-  return { open: false, nextChange: null };
-}
+type Salon = AmbassadorSalon & { website: string | null };
 
 const RATING_LABEL: Record<number, string> = {
   1: 'Peu probable',
@@ -87,23 +29,33 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-function mapsLink(s: Salon): string {
-  if (s.lat != null && s.lon != null) {
-    return `https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}`;
-  }
-  const q = encodeURIComponent([s.name, s.address ?? '', s.postal_code ?? ''].filter(Boolean).join(' '));
-  return `https://www.google.com/maps/search/?api=1&query=${q}`;
-}
+const mapsLink = buildMapsLink;
 
 export function AmbassadeurSalonsTracker({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
   const [currentClaim, setCurrentClaim] = useState<CurrentClaim | null>(null);
   const [availableZones, setAvailableZones] = useState<Zone[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
+  const [zoneBbox, setZoneBbox] = useState<{ minLat: number; minLon: number; maxLat: number; maxLon: number } | null>(null);
   const [zoneCity, setZoneCity] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activeVisitFor, setActiveVisitFor] = useState<Salon | null>(null);
+  const [view, setView] = useState<'map' | 'list'>('map');
+
+  // Persisted view choice (hydration-safe localStorage read).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem('tiplink:salons-view');
+    if (saved === 'list' || saved === 'map') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setView(saved);
+    }
+  }, []);
+  const onChangeView = useCallback((v: 'map' | 'list') => {
+    setView(v);
+    if (typeof window !== 'undefined') window.localStorage.setItem('tiplink:salons-view', v);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -121,9 +73,13 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
       if (zData.currentClaim) {
         const sRes = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons`);
         const sData = await sRes.json();
-        if (sRes.ok) setSalons(sData.salons ?? []);
+        if (sRes.ok) {
+          setSalons(sData.salons ?? []);
+          setZoneBbox(sData.zone?.bbox ?? null);
+        }
       } else {
         setSalons([]);
+        setZoneBbox(null);
       }
     } finally {
       setLoading(false);
@@ -263,9 +219,43 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
         }}>{actionError}</div>
       )}
 
+      {salons.length > 0 && (
+        <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', gap: 4 }}>
+          <button
+            onClick={() => onChangeView('map')}
+            style={{
+              padding: '6px 14px', borderRadius: 99,
+              background: view === 'map' ? 'var(--accent-muted)' : 'transparent',
+              color: view === 'map' ? 'var(--accent)' : 'var(--text-3)',
+              border: `1px solid ${view === 'map' ? 'var(--accent-border)' : 'var(--border)'}`,
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            }}
+          >🗺️ Carte</button>
+          <button
+            onClick={() => onChangeView('list')}
+            style={{
+              padding: '6px 14px', borderRadius: 99,
+              background: view === 'list' ? 'var(--accent-muted)' : 'transparent',
+              color: view === 'list' ? 'var(--accent)' : 'var(--text-3)',
+              border: `1px solid ${view === 'list' ? 'var(--accent-border)' : 'var(--border)'}`,
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            }}
+          >📋 Liste</button>
+        </div>
+      )}
+
       {salons.length === 0 ? (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)', fontSize: 12 }}>
           Aucun salon dans cette zone pour le moment. Préviens l&apos;admin.
+        </div>
+      ) : view === 'map' ? (
+        <div style={{ padding: 12 }}>
+          <SalonsMap
+            variant="ambassador"
+            salons={salons}
+            initialBbox={zoneBbox}
+            onLogVisit={(s) => setActiveVisitFor(s as Salon)}
+          />
         </div>
       ) : (
         <>

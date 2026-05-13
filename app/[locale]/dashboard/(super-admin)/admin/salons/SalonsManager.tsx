@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import {
   importZonesFromOsm,
   importSalonsForZone,
@@ -12,6 +13,16 @@ import {
   createSalon,
   toggleSalonActive,
 } from '@/actions/admin/salons';
+import type { AdminSalon, AdminZoneOverlay } from '@/components/salons/SalonsMap';
+
+const SalonsMap = dynamic(
+  () => import('@/components/salons/SalonsMap').then((m) => m.SalonsMap),
+  { ssr: false, loading: () => (
+    <div style={{ height: '60vh', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13, background: 'var(--surface-2)', borderRadius: 'var(--radius)' }}>
+      Chargement de la carte…
+    </div>
+  ) }
+);
 
 type CityStats = {
   city: string;
@@ -51,15 +62,17 @@ function fmtDateShort(iso: string) {
 }
 
 export function SalonsManager({
-  cityStats, zones, salons, activeClaims, visits,
+  cityStats, zones, salons, activeClaims, visits, mapSalons, mapZones,
 }: {
   cityStats: CityStats[];
   zones: Zone[];
   salons: Salon[];
   activeClaims: Claim[];
   visits: Visit[];
+  mapSalons: AdminSalon[];
+  mapZones: AdminZoneOverlay[];
 }) {
-  const [tab, setTab] = useState<'overview' | 'zones' | 'salons' | 'visits'>('overview');
+  const [tab, setTab] = useState<'overview' | 'map' | 'zones' | 'salons' | 'visits'>('overview');
   const [importCity, setImportCity] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -224,6 +237,7 @@ export function SalonsManager({
       <div className="dash-tabs" style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
         {([
           ['overview', `Vue par ville (${cityStats.length})`],
+          ['map', `🗺️ Carte (${mapSalons.length})`],
           ['zones', `Zones (${zones.length})`],
           ['salons', `Salons (${salons.length})`],
           ['visits', `Visites (${visits.length})`],
@@ -243,6 +257,10 @@ export function SalonsManager({
 
       {tab === 'overview' && (
         <CityOverview cityStats={cityStats} onImportAll={runImportAllSalons} pending={pending} />
+      )}
+
+      {tab === 'map' && (
+        <SalonsMap variant="admin" salons={mapSalons} zones={mapZones} />
       )}
 
       {tab === 'zones' && (
