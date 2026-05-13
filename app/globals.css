@@ -232,4 +232,89 @@ input, select, textarea, button { font-family: var(--font); }
 
   /* Admin smarttags modal range grid — stack on mobile */
   .dash-modal-grid-2col { grid-template-columns: 1fr !important; }
+
+  /* ── Mobile UX defaults across all surfaces ─────────────────────────── */
+  /* iOS Safari auto-zooms <16px inputs on focus — force 16px on mobile.
+     Applied globally because PIN inputs / referral inputs etc. live outside
+     the admin dash too. Date/checkbox stay at their natural size. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+
+  /* Bigger touch targets on mobile buttons inside the dashboard */
+  .dash-main-pad button,
+  .dash-main-pad a[role="button"] {
+    min-height: 38px;
+  }
+  .dash-main-pad input[type="checkbox"],
+  .dash-main-pad input[type="radio"] {
+    min-width: 18px; min-height: 18px;
+  }
+
+  /* Horizontally-scrollable tables: wrap any wide table in .dash-scroll-x */
+  .dash-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -16px; /* bleed to screen edges so the scroll feels natural */
+    padding: 0 16px;
+  }
+  .dash-scroll-x > table { min-width: 100%; }
+
+  /* Catch-all: every <table> inside the dashboard becomes
+     horizontally-scrollable on mobile instead of getting cramped */
+  .dash-main-pad table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .dash-main-pad table th,
+  .dash-main-pad table td {
+    white-space: nowrap;
+  }
+
+  /* Tabs that overflow → horizontal scroll */
+  .dash-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+  }
+  .dash-tabs::-webkit-scrollbar { display: none; }
+  .dash-tabs > button { flex-shrink: 0; }
+
+  /* KPI grids: cap at 2 columns on mobile, comfortable cells */
+  .dash-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* Header/title rows: stack with extra breathing room */
+  .dash-row-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .dash-row-stack > * { width: 100%; }
+
+  /* Inline forms that have many inputs → stack each input full width */
+  .dash-inline-form {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .dash-inline-form > * { width: 100% !important; min-width: 0 !important; }
+}
+
+/* ── Touch comfort on all screens ────────────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  /* Visible focus rings for touch users */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }

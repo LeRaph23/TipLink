@@ -157,7 +157,7 @@ export function AmbassadeursManager({
           <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 16px', color: 'var(--text)' }}>
             Créer un ambassadeur
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div className="dash-modal-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div>
               <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>Nom complet</label>
               <input style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="Kevin Martin" />

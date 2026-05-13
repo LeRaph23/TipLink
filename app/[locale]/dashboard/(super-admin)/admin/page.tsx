@@ -153,7 +153,7 @@ export default async function AdminOverviewPage({
       </div>
 
       {/* Main KPIs */}
-      <div style={{
+      <div className="dash-kpi-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
         gap: 12, marginBottom: 28,
