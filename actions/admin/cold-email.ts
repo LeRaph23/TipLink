@@ -258,6 +258,139 @@ export async function scrapeSireneProspects(
   }
 }
 
+export type ProspectStatus = 'not_contacted' | 'contacted' | 'in_discussion' | 'accepted' | 'refused';
+
+export type ProspectRow = {
+  id: string;
+  siret: string | null;
+  company_name: string | null;
+  email: string | null;
+  first_name: string | null;
+  city: string | null;
+  naf_code: string | null;
+  creation_date: string | null;
+  imported_at: string;
+  notes: string | null;
+  linkedin_url: string | null;
+  status: ProspectStatus;
+};
+
+export async function listProspects(): Promise<
+  { ok: true; prospects: ProspectRow[] } | { ok: false; error: string }
+> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+    const { data, error } = await service
+      .from('cold_email_prospects')
+      .select('id, siret, company_name, email, first_name, city, naf_code, creation_date, imported_at, notes, linkedin_url, status')
+      .order('imported_at', { ascending: false })
+      .limit(2000);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, prospects: (data ?? []) as ProspectRow[] };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+const ALLOWED_STATUSES: ProspectStatus[] = ['not_contacted', 'contacted', 'in_discussion', 'accepted', 'refused'];
+
+export async function updateProspect(
+  id: string,
+  patch: Partial<{ email: string | null; linkedin_url: string | null; notes: string | null; status: ProspectStatus; company_name: string | null; first_name: string | null }>
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    if (!id) return { ok: false, error: 'id requis' };
+
+    const update: Record<string, string | null> = {};
+    if ('email' in patch) {
+      const v = patch.email?.trim().toLowerCase() || null;
+      if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { ok: false, error: 'Email invalide' };
+      update.email = v;
+    }
+    if ('linkedin_url' in patch) {
+      const v = patch.linkedin_url?.trim() || null;
+      if (v && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(v)) return { ok: false, error: 'URL LinkedIn invalide' };
+      update.linkedin_url = v;
+    }
+    if ('notes' in patch) update.notes = patch.notes?.trim() || null;
+    if ('company_name' in patch) update.company_name = patch.company_name?.trim() || null;
+    if ('first_name' in patch) update.first_name = patch.first_name?.trim() || null;
+    if ('status' in patch && patch.status) {
+      if (!ALLOWED_STATUSES.includes(patch.status)) return { ok: false, error: 'Statut invalide' };
+      update.status = patch.status;
+    }
+
+    if (Object.keys(update).length === 0) return { ok: true };
+
+    const service = createServiceClient();
+    const { error } = await service.from('cold_email_prospects').update(update).eq('id', id);
+    if (error) return { ok: false, error: error.message };
+    await logAdminAction('cold_email.update_prospect', { id, fields: Object.keys(update) });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+export async function createManualProspect(
+  input: { company_name?: string; first_name?: string; email?: string; linkedin_url?: string; city?: string; notes?: string }
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const company = input.company_name?.trim() || null;
+    const firstName = input.first_name?.trim() || null;
+    const email = input.email?.trim().toLowerCase() || null;
+    const linkedin = input.linkedin_url?.trim() || null;
+    const city = input.city?.trim() || null;
+    const notes = input.notes?.trim() || null;
+
+    if (!company && !firstName && !email && !linkedin) {
+      return { ok: false, error: 'Renseigne au moins un nom, email ou LinkedIn' };
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: 'Email invalide' };
+    if (linkedin && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(linkedin)) return { ok: false, error: 'URL LinkedIn invalide' };
+
+    const { data, error } = await service
+      .from('cold_email_prospects')
+      .insert({
+        siret: null,
+        company_name: company,
+        first_name: firstName,
+        email,
+        linkedin_url: linkedin,
+        city,
+        notes,
+        status: 'not_contacted',
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) return { ok: false, error: error?.message ?? 'Erreur insertion' };
+    await logAdminAction('cold_email.create_prospect', { id: data.id });
+    return { ok: true, id: data.id };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+export async function deleteProspect(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    if (!id) return { ok: false, error: 'id requis' };
+    const service = createServiceClient();
+    const { error } = await service.from('cold_email_prospects').delete().eq('id', id);
+    if (error) return { ok: false, error: error.message };
+    await logAdminAction('cold_email.delete_prospect', { id });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
 export async function getColdEmailStats(): Promise<
   | { ok: true; stats: { total: number; step0: number; step1: number; step2: number; step3: number; unsubscribed: number; replied: number } }
   | { ok: false; error: string }

@@ -154,7 +154,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
     { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
     { href: '/dashboard/admin/promo-codes',   label: ta('promoCodes'),  icon: <TagIcon /> },
     { href: '/dashboard/admin/ambassadeurs',  label: ta('ambassadeurs'), icon: <UsersIcon /> },
-    { href: '/dashboard/admin/cold-email',    label: ta('coldEmail'),    icon: <MailIcon /> },
+    { href: '/dashboard/admin/cold-email',    label: ta('prospects'),    icon: <MailIcon /> },
   ];
 
   const visibleLinks = links.filter(l =>
