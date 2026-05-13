@@ -217,7 +217,7 @@ export default async function AdminAmbassadeursPage({
         </a>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 28 }}>
+      <div className="dash-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 28 }}>
         <StatCard label="Ambassadeurs actifs" value={String(activeCount)} />
         <StatCard label="Ventes totales" value={String(totalSales)} />
         <StatCard label="Commissions dues" value={`${(totalCommission / 100).toFixed(0)} €`} />

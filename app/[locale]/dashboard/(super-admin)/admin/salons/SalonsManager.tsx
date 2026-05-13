@@ -185,7 +185,7 @@ export function SalonsManager({
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+      <div className="dash-tabs" style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
         {([
           ['overview', `Vue par ville (${cityStats.length})`],
           ['zones', `Zones (${zones.length})`],
