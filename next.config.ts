@@ -11,8 +11,9 @@ const CSP = [
   "frame-src https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com",
   // Supabase REST/Realtime + Stripe API calls (from browser SDK)
   "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co",
-  // Avatars and logos live in Supabase Storage (public-media bucket)
-  "img-src 'self' data: blob: https://*.supabase.co",
+  // Avatars and logos live in Supabase Storage (public-media bucket).
+  // Carto tiles power the salon map.
+  "img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com",
   // Tailwind injects inline styles; no external stylesheet CDN
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
