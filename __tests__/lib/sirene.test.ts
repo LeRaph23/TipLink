@@ -56,13 +56,15 @@ describe('searchSirene', () => {
       personnePhysiqueOnly: true,
     });
 
-    const calledUrl = String(fetchMock.mock.calls[0]![0]);
-    expect(calledUrl).toContain('etatAdministratifUniteLegale%3AA');
-    expect(calledUrl).toContain('categorieJuridiqueUniteLegale%3A1000');
-    expect(calledUrl).toContain('4791B');
-    expect(calledUrl).toContain('7022Z');
-    expect(calledUrl).toContain('2024-01-01');
-    expect(calledUrl).toContain('2025-01-01');
+    // One HTTP call per NAF code (avoids OR in periode()).
+    expect(fetchMock.mock.calls).toHaveLength(2);
+    const url0 = String(fetchMock.mock.calls[0]![0]);
+    const url1 = String(fetchMock.mock.calls[1]![0]);
+    expect(url0).toContain('etatAdministratifEtablissement%3AA');
+    expect(url0).toContain('4791B');
+    expect(url1).toContain('7022Z');
+    expect(url0).toContain('2024-01-01');
+    expect(url0).toContain('2025-01-01');
   });
 
   it('passes the API key in the request header', async () => {
@@ -91,6 +93,7 @@ describe('searchSirene', () => {
             nomUniteLegale: 'Martin',
             dateCreationUniteLegale: '2024-06-15',
             activitePrincipaleUniteLegale: '4791B',
+            categorieJuridiqueUniteLegale: '1000',
           },
           adresseEtablissement: {
             codePostalEtablissement: '69001',
@@ -112,6 +115,7 @@ describe('searchSirene', () => {
       postalCode: '69001',
       nafCode: '4791B',
       creationDate: '2024-06-15',
+      categorieJuridique: '1000',
     });
   });
 
@@ -127,7 +131,7 @@ describe('searchSirene', () => {
       }),
     }) as unknown as typeof fetch;
 
-    const r = await searchSirene({ nafCodes: ['4791B'], pageSize: 100, page: 0 });
+    const r = await searchSirene({ nafCodes: ['4791B'], pageSize: 100, page: 0, personnePhysiqueOnly: false });
     expect(r.hasMore).toBe(true);
     expect(r.results).toHaveLength(100);
   });

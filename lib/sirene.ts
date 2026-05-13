@@ -20,6 +20,7 @@ export type SireneEtablissement = {
   postalCode: string | null;
   nafCode: string | null;
   creationDate: string | null;
+  categorieJuridique: string | null;
 };
 
 export type SireneSearchOptions = {
@@ -47,6 +48,7 @@ type RawEtablissement = {
     nomUniteLegale?: string | null;
     dateCreationUniteLegale?: string | null;
     activitePrincipaleUniteLegale?: string | null;
+    categorieJuridiqueUniteLegale?: string | null;
   };
   adresseEtablissement?: {
     codePostalEtablissement?: string | null;
@@ -59,24 +61,20 @@ type RawResponse = {
   etablissements?: RawEtablissement[];
 };
 
-// Build a query for a SINGLE NAF code. SIRENE 3.11's query parser is finicky
-// with OR clauses inside periode(); the safest approach is one NAF per call.
-// Pattern proven to work in production: dateCreationUniteLegale:X AND
-// periode(etatAdministratifUniteLegale:A AND activitePrincipaleUniteLegale:Y).
+// Build a query for a SINGLE NAF code. The /siret endpoint only accepts
+// Etablissement-suffixed fields inside q= (UniteLegale-suffixed fields
+// trigger a 400 syntax error). Verified empirically against the live
+// API: see PR #7 debug endpoint results.
 function buildQueryForNaf(opts: SireneSearchOptions, nafCode: string | null): string {
-  const periodeInner: string[] = ['etatAdministratifUniteLegale:A'];
-  if (nafCode) periodeInner.push(`activitePrincipaleUniteLegale:${nafCode}`);
+  const periodeInner: string[] = ['etatAdministratifEtablissement:A'];
+  if (nafCode) periodeInner.push(`activitePrincipaleEtablissement:${nafCode}`);
 
   const parts: string[] = [`periode(${periodeInner.join(' AND ')})`];
-
-  if (opts.personnePhysiqueOnly !== false) {
-    parts.push('categorieJuridiqueUniteLegale:1000');
-  }
 
   if (opts.createdAfter || opts.createdBefore) {
     const after = opts.createdAfter ?? '*';
     const before = opts.createdBefore ?? '*';
-    parts.push(`dateCreationUniteLegale:[${after} TO ${before}]`);
+    parts.push(`dateCreationEtablissement:[${after} TO ${before}]`);
   }
 
   if (opts.postalCodePrefix) {
@@ -100,6 +98,7 @@ function mapEtablissement(raw: RawEtablissement): SireneEtablissement | null {
     postalCode: adr.codePostalEtablissement ?? null,
     nafCode: ul.activitePrincipaleUniteLegale ?? null,
     creationDate: ul.dateCreationUniteLegale ?? null,
+    categorieJuridique: ul.categorieJuridiqueUniteLegale ?? null,
   };
 }
 
@@ -160,6 +159,10 @@ export async function searchSirene(opts: SireneSearchOptions): Promise<SireneSea
     totalAcrossNaf += total;
     for (const r of results) {
       if (seen.has(r.siret)) continue;
+      // Personne physique filter: SIRENE doesn't let us filter on
+      // categorieJuridiqueUniteLegale inside q= at /siret, so we do it
+      // here. Code 1000 = entrepreneur individuel.
+      if (opts.personnePhysiqueOnly !== false && r.categorieJuridique !== '1000') continue;
       seen.add(r.siret);
       aggregated.push(r);
     }
