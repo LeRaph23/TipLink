@@ -1136,6 +1136,203 @@ export type Database = {
           }
         ];
       };
+      salon_zones: {
+        Row: {
+          id: string;
+          city: string;
+          name: string;
+          osm_relation_id: number | null;
+          bbox_min_lat: number | null;
+          bbox_min_lon: number | null;
+          bbox_max_lat: number | null;
+          bbox_max_lon: number | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          city: string;
+          name: string;
+          osm_relation_id?: number | null;
+          bbox_min_lat?: number | null;
+          bbox_min_lon?: number | null;
+          bbox_max_lat?: number | null;
+          bbox_max_lon?: number | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          city?: string;
+          name?: string;
+          osm_relation_id?: number | null;
+          bbox_min_lat?: number | null;
+          bbox_min_lon?: number | null;
+          bbox_max_lat?: number | null;
+          bbox_max_lon?: number | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      salons: {
+        Row: {
+          id: string;
+          zone_id: string | null;
+          city: string;
+          name: string;
+          address: string | null;
+          postal_code: string | null;
+          phone: string | null;
+          website: string | null;
+          lat: number | null;
+          lon: number | null;
+          osm_id: number | null;
+          osm_type: 'node' | 'way' | 'relation' | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          zone_id?: string | null;
+          city: string;
+          name: string;
+          address?: string | null;
+          postal_code?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          lat?: number | null;
+          lon?: number | null;
+          osm_id?: number | null;
+          osm_type?: 'node' | 'way' | 'relation' | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          zone_id?: string | null;
+          city?: string;
+          name?: string;
+          address?: string | null;
+          postal_code?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          lat?: number | null;
+          lon?: number | null;
+          osm_id?: number | null;
+          osm_type?: 'node' | 'way' | 'relation' | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'salons_zone_id_fkey';
+            columns: ['zone_id'];
+            isOneToOne: false;
+            referencedRelation: 'salon_zones';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ambassador_zone_claims: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          zone_id: string;
+          claimed_at: string;
+          released_at: string | null;
+          released_by_admin: boolean;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          zone_id: string;
+          claimed_at?: string;
+          released_at?: string | null;
+          released_by_admin?: boolean;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          zone_id?: string;
+          claimed_at?: string;
+          released_at?: string | null;
+          released_by_admin?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_zone_claims_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ambassador_zone_claims_zone_id_fkey';
+            columns: ['zone_id'];
+            isOneToOne: false;
+            referencedRelation: 'salon_zones';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      salon_visits: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          salon_id: string;
+          visited_at: string;
+          flyer_left: boolean;
+          convinced: 'yes' | 'maybe' | 'no';
+          likelihood_rating: number;
+          notes: string | null;
+          follow_up_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          salon_id: string;
+          visited_at?: string;
+          flyer_left?: boolean;
+          convinced?: 'yes' | 'maybe' | 'no';
+          likelihood_rating: number;
+          notes?: string | null;
+          follow_up_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          salon_id?: string;
+          visited_at?: string;
+          flyer_left?: boolean;
+          convinced?: 'yes' | 'maybe' | 'no';
+          likelihood_rating?: number;
+          notes?: string | null;
+          follow_up_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'salon_visits_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'salon_visits_salon_id_fkey';
+            columns: ['salon_id'];
+            isOneToOne: false;
+            referencedRelation: 'salons';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
