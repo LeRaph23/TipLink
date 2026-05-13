@@ -133,12 +133,11 @@ export async function regenerateAmbassadorSetupToken(
 
     const { data: amb } = await service
       .from('ambassadors')
-      .select('id, name, pin_hash, promo_codes(code)')
+      .select('id, name, promo_codes(code)')
       .eq('id', id)
       .maybeSingle();
 
     if (!amb) return { ok: false, error: 'Ambassadeur introuvable.' };
-    if (amb.pin_hash) return { ok: false, error: 'L\'ambassadeur a déjà défini son PIN. Utilise "Réinitialiser PIN".' };
 
     const promoCode = (amb.promo_codes as { code?: string } | { code?: string }[] | null);
     const code = Array.isArray(promoCode) ? promoCode[0]?.code : promoCode?.code;
@@ -147,9 +146,15 @@ export async function regenerateAmbassadorSetupToken(
     const setupToken = generateSetupToken();
     const expiresAt = new Date(Date.now() + SETUP_TOKEN_TTL_DAYS * 86400000).toISOString();
 
+    // Clear existing PIN so the ambassador must re-set it via the new activation link
     const { error } = await service
       .from('ambassadors')
-      .update({ pin_setup_token: setupToken, pin_setup_expires_at: expiresAt })
+      .update({
+        pin_hash: null,
+        pin_salt: null,
+        pin_setup_token: setupToken,
+        pin_setup_expires_at: expiresAt,
+      })
       .eq('id', id);
 
     if (error) return { ok: false, error: error.message };
@@ -320,33 +325,3 @@ export async function reviewRecruitmentApplication(
   }
 }
 
-export async function resetAmbassadorPin(
-  id: string,
-  newPin: string
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  try {
-    await requireSuperAdminUser();
-    const service = createServiceClient();
-
-    if (!/^\d{4}$/.test(newPin)) {
-      return { ok: false, error: 'Le PIN doit contenir exactement 4 chiffres.' };
-    }
-
-    const pinSalt = crypto.randomBytes(32).toString('hex');
-    const pinHash = crypto.scryptSync(newPin, pinSalt, 64).toString('hex');
-
-    const { error: dbErr } = await service
-      .from('ambassadors')
-      .update({ pin_hash: pinHash, pin_salt: pinSalt })
-      .eq('id', id);
-
-    if (dbErr) return { ok: false, error: dbErr.message };
-
-    await logAdminAction('ambassadors.reset_pin', { id });
-
-    return { ok: true };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Erreur inconnue';
-    return { ok: false, error: msg };
-  }
-}
