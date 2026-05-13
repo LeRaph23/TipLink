@@ -173,7 +173,7 @@
       "h1c": "pourboires",
       "sub": "La plaque se pose en 5 secondes, n'importe où. Votre client approche son téléphone ou scanne le QR code, choisit un montant — et le pourboire arrive directement sur votre compte. Zéro app, zéro cash, zéro friction.",
       "social": "Adopté par 400+ équipes",
-      "countries": "🇫🇷 🇧🇪 🇮🇪 🇩🇪 🇳🇱 🇪🇸",
+      "countries": "🇩🇩 🇩🇧 🇩🇨 🇩🇩 🇩🇨 🇩🇨",
       "cta": "Commander maintenant"
     },
     "claim": {
@@ -190,7 +190,7 @@
       "rating": "4.8",
       "reviewCount": "+150 avis vérifiés",
       "claim": "Garantie matériel à vie",
-      "frenchCompany": "Entreprise française 🇫🇷",
+      "frenchCompany": "Entreprise française 🇩🇧",
       "get3s": "Recevez des pourboires en 3 secondes !",
       "packS": "Solo · 1 plaque époxy",
       "packM": "Duo · 2 plaques époxy",
@@ -204,7 +204,7 @@
       "bullet1": "Paiement unique, 0 frais mensuel",
       "bullet2": "5 % de commission sur les pourboires uniquement",
       "bullet3": "Résine époxy haute densité — conçue pour durer",
-      "bullet4": "Entreprise française 🇫🇷",
+      "bullet4": "Entreprise française 🇩🇧",
       "bullet5": "Remplacement à vie du matériel",
       "material": "Résine époxy",
       "size": "10 × 10 cm",
@@ -810,7 +810,8 @@
         "establishments": "Établissements",
         "groups": "Groupes",
         "promoCodes": "Codes promo",
-        "ambassadeurs": "Ambassadeurs"
+        "ambassadeurs": "Ambassadeurs",
+        "coldEmail": "Cold Email"
       },
       "overview": {
         "title": "Vue d'ensemble SaaS",
