@@ -810,7 +810,8 @@
         "establishments": "Établissements",
         "groups": "Groupes",
         "promoCodes": "Codes promo",
-        "ambassadeurs": "Ambassadeurs"
+        "ambassadeurs": "Ambassadeurs",
+        "coldEmail": "Cold Email"
       },
       "overview": {
         "title": "Vue d'ensemble SaaS",
