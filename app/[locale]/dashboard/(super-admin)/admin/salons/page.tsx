@@ -3,6 +3,10 @@ import { requireSuperAdmin } from '@/lib/auth/require-super-admin';
 import { createServiceClient } from '@/lib/supabase/service';
 import { SalonsManager } from './SalonsManager';
 
+// Always render dynamic — never serve a stale RSC payload.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminSalonsPage({
   params,
 }: {
