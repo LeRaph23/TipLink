@@ -99,6 +99,16 @@ export function SalonsManager({
   }, {});
   const emptyZones = zones.filter((z) => z.isActive && (salonsCountByZone[z.id] ?? 0) === 0);
 
+  // Zones that still have at least one salon missing an address.
+  const missingAddressCountByZone = salons.reduce<Record<string, number>>((acc, s) => {
+    if (s.zoneId && !s.address) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
+    return acc;
+  }, {});
+  const zonesWithMissingAddresses = zones.filter(
+    (z) => z.isActive && (missingAddressCountByZone[z.id] ?? 0) > 0
+  );
+  const totalMissingAddresses = Object.values(missingAddressCountByZone).reduce((a, b) => a + b, 0);
+
   const runImportAllEmptyZones = () => {
     if (emptyZones.length === 0) return;
     if (!confirm(
@@ -123,6 +133,38 @@ export function SalonsManager({
       setFeedback({
         type: failed === 0 ? 'ok' : 'err',
         msg: `${emptyZones.length - failed}/${emptyZones.length} zones traitées · ${totalInserted} salons importés, ${totalSkipped} ignorés${failed ? ` · ${failed} échec(s)` : ''}.`,
+      });
+    });
+  };
+
+  const runEnrichAllMissingAddresses = () => {
+    if (zonesWithMissingAddresses.length === 0) return;
+    // Nominatim throttles to 1 req/s, so the cost in seconds ≈ total missing.
+    const seconds = totalMissingAddresses;
+    if (!confirm(
+      `Enrichir les adresses des ${totalMissingAddresses} salons manquants via Nominatim ? ` +
+      `Cela peut prendre ~${Math.ceil(seconds / 60)} min (limite 1 req/s).`
+    )) return;
+
+    setFeedback({ type: 'ok', msg: `Enrichissement de ${totalMissingAddresses} adresses en cours…` });
+    startTransition(async () => {
+      let totalEnriched = 0;
+      let totalSkipped = 0;
+      let failed = 0;
+      for (const z of zonesWithMissingAddresses) {
+        try {
+          const r = await enrichSalonAddressesForZone(z.id); // force=false → only missing
+          if (r.ok) { totalEnriched += r.enriched; totalSkipped += r.skipped; }
+          else failed += 1;
+        } catch {
+          failed += 1;
+        }
+        // Short pause between zones; Nominatim is the bottleneck inside.
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      setFeedback({
+        type: failed === 0 ? 'ok' : 'err',
+        msg: `${zonesWithMissingAddresses.length - failed}/${zonesWithMissingAddresses.length} zones traitées · ${totalEnriched} adresses ajoutées, ${totalSkipped} introuvables${failed ? ` · ${failed} échec(s)` : ''}.`,
       });
     });
   };
@@ -304,6 +346,33 @@ export function SalonsManager({
               }}
             >
               ⚡ Importer les salons des zones vides ({emptyZones.length})
+            </button>
+          </div>
+        )}
+
+        {zonesWithMissingAddresses.length > 0 && (
+          <div style={{
+            marginTop: 12, paddingTop: 12,
+            borderTop: '1px dashed var(--border-subtle)',
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          }}>
+            <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
+              <strong style={{ color: 'var(--warning)' }}>{totalMissingAddresses}</strong> salon
+              {totalMissingAddresses > 1 ? 's' : ''} sans adresse,
+              répartis sur {zonesWithMissingAddresses.length} zone
+              {zonesWithMissingAddresses.length > 1 ? 's' : ''}.
+            </div>
+            <button
+              onClick={runEnrichAllMissingAddresses}
+              disabled={pending}
+              style={{
+                padding: '8px 14px',
+                background: 'var(--warning-bg)', color: 'var(--warning)',
+                border: '1px solid var(--warning)', borderRadius: 'var(--radius-sm)',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              📍 Enrichir les adresses manquantes ({totalMissingAddresses})
             </button>
           </div>
         )}
