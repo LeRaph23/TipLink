@@ -5,6 +5,7 @@ import {
   importZonesFromOsm,
   importSalonsForZone,
   enrichSalonAddressesForZone,
+  enrichSalonsViaGoogleForZone,
   createZone,
   toggleZoneActive,
   releaseZoneClaim,
@@ -26,6 +27,8 @@ type Salon = {
   id: string; zoneId: string | null; city: string; name: string;
   address: string | null; postalCode: string | null; phone: string | null;
   isActive: boolean; visitCount: number;
+  googleEnriched: boolean;
+  businessStatus: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
 };
 type Claim = { zoneId: string; ambassadorId: string; ambassadorName: string; claimedAt: string };
 type Visit = {
@@ -138,6 +141,22 @@ export function SalonsManager({
       }
     });
   };
+  const runEnrichGoogle = (zoneId: string) => {
+    setFeedback(null);
+    startTransition(async () => {
+      const res = await enrichSalonsViaGoogleForZone(zoneId);
+      if (res.ok) {
+        setFeedback({
+          type: 'ok',
+          msg: res.total === 0
+            ? 'Tous les salons déjà enrichis (< 30 jours).'
+            : `${res.matched}/${res.total} salons enrichis. ${res.closed} fermé(s) définitivement → désactivés. ${res.missing} introuvable(s) sur Google.`,
+        });
+      } else {
+        setFeedback({ type: 'err', msg: res.error });
+      }
+    });
+  };
   const handleReleaseClaim = (zoneId: string) => {
     if (!confirm('Forcer la libération de cette zone ?')) return;
     startTransition(async () => {
@@ -238,8 +257,13 @@ export function SalonsManager({
             if (s.zoneId && !s.address) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
             return acc;
           }, {})}
+          unenrichedGoogleByZone={salons.reduce<Record<string, number>>((acc, s) => {
+            if (s.zoneId && !s.googleEnriched) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
+            return acc;
+          }, {})}
           onImportSalons={runImportSalons}
           onEnrichAddresses={runEnrichAddresses}
+          onEnrichGoogle={runEnrichGoogle}
           onToggleActive={handleToggleZone}
           onReleaseClaim={handleReleaseClaim}
           pending={pending}
@@ -324,15 +348,17 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 function ZonesTable({
-  zones, claimByZone, salonsByZone, missingAddressByZone,
-  onImportSalons, onEnrichAddresses, onToggleActive, onReleaseClaim, pending,
+  zones, claimByZone, salonsByZone, missingAddressByZone, unenrichedGoogleByZone,
+  onImportSalons, onEnrichAddresses, onEnrichGoogle, onToggleActive, onReleaseClaim, pending,
 }: {
   zones: Zone[];
   claimByZone: Map<string, Claim>;
   salonsByZone: Record<string, number>;
   missingAddressByZone: Record<string, number>;
+  unenrichedGoogleByZone: Record<string, number>;
   onImportSalons: (zoneId: string) => void;
   onEnrichAddresses: (zoneId: string) => void;
+  onEnrichGoogle: (zoneId: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
   onReleaseClaim: (zoneId: string) => void;
   pending: boolean;
@@ -393,6 +419,7 @@ function ZonesTable({
           const claim = claimByZone.get(z.id);
           const count = salonsByZone[z.id] ?? 0;
           const missing = missingAddressByZone[z.id] ?? 0;
+          const unenrichedGoogle = unenrichedGoogleByZone[z.id] ?? 0;
           return (
             <div key={z.id} style={{
               background: 'var(--surface)',
@@ -469,6 +496,23 @@ function ZonesTable({
                     }}
                   >
                     Enrichir adresses
+                  </button>
+                )}
+                {count > 0 && unenrichedGoogle > 0 && (
+                  <button
+                    onClick={() => onEnrichGoogle(z.id)}
+                    disabled={pending}
+                    title={`Google Places : horaires, statut ouvert/fermé, note (${unenrichedGoogle} à enrichir)`}
+                    style={{
+                      padding: '8px 12px',
+                      background: 'var(--surface-2)', color: 'var(--text-2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Enrichir Google ({unenrichedGoogle})
                   </button>
                 )}
                 {claim && (

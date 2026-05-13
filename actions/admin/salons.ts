@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 import { fetchZonesForCity, fetchSalonsInBbox, reverseGeocodeBatch } from '@/lib/osm-import';
+import { enrichSalonsViaGoogle } from '@/lib/google-places';
+import type { Json } from '@/types/database';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -326,6 +328,121 @@ export async function enrichSalonAddressesForZone(
     await logAdminAction('salons.enrich_addresses', { zoneId, enriched, skipped });
     revalidatePath('/dashboard/admin/salons', 'page');
     return { ok: true, enriched, total: needsAddress.length, skipped };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+
+// ─── Google Places enrichment ────────────────────────────────────────────────
+// For each salon in the zone, do a text+location search against Google Places.
+// Stores opening hours, business status, rating. Salons flagged
+// CLOSED_PERMANENTLY are deactivated (is_active = false).
+export async function enrichSalonsViaGoogleForZone(
+  zoneId: string
+): Promise<Result<{ enriched: number; matched: number; closed: number; missing: number; total: number }>> {
+  try {
+    await requireSuperAdminUser();
+    if (!process.env.GOOGLE_PLACES_API_KEY) {
+      return { ok: false, error: 'GOOGLE_PLACES_API_KEY non configurée sur Vercel.' };
+    }
+    const service = createServiceClient();
+
+    const { data: salons } = await service
+      .from('salons')
+      .select('id, name, lat, lon, is_active, google_enriched_at')
+      .eq('zone_id', zoneId)
+      .eq('is_active', true);
+
+    if (!salons || salons.length === 0) {
+      return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: 0 };
+    }
+
+    // Skip salons enriched in the last 30 days unless they're explicitly
+    // re-enriched (here we always batch — cost-friendly default).
+    const cutoff = Date.now() - 30 * 86400000;
+    const candidates = salons.filter((s) => {
+      if (s.lat == null || s.lon == null) return false;
+      if (s.google_enriched_at && new Date(s.google_enriched_at).getTime() > cutoff) {
+        return false;
+      }
+      return true;
+    });
+
+    if (candidates.length === 0) {
+      return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: salons.length };
+    }
+
+    const results = await enrichSalonsViaGoogle(
+      candidates.map((s) => ({
+        id: s.id,
+        name: s.name,
+        lat: Number(s.lat),
+        lon: Number(s.lon),
+      }))
+    );
+
+    let matched = 0;
+    let closed = 0;
+    let missing = 0;
+
+    for (const [salonId, place] of results) {
+      if (!place) {
+        // No usable Google match — still mark as enriched so we don't keep
+        // re-spending API quota on this salon for the next 30 days.
+        await service
+          .from('salons')
+          .update({ google_enriched_at: new Date().toISOString() })
+          .eq('id', salonId);
+        missing += 1;
+        continue;
+      }
+
+      matched += 1;
+      const isClosed = place.businessStatus === 'CLOSED_PERMANENTLY';
+      if (isClosed) closed += 1;
+
+      const update: {
+        google_place_id?: string;
+        business_status?: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY';
+        opening_hours?: Json | null;
+        google_rating?: number | null;
+        google_user_ratings_total?: number | null;
+        google_enriched_at: string;
+        is_active?: boolean;
+        // Backfill OSM-missing data when Google has it
+        phone?: string | null;
+        website?: string | null;
+        address?: string | null;
+      } = {
+        google_place_id: place.placeId,
+        business_status: place.businessStatus ?? undefined,
+        opening_hours: (place.openingHours as unknown as Json) ?? null,
+        google_rating: place.rating ?? null,
+        google_user_ratings_total: place.userRatingCount ?? null,
+        google_enriched_at: new Date().toISOString(),
+      };
+      if (isClosed) update.is_active = false;
+      if (place.phoneNumber) update.phone = place.phoneNumber;
+      if (place.websiteUri) update.website = place.websiteUri;
+      if (place.formattedAddress) update.address = place.formattedAddress;
+
+      const { error } = await service.from('salons').update(update).eq('id', salonId);
+      if (error) matched -= 1; // count only successful writes
+    }
+
+    await logAdminAction('salons.enrich_google', {
+      zoneId, candidates: candidates.length, matched, closed, missing,
+    });
+    revalidatePath('/dashboard/admin/salons', 'page');
+    return {
+      ok: true,
+      enriched: matched,
+      matched,
+      closed,
+      missing,
+      total: candidates.length,
+    };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }
