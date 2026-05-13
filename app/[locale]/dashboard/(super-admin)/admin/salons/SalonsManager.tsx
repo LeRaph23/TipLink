@@ -104,33 +104,7 @@ export function SalonsManager({
     });
   };
 
-  const runImportAllSalons = async (city: string) => {
-    const zonesForCity = zones.filter((z) => z.city === city && z.isActive);
-    if (zonesForCity.length === 0) return;
-    if (!confirm(`Importer les salons des ${zonesForCity.length} zones de ${city} ? (cela peut prendre ~${zonesForCity.length}s)`)) return;
 
-    setFeedback(null);
-    startTransition(async () => {
-      let totalInserted = 0;
-      let totalSkipped = 0;
-      let failed = 0;
-      for (const z of zonesForCity) {
-        const res = await importSalonsForZone(z.id);
-        if (res.ok) {
-          totalInserted += res.inserted;
-          totalSkipped += res.skipped;
-        } else {
-          failed += 1;
-        }
-        // Be polite to Overpass between zones
-        await new Promise((r) => setTimeout(r, 800));
-      }
-      setFeedback({
-        type: failed === 0 ? 'ok' : 'err',
-        msg: `${totalInserted} salons importés, ${totalSkipped} ignorés${failed ? `, ${failed} zone(s) échouée(s)` : ''}.`,
-      });
-    });
-  };
 
   const handleToggleZone = (id: string, active: boolean) => {
     startTransition(async () => {
@@ -138,29 +112,29 @@ export function SalonsManager({
       if (!res.ok) setFeedback({ type: 'err', msg: res.error });
     });
   };
-  const runEnrichAddresses = (zoneId: string) => {
+  const runEnrichAddresses = (zoneId: string, force = false) => {
     setFeedback(null);
     startTransition(async () => {
-      const res = await enrichSalonAddressesForZone(zoneId);
+      const res = await enrichSalonAddressesForZone(zoneId, { force });
       if (res.ok) {
         setFeedback({
           type: 'ok',
           msg: res.total === 0
-            ? 'Tous les salons ont déjà une adresse.'
-            : `${res.enriched} adresse(s) ajoutée(s) via Nominatim, ${res.skipped} introuvable(s).`,
+            ? 'Aucune adresse à enrichir.'
+            : `${res.enriched} adresse(s) ${force ? 'mises à jour' : 'ajoutées'} via Nominatim, ${res.skipped} introuvable(s).`,
         });
       } else {
         setFeedback({ type: 'err', msg: res.error });
       }
     });
   };
-  const runEnrichGoogle = (zoneId: string) => {
+  const runEnrichGoogle = (zoneId: string, force = false) => {
     setFeedback(null);
     startTransition(async () => {
-      const res = await enrichSalonsViaGoogleForZone(zoneId);
+      const res = await enrichSalonsViaGoogleForZone(zoneId, { force });
       if (res.ok) {
         if (res.total === 0) {
-          setFeedback({ type: 'ok', msg: 'Tous les salons déjà enrichis (< 30 jours).' });
+          setFeedback({ type: 'ok', msg: 'Aucun salon à enrichir.' });
         } else {
           const base = `${res.matched}/${res.total} salons enrichis. ${res.closed} fermé(s) définitivement → désactivés. ${res.missing} introuvable(s) sur Google.`;
           const suffix = res.apiError ? ` ⚠ Erreur API : ${res.apiError}` : '';
@@ -172,6 +146,56 @@ export function SalonsManager({
       } else {
         setFeedback({ type: 'err', msg: res.error });
       }
+    });
+  };
+
+  // ── City-level bulk runners ──────────────────────────────────────────────
+  type Bulk = 'salons' | 'google' | 'addresses';
+
+  const runBulkForCity = (city: string, kind: Bulk) => {
+    const zonesForCity = zones.filter((z) => z.city === city && z.isActive);
+    if (zonesForCity.length === 0) return;
+    const labels: Record<Bulk, string> = {
+      salons:    `Réimporter les salons des ${zonesForCity.length} zones de ${city} ?`,
+      google:    `Ré-enrichir Google sur les ${zonesForCity.length} zones de ${city} ? (consomme du quota API)`,
+      addresses: `Ré-enrichir les adresses des ${zonesForCity.length} zones de ${city} via Nominatim ?`,
+    };
+    if (!confirm(labels[kind])) return;
+
+    setFeedback({ type: 'ok', msg: `Traitement de ${zonesForCity.length} zones en cours…` });
+    startTransition(async () => {
+      let okCount = 0, failed = 0;
+      const totals = { matched: 0, missing: 0, closed: 0, inserted: 0, skipped: 0, enriched: 0 };
+
+      for (const z of zonesForCity) {
+        let r;
+        try {
+          if (kind === 'salons')     r = await importSalonsForZone(z.id);
+          else if (kind === 'google') r = await enrichSalonsViaGoogleForZone(z.id, { force: true });
+          else                        r = await enrichSalonAddressesForZone(z.id, { force: true });
+        } catch (e) {
+          r = { ok: false, error: e instanceof Error ? e.message : 'Erreur' } as const;
+        }
+        if (r.ok) {
+          okCount += 1;
+          if (kind === 'salons')        { totals.inserted += (r as { inserted: number }).inserted; totals.skipped += (r as { skipped: number }).skipped; }
+          else if (kind === 'google')   { totals.matched += (r as { matched: number }).matched; totals.missing += (r as { missing: number }).missing; totals.closed += (r as { closed: number }).closed; }
+          else                          { totals.enriched += (r as { enriched: number }).enriched; }
+        } else {
+          failed += 1;
+        }
+        await new Promise((r) => setTimeout(r, 800));
+      }
+
+      const summary =
+        kind === 'salons'   ? `${okCount}/${zonesForCity.length} zones · ${totals.inserted} salons importés, ${totals.skipped} ignorés`
+      : kind === 'google'   ? `${okCount}/${zonesForCity.length} zones · ${totals.matched} matchés, ${totals.closed} fermés, ${totals.missing} introuvables`
+      :                       `${okCount}/${zonesForCity.length} zones · ${totals.enriched} adresses enrichies`;
+
+      setFeedback({
+        type: failed === 0 ? 'ok' : 'err',
+        msg: summary + (failed ? ` · ${failed} échec(s)` : ''),
+      });
     });
   };
   const handleReleaseClaim = (zoneId: string) => {
@@ -260,7 +284,7 @@ export function SalonsManager({
       </div>
 
       {tab === 'overview' && (
-        <CityOverview cityStats={cityStats} onImportAll={runImportAllSalons} pending={pending} />
+        <CityOverview cityStats={cityStats} onBulk={runBulkForCity} pending={pending} />
       )}
 
       {tab === 'map' && (
@@ -304,8 +328,8 @@ export function SalonsManager({
 }
 
 function CityOverview({
-  cityStats, onImportAll, pending,
-}: { cityStats: CityStats[]; onImportAll: (city: string) => void; pending: boolean }) {
+  cityStats, onBulk, pending,
+}: { cityStats: CityStats[]; onBulk: (city: string, kind: 'salons' | 'google' | 'addresses') => void; pending: boolean }) {
   if (cityStats.length === 0) {
     return (
       <Empty>Aucune ville importée. Démarre avec le formulaire ci-dessus.</Empty>
@@ -315,6 +339,8 @@ function CityOverview({
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
       {cityStats.map((c) => {
         const coverage = c.salonsTotal === 0 ? 0 : Math.round((c.salonsVisited / c.salonsTotal) * 100);
+        const hasZones = c.zonesTotal > 0;
+        const hasSalons = c.salonsTotal > 0;
         return (
           <div key={c.city} style={{
             background: 'var(--surface)', border: '1px solid var(--border-subtle)',
@@ -331,17 +357,33 @@ function CityOverview({
             <div style={{ marginTop: 10, height: 4, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${coverage}%`, background: 'var(--accent)' }} />
             </div>
-            {c.zonesTotal > 0 && c.salonsTotal === 0 && (
-              <button
-                onClick={() => onImportAll(c.city)}
-                disabled={pending}
-                style={{
-                  marginTop: 12, width: '100%', padding: '8px 12px',
-                  background: 'var(--accent)', color: '#fff',
-                  border: 'none', borderRadius: 'var(--radius-sm)',
-                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                }}
-              >Importer salons (toutes zones)</button>
+
+            {hasZones && (
+              <div style={{
+                marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)',
+                display: 'flex', flexDirection: 'column', gap: 6,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Actions sur toutes les zones
+                </div>
+                <button
+                  onClick={() => onBulk(c.city, 'salons')}
+                  disabled={pending}
+                  style={cityBulkPrimaryStyle}
+                >🔄 {hasSalons ? 'Ré-importer' : 'Importer'} les salons OSM</button>
+                <button
+                  onClick={() => onBulk(c.city, 'google')}
+                  disabled={pending || !hasSalons}
+                  style={cityBulkGhostStyle(!hasSalons)}
+                  title={!hasSalons ? 'Importe d\'abord les salons' : ''}
+                >⚙ Enrichir Google (horaires, fermés, note)</button>
+                <button
+                  onClick={() => onBulk(c.city, 'addresses')}
+                  disabled={pending || !hasSalons}
+                  style={cityBulkGhostStyle(!hasSalons)}
+                  title={!hasSalons ? 'Importe d\'abord les salons' : ''}
+                >📍 Enrichir les adresses (Nominatim)</button>
+              </div>
             )}
           </div>
         );
@@ -379,8 +421,8 @@ function ZonesTable({
   missingAddressByZone: Record<string, number>;
   unenrichedGoogleByZone: Record<string, number>;
   onImportSalons: (zoneId: string) => void;
-  onEnrichAddresses: (zoneId: string) => void;
-  onEnrichGoogle: (zoneId: string) => void;
+  onEnrichAddresses: (zoneId: string, force?: boolean) => void;
+  onEnrichGoogle: (zoneId: string, force?: boolean) => void;
   onToggleActive: (id: string, active: boolean) => void;
   onReleaseClaim: (zoneId: string) => void;
   pending: boolean;
@@ -503,28 +545,31 @@ function ZonesTable({
                 >
                   {count > 0 ? 'Réimporter salons' : 'Importer salons'}
                 </button>
-                {missing > 0 && (
+                {count > 0 && (
                   <button
-                    onClick={() => onEnrichAddresses(z.id)}
+                    onClick={() => onEnrichAddresses(z.id, missing === 0)}
                     disabled={pending}
-                    title={`Reverse-geocoding via Nominatim (~${missing}s)`}
+                    title={missing > 0 ? `${missing} salon(s) sans adresse` : 'Toutes les adresses sont remplies — relance pour rafraîchir'}
                     style={{
                       padding: '8px 12px',
-                      background: 'var(--warning-bg)', color: 'var(--warning)',
-                      border: '1px solid var(--warning)',
+                      background: missing > 0 ? 'var(--warning-bg)' : 'var(--surface-2)',
+                      color: missing > 0 ? 'var(--warning)' : 'var(--text-2)',
+                      border: `1px solid ${missing > 0 ? 'var(--warning)' : 'var(--border)'}`,
                       borderRadius: 'var(--radius-sm)',
                       fontSize: 12, fontWeight: 600, cursor: 'pointer',
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    Enrichir adresses
+                    📍 {missing > 0 ? `Adresses (${missing})` : 'Rafraîchir adresses'}
                   </button>
                 )}
-                {count > 0 && unenrichedGoogle > 0 && (
+                {count > 0 && (
                   <button
-                    onClick={() => onEnrichGoogle(z.id)}
+                    onClick={() => onEnrichGoogle(z.id, unenrichedGoogle === 0)}
                     disabled={pending}
-                    title={`Google Places : horaires, statut ouvert/fermé, note (${unenrichedGoogle} à enrichir)`}
+                    title={unenrichedGoogle > 0
+                      ? `${unenrichedGoogle} salon(s) à enrichir via Google`
+                      : 'Tous les salons sont déjà enrichis — relance pour rafraîchir horaires & note'}
                     style={{
                       padding: '8px 12px',
                       background: 'var(--surface-2)', color: 'var(--text-2)',
@@ -534,7 +579,7 @@ function ZonesTable({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    Enrichir Google ({unenrichedGoogle})
+                    ⚙ {unenrichedGoogle > 0 ? `Google (${unenrichedGoogle})` : 'Rafraîchir Google'}
                   </button>
                 )}
                 {claim && (
@@ -714,6 +759,22 @@ const miniBtnStyle: React.CSSProperties = {
   border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
   fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap',
 };
+const cityBulkPrimaryStyle: React.CSSProperties = {
+  width: '100%', padding: '7px 10px',
+  background: 'var(--accent)', color: '#fff',
+  border: 'none', borderRadius: 'var(--radius-sm)',
+  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+  whiteSpace: 'nowrap',
+};
+const cityBulkGhostStyle = (disabled: boolean): React.CSSProperties => ({
+  width: '100%', padding: '7px 10px',
+  background: 'var(--surface-2)', color: 'var(--text-2)',
+  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+  fontSize: 12, fontWeight: 600,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.55 : 1,
+  whiteSpace: 'nowrap',
+});
 const miniDangerBtnStyle: React.CSSProperties = {
   ...miniBtnStyle, color: 'var(--error)', borderColor: 'var(--error)',
 };
