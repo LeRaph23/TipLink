@@ -87,6 +87,34 @@ export function SalonsManager({
     });
   };
 
+  const runImportAllSalons = async (city: string) => {
+    const zonesForCity = zones.filter((z) => z.city === city && z.isActive);
+    if (zonesForCity.length === 0) return;
+    if (!confirm(`Importer les salons des ${zonesForCity.length} zones de ${city} ? (cela peut prendre ~${zonesForCity.length}s)`)) return;
+
+    setFeedback(null);
+    startTransition(async () => {
+      let totalInserted = 0;
+      let totalSkipped = 0;
+      let failed = 0;
+      for (const z of zonesForCity) {
+        const res = await importSalonsForZone(z.id);
+        if (res.ok) {
+          totalInserted += res.inserted;
+          totalSkipped += res.skipped;
+        } else {
+          failed += 1;
+        }
+        // Be polite to Overpass between zones
+        await new Promise((r) => setTimeout(r, 800));
+      }
+      setFeedback({
+        type: failed === 0 ? 'ok' : 'err',
+        msg: `${totalInserted} salons importés, ${totalSkipped} ignorés${failed ? `, ${failed} zone(s) échouée(s)` : ''}.`,
+      });
+    });
+  };
+
   const handleToggleZone = (id: string, active: boolean) => {
     startTransition(async () => {
       const res = await toggleZoneActive(id, active);
@@ -178,7 +206,7 @@ export function SalonsManager({
       </div>
 
       {tab === 'overview' && (
-        <CityOverview cityStats={cityStats} />
+        <CityOverview cityStats={cityStats} onImportAll={runImportAllSalons} pending={pending} />
       )}
 
       {tab === 'zones' && (
@@ -207,7 +235,9 @@ export function SalonsManager({
   );
 }
 
-function CityOverview({ cityStats }: { cityStats: CityStats[] }) {
+function CityOverview({
+  cityStats, onImportAll, pending,
+}: { cityStats: CityStats[]; onImportAll: (city: string) => void; pending: boolean }) {
   if (cityStats.length === 0) {
     return (
       <Empty>Aucune ville importée. Démarre avec le formulaire ci-dessus.</Empty>
@@ -233,6 +263,18 @@ function CityOverview({ cityStats }: { cityStats: CityStats[] }) {
             <div style={{ marginTop: 10, height: 4, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${coverage}%`, background: 'var(--accent)' }} />
             </div>
+            {c.zonesTotal > 0 && c.salonsTotal === 0 && (
+              <button
+                onClick={() => onImportAll(c.city)}
+                disabled={pending}
+                style={{
+                  marginTop: 12, width: '100%', padding: '8px 12px',
+                  background: 'var(--accent)', color: '#fff',
+                  border: 'none', borderRadius: 'var(--radius-sm)',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >Importer salons (toutes zones)</button>
+            )}
           </div>
         );
       })}
@@ -298,22 +340,21 @@ function ZonesTable({
   }
 
   return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-      borderRadius: 'var(--radius)', overflow: 'hidden',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 10, borderBottom: '1px solid var(--border-subtle)' }}>
+    <div>
+      <div style={{
+        display: 'flex', justifyContent: 'flex-end', marginBottom: 10,
+      }}>
         {!creating ? (
           <button
             onClick={() => setCreating(true)}
             style={{
-              fontSize: 12, padding: '5px 10px', background: 'var(--surface-2)',
+              fontSize: 12, padding: '6px 12px', background: 'var(--surface-2)',
               color: 'var(--text-2)', border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)', cursor: 'pointer',
             }}
           >+ Zone manuelle</button>
         ) : (
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <input value={newCity} onChange={(e) => setNewCity(e.target.value)} placeholder="Ville" style={inputStyle} />
             <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom de zone" style={inputStyle} />
             <button onClick={submit} disabled={busy} style={primaryBtnStyle}>OK</button>
@@ -321,46 +362,77 @@ function ZonesTable({
           </div>
         )}
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead>
-          <tr style={{ background: 'var(--surface-2)' }}>
-            <Th>Ville</Th><Th>Zone</Th><Th>Salons</Th><Th>Réservée par</Th><Th>Actif</Th><Th>Actions</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {zones.map((z) => {
-            const claim = claimByZone.get(z.id);
-            return (
-              <tr key={z.id} style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                <Td>{z.city}</Td>
-                <Td><strong>{z.name}</strong></Td>
-                <Td>{salonsByZone[z.id] ?? 0}</Td>
-                <Td>{claim ? <span style={{ color: 'var(--accent)' }}>{claim.ambassadorName} <span style={{ color: 'var(--text-3)' }}>({fmtDateShort(claim.claimedAt)})</span></span> : <span style={{ color: 'var(--text-3)' }}>—</span>}</Td>
-                <Td>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+        {zones.map((z) => {
+          const claim = claimByZone.get(z.id);
+          const count = salonsByZone[z.id] ?? 0;
+          return (
+            <div key={z.id} style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius)',
+              padding: 14,
+              opacity: z.isActive ? 1 : 0.55,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {z.city}
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 2, wordBreak: 'break-word' }}>
+                    {z.name}
+                  </div>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-3)' }}>
                   <input
                     type="checkbox"
                     checked={z.isActive}
                     onChange={(e) => onToggleActive(z.id, e.target.checked)}
                     disabled={pending}
                   />
-                </Td>
-                <Td>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => onImportSalons(z.id)} disabled={pending} style={miniBtnStyle}>
-                      Import salons
-                    </button>
-                    {claim && (
-                      <button onClick={() => onReleaseClaim(z.id)} disabled={pending} style={miniDangerBtnStyle}>
-                        Libérer
-                      </button>
-                    )}
-                  </div>
-                </Td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  actif
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginBottom: 10, fontSize: 12 }}>
+                <span style={{ color: 'var(--text-3)' }}>
+                  Salons : <strong style={{ color: count > 0 ? 'var(--accent)' : 'var(--text)' }}>{count}</strong>
+                </span>
+                {claim ? (
+                  <span style={{ color: 'var(--accent)', fontSize: 11 }}>
+                    🔒 {claim.ambassadorName} ({fmtDateShort(claim.claimedAt)})
+                  </span>
+                ) : (
+                  <span style={{ color: 'var(--text-3)', fontSize: 11 }}>libre</span>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => onImportSalons(z.id)}
+                  disabled={pending}
+                  style={{
+                    flex: 1, minWidth: 0,
+                    padding: '8px 12px',
+                    background: 'var(--accent)', color: '#fff',
+                    border: 'none', borderRadius: 'var(--radius-sm)',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {count > 0 ? 'Réimporter salons' : 'Importer salons'}
+                </button>
+                {claim && (
+                  <button onClick={() => onReleaseClaim(z.id)} disabled={pending} style={miniDangerBtnStyle}>
+                    Libérer
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -425,7 +497,7 @@ function SalonsTable({
           </>
         )}
       </div>
-      <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+      <div style={{ maxHeight: 600, overflowY: 'auto', overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-2)' }}>
             <tr><Th>Ville</Th><Th>Zone</Th><Th>Nom</Th><Th>Adresse</Th><Th>Tél</Th><Th>Visites</Th><Th>Actif</Th></tr>
@@ -459,7 +531,7 @@ function VisitsTable({ visits }: { visits: Visit[] }) {
       background: 'var(--surface)', border: '1px solid var(--border-subtle)',
       borderRadius: 'var(--radius)', overflow: 'hidden',
     }}>
-      <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+      <div style={{ maxHeight: 600, overflowY: 'auto', overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-2)' }}>
             <tr><Th>Date</Th><Th>Ville</Th><Th>Salon</Th><Th>Ambassadeur</Th><Th>Flyer</Th><Th>Convaincu</Th><Th>Note</Th><Th>Relance</Th><Th>Notes</Th></tr>
