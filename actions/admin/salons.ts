@@ -340,7 +340,7 @@ export async function enrichSalonAddressesForZone(
 // CLOSED_PERMANENTLY are deactivated (is_active = false).
 export async function enrichSalonsViaGoogleForZone(
   zoneId: string
-): Promise<Result<{ enriched: number; matched: number; closed: number; missing: number; total: number }>> {
+): Promise<Result<{ enriched: number; matched: number; closed: number; missing: number; total: number; apiError: string | null }>> {
   try {
     await requireSuperAdminUser();
     if (!process.env.GOOGLE_PLACES_API_KEY) {
@@ -350,37 +350,46 @@ export async function enrichSalonsViaGoogleForZone(
 
     const { data: salons } = await service
       .from('salons')
-      .select('id, name, lat, lon, is_active, google_enriched_at')
+      .select('id, name, city, lat, lon, is_active, google_enriched_at, google_place_id')
       .eq('zone_id', zoneId)
       .eq('is_active', true);
 
     if (!salons || salons.length === 0) {
-      return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: 0 };
+      return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: 0, apiError: null };
     }
 
-    // Skip salons enriched in the last 30 days unless they're explicitly
-    // re-enriched (here we always batch — cost-friendly default).
+    // Skip salons that were SUCCESSFULLY enriched (have a google_place_id)
+    // in the last 30 days. Salons without a place_id are retried on every
+    // call so we benefit from algorithm improvements without manual reset.
     const cutoff = Date.now() - 30 * 86400000;
     const candidates = salons.filter((s) => {
       if (s.lat == null || s.lon == null) return false;
-      if (s.google_enriched_at && new Date(s.google_enriched_at).getTime() > cutoff) {
+      const matched = !!s.google_place_id;
+      if (matched && s.google_enriched_at && new Date(s.google_enriched_at).getTime() > cutoff) {
         return false;
       }
       return true;
     });
 
     if (candidates.length === 0) {
-      return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: salons.length };
+      return { ok: true, enriched: 0, matched: 0, closed: 0, missing: 0, total: salons.length, apiError: null };
     }
 
-    const results = await enrichSalonsViaGoogle(
+    const { results, firstError } = await enrichSalonsViaGoogle(
       candidates.map((s) => ({
         id: s.id,
         name: s.name,
+        city: s.city,
         lat: Number(s.lat),
         lon: Number(s.lon),
       }))
     );
+
+    // If every salon failed and we have an API error, surface it instead
+    // of silently writing "0 matched, N missing".
+    if (firstError && Array.from(results.values()).every((v) => v === null)) {
+      return { ok: false, error: `Google Places: ${firstError}` };
+    }
 
     let matched = 0;
     let closed = 0;
@@ -433,6 +442,7 @@ export async function enrichSalonsViaGoogleForZone(
 
     await logAdminAction('salons.enrich_google', {
       zoneId, candidates: candidates.length, matched, closed, missing,
+      firstError: firstError ?? null,
     });
     revalidatePath('/dashboard/admin/salons', 'page');
     return {
@@ -442,6 +452,7 @@ export async function enrichSalonsViaGoogleForZone(
       closed,
       missing,
       total: candidates.length,
+      apiError: firstError,
     };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };

@@ -74,101 +74,126 @@ function haversineMeters(a: { lat: number; lon: number }, b: { lat: number; lon:
 }
 
 /**
- * Find a Google Place that matches the given salon (name + GPS).
- * Returns null if no plausible match (closest result > 250m away or no results).
+ * Find a Google Place that matches the given salon (name + GPS, optionally city).
+ * Strategy: 2 passes — (1) tight location bias 500m, (2) wider with city in
+ * the text query as a fallback. Both passes accept results within 450m of
+ * the OSM coordinates. Returns null if neither pass finds a plausible match.
  */
 export async function findGooglePlaceForSalon(input: {
   name: string;
   lat: number;
   lon: number;
+  city?: string | null;
 }): Promise<GooglePlaceData | null> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) throw new Error('GOOGLE_PLACES_API_KEY non configurée');
 
-  const body = {
+  async function runSearch(body: Record<string, unknown>): Promise<SearchTextResponse> {
+    const res = await fetch(PLACES_SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey!,
+        'X-Goog-FieldMask': FIELD_MASK,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 300)}`);
+    }
+    return (await res.json()) as SearchTextResponse;
+  }
+
+  function pickClosest(places: NonNullable<SearchTextResponse['places']>) {
+    let best: (typeof places)[number] | null = null;
+    let bestDist = Infinity;
+    for (const p of places) {
+      if (!p.location) continue;
+      const d = haversineMeters(
+        { lat: input.lat, lon: input.lon },
+        { lat: p.location.latitude, lon: p.location.longitude }
+      );
+      if (d < bestDist) { bestDist = d; best = p; }
+    }
+    return { best, bestDist };
+  }
+
+  // Pass 1: name only, tight location bias. No includedType — Google
+  // classifies many salons as beauty_salon / barber_shop / spa.
+  const pass1 = await runSearch({
     textQuery: input.name,
     languageCode: 'fr',
     regionCode: 'FR',
-    maxResultCount: 5,
+    maxResultCount: 8,
     locationBias: {
       circle: {
         center: { latitude: input.lat, longitude: input.lon },
-        radius: 300, // 300m around the OSM coordinates
+        radius: 500,
       },
     },
-    includedType: 'hair_salon', // bias toward hair salons; beauty fits too
-    strictTypeFiltering: false,
-  };
-
-  const res = await fetch(PLACES_SEARCH_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': FIELD_MASK,
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(10000),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 200)}`);
-  }
+  let { best, bestDist } = pickClosest(pass1.places ?? []);
 
-  const data = (await res.json()) as SearchTextResponse;
-  const places = data.places ?? [];
-  if (places.length === 0) return null;
-
-  // Pick the closest result that's within 250m of our OSM coordinates
-  let bestPlace: (typeof places)[number] | null = null;
-  let bestDistance = Infinity;
-  for (const p of places) {
-    if (!p.location) continue;
-    const d = haversineMeters(
-      { lat: input.lat, lon: input.lon },
-      { lat: p.location.latitude, lon: p.location.longitude }
-    );
-    if (d < bestDistance) {
-      bestDistance = d;
-      bestPlace = p;
+  // Pass 2: wider — append the city to the query, no location bias.
+  // Helps when the closest Google match is > 500m or when pass 1 misses.
+  if (!best || bestDist > 450) {
+    if (input.city) {
+      const pass2 = await runSearch({
+        textQuery: `${input.name} ${input.city}`,
+        languageCode: 'fr',
+        regionCode: 'FR',
+        maxResultCount: 8,
+      });
+      const r2 = pickClosest(pass2.places ?? []);
+      // Take pass 2 only if it's closer
+      if (r2.best && r2.bestDist < bestDist) {
+        best = r2.best;
+        bestDist = r2.bestDist;
+      }
     }
   }
 
-  if (!bestPlace || bestDistance > 250) return null;
+  if (!best || bestDist > 450) return null;
 
   return {
-    placeId: bestPlace.id,
-    displayName: bestPlace.displayName?.text ?? null,
-    formattedAddress: bestPlace.formattedAddress ?? null,
-    businessStatus: bestPlace.businessStatus ?? null,
-    openingHours: bestPlace.regularOpeningHours ?? null,
-    rating: bestPlace.rating ?? null,
-    userRatingCount: bestPlace.userRatingCount ?? null,
-    phoneNumber: bestPlace.internationalPhoneNumber ?? null,
-    websiteUri: bestPlace.websiteUri ?? null,
+    placeId: best.id,
+    displayName: best.displayName?.text ?? null,
+    formattedAddress: best.formattedAddress ?? null,
+    businessStatus: best.businessStatus ?? null,
+    openingHours: best.regularOpeningHours ?? null,
+    rating: best.rating ?? null,
+    userRatingCount: best.userRatingCount ?? null,
+    phoneNumber: best.internationalPhoneNumber ?? null,
+    websiteUri: best.websiteUri ?? null,
   };
 }
 
 /**
  * Best-effort enrich for a batch. Sequential to play nice with Google's
  * QPS limits — no manual throttle needed (they allow 10 QPS by default).
+ *
+ * Errors from Google are surfaced via the second tuple element so callers
+ * can show 'API mal configurée' instead of a silent 'introuvable'.
  */
 export async function enrichSalonsViaGoogle(
-  inputs: Array<{ id: string; name: string; lat: number; lon: number }>,
+  inputs: Array<{ id: string; name: string; lat: number; lon: number; city?: string | null }>,
   onProgress?: (done: number, total: number) => void
-): Promise<Map<string, GooglePlaceData | null>> {
+): Promise<{ results: Map<string, GooglePlaceData | null>; firstError: string | null }> {
   const results = new Map<string, GooglePlaceData | null>();
+  let firstError: string | null = null;
   for (let i = 0; i < inputs.length; i++) {
     const s = inputs[i];
     try {
-      const r = await findGooglePlaceForSalon({ name: s.name, lat: s.lat, lon: s.lon });
+      const r = await findGooglePlaceForSalon({ name: s.name, lat: s.lat, lon: s.lon, city: s.city });
       results.set(s.id, r);
-    } catch {
-      // Hard error on this salon — store null so we skip the update
+    } catch (e) {
       results.set(s.id, null);
+      if (!firstError) firstError = e instanceof Error ? e.message : String(e);
     }
     onProgress?.(i + 1, inputs.length);
   }
-  return results;
+  return { results, firstError };
 }
