@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import {
   importZonesFromOsm,
   importSalonsForZone,
+  enrichSalonAddressesForZone,
   createZone,
   toggleZoneActive,
   releaseZoneClaim,
@@ -121,6 +122,22 @@ export function SalonsManager({
       if (!res.ok) setFeedback({ type: 'err', msg: res.error });
     });
   };
+  const runEnrichAddresses = (zoneId: string) => {
+    setFeedback(null);
+    startTransition(async () => {
+      const res = await enrichSalonAddressesForZone(zoneId);
+      if (res.ok) {
+        setFeedback({
+          type: 'ok',
+          msg: res.total === 0
+            ? 'Tous les salons ont déjà une adresse.'
+            : `${res.enriched} adresse(s) ajoutée(s) via Nominatim, ${res.skipped} introuvable(s).`,
+        });
+      } else {
+        setFeedback({ type: 'err', msg: res.error });
+      }
+    });
+  };
   const handleReleaseClaim = (zoneId: string) => {
     if (!confirm('Forcer la libération de cette zone ?')) return;
     startTransition(async () => {
@@ -217,7 +234,12 @@ export function SalonsManager({
             if (s.zoneId) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
             return acc;
           }, {})}
+          missingAddressByZone={salons.reduce<Record<string, number>>((acc, s) => {
+            if (s.zoneId && !s.address) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
+            return acc;
+          }, {})}
           onImportSalons={runImportSalons}
+          onEnrichAddresses={runEnrichAddresses}
           onToggleActive={handleToggleZone}
           onReleaseClaim={handleReleaseClaim}
           pending={pending}
@@ -302,12 +324,15 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 function ZonesTable({
-  zones, claimByZone, salonsByZone, onImportSalons, onToggleActive, onReleaseClaim, pending,
+  zones, claimByZone, salonsByZone, missingAddressByZone,
+  onImportSalons, onEnrichAddresses, onToggleActive, onReleaseClaim, pending,
 }: {
   zones: Zone[];
   claimByZone: Map<string, Claim>;
   salonsByZone: Record<string, number>;
+  missingAddressByZone: Record<string, number>;
   onImportSalons: (zoneId: string) => void;
+  onEnrichAddresses: (zoneId: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
   onReleaseClaim: (zoneId: string) => void;
   pending: boolean;
@@ -367,6 +392,7 @@ function ZonesTable({
         {zones.map((z) => {
           const claim = claimByZone.get(z.id);
           const count = salonsByZone[z.id] ?? 0;
+          const missing = missingAddressByZone[z.id] ?? 0;
           return (
             <div key={z.id} style={{
               background: 'var(--surface)',
@@ -395,10 +421,15 @@ function ZonesTable({
                 </label>
               </div>
 
-              <div style={{ display: 'flex', gap: 12, marginBottom: 10, fontSize: 12 }}>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 10, fontSize: 12, flexWrap: 'wrap' }}>
                 <span style={{ color: 'var(--text-3)' }}>
                   Salons : <strong style={{ color: count > 0 ? 'var(--accent)' : 'var(--text)' }}>{count}</strong>
                 </span>
+                {missing > 0 && (
+                  <span style={{ color: 'var(--warning)', fontSize: 11 }}>
+                    ⚠ {missing} sans adresse
+                  </span>
+                )}
                 {claim ? (
                   <span style={{ color: 'var(--accent)', fontSize: 11 }}>
                     🔒 {claim.ambassadorName} ({fmtDateShort(claim.claimedAt)})
@@ -423,6 +454,23 @@ function ZonesTable({
                 >
                   {count > 0 ? 'Réimporter salons' : 'Importer salons'}
                 </button>
+                {missing > 0 && (
+                  <button
+                    onClick={() => onEnrichAddresses(z.id)}
+                    disabled={pending}
+                    title={`Reverse-geocoding via Nominatim (~${missing}s)`}
+                    style={{
+                      padding: '8px 12px',
+                      background: 'var(--warning-bg)', color: 'var(--warning)',
+                      border: '1px solid var(--warning)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Enrichir adresses
+                  </button>
+                )}
                 {claim && (
                   <button onClick={() => onReleaseClaim(z.id)} disabled={pending} style={miniDangerBtnStyle}>
                     Libérer

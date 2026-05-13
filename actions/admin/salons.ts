@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
-import { fetchZonesForCity, fetchSalonsInBbox } from '@/lib/osm-import';
+import { fetchZonesForCity, fetchSalonsInBbox, reverseGeocodeBatch } from '@/lib/osm-import';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -267,6 +267,65 @@ export async function toggleSalonActive(
     await logAdminAction(isActive ? 'salons.salon_activate' : 'salons.salon_deactivate', { salonId });
     revalidatePath('/dashboard/admin/salons', 'page');
     return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+// ─── Reverse-geocode missing addresses via Nominatim ─────────────────────────
+// Throttled to 1 req/s — Nominatim public-instance policy. Call per zone.
+export async function enrichSalonAddressesForZone(
+  zoneId: string
+): Promise<Result<{ enriched: number; total: number; skipped: number }>> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: salons } = await service
+      .from('salons')
+      .select('id, lat, lon, address, postal_code')
+      .eq('zone_id', zoneId)
+      .eq('is_active', true);
+
+    if (!salons || salons.length === 0) {
+      return { ok: true, enriched: 0, total: 0, skipped: 0 };
+    }
+
+    const needsAddress = salons.filter(
+      (s) => !s.address && s.lat != null && s.lon != null
+    );
+
+    if (needsAddress.length === 0) {
+      return { ok: true, enriched: 0, total: salons.length, skipped: 0 };
+    }
+
+    const results = await reverseGeocodeBatch(
+      needsAddress.map((s) => ({
+        id: s.id,
+        lat: Number(s.lat),
+        lon: Number(s.lon),
+      }))
+    );
+
+    let enriched = 0;
+    let skipped = 0;
+
+    for (const [salonId, r] of results) {
+      if (!r.address && !r.postal_code) {
+        skipped += 1;
+        continue;
+      }
+      const update: { address?: string; postal_code?: string } = {};
+      if (r.address) update.address = r.address;
+      if (r.postal_code) update.postal_code = r.postal_code;
+      const { error } = await service.from('salons').update(update).eq('id', salonId);
+      if (error) skipped += 1;
+      else enriched += 1;
+    }
+
+    await logAdminAction('salons.enrich_addresses', { zoneId, enriched, skipped });
+    revalidatePath('/dashboard/admin/salons', 'page');
+    return { ok: true, enriched, total: needsAddress.length, skipped };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }

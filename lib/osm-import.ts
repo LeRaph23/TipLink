@@ -237,3 +237,80 @@ export async function fetchSalonsInBbox(bbox: {
 
   return out;
 }
+
+// ─── Reverse geocoding via Nominatim ─────────────────────────────────────
+// Free OSM service. Strict 1 req/s rate limit per their usage policy.
+// We use it as a fallback when a salon has no addr:* tags in OSM.
+
+const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse';
+const NOMINATIM_DELAY_MS = 1100; // be polite, stay under 1 req/s
+
+export type ReverseGeocodeResult = {
+  address: string | null;
+  postal_code: string | null;
+};
+
+type NominatimResponse = {
+  address?: {
+    house_number?: string;
+    road?: string;
+    pedestrian?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    postcode?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+  };
+  display_name?: string;
+};
+
+async function callNominatim(lat: number, lon: number): Promise<NominatimResponse | null> {
+  try {
+    const url = `${NOMINATIM_ENDPOINT}?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1&accept-language=fr`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as NominatimResponse;
+  } catch {
+    return null;
+  }
+}
+
+export async function reverseGeocode(lat: number, lon: number): Promise<ReverseGeocodeResult> {
+  const data = await callNominatim(lat, lon);
+  if (!data?.address) return { address: null, postal_code: null };
+  const a = data.address;
+  const street = a.road ?? a.pedestrian ?? a.suburb ?? a.neighbourhood;
+  const city = a.city ?? a.town ?? a.village;
+  const parts: string[] = [];
+  if (a.house_number || street) {
+    parts.push([a.house_number, street].filter(Boolean).join(' '));
+  }
+  if (city) parts.push(city);
+  return {
+    address: parts.length ? parts.join(', ') : null,
+    postal_code: a.postcode ?? null,
+  };
+}
+
+/**
+ * Throttled batch reverse-geocoding (1 req/sec per Nominatim policy).
+ * `onProgress` callback receives (index, total) so callers can show progress.
+ */
+export async function reverseGeocodeBatch(
+  coords: Array<{ id: string; lat: number; lon: number }>,
+  onProgress?: (done: number, total: number) => void
+): Promise<Map<string, ReverseGeocodeResult>> {
+  const results = new Map<string, ReverseGeocodeResult>();
+  for (let i = 0; i < coords.length; i++) {
+    const c = coords[i];
+    const r = await reverseGeocode(c.lat, c.lon);
+    results.set(c.id, r);
+    onProgress?.(i + 1, coords.length);
+    if (i < coords.length - 1) await sleep(NOMINATIM_DELAY_MS);
+  }
+  return results;
+}
