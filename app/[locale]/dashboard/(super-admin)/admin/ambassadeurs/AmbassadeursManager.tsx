@@ -4,7 +4,6 @@ import { useState, useTransition } from 'react';
 import {
   createAmbassador,
   toggleAmbassador,
-  resetAmbassadorPin,
   deleteAmbassador,
   regenerateAmbassadorSetupToken,
 } from '@/actions/admin/ambassadors';
@@ -47,11 +46,6 @@ export function AmbassadeursManager({
   // Create form
   const [name, setName] = useState('');
   const [promoCodeId, setPromoCodeId] = useState('');
-
-  // Reset PIN modal state
-  const [resetTarget, setResetTarget] = useState<string | null>(null);
-  const [resetPin, setResetPin] = useState('');
-  const [resetError, setResetError] = useState<string | null>(null);
 
   // Delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<Ambassador | null>(null);
@@ -99,18 +93,6 @@ export function AmbassadeursManager({
       setAmbassadors(prev =>
         prev.map(a => a.id === id ? { ...a, is_active: !currentActive } : a)
       );
-    });
-  };
-
-  const handleResetPin = () => {
-    if (!resetTarget) return;
-    setResetError(null);
-    if (!/^\d{4}$/.test(resetPin)) { setResetError('PIN : exactement 4 chiffres.'); return; }
-    startTransition(async () => {
-      const result = await resetAmbassadorPin(resetTarget, resetPin);
-      if (!result.ok) { setResetError(result.error); return; }
-      setResetTarget(null);
-      setResetPin('');
     });
   };
 
@@ -255,7 +237,7 @@ export function AmbassadeursManager({
                   <td style={{ padding: '11px 14px' }}>
                     {a.promoCode && (
                       <a
-                        href={`/fr/ambassadeur/${a.promoCode.toLowerCase()}`}
+                        href={`/api/admin/ambassador-session/${a.promoCode.toLowerCase()}`}
                         target="_blank"
                         rel="noreferrer"
                         style={{ fontSize: 12, color: 'var(--text-3)', textDecoration: 'none', padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)' }}
@@ -285,16 +267,10 @@ export function AmbassadeursManager({
                         {a.is_active ? 'Désactiver' : 'Activer'}
                       </button>
                       <button
-                        style={{ ...btnSecondary, color: 'var(--warning)' }}
-                        onClick={() => { setResetTarget(a.id); setResetPin(''); setResetError(null); }}
-                      >
-                        PIN
-                      </button>
-                      <button
                         style={btnSecondary}
                         onClick={() => handleRegenerateToken(a.id, a.name)}
                         disabled={isPending}
-                        title="Génère un nouveau lien d'activation (utile si l'ambassadeur n'a pas encore défini son PIN)"
+                        title="Génère un nouveau lien d'activation et réinitialise le PIN (l'ambassadeur définira lui-même son nouveau PIN)"
                       >
                         🔗 Lien
                       </button>
@@ -315,39 +291,6 @@ export function AmbassadeursManager({
 
       {regenResult && (
         <SetupUrlModal data={regenResult} onClose={() => setRegenResult(null)} />
-      )}
-
-      {resetTarget && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }}>
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)', padding: 24, width: 320,
-          }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 14px', color: 'var(--text)' }}>
-              Réinitialiser le PIN
-            </h3>
-            <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 14 }}>
-              Entre le nouveau PIN à 4 chiffres pour cet ambassadeur.
-            </p>
-            <input
-              style={inputStyle} type="password" inputMode="numeric" maxLength={4}
-              value={resetPin} onChange={e => setResetPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              placeholder="Nouveau PIN (4 chiffres)"
-            />
-            {resetError && (
-              <div style={{ marginTop: 8, color: 'var(--error)', fontSize: 12 }}>{resetError}</div>
-            )}
-            <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-              <button style={btnPrimary} onClick={handleResetPin} disabled={isPending}>
-                {isPending ? '…' : 'Confirmer'}
-              </button>
-              <button style={btnSecondary} onClick={() => setResetTarget(null)}>Annuler</button>
-            </div>
-          </div>
-        </div>
       )}
 
       {deleteTarget && (
@@ -435,7 +378,7 @@ function SetupUrlModal({ data, onClose }: { data: { name: string; url: string; e
           Nouveau lien d&apos;activation pour {data.name}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>
-          L&apos;ancien lien est invalidé. Envoie-lui ce nouveau lien (expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}) :
+          L&apos;ancien lien et le PIN sont invalidés. Envoie ce nouveau lien à l&apos;ambassadeur (expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}) — il définira lui-même son nouveau PIN :
         </p>
         <code style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', wordBreak: 'break-all', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: 6 }}>
           {data.url}
