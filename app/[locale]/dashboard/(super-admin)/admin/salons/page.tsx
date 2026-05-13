@@ -7,6 +7,28 @@ import { SalonsManager } from './SalonsManager';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+/**
+ * Fetch a Supabase table in chunks of 1000 to bypass any PostgREST
+ * server-side max-rows limit (Supabase defaults to 1000 on some projects).
+ * Re-runs the same builder until fewer rows than the chunk size come back.
+ */
+async function fetchAll<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>
+): Promise<T[]> {
+  const chunkSize = 1000;
+  const out: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data } = await build(from, from + chunkSize - 1);
+    const rows = data ?? [];
+    out.push(...rows);
+    if (rows.length < chunkSize) break;
+    from += chunkSize;
+    if (from > 500000) break; // hard safety cap
+  }
+  return out;
+}
+
 export default async function AdminSalonsPage({
   params,
 }: {
@@ -18,24 +40,46 @@ export default async function AdminSalonsPage({
 
   const service = createServiceClient();
 
-  const [{ data: zones }, { data: salons }, { data: visits }, { data: claims }, { data: ambassadors }] =
-    await Promise.all([
-      service.from('salon_zones')
+  const [zones, salons, visits, claims, ambassadors] = await Promise.all([
+    fetchAll<{ id: string; city: string; name: string; is_active: boolean; created_at: string; bbox_min_lat: number | null; bbox_min_lon: number | null; bbox_max_lat: number | null; bbox_max_lon: number | null }>(
+      (a, b) => service.from('salon_zones')
         .select('id, city, name, is_active, created_at, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
         .order('city').order('name')
-        .range(0, 9999),
-      service.from('salons')
+        .range(a, b)
+    ),
+    fetchAll<{
+      id: string; zone_id: string | null; city: string; name: string;
+      address: string | null; postal_code: string | null; phone: string | null;
+      is_active: boolean; google_enriched_at: string | null;
+      business_status: string | null;
+      lat: number | null; lon: number | null;
+      opening_hours: unknown; google_rating: number | null;
+    }>(
+      (a, b) => service.from('salons')
         .select('id, zone_id, city, name, address, postal_code, phone, is_active, google_enriched_at, business_status, lat, lon, opening_hours, google_rating')
-        .range(0, 99999),
-      service.from('salon_visits')
+        .order('id')
+        .range(a, b)
+    ),
+    fetchAll<{
+      id: string; salon_id: string; ambassador_id: string; visited_at: string;
+      flyer_left: boolean; convinced: string; likelihood_rating: number;
+      notes: string | null; follow_up_at: string | null;
+    }>(
+      (a, b) => service.from('salon_visits')
         .select('id, salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at')
-        .range(0, 99999),
-      service.from('ambassador_zone_claims')
+        .order('id')
+        .range(a, b)
+    ),
+    fetchAll<{ id: string; ambassador_id: string; zone_id: string; claimed_at: string; released_at: string | null }>(
+      (a, b) => service.from('ambassador_zone_claims')
         .select('id, ambassador_id, zone_id, claimed_at, released_at')
         .is('released_at', null)
-        .range(0, 9999),
-      service.from('ambassadors').select('id, name').range(0, 9999),
-    ]);
+        .range(a, b)
+    ),
+    fetchAll<{ id: string; name: string }>(
+      (a, b) => service.from('ambassadors').select('id, name').range(a, b)
+    ),
+  ]);
 
   // Aggregate per city
   type CityStats = {
