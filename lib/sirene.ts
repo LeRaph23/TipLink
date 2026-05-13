@@ -61,13 +61,23 @@ type RawResponse = {
   etablissements?: RawEtablissement[];
 };
 
+// SIRENE stores NAF codes in dotted form (e.g. "47.91B"). Our suggested
+// list uses the compact form ("4791B") for readability — normalize here.
+function normalizeNaf(code: string): string {
+  const c = code.replace(/\./g, '').toUpperCase();
+  if (/^\d{4}[A-Z]$/.test(c)) return `${c.slice(0, 2)}.${c.slice(2)}`;
+  return code;
+}
+
 // Build a query for a SINGLE NAF code. The /siret endpoint only accepts
 // Etablissement-suffixed fields inside q= (UniteLegale-suffixed fields
 // trigger a 400 syntax error). Verified empirically against the live
 // API: see PR #7 debug endpoint results.
 function buildQueryForNaf(opts: SireneSearchOptions, nafCode: string | null): string {
   const periodeInner: string[] = ['etatAdministratifEtablissement:A'];
-  if (nafCode) periodeInner.push(`activitePrincipaleEtablissement:${nafCode}`);
+  if (nafCode) {
+    periodeInner.push(`activitePrincipaleEtablissement:${normalizeNaf(nafCode)}`);
+  }
 
   const parts: string[] = [`periode(${periodeInner.join(' AND ')})`];
 
