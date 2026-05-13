@@ -67,8 +67,10 @@ function buildQuery(opts: SireneSearchOptions): string {
   }
 
   if (opts.nafCodes && opts.nafCodes.length > 0) {
-    const naf = opts.nafCodes.map(c => `"${c}"`).join(' OR ');
-    parts.push(`(periode(activitePrincipaleUniteLegale:${naf}))`);
+    const naf = opts.nafCodes
+      .map(c => `activitePrincipaleUniteLegale:${c}`)
+      .join(' OR ');
+    parts.push(`periode(${naf})`);
   }
 
   if (opts.createdAfter || opts.createdBefore) {
