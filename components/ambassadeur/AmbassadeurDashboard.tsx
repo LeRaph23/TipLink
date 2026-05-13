@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { AmbassadeurPayoutPanel } from './AmbassadeurBanking';
 import { AmbassadeurContracts } from './AmbassadeurContracts';
 import { AmbassadeurReferralPanel } from './AmbassadeurReferralPanel';
+import { AmbassadeurSalonsTracker } from './AmbassadeurSalonsTracker';
 
 type AuthState = 'loading' | 'pin-required' | 'pin-setup' | 'pin-setup-invalid' | 'authenticated';
 
@@ -565,6 +566,9 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             ))}
           </div>
         </div>
+
+        {/* Salons à démarcher */}
+        <AmbassadeurSalonsTracker code={code} />
 
         {/* Parrainage */}
         <AmbassadeurReferralPanel code={code} />
