@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 import { searchSirene, estimateBirthYearFromFirstName, type SireneSearchOptions } from '@/lib/sirene';
+import type { Database } from '@/types/database';
+
+type ProspectUpdate = Database['public']['Tables']['cold_email_prospects']['Update'];
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -303,7 +306,7 @@ export async function updateProspect(
     await requireSuperAdminUser();
     if (!id) return { ok: false, error: 'id requis' };
 
-    const update: Record<string, string | null> = {};
+    const update: ProspectUpdate = {};
     if ('email' in patch) {
       const v = patch.email?.trim().toLowerCase() || null;
       if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { ok: false, error: 'Email invalide' };
