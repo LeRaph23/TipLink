@@ -11,9 +11,18 @@
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.osm.ch/api/interpreter',
+  'https://overpass.osm.jp/api/interpreter',
 ];
 
 const OVERPASS_TIMEOUT_S = 25;
+const USER_AGENT = 'DigiTip-SalonImport/1.0 (+https://digitip.app; admin)';
+const MAX_RETRIES_PER_ENDPOINT = 2;
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 export type OsmZone = {
   osm_relation_id: number;
@@ -48,21 +57,45 @@ type OverpassResponse = { elements?: OverpassElement[] };
 
 async function callOverpass(query: string): Promise<OverpassResponse> {
   let lastError: Error | null = null;
+  const body = `data=${encodeURIComponent(query)}`;
+
   for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: AbortSignal.timeout((OVERPASS_TIMEOUT_S + 5) * 1000),
-      });
-      if (!res.ok) {
-        lastError = new Error(`Overpass HTTP ${res.status}`);
-        continue;
+    for (let attempt = 0; attempt <= MAX_RETRIES_PER_ENDPOINT; attempt++) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': USER_AGENT,
+            Accept: 'application/json',
+          },
+          body,
+          signal: AbortSignal.timeout((OVERPASS_TIMEOUT_S + 5) * 1000),
+        });
+
+        if (res.status === 429 || res.status === 503) {
+          // Server tells us to back off
+          const retryAfter = parseInt(res.headers.get('Retry-After') ?? '', 10);
+          const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+            ? Math.min(retryAfter * 1000, 8000)
+            : 1500 * Math.pow(2, attempt); // 1.5s, 3s, 6s
+          lastError = new Error(`Overpass HTTP ${res.status} (retry-after ${Math.round(waitMs / 1000)}s)`);
+          if (attempt < MAX_RETRIES_PER_ENDPOINT) {
+            await sleep(waitMs);
+            continue;
+          }
+          break; // try next endpoint
+        }
+
+        if (!res.ok) {
+          lastError = new Error(`Overpass HTTP ${res.status}`);
+          break; // try next endpoint
+        }
+        return (await res.json()) as OverpassResponse;
+      } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e));
+        break; // network error → try next endpoint
       }
-      return (await res.json()) as OverpassResponse;
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error(String(e));
     }
   }
   throw lastError ?? new Error('Overpass unreachable');

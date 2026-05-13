@@ -71,7 +71,11 @@ export async function importZonesFromOsm(
     revalidatePath('/dashboard/admin/salons', 'page');
     return { ok: true, inserted, skipped };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+    const raw = e instanceof Error ? e.message : 'Erreur inconnue';
+    const friendly = raw.includes('429')
+      ? 'OpenStreetMap nous rate-limit (trop de requêtes). Réessaie dans 1-2 minutes.'
+      : raw;
+    return { ok: false, error: friendly };
   }
 }
 
@@ -133,7 +137,11 @@ export async function importSalonsForZone(
     revalidatePath('/dashboard/admin/salons', 'page');
     return { ok: true, inserted, skipped };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+    const raw = e instanceof Error ? e.message : 'Erreur inconnue';
+    const friendly = raw.includes('429')
+      ? 'OpenStreetMap nous rate-limit (trop de requêtes). Réessaie dans 1-2 minutes.'
+      : raw;
+    return { ok: false, error: friendly };
   }
 }
 
