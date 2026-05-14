@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getBaseUrl } from '@/lib/env';
+import { sendStaffInviteEmail } from '@/lib/email';
 
 interface CreateStaffInput {
   fullName: string;
@@ -78,46 +79,95 @@ export async function inviteStaffMember(
   const locale = input.locale === 'fr' ? 'fr' : 'en';
   const base = getBaseUrl();
 
-  let invited = false;
-  try {
-    const anyService = service as unknown as {
-      auth: {
-        admin: {
-          inviteUserByEmail: (
-            email: string,
-            options?: { redirectTo?: string; data?: Record<string, unknown> }
-          ) => Promise<{ data: { user: { id: string } | null } | null; error: { message: string } | null }>;
-        };
+  // Fetch establishment name so we can personalise the invite email.
+  const { data: est } = await service
+    .from('establishments')
+    .select('name')
+    .eq('id', input.establishmentId)
+    .maybeSingle();
+  const establishmentName = est?.name ?? 'Digitip';
+
+  // We generate the invite link ourselves and send a custom email via Resend.
+  // The previous flow used Supabase's `inviteUserByEmail`, which sends an email
+  // whose link goes through Supabase's hosted `/auth/v1/verify` endpoint. That
+  // endpoint returns auth material in a URL fragment, which our server-side
+  // `/auth/callback` route cannot read — so the invitee landed on /login
+  // instead of the staff onboarding (`/join/[establishmentId]`).
+  //
+  // By using `generateLink` and emailing the `token_hash` directly to our own
+  // callback, the callback can `verifyOtp` server-side and redirect to the
+  // staff onboarding with the email pre-filled.
+  const nextPath = `/join/${input.establishmentId}`;
+  const adminClient = service as unknown as {
+    auth: {
+      admin: {
+        generateLink: (params: {
+          type: 'invite';
+          email: string;
+          options?: { redirectTo?: string; data?: Record<string, unknown> };
+        }) => Promise<{
+          data: {
+            user: { id: string } | null;
+            properties: { hashed_token: string; action_link: string } | null;
+          } | null;
+          error: { message: string } | null;
+        }>;
       };
     };
-    const { data: inviteData, error: inviteErr } = await anyService.auth.admin.inviteUserByEmail(
-      normalizedEmail,
-      {
-        redirectTo: `${base}/auth/callback?next=/join/${input.establishmentId}&locale=${locale}`,
+  };
+
+  let invited = false;
+  try {
+    const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
+      type: 'invite',
+      email: normalizedEmail,
+      options: {
+        redirectTo: `${base}/auth/callback?next=${encodeURIComponent(nextPath)}&locale=${locale}`,
         data: {
           full_name: input.fullName.trim(),
           staff_profile_id: staff.id,
           establishment_id: input.establishmentId,
           pending_role: input.role,
         },
-      }
-    );
+      },
+    });
 
-    if (!inviteErr && inviteData?.user?.id) {
-      invited = true;
+    const userId = linkData?.user?.id ?? null;
+    const hashedToken = linkData?.properties?.hashed_token ?? null;
+
+    if (!linkErr && userId) {
       // Link the auth user to this staff_profile immediately so onboarding
       // works the moment they accept the invite.
       await service
         .from('staff_profiles')
-        .update({ user_id: inviteData.user.id })
+        .update({ user_id: userId })
         .eq('id', staff.id);
 
       // Pre-create role for the invited user.
       await service.from('user_roles').insert({
-        user_id: inviteData.user.id,
+        user_id: userId,
         role: input.role,
         establishment_id: input.role === 'manager' ? input.establishmentId : null,
       });
+
+      if (hashedToken) {
+        const params = new URLSearchParams({
+          token_hash: hashedToken,
+          type: 'invite',
+          next: nextPath,
+          locale,
+        });
+        const inviteUrl = `${base}/auth/callback?${params.toString()}`;
+
+        const { ok } = await sendStaffInviteEmail({
+          to: normalizedEmail,
+          fullName: input.fullName.trim(),
+          establishmentName,
+          inviteUrl,
+          locale,
+        });
+        invited = ok;
+      }
     }
   } catch {
     // Swallow: staff_profile is still created, admin can resend invite later.

@@ -884,3 +884,58 @@ export async function sendColdEmailStep(opts: {
   });
   return { ok: !result.error, id: result.data?.id };
 }
+
+// ─── Staff invite — admin invites a colleague to join an establishment ───────
+
+export async function sendStaffInviteEmail(opts: {
+  to: string;
+  fullName: string;
+  establishmentName: string;
+  inviteUrl: string;
+  locale?: string;
+}): Promise<{ ok: boolean }> {
+  if (!resend) return { ok: false };
+  const { to, fullName, establishmentName, inviteUrl, locale = 'fr' } = opts;
+  const isFr = locale === 'fr';
+
+  const subject = isFr
+    ? `Vous êtes invité(e) à rejoindre ${establishmentName} sur Digitip`
+    : `You're invited to join ${establishmentName} on Digitip`;
+
+  const heading = isFr ? 'Bienvenue dans l\'équipe' : 'Welcome to the team';
+  const intro = isFr
+    ? `<strong style="color:#fff">${establishmentName}</strong> vous invite à rejoindre Digitip pour recevoir vos pourboires directement sur votre compte bancaire.`
+    : `<strong style="color:#fff">${establishmentName}</strong> is inviting you to join Digitip and receive tips straight into your bank account.`;
+  const ctaLabel = isFr ? 'Créer mon compte' : 'Create my account';
+  const helper = isFr
+    ? `Ce lien vous emmène directement à l'onboarding avec votre email pré-rempli (${to}). Pas besoin de mot de passe — vous choisirez le vôtre à la fin.`
+    : `This link takes you straight to onboarding with your email pre-filled (${to}). No password needed — you'll set one at the end.`;
+  const greeting = isFr ? `Bonjour ${fullName},` : `Hi ${fullName},`;
+  const footer = isFr
+    ? 'Si vous n\'attendiez pas cette invitation, vous pouvez ignorer ce message.'
+    : 'If you weren\'t expecting this invitation, you can safely ignore this message.';
+
+  const result = await resend.emails.send({
+    from: FROM,
+    to,
+    subject,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">${isFr ? 'Invitation équipe' : 'Team invite'}</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 12px">
+      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">${heading}</div>
+      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0 0 8px">${greeting}</p>
+      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">${intro}</p>
+    </td></tr>
+    <tr><td style="padding:8px 32px 8px">
+      <p><a href="${inviteUrl}" style="display:inline-block;padding:12px 22px;background:#22c55e;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">${ctaLabel} →</a></p>
+    </td></tr>
+    <tr><td style="padding:8px 32px 32px">
+      <p style="font-size:12px;color:#666;margin:0 0 16px;line-height:1.6">${helper}</p>
+      <p style="font-size:11px;color:#444;margin:0;line-height:1.6">${footer}</p>
+    </td></tr>`),
+  });
+  return { ok: !result.error };
+}
