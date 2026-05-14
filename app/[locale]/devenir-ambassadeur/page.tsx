@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const PERKS = [
   { icon: '💰', label: '25-35€ par vente', sub: 'Solo 25€ · Duo 35€' },
   { icon: '🎁', label: 'Bonus parrainage', sub: '+25€ par filleul · +250€ aux 10' },
-  { icon: '⚡', label: 'Virement Stripe', sub: 'Versement dès 30€' },
+  { icon: '⚡', label: 'Virement Stripe', sub: 'Dès 30€ · 1×/mois max' },
   { icon: '📱', label: '0 stock', sub: 'Tout en ligne, depuis ton tel' },
 ];
 
@@ -30,7 +30,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Comment je suis payé ?',
-    a: 'Tu connectes ton RIB via Stripe Connect depuis ton dashboard. Tu demandes un virement quand ton solde atteint 30€. Le virement arrive sous 2-5 jours ouvrés.',
+    a: 'Tu connectes ton RIB via Stripe Connect depuis ton dashboard. Tu peux retirer ton blé dès 30€ de solde, dans la limite d\'un virement par mois. Le virement arrive sous 2-5 jours ouvrés.',
   },
   {
     q: 'Combien de temps ça prend ?',
