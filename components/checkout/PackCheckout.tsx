@@ -383,7 +383,7 @@ function InnerCheckout({
       {/* Pay button */}
       <button
         type="button"
-        onClick={handleConfirm}
+        onClick={() => { void handleConfirm(); }}
         disabled={!stripe || !elements || isLoading}
         style={{
           width: '100%', padding: '16px', borderRadius: 14, border: 'none',
