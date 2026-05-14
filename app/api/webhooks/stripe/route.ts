@@ -309,7 +309,7 @@ async function handleEvent(
           ? (typeof expressFirstDiscount.discount === 'string' ? expressFirstDiscount.discount : (expressFirstDiscount.discount as { id?: string } | null)?.id ?? null)
           : null;
 
-        const { data: newOrder } = await supabase.from('smarttag_orders').insert({
+        const { data: newOrder, error: newOrderErr } = await supabase.from('smarttag_orders').insert({
           group_id: newGroup.id,
           pack,
           quantity,
@@ -323,6 +323,9 @@ async function handleEvent(
           discount_amount: expressDiscount,
           stripe_discount_id: expressDiscountId,
         }).select('id').single();
+        if (newOrderErr || !newOrder) {
+          throw new Error(`express checkout: failed to create smarttag_order — ${newOrderErr?.message ?? 'unknown'}`);
+        }
 
         // Best-effort: auto-assign available unencoded tags from pool to this order
         if (newOrder?.id) {
@@ -449,7 +452,7 @@ async function handleEvent(
         }
       }
 
-      const { data: upsertedOrder } = await supabase
+      const { data: upsertedOrder, error: upsertErr } = await supabase
         .from('smarttag_orders')
         .upsert(
           {
@@ -472,6 +475,10 @@ async function handleEvent(
           },
           { onConflict: 'stripe_checkout_session_id' }
         ).select('id').single();
+
+      if (upsertErr || !upsertedOrder) {
+        throw new Error(`auth checkout: failed to upsert smarttag_order — ${upsertErr?.message ?? 'unknown'}`);
+      }
 
       // Best-effort: auto-assign available tags from pool to this order
       if (upsertedOrder?.id) {
@@ -601,11 +608,20 @@ async function handlePackExpressPaid(
 
   const shipping = intent.shipping ?? null;
 
-  // Prefer receipt_email (we set it via confirmParams.receipt_email on confirm).
-  // Fallback to billing_details on the latest charge if Stripe expanded it.
+  // Prefer receipt_email (set via confirmParams.receipt_email on confirm).
+  // Fallback to billing_details on the latest charge — Link populates this even
+  // when the user never typed an email into our form, so we retrieve the charge
+  // when the event payload only carries the id.
   let email: string | null = intent.receipt_email ?? null;
-  if (!email && intent.latest_charge && typeof intent.latest_charge !== 'string') {
-    email = (intent.latest_charge as Stripe.Charge).billing_details?.email ?? null;
+  if (!email && intent.latest_charge) {
+    if (typeof intent.latest_charge !== 'string') {
+      email = (intent.latest_charge as Stripe.Charge).billing_details?.email ?? null;
+    } else {
+      try {
+        const charge = await stripe.charges.retrieve(intent.latest_charge);
+        email = charge.billing_details?.email ?? null;
+      } catch { /* non-blocking */ }
+    }
   }
 
   const legalName = shipping?.name ?? email ?? 'Unknown';
@@ -639,7 +655,7 @@ async function handlePackExpressPaid(
     throw new Error(`pack-express: failed to create group — ${groupErr?.message ?? 'unknown'}`);
   }
 
-  const { data: newOrder } = await supabase
+  const { data: newOrder, error: orderErr } = await supabase
     .from('smarttag_orders')
     .insert({
       group_id: newGroup.id,
@@ -656,6 +672,10 @@ async function handlePackExpressPaid(
     })
     .select('id')
     .single();
+
+  if (orderErr || !newOrder) {
+    throw new Error(`pack-express: failed to create smarttag_order — ${orderErr?.message ?? 'unknown'}`);
+  }
 
   if (newOrder?.id) {
     await autoAssignTagsToOrder(supabase, newOrder.id, quantity);

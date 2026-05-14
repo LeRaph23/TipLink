@@ -184,16 +184,48 @@ function InnerCheckout({
     [locale]
   );
 
-  async function handleConfirm() {
+  // Stripe doesn't auto-populate PI receipt_email / shipping for the express
+  // (Link/ApplePay/GooglePay) flow — we must pass them explicitly. The express
+  // event carries the email + shipping selected in the wallet sheet; for the
+  // card flow we fall back to the form's email state.
+  type ExpressConfirmEvent = {
+    billingDetails?: { email?: string | null; name?: string | null } | null;
+    shippingAddress?: {
+      name?: string | null;
+      address?: { line1?: string | null; line2?: string | null; city?: string | null; postal_code?: string | null; state?: string | null; country?: string | null } | null;
+    } | null;
+  };
+
+  async function handleConfirm(event?: ExpressConfirmEvent) {
     if (!stripe || !elements) return;
+    const expressEmail = event?.billingDetails?.email ?? null;
+    const finalEmail = (expressEmail ?? email).trim();
+    if (!finalEmail) {
+      setError('Merci d’entrer un email — il est obligatoire pour recevoir la facture et le lien de configuration.');
+      return;
+    }
     setError(null);
     setIsLoading(true);
     try {
+      const shipping = event?.shippingAddress?.address
+        ? {
+            name: event.shippingAddress.name ?? '',
+            address: {
+              line1: event.shippingAddress.address.line1 ?? '',
+              line2: event.shippingAddress.address.line2 ?? undefined,
+              city: event.shippingAddress.address.city ?? '',
+              postal_code: event.shippingAddress.address.postal_code ?? '',
+              state: event.shippingAddress.address.state ?? undefined,
+              country: event.shippingAddress.address.country ?? '',
+            },
+          }
+        : undefined;
       const { error: confirmErr } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/${locale}/order/success`,
-          receipt_email: email.trim() || undefined,
+          receipt_email: finalEmail,
+          ...(shipping ? { shipping } : {}),
         },
       });
       if (confirmErr) {
@@ -231,6 +263,9 @@ function InnerCheckout({
             buttonType: { applePay: 'buy', googlePay: 'buy' },
             buttonTheme: { applePay: 'black', googlePay: 'black' },
             layout: { maxColumns: 2, maxRows: 1 },
+            emailRequired: true,
+            shippingAddressRequired: true,
+            allowedShippingCountries: [...ALLOWED_SHIPPING_COUNTRIES],
           }}
         />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 0' }}>
