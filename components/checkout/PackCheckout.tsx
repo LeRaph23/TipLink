@@ -6,7 +6,6 @@ import {
   AddressElement,
   Elements,
   ExpressCheckoutElement,
-  LinkAuthenticationElement,
   PaymentElement,
   useElements,
   useStripe,
@@ -125,15 +124,8 @@ export function PackCheckout({ pack, locale }: Props) {
         colorText: '#0f1020',
         colorDanger: '#dc2626',
         borderRadius: '12px',
-        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+        fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
         spacingUnit: '4px',
-      },
-      rules: {
-        '.Input': { border: '1px solid #e6e6f0', boxShadow: 'none', padding: '12px' },
-        '.Input:focus': { border: '1px solid #E57A97', boxShadow: '0 0 0 3px rgba(229,122,151,0.18)' },
-        '.Label': { fontWeight: '600', fontSize: '13px', color: '#3a3b4f' },
-        '.Tab': { border: '1px solid #e6e6f0', boxShadow: 'none' },
-        '.Tab--selected': { borderColor: '#E57A97', boxShadow: '0 0 0 1px #E57A97' },
       },
     },
   };
@@ -250,14 +242,27 @@ function InnerCheckout({
         </div>
       </div>
 
-      {/* Contact email (Link-aware) */}
+      {/* Contact email */}
       <div>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}>
+        <label
+          htmlFor="checkout-email"
+          style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}
+        >
           Email
         </label>
-        <LinkAuthenticationElement
-          options={{ defaultValues: { email } }}
-          onChange={(e) => setEmail(e.value.email)}
+        <input
+          id="checkout-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email@exemple.com"
+          required
+          style={{
+            width: '100%', padding: '12px', borderRadius: 10,
+            border: '1px solid #e6e6f0', fontSize: 14, color: '#0f1020',
+            background: '#fff', outline: 'none',
+            fontFamily: 'inherit', boxSizing: 'border-box',
+          }}
         />
       </div>
 
@@ -270,9 +275,8 @@ function InnerCheckout({
           options={{
             mode: 'shipping',
             allowedCountries: ALLOWED_SHIPPING_COUNTRIES,
-            fields: { phone: 'auto' },
+            fields: { phone: 'always' },
             validation: { phone: { required: 'auto' } },
-            display: { name: 'split' },
           }}
         />
       </div>
