@@ -181,6 +181,9 @@ const ExpressOnboardingSchema = z.object({
   adminFullName: z.string().min(1).max(200),
   colleagues: z.array(ColleagueSchema).max(20).default([]),
   locale: z.enum(['fr', 'en']).default('fr'),
+  // Optional: when Supabase email confirmation is enabled, sign-up returns
+  // no session, so we fall back to the admin API to resolve the user.
+  userId: z.string().uuid().optional(),
 });
 
 // For the express checkout flow (bought on landing page, no existing account).
@@ -192,12 +195,18 @@ export async function completeExpressOnboarding(
   const parsed = ExpressOnboardingSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Non authentifié — créez votre compte en premier.' };
-
   const service = createServiceClient();
-  const { groupId, establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
+  const { groupId, establishmentName, address, adminFullName, colleagues, locale, userId } = parsed.data;
+
+  const supabase = await createClient();
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
+
+  let user = sessionUser;
+  if (!user && userId) {
+    const { data: adminLookup } = await service.auth.admin.getUserById(userId);
+    user = adminLookup.user ?? null;
+  }
+  if (!user) return { error: 'Non authentifié — créez votre compte en premier.' };
 
   // Verify the group exists and hasn't been onboarded yet
   const { data: group } = await service
@@ -241,8 +250,13 @@ export async function completeExpressOnboarding(
     { onConflict: 'user_id,role,group_id' }
   );
 
-  // Update auth user display name
-  await supabase.auth.updateUser({ data: { full_name: adminFullName } });
+  // Update auth user display name. Use the admin API when we don't have a
+  // session (e.g. email confirmation still pending) so this always works.
+  if (sessionUser) {
+    await supabase.auth.updateUser({ data: { full_name: adminFullName } });
+  } else {
+    await service.auth.admin.updateUserById(user.id, { user_metadata: { full_name: adminFullName } });
+  }
 
   // Invite colleagues (best-effort)
   if (colleagues.length > 0) {
