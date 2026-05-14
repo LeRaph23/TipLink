@@ -20,12 +20,12 @@ function verifyToken(token: string): string | null {
 }
 
 function html(body: string, status: 'ok' | 'err'): string {
-  const color = status === 'ok' ? '#22c55e' : '#ef4444';
+  const color = status === 'ok' ? '#22c55e' : '#f87171';
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Désinscription</title></head>
-<body style="margin:0;font-family:-apple-system,sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:100vh;display:flex;align-items:center;justify-content:center">
-  <div style="max-width:420px;padding:32px;background:#141414;border:1px solid #222;border-radius:14px;text-align:center">
+<body style="margin:0;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0d;color:#f2f2f5;min-height:100vh;display:flex;align-items:center;justify-content:center">
+  <div style="max-width:420px;padding:32px;background:#17171d;border:1px solid #2e2e38;border-radius:14px;text-align:center">
     <div style="font-size:32px;color:${color};margin-bottom:10px">${status === 'ok' ? '✓' : '✗'}</div>
-    <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">${body}</p>
+    <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0">${body}</p>
   </div>
 </body></html>`;
 }
