@@ -587,6 +587,119 @@ export async function sendOrderDelivered(opts: {
   });
 }
 
+// ─── Order canceled ───────────────────────────────────────────────────────────
+
+export async function sendOrderCanceled(opts: {
+  to: string;
+  pack: string;
+  quantity: number;
+  orderId: string;
+  reason?: string | null;
+  locale?: string;
+}): Promise<void> {
+  if (!resend) return;
+
+  const { to, pack, quantity, orderId, reason, locale = 'fr' } = opts;
+  const isFr = locale === 'fr';
+  const shortRef = orderId.slice(0, 8).toUpperCase();
+  const label = packLabel(pack, locale);
+
+  const subject = isFr
+    ? `Votre commande Digitip a été annulée — ${label}`
+    : `Your Digitip order has been canceled — ${label}`;
+  const headline = isFr ? 'Commande annulée' : 'Order canceled';
+  const subline = isFr
+    ? 'Le montant payé vous sera intégralement remboursé sur le moyen de paiement utilisé sous 5 à 10 jours ouvrés.'
+    : 'The amount paid will be fully refunded to your original payment method within 5–10 business days.';
+  const reasonLabel = isFr ? 'Motif' : 'Reason';
+  const orderLabel = isFr ? 'Pack' : 'Pack';
+  const qtyLabel = isFr ? 'Quantité' : 'Quantity';
+  const refLabel = isFr ? 'Référence' : 'Reference';
+  const footer = isFr
+    ? 'Une erreur ? Répondez à cet email, nous regardons rapidement.'
+    : 'Made a mistake? Reply to this email, we’ll take a look.';
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">${headline}</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${headline}</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:6px">${headline}</div>
+      <div style="font-size:14px;color:#888;line-height:1.6">${subline}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+        ${infoRow(orderLabel, label)}
+        ${infoRow(qtyLabel, String(quantity))}
+        ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
+        ${reason ? infoRow(reasonLabel, escapeHtml(reason)) : ''}
+      </table>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:12px;color:#444;margin:0;line-height:1.6">${footer}</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Custom order note (admin → customer, free-form) ──────────────────────────
+
+export async function sendOrderCustomNote(opts: {
+  to: string;
+  orderId: string;
+  subject: string;
+  bodyText: string;
+  locale?: string;
+}): Promise<void> {
+  if (!resend) return;
+
+  const { to, orderId, subject, bodyText, locale = 'fr' } = opts;
+  const isFr = locale === 'fr';
+  const shortRef = orderId.slice(0, 8).toUpperCase();
+  const refLabel = isFr ? 'Référence commande' : 'Order reference';
+  const signature = isFr
+    ? 'L’équipe Digitip · support@digitip.app'
+    : 'The Digitip team · support@digitip.app';
+
+  const safeBody = escapeHtml(bodyText).replace(/\n/g, '<br>');
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject,
+    html: darkLayout(`
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
+      <div style="font-size:13px;color:#666;margin-top:2px">${escapeHtml(subject)}</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="font-size:14px;color:#d4d4d4;line-height:1.7">${safeBody}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 18px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+        ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
+      </table>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="font-size:12px;color:#666;margin:0;line-height:1.6">${signature}</p>
+    </td></tr>`),
+  });
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ─── Ambassador — templated email sent by super admin ─────────────────────────
 // `bodyHtml` is the rendered HTML body (placeholders already substituted by
 // the caller via renderTemplate). It is wrapped in the Digitip dark layout.

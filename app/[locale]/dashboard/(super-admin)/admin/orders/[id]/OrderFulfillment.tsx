@@ -3,7 +3,16 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { fulfillOrder, markOrderShipped, markOrderDelivered, forceOrderStatus } from '@/actions/admin/orders';
+import {
+  fulfillOrder,
+  markOrderShipped,
+  markOrderDelivered,
+  forceOrderStatus,
+  cancelOrder,
+  resendOrderEmail,
+  sendCustomOrderEmail,
+  updateOrderInternalNotes,
+} from '@/actions/admin/orders';
 
 type Establishment = { id: string; name: string };
 type StockTag = { id: string; short_id: string; batch_label: string | null };
@@ -25,6 +34,7 @@ type Props = {
   encodedCount: number;
   status: string;
   trackingNumber: string | null;
+  internalNotes: string;
   establishments: Establishment[];
   stockTags: StockTag[];
 };
@@ -48,7 +58,7 @@ const input: React.CSSProperties = {
 };
 
 export function OrderFulfillment({
-  orderId, quantity, encodedCount, status, trackingNumber, establishments, stockTags,
+  orderId, quantity, encodedCount, status, trackingNumber, internalNotes, establishments, stockTags,
 }: Props) {
   const t = useTranslations('dashboard.admin.orders');
   const router = useRouter();
@@ -60,6 +70,12 @@ export function OrderFulfillment({
   const [forceStatus, setForceStatus] = useState<OrderStatus>(status as OrderStatus);
   const [forceTracking, setForceTracking] = useState(trackingNumber ?? '');
   const [toast, setToast] = useState<string | null>(null);
+  const [notes, setNotes] = useState(internalNotes);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelEmail, setCancelEmail] = useState(true);
+  const [customSubject, setCustomSubject] = useState('Update concernant votre commande Digitip');
+  const [customBody, setCustomBody] = useState('');
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   const remaining = quantity - encodedCount;
   const canFulfill = remaining > 0 && ['pending_fulfillment', 'encoding'].includes(status);
@@ -250,6 +266,190 @@ export function OrderFulfillment({
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8 }}>Statut actuel déjà "{statusLabels[status as OrderStatus]}"</div>
         )}
       </div>
+
+      {/* ── Emails (renvoi templates + message libre) ── */}
+      <div style={{
+        marginTop: 20,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: 16,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+          Emails au client
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          {(['confirmation', 'shipped', 'delivered', 'canceled'] as const).map((k) => {
+            const labels = {
+              confirmation: 'Renvoyer la confirmation',
+              shipped: 'Renvoyer l’email expédition',
+              delivered: 'Renvoyer l’email livraison',
+              canceled: 'Renvoyer l’email d’annulation',
+            };
+            return (
+              <button
+                key={k}
+                type="button"
+                style={secondaryBtn}
+                disabled={pending}
+                onClick={() => {
+                  startTransition(async () => {
+                    const res = await resendOrderEmail(orderId, k);
+                    if (!res.ok) flash(res.error);
+                    else notify(`Email envoyé à ${res.data.to}`);
+                  });
+                }}
+              >
+                {labels[k]}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{
+          borderTop: '1px dashed var(--border)',
+          paddingTop: 14,
+          display: 'grid',
+          gap: 8,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Message libre
+          </div>
+          <input
+            type="text"
+            value={customSubject}
+            onChange={(e) => setCustomSubject(e.target.value)}
+            placeholder="Sujet"
+            style={input}
+          />
+          <textarea
+            value={customBody}
+            onChange={(e) => setCustomBody(e.target.value)}
+            placeholder="Bonjour, on a pris quelques jours de retard sur l’encodage de votre pack — il partira lundi…"
+            rows={5}
+            style={{ ...input, fontFamily: 'var(--font)', resize: 'vertical' }}
+          />
+          <div>
+            <button
+              type="button"
+              style={primaryBtn}
+              disabled={pending || customBody.trim().length < 5 || customSubject.trim().length < 3}
+              onClick={() => {
+                startTransition(async () => {
+                  const res = await sendCustomOrderEmail(orderId, customSubject, customBody);
+                  if (!res.ok) flash(res.error);
+                  else { setCustomBody(''); notify(`Email envoyé à ${res.data.to}`); }
+                });
+              }}
+            >
+              {pending ? '…' : 'Envoyer le message'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Notes internes (jamais envoyées au client) ── */}
+      <div style={{
+        marginTop: 20,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: 16,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+          Notes internes (visibles uniquement par l’équipe Digitip)
+        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={4}
+          placeholder="Ex. client a appelé pour décaler la livraison, retard transporteur, etc."
+          style={{ ...input, fontFamily: 'var(--font)', resize: 'vertical' }}
+        />
+        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{notes.length} / 10 000 caractères</span>
+          <button
+            type="button"
+            style={secondaryBtn}
+            disabled={pending || notes === internalNotes}
+            onClick={() => {
+              startTransition(async () => {
+                const res = await updateOrderInternalNotes(orderId, notes);
+                if (!res.ok) flash(res.error);
+                else { notify('Notes enregistrées'); router.refresh(); }
+              });
+            }}
+          >
+            {pending ? '…' : 'Enregistrer les notes'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Annulation de la commande ── */}
+      {['pending_payment', 'pending_fulfillment', 'encoding', 'ready_to_ship'].includes(status) && (
+        <div style={{
+          marginTop: 20,
+          background: 'var(--surface)',
+          border: '1px solid var(--error, #ef4444)',
+          borderRadius: 'var(--radius)',
+          padding: 16,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--error, #ef4444)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+            Annuler la commande
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.6 }}>
+            Libère immédiatement les SmartTags réservés/encodés vers le pool. Le remboursement Stripe se fait séparément depuis le dashboard Stripe.
+          </div>
+          <input
+            type="text"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Motif (optionnel, inclus dans l’email client si activé)"
+            style={input}
+          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12, color: 'var(--text-2)' }}>
+            <input type="checkbox" checked={cancelEmail} onChange={(e) => setCancelEmail(e.target.checked)} />
+            Notifier le client par email
+          </label>
+          <div style={{ marginTop: 12 }}>
+            {!confirmingCancel ? (
+              <button
+                type="button"
+                style={{ ...secondaryBtn, borderColor: 'var(--error, #ef4444)', color: 'var(--error, #ef4444)' }}
+                disabled={pending}
+                onClick={() => setConfirmingCancel(true)}
+              >
+                Annuler la commande
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  style={{ ...primaryBtn, background: 'var(--error, #ef4444)', borderColor: 'var(--error, #ef4444)' }}
+                  disabled={pending}
+                  onClick={() => {
+                    startTransition(async () => {
+                      const res = await cancelOrder(orderId, cancelReason.trim() || null, { sendEmail: cancelEmail });
+                      if (!res.ok) flash(res.error);
+                      else { setConfirmingCancel(false); notify('Commande annulée'); router.refresh(); }
+                    });
+                  }}
+                >
+                  {pending ? '…' : 'Confirmer l’annulation'}
+                </button>
+                <button
+                  type="button"
+                  style={secondaryBtn}
+                  disabled={pending}
+                  onClick={() => setConfirmingCancel(false)}
+                >
+                  Retour
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
