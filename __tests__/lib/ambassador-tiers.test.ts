@@ -5,6 +5,7 @@ import {
   REFERRAL_REWARDS,
   REFERRAL_VALIDATION_MIN_SALES,
   getWeeklyTier,
+  computeClosedWeekBonuses,
 } from '@/lib/ambassador-tiers';
 
 describe('WEEKLY_TIERS (reduced bonuses)', () => {
@@ -60,7 +61,67 @@ describe('REFERRAL_REWARDS', () => {
   it('milestone_10 is 250€', () => {
     expect(REFERRAL_REWARDS.milestone_10).toBe(25000);
   });
-  it('requires 2 sales for validation', () => {
-    expect(REFERRAL_VALIDATION_MIN_SALES).toBe(2);
+  it('requires 3 sales for validation', () => {
+    expect(REFERRAL_VALIDATION_MIN_SALES).toBe(3);
+  });
+});
+
+describe('computeClosedWeekBonuses', () => {
+  // Fixed reference point: Wednesday 2026-05-13 12:00 UTC = 14:00 Paris
+  // Current week (Paris): Mon 2026-05-11 → Sun 2026-05-17
+  const NOW = new Date('2026-05-13T12:00:00Z');
+
+  // Dates in past weeks (Paris time)
+  const LAST_WEEK     = '2026-05-07T10:00:00Z'; // Thu last week
+  const TWO_WEEKS_AGO = '2026-04-30T10:00:00Z'; // Thu two weeks ago
+
+  // Date in current week
+  const THIS_WEEK = '2026-05-12T10:00:00Z'; // Tue this week
+
+  const make = (date: string, n: number) =>
+    Array.from({ length: n }, () => ({ created_at: date }));
+
+  it('returns 0 for empty sales', () => {
+    expect(computeClosedWeekBonuses([], NOW)).toBe(0);
+  });
+
+  it('returns 0 when all sales are in the current week', () => {
+    expect(computeClosedWeekBonuses(make(THIS_WEEK, 10), NOW)).toBe(0);
+  });
+
+  it('returns 0 for a past week below bronze (4 sales)', () => {
+    expect(computeClosedWeekBonuses(make(LAST_WEEK, 4), NOW)).toBe(0);
+  });
+
+  it('pays bronze (15€) for a past week with exactly 5 sales', () => {
+    expect(computeClosedWeekBonuses(make(LAST_WEEK, 5), NOW)).toBe(1500);
+  });
+
+  it('pays silver (30€) for a past week with 8 sales, not bronze+silver', () => {
+    expect(computeClosedWeekBonuses(make(LAST_WEEK, 8), NOW)).toBe(3000);
+  });
+
+  it('pays gold (50€) for a past week with 10 sales, not cumulative', () => {
+    expect(computeClosedWeekBonuses(make(LAST_WEEK, 10), NOW)).toBe(5000);
+  });
+
+  it('sums bonuses across multiple closed weeks', () => {
+    // Last week: 5 sales → bronze 15€ | Two weeks ago: 10 sales → gold 50€ | Total: 65€
+    const sales = [...make(LAST_WEEK, 5), ...make(TWO_WEEKS_AGO, 10)];
+    expect(computeClosedWeekBonuses(sales, NOW)).toBe(6500);
+  });
+
+  it('ignores current-week sales when counting past weeks', () => {
+    // Last week bronze (15€) + this week ignored even though it would be gold
+    const sales = [...make(LAST_WEEK, 5), ...make(THIS_WEEK, 10)];
+    expect(computeClosedWeekBonuses(sales, NOW)).toBe(1500);
+  });
+
+  it('skips malformed dates without throwing', () => {
+    const sales = [
+      { created_at: 'not-a-date' },
+      ...make(LAST_WEEK, 5),
+    ];
+    expect(computeClosedWeekBonuses(sales, NOW)).toBe(1500);
   });
 });

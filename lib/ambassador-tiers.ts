@@ -18,14 +18,15 @@ export const MONTHLY_CHALLENGE = {
 } as const;
 
 // Referral rewards — paid to the parrain when filleul (a) is approved by
-// super-admin AND (b) completes >=2 sales. Milestones are one-shot lifetime.
+// super-admin AND (b) completes >=3 sales. Milestones are one-shot lifetime.
 export const REFERRAL_REWARDS = {
   validation:    2500,  // 25€ per validated filleul
   milestone_5:   10000, // +100€ once parrain reaches 5 validated filleuls
   milestone_10:  25000, // +250€ once parrain reaches 10 validated filleuls
 } as const;
 
-export const REFERRAL_VALIDATION_MIN_SALES = 2;
+// Raised from 2 to 3: better ROI per validated filleul (3×25€ commission vs 25€ referral bonus)
+export const REFERRAL_VALIDATION_MIN_SALES = 3;
 
 // Minimum amount an ambassador can withdraw in a single payout (30€).
 export const MIN_PAYOUT_CENTS = 3000;
@@ -55,55 +56,45 @@ export function computeClosedWeekBonuses(
 }
 
 /**
- * Returns the Monday 00:00 and Sunday 23:59:59 of the current week in Paris
- * local time, as UTC Date objects.
+ * Returns the Monday 00:00 and Sunday 23:59:59 of the week containing `now`,
+ * expressed in UTC, with boundaries anchored to Paris midnight.
  */
 export function getWeekBounds(now = new Date()): { start: Date; end: Date } {
-  // Work in Europe/Paris timezone via Intl
   const tz = 'Europe/Paris';
-  const fmt = (d: Date, part: 'year'|'month'|'day'|'weekday') =>
-    new Intl.DateTimeFormat('fr-FR', { timeZone: tz, [part]: 'numeric' }).format(d);
-
-  // Day of week: 0=Sun, 1=Mon … 6=Sat in Paris
-  const parisDayOfWeek = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(now);
+  const dowStr = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(now);
   const dowMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const dow = dowMap[parisDayOfWeek] ?? 0;
+  const dow = dowMap[dowStr] ?? 0;
   const daysFromMonday = dow === 0 ? 6 : dow - 1;
 
-  const monday = new Date(now.getTime() - daysFromMonday * 86400000);
-  // Snap to midnight Paris time by using the date parts
-  const [mDay, mMonth, mYear] = fmt(monday, 'day').split('/');
-  const parisYear = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric' }).format(monday));
-  const parisMonth = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'numeric' }).format(monday)) - 1;
-  const parisDay = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, day: 'numeric' }).format(monday));
+  // Step back to the approximate Monday, then read its Paris calendar date
+  const approxMonday = new Date(now.getTime() - daysFromMonday * 86400000);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(approxMonday);
+  const get = (t: string) => parseInt(parts.find(p => p.type === t)!.value);
 
-  // Paris midnight in UTC: use the offset
-  const mondayMidnightParis = new Date(`${parisYear}-${String(parisMonth + 1).padStart(2, '0')}-${String(parisDay).padStart(2, '0')}T00:00:00`);
-  // Convert Paris midnight to UTC
-  const offset = getParisOffsetMs(mondayMidnightParis);
-  const start = new Date(mondayMidnightParis.getTime() - offset);
+  const start = parisMidnightUtc(get('year'), get('month'), get('day'));
   const end = new Date(start.getTime() + 7 * 86400000 - 1);
-
   return { start, end };
 }
 
 /**
- * Returns the first and last instant of the current calendar month in Paris time.
+ * Returns the first and last instant of the calendar month containing `now`,
+ * expressed in UTC, with boundaries anchored to Paris midnight.
  */
 export function getMonthBounds(now = new Date()): { start: Date; end: Date } {
   const tz = 'Europe/Paris';
-  const year = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric' }).format(now));
-  const month = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'numeric' }).format(now)) - 1;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now);
+  const get = (t: string) => parseInt(parts.find(p => p.type === t)!.value);
+  const year = get('year');
+  const month = get('month'); // 1-indexed
 
-  const firstParis = new Date(`${year}-${String(month + 1).padStart(2, '0')}-01T00:00:00`);
-  const offset = getParisOffsetMs(firstParis);
-  const start = new Date(firstParis.getTime() - offset);
-
-  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-  const lastParis = new Date(`${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}T23:59:59`);
-  const endOffset = getParisOffsetMs(lastParis);
-  const end = new Date(lastParis.getTime() - endOffset);
-
+  const start = parisMidnightUtc(year, month, 1);
+  // Last day: Date.UTC with day=0 rolls back to the last day of the previous month (month is 1-indexed here)
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const end = new Date(parisMidnightUtc(year, month, lastDay + 1).getTime() - 1);
   return { start, end };
 }
 
@@ -119,14 +110,27 @@ export function computeTotalBaseCommission(
   return sales.reduce((sum, s) => sum + s.commission_amount, 0);
 }
 
-// ─── internal helper ─────────────────────────────────────────────────────────
+// ─── internal helpers ─────────────────────────────────────────────────────────
 
-function getParisOffsetMs(localDate: Date): number {
-  // Determine UTC offset for Europe/Paris at a given local date
-  // by comparing the local date string to UTC
-  const utcStr = localDate.toLocaleString('en-US', { timeZone: 'UTC' });
-  const parisStr = localDate.toLocaleString('en-US', { timeZone: 'Europe/Paris' });
-  const utcMs = new Date(utcStr).getTime();
-  const parisMs = new Date(parisStr).getTime();
-  return parisMs - utcMs;
+/** UTC timestamp when the Paris clock shows midnight on the given Paris calendar date. */
+function parisMidnightUtc(year: number, month: number, day: number): Date {
+  // JS Date.UTC rolls over naturally (e.g. month=5, day=32 → June 1), which lets
+  // getMonthBounds compute nextMonthStart without a separate year-wrap check.
+  const approx = new Date(Date.UTC(year, month - 1, day));
+  return new Date(approx.getTime() - getParisOffsetMs(approx));
+}
+
+/** How many ms ahead Europe/Paris is of UTC at the given UTC instant. */
+function getParisOffsetMs(utcDate: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  }).formatToParts(utcDate);
+  const get = (t: string) => parseInt(parts.find(p => p.type === t)!.value);
+  // hour12:false can return 24 for midnight in some runtimes; normalise with % 24
+  const hour = get('hour') % 24;
+  const parisAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), hour, get('minute'), get('second'));
+  return parisAsUtc - utcDate.getTime();
 }
