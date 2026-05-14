@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const PERKS = [
   { icon: '💰', label: '25-35€ par vente', sub: 'Solo 25€ · Duo 35€' },
   { icon: '🎁', label: 'Bonus parrainage', sub: '+25€ par filleul · +250€ aux 10' },
-  { icon: '⚡', label: 'Virement Stripe', sub: 'Versement dès 30€' },
+  { icon: '⚡', label: 'Virement Stripe', sub: 'Dès 30€ · 1×/mois max' },
   { icon: '📱', label: '0 stock', sub: 'Tout en ligne, depuis ton tel' },
 ];
 
@@ -30,7 +30,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Comment je suis payé ?',
-    a: 'Tu connectes ton RIB via Stripe Connect depuis ton dashboard. Tu demandes un virement quand ton solde atteint 30€. Le virement arrive sous 2-5 jours ouvrés.',
+    a: 'Tu connectes ton RIB via Stripe Connect depuis ton dashboard. Tu peux retirer ton blé dès 30€ de solde, dans la limite d\'un virement par mois. Le virement arrive sous 2-5 jours ouvrés.',
   },
   {
     q: 'Combien de temps ça prend ?',
@@ -38,7 +38,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Quel est le produit que je vends ?',
-    a: 'SmartTag : un sticker NFC qui permet aux clients de laisser un pourboire sans contact directement aux employés. Cible : restos, bars, salons de coiffure, taxis VTC.',
+    a: 'SmartTag : un sticker NFC qui permet aux clients de laisser un pourboire sans contact directement aux employés. Cible prioritaire : salons de coiffure et instituts d\'esthétique. Ensuite : barbiers, spas, restos, bars.',
   },
   {
     q: 'Et si je ne fais aucune vente ?',
@@ -75,7 +75,7 @@ export default async function DevenirAmbassadeurPage({
             Gagne 25-35€ par vente,<br />depuis ton téléphone.
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.6, margin: '0 0 24px' }}>
-            Rejoins l&apos;équipe Digitip. Tu places des SmartTags NFC (pourboires sans contact) chez des restos, bars, coiffeurs.
+            Rejoins l&apos;équipe Digitip. Tu places des SmartTags NFC (pourboires sans contact) en priorité chez des coiffeurs et instituts d&apos;esthétique.
             Pas de stock à avancer, pas d&apos;horaires imposés. Tu factures via micro-entreprise, on s&apos;occupe du reste.
           </p>
 
