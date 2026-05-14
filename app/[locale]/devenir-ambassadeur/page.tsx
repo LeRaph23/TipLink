@@ -72,7 +72,7 @@ export default async function DevenirAmbassadeurPage({
           borderRadius: 'var(--radius-xl)', padding: '36px 28px', marginBottom: 20,
         }}>
           <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1.1, margin: '0 0 12px' }}>
-            Gagne 25-35€ par vente,<br />depuis ton téléphone.
+            Gagne 25-35€ par vente.
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.6, margin: '0 0 24px' }}>
             Rejoins l&apos;équipe Digitip. Tu places des SmartTags NFC (pourboires sans contact) en priorité chez des coiffeurs et instituts d&apos;esthétique.
