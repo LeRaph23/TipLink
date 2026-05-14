@@ -266,7 +266,7 @@ async function handleEvent(
       // ── Express checkout (landing page guest flow) ──────────────────────────
       if (!groupId && session.metadata?.source === 'express' && pack) {
         const email = session.customer_details?.email;
-        const legalName = session.customer_details?.name ?? email ?? 'Unknown';
+        const legalName = session.customer_details?.name?.trim() || email || 'Unknown';
         const shipping = session.collected_information?.shipping_details ?? null;
         const customerId = typeof session.customer === 'string'
           ? session.customer
@@ -606,13 +606,28 @@ async function handlePackExpressPaid(
     .maybeSingle();
   if (existing) return;
 
-  const shipping = intent.shipping ?? null;
+  const rawShipping = intent.shipping ?? null;
+  // Stripe sometimes hands us a shipping object that's structurally present
+  // but full of empty strings (Link without shippingAddressRequired). Treat
+  // that as "no shipping" so downstream fallbacks kick in.
+  const shippingName = rawShipping?.name?.trim() || null;
+  const shippingHasAddress =
+    !!(rawShipping?.address && (
+      rawShipping.address.line1?.trim() ||
+      rawShipping.address.city?.trim() ||
+      rawShipping.address.postal_code?.trim()
+    ));
+  const shipping = shippingName || shippingHasAddress ? rawShipping : null;
 
-  // Prefer receipt_email (set via confirmParams.receipt_email on confirm).
-  // Fallback to billing_details on the latest charge — Link populates this even
-  // when the user never typed an email into our form, so we retrieve the charge
-  // when the event payload only carries the id.
-  let email: string | null = intent.receipt_email ?? null;
+  // Email resolution order:
+  //  1. PI metadata.customer_email — set by /api/billing/attach-pi-email just
+  //     before confirmPayment, so the webhook has a deterministic source even
+  //     when receipt_email is intentionally unset to suppress Stripe receipts.
+  //  2. intent.receipt_email — legacy fallback for older PIs.
+  //  3. latest_charge.billing_details.email — Link populates this; we retrieve
+  //     the charge because event payloads carry only the id.
+  let email: string | null = intent.metadata?.customer_email?.trim() || null;
+  if (!email) email = intent.receipt_email ?? null;
   if (!email && intent.latest_charge) {
     if (typeof intent.latest_charge !== 'string') {
       email = (intent.latest_charge as Stripe.Charge).billing_details?.email ?? null;
@@ -624,7 +639,7 @@ async function handlePackExpressPaid(
     }
   }
 
-  const legalName = shipping?.name ?? email ?? 'Unknown';
+  const legalName = shippingName ?? email ?? 'Unknown';
   const quantity =
     Number(intent.metadata?.quantity ?? 0) || (pack === 'solo' ? 1 : 2);
   const promoCodeStr = intent.metadata?.promo_code ?? null;

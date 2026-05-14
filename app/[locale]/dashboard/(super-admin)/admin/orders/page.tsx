@@ -2,6 +2,11 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 
+// Never serve a stale RSC payload — admins expect to see new orders the
+// instant Stripe finishes the webhook.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const STATUS_ORDER = [
   'pending_payment',
   'pending_fulfillment',
