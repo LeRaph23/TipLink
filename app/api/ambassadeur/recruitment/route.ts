@@ -10,19 +10,13 @@ import { resolveReferralCode } from '@/lib/referrals';
 
 export const runtime = 'nodejs';
 
+// SIRET format check: 14 digits, whitespace tolerated. We intentionally do
+// NOT enforce a Luhn checksum here — La Poste (SIREN 356 000 000) and a few
+// other legitimate SIRETs fail standard Luhn, and the canonical existence
+// check is done downstream via the SIRENE API and admin review.
 function validateSiret(raw: string): string | null {
   const clean = raw.replace(/\s+/g, '');
-  if (!/^\d{14}$/.test(clean)) return null;
-  let sum = 0;
-  for (let i = 0; i < 14; i++) {
-    let d = parseInt(clean[i], 10);
-    if (i % 2 === 0) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-  }
-  return sum % 10 === 0 ? clean : null;
+  return /^\d{14}$/.test(clean) ? clean : null;
 }
 
 export async function POST(req: NextRequest) {
