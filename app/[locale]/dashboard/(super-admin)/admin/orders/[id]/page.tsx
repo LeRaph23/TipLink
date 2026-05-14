@@ -4,6 +4,9 @@ import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { OrderFulfillment } from './OrderFulfillment';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminOrderDetailPage({
   params,
 }: {

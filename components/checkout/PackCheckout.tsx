@@ -140,6 +140,7 @@ export function PackCheckout({ pack, locale }: Props) {
         discountAmount={data.discountAmount}
         promoCode={data.promoCode}
         promoError={promoError}
+        clientSecret={data.clientSecret}
         onApplyPromo={(code) => { setPromoError(null); setAppliedPromo(code); }}
       />
     </Elements>
@@ -154,6 +155,7 @@ interface InnerProps {
   discountAmount: number;
   promoCode: string | null;
   promoError: string | null;
+  clientSecret: string;
   onApplyPromo: (code: string | null) => void;
 }
 
@@ -165,6 +167,7 @@ function InnerCheckout({
   discountAmount,
   promoCode,
   promoError,
+  clientSecret,
   onApplyPromo,
 }: InnerProps) {
   const stripe = useStripe();
@@ -188,6 +191,12 @@ function InnerCheckout({
   // (Link/ApplePay/GooglePay) flow — we must pass them explicitly. The express
   // event carries the email + shipping selected in the wallet sheet; for the
   // card flow we fall back to the form's email state.
+  //
+  // We deliberately DO NOT pass receipt_email to confirmPayment — that would
+  // cause Stripe to send its own branded "Receipt from Yuzu Labs" email,
+  // duplicating our own Digitip confirmation. Instead we PATCH the PI with
+  // metadata.customer_email so the webhook can route the email exclusively
+  // through Resend with the Digitip template.
   type ExpressConfirmEvent = {
     billingDetails?: { email?: string | null; name?: string | null } | null;
     shippingAddress?: {
@@ -207,9 +216,19 @@ function InnerCheckout({
     setError(null);
     setIsLoading(true);
     try {
+      // Attach the email to the PI metadata so the webhook can pick it up
+      // without us needing Stripe's auto-receipt machinery. Best-effort:
+      // a failure here just means we'll fall back to billing_details.email
+      // in the webhook.
+      await fetch('/api/billing/attach-pi-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientSecret, email: finalEmail }),
+      }).catch(() => {});
+
       const shipping = event?.shippingAddress?.address
         ? {
-            name: event.shippingAddress.name ?? '',
+            name: (event.shippingAddress.name ?? '').trim() || finalEmail,
             address: {
               line1: event.shippingAddress.address.line1 ?? '',
               line2: event.shippingAddress.address.line2 ?? undefined,
@@ -224,7 +243,7 @@ function InnerCheckout({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/${locale}/order/success`,
-          receipt_email: finalEmail,
+          // receipt_email intentionally omitted — see comment above.
           ...(shipping ? { shipping } : {}),
         },
       });
