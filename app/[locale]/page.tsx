@@ -867,7 +867,7 @@ export default function LandingPage() {
       <DoubleGuaranteeSection />
       <FooterSection />
 
-      {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} locale={locale} />}
+      {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} />}
     </div>
   );
 }
