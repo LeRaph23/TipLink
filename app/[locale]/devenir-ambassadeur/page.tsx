@@ -38,7 +38,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Quel est le produit que je vends ?',
-    a: 'SmartTag : un sticker NFC qui permet aux clients de laisser un pourboire sans contact directement aux employés. Cible : restos, bars, salons de coiffure, taxis VTC.',
+    a: 'SmartTag : un sticker NFC qui permet aux clients de laisser un pourboire sans contact directement aux employés. Cible prioritaire : salons de coiffure et instituts d\'esthétique. Ensuite : barbiers, spas, restos, bars.',
   },
   {
     q: 'Et si je ne fais aucune vente ?',
@@ -75,7 +75,7 @@ export default async function DevenirAmbassadeurPage({
             Gagne 25-35€ par vente,<br />depuis ton téléphone.
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.6, margin: '0 0 24px' }}>
-            Rejoins l&apos;équipe Digitip. Tu places des SmartTags NFC (pourboires sans contact) chez des restos, bars, coiffeurs.
+            Rejoins l&apos;équipe Digitip. Tu places des SmartTags NFC (pourboires sans contact) en priorité chez des coiffeurs et instituts d&apos;esthétique.
             Pas de stock à avancer, pas d&apos;horaires imposés. Tu factures via micro-entreprise, on s&apos;occupe du reste.
           </p>
 
