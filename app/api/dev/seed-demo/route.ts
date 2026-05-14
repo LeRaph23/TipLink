@@ -316,7 +316,7 @@ export async function POST() {
         step = 'smarttag_orders.insert';
         const coreRow: Record<string, unknown> = {
           group_id: groupId,
-          pack: 'm',
+          pack: 'duo',
           quantity: 30,
           stripe_checkout_session_id: `cs_demo_${groupId.slice(0, 8)}`,
           stripe_invoice_id: `in_demo_${groupId.slice(0, 8)}`,
