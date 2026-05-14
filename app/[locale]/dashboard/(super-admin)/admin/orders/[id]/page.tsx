@@ -16,7 +16,7 @@ export default async function AdminOrderDetailPage({
 
   const { data: order } = await supabase
     .from('smarttag_orders')
-    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, shipping_address, shipped_at, delivered_at, fulfilled_at, created_at, group_id, promo_code, discount_amount, stripe_checkout_session_id, stripe_invoice_id, groups(id, name)')
+    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, shipping_address, shipped_at, delivered_at, fulfilled_at, created_at, group_id, promo_code, discount_amount, stripe_checkout_session_id, stripe_invoice_id, internal_notes, groups(id, name)')
     .eq('id', id)
     .maybeSingle();
 
@@ -120,6 +120,7 @@ export default async function AdminOrderDetailPage({
         encodedCount={order.tags_encoded_count}
         status={order.status}
         trackingNumber={order.tracking_number}
+        internalNotes={order.internal_notes ?? ''}
         establishments={(establishments ?? []).map((e) => ({ id: e.id, name: e.name }))}
         stockTags={(stockTags ?? []).map((s) => ({ id: s.id, short_id: s.short_id, batch_label: s.batch_label }))}
       />
