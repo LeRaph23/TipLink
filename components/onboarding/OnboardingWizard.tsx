@@ -497,13 +497,9 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
-      if (!signUpData.session) {
-        setNeedsEmailVerification(true);
-        setDone(true);
-        setSubmitting(false);
-        return;
-      }
-
+      // Run the express onboarding action up-front so the group_admin role is
+      // attached to the new auth user even when email confirmation defers the
+      // session. Otherwise the user logs in later with no role at all.
       const result = await completeExpressOnboarding({
         groupId: props.groupId,
         establishmentName: state.establishmentName,
@@ -511,6 +507,7 @@ export function OnboardingWizard(props: Props) {
         adminFullName: state.adminFullName,
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         locale: locale as 'fr' | 'en',
+        userId: signUpData.user?.id,
       });
 
       if ('error' in result) {
@@ -519,7 +516,9 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
-      if (!opts?.skipBankingSetup) {
+      // Banking setup needs an authenticated session; skip it when email
+      // confirmation is pending — the user will be prompted after login.
+      if (signUpData.session && !opts?.skipBankingSetup) {
         const { ok, bankingErr } = await attemptBankingSetup();
         if (!ok) {
           setError(bankingErr ?? 'Erreur bancaire');
@@ -528,7 +527,7 @@ export function OnboardingWizard(props: Props) {
         }
       }
 
-      await supabase.auth.signOut();
+      if (signUpData.session) await supabase.auth.signOut();
       setNeedsEmailVerification(true);
     } else {
       const result = await completePostPurchaseOnboarding({
