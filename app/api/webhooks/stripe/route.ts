@@ -80,6 +80,14 @@ async function handleEvent(
   switch (event.type) {
     case 'payment_intent.succeeded': {
       const intent = event.data.object as Stripe.PaymentIntent;
+
+      // ── Hardware pack express (embedded checkout on /checkout page) ──
+      if (intent.metadata?.source === 'pack-express') {
+        if (intent.status !== 'succeeded') break;
+        await handlePackExpressPaid(intent, supabase);
+        break;
+      }
+
       const transactionId = intent.metadata?.transaction_id;
 
       if (!transactionId) {
@@ -568,6 +576,148 @@ async function handleEvent(
     default:
       // Unknown event types are logged but not errored
       break;
+  }
+}
+
+// ─── Hardware pack express (embedded /checkout) ──────────────────────────────
+
+async function handlePackExpressPaid(
+  intent: Stripe.PaymentIntent,
+  supabase: ReturnType<typeof createServiceClient>
+): Promise<void> {
+  const rawPack = intent.metadata?.pack;
+  const pack = (['solo', 'duo'] as const).find((p) => p === rawPack);
+  if (!pack) {
+    throw new Error(`pack-express PI missing valid pack metadata: ${intent.id}`);
+  }
+
+  // Idempotency: if this PI already produced an order, exit silently.
+  const { data: existing } = await supabase
+    .from('smarttag_orders')
+    .select('id')
+    .eq('stripe_payment_intent_id', intent.id)
+    .maybeSingle();
+  if (existing) return;
+
+  const shipping = intent.shipping ?? null;
+
+  // Prefer receipt_email (we set it via confirmParams.receipt_email on confirm).
+  // Fallback to billing_details on the latest charge if Stripe expanded it.
+  let email: string | null = intent.receipt_email ?? null;
+  if (!email && intent.latest_charge && typeof intent.latest_charge !== 'string') {
+    email = (intent.latest_charge as Stripe.Charge).billing_details?.email ?? null;
+  }
+
+  const legalName = shipping?.name ?? email ?? 'Unknown';
+  const quantity =
+    Number(intent.metadata?.quantity ?? 0) || (pack === 'solo' ? 1 : 2);
+  const promoCodeStr = intent.metadata?.promo_code ?? null;
+  const promoCodeId = intent.metadata?.promo_code_id ?? null;
+  const discountAmount = Number(intent.metadata?.discount_amount ?? 0) || 0;
+  const locale = intent.metadata?.locale === 'fr' ? 'fr' : 'en';
+
+  const customerId = typeof intent.customer === 'string'
+    ? intent.customer
+    : (intent.customer as Stripe.Customer | null)?.id ?? null;
+
+  // Create the group on the fly (mirror of express checkout.session.completed)
+  const { data: newGroup, error: groupErr } = await supabase
+    .from('groups')
+    .insert({
+      name: legalName,
+      legal_name: legalName,
+      stripe_customer_id: customerId,
+      shipping_address: shipping
+        ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
+        : null,
+      settings: { tip_thresholds: [1, 2, 5, 10] },
+    })
+    .select('id')
+    .single();
+
+  if (groupErr || !newGroup) {
+    throw new Error(`pack-express: failed to create group — ${groupErr?.message ?? 'unknown'}`);
+  }
+
+  const { data: newOrder } = await supabase
+    .from('smarttag_orders')
+    .insert({
+      group_id: newGroup.id,
+      pack,
+      quantity,
+      stripe_payment_intent_id: intent.id,
+      status: 'pending_fulfillment',
+      shipping_address: shipping
+        ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
+        : null,
+      promo_code: promoCodeStr,
+      promo_code_id: promoCodeId,
+      discount_amount: discountAmount,
+    })
+    .select('id')
+    .single();
+
+  if (newOrder?.id) {
+    await autoAssignTagsToOrder(supabase, newOrder.id, quantity);
+
+    // Increment promo redemption count (best-effort)
+    if (promoCodeId) {
+      try {
+        await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)(
+          'increment_promo_redeemed',
+          { promo_id: promoCodeId }
+        );
+      } catch { /* ignore */ }
+    }
+
+    if (promoCodeStr) {
+      await attributeAmbassadorSale(
+        supabase, promoCodeStr,
+        newOrder.id, pack, legalName
+      );
+    }
+  }
+
+  // Provision a starter establishment so the tip flow works immediately
+  const slug = legalName
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const country = (shipping?.address?.country ?? 'FR').toUpperCase();
+
+  await supabase.from('establishments').insert({
+    group_id: newGroup.id,
+    name: legalName,
+    business_type: 'beauty',
+    slug: slug || `group-${newGroup.id.slice(0, 8)}`,
+    country,
+    currency: 'eur',
+    onboarding_status: 'not_started',
+  });
+
+  // Send customer confirmation + setup link
+  if (email && newOrder) {
+    const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
+    const setupUrl = `${base}/${locale}/onboarding?group=${newGroup.id}&email=${encodeURIComponent(email)}`;
+    await sendOrderConfirmation({
+      to: email,
+      pack,
+      quantity,
+      orderId: newOrder.id,
+      invoicePdfUrl: null,
+      setupUrl,
+      locale,
+    }).catch(() => {});
+
+    await sendAdminNewOrder({
+      customerName: legalName,
+      customerEmail: email,
+      pack,
+      quantity,
+      orderId: newOrder.id,
+      promoCode: promoCodeStr,
+      locale,
+    }).catch(() => {});
   }
 }
 

@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 
 type Pack = 'solo' | 'duo';
 
 type Props = {
   pack: Pack;
   onClose: () => void;
-  locale: string;
 };
 
 const PACK_INFO: Record<Pack, { qty: number; price: string; full: string; save: string; img: string; alt: string }> = {
@@ -17,11 +17,11 @@ const PACK_INFO: Record<Pack, { qty: number; price: string; full: string; save: 
   duo:  { qty: 2, price: '99,00 €', full: '138,00 €', save: '−28%', img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
 };
 
-export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
+export function BuyModal({ pack: initialPack, onClose }: Props) {
   const tc = useTranslations('common');
+  const router = useRouter();
   const [selectedPack, setSelectedPack] = useState<Pack>(initialPack);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const info = PACK_INFO[selectedPack];
 
@@ -33,25 +33,9 @@ export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
     return () => document.removeEventListener('keydown', handleKey);
   }, [handleKey]);
 
-  async function handleCheckout() {
+  function handleCheckout() {
     setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/billing/express-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pack: selectedPack, locale }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.error ?? 'Erreur lors de la création du paiement');
-      }
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
-      setLoading(false);
-    }
+    router.push(`/checkout?pack=${selectedPack}`);
   }
 
   return (
@@ -158,14 +142,6 @@ export function BuyModal({ pack: initialPack, onClose, locale }: Props) {
               </div>
             ))}
           </div>
-
-          {error && (
-            <div style={{
-              marginTop: 12, padding: '10px 14px', borderRadius: 8,
-              background: '#fef2f2', border: '1px solid #fecaca',
-              fontSize: 13, color: '#dc2626',
-            }}>{error}</div>
-          )}
 
           <button
             onClick={handleCheckout}

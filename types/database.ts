@@ -70,6 +70,7 @@ export type Database = {
           pack: 'solo' | 'duo';
           quantity: number;
           stripe_checkout_session_id: string | null;
+          stripe_payment_intent_id: string | null;
           stripe_invoice_id: string | null;
           status: 'pending_payment' | 'pending_fulfillment' | 'encoding' | 'ready_to_ship' | 'shipped' | 'delivered' | 'canceled';
           shipping_address: Json | null;
@@ -91,6 +92,7 @@ export type Database = {
           pack: 'solo' | 'duo';
           quantity: number;
           stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
           stripe_invoice_id?: string | null;
           status?: 'pending_payment' | 'pending_fulfillment' | 'encoding' | 'ready_to_ship' | 'shipped' | 'delivered' | 'canceled';
           shipping_address?: Json | null;
@@ -112,6 +114,7 @@ export type Database = {
           pack?: 'solo' | 'duo';
           quantity?: number;
           stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
           stripe_invoice_id?: string | null;
           status?: 'pending_payment' | 'pending_fulfillment' | 'encoding' | 'ready_to_ship' | 'shipped' | 'delivered' | 'canceled';
           shipping_address?: Json | null;
