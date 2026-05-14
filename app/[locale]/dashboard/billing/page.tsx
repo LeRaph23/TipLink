@@ -4,6 +4,9 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { BillingPortalButton } from './BillingPortalButton';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function statusStyle(status: string): { color: string; bg: string; dot: string } {
   switch (status) {
     case 'delivered':     return { color: '#22c55e', bg: '#22c55e18', dot: '●' };
@@ -31,31 +34,39 @@ export default async function BillingPage({
 
   const service = createServiceClient();
 
-  const { data: roles } = await service
+  // Resolve caller's role(s):
+  //  - super_admin: sees all orders (no group filter)
+  //  - group_admin: sees only orders for groups they own
+  const { data: allRoles } = await service
     .from('user_roles')
-    .select('group_id')
-    .eq('user_id', user.id)
-    .in('role', ['group_admin', 'super_admin'])
-    .not('group_id', 'is', null);
+    .select('role, group_id')
+    .eq('user_id', user.id);
+  const isSuperAdmin = (allRoles ?? []).some((r) => r.role === 'super_admin');
+  const ownedGroupIds = (allRoles ?? [])
+    .filter((r) => r.role === 'group_admin' && r.group_id != null)
+    .map((r) => r.group_id) as string[];
 
-  const groupId = roles?.[0]?.group_id ?? null;
+  const primaryGroupId = ownedGroupIds[0] ?? null;
+
+  const ordersQuery = service
+    .from('smarttag_orders')
+    .select('id, pack, quantity, status, tracking_number, created_at, stripe_invoice_id, shipped_at, delivered_at, group_id, groups(name)')
+    .order('created_at', { ascending: false })
+    .limit(50);
 
   const [{ data: group }, { data: orders }] = await Promise.all([
-    groupId
+    primaryGroupId
       ? service
           .from('groups')
           .select('id, stripe_customer_id')
-          .eq('id', groupId)
+          .eq('id', primaryGroupId)
           .maybeSingle()
       : Promise.resolve({ data: null }),
-    groupId
-      ? service
-          .from('smarttag_orders')
-          .select('id, pack, quantity, status, tracking_number, created_at, stripe_invoice_id, shipped_at, delivered_at')
-          .eq('group_id', groupId)
-          .order('created_at', { ascending: false })
-          .limit(20)
-      : Promise.resolve({ data: [] }),
+    isSuperAdmin
+      ? ordersQuery
+      : ownedGroupIds.length > 0
+        ? ordersQuery.in('group_id', ownedGroupIds)
+        : Promise.resolve({ data: [] }),
   ]);
 
   return (
@@ -112,7 +123,11 @@ export default async function BillingPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('orderPack'), t('orderStatus'), t('orderDate'), t('orderTracking'), t('orderInvoice'), ''].map(h => (
+                {[
+                  ...(isSuperAdmin ? ['Groupe'] : []),
+                  t('orderPack'), t('orderStatus'), t('orderDate'),
+                  t('orderTracking'), t('orderInvoice'), '',
+                ].map(h => (
                   <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
                 ))}
               </tr>
@@ -120,8 +135,14 @@ export default async function BillingPage({
             <tbody>
               {orders.map(o => {
                 const { color, bg, dot } = statusStyle(o.status);
+                const orderGroupName = (o as unknown as { groups: { name: string } | null }).groups?.name ?? '—';
                 return (
                   <tr key={o.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    {isSuperAdmin && (
+                      <td style={{ padding: '11px 16px', color: 'var(--text-2)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {orderGroupName}
+                      </td>
+                    )}
                     <td style={{ padding: '11px 16px', fontWeight: 600 }}>
                       {o.pack.toUpperCase()} · {o.quantity}
                     </td>
