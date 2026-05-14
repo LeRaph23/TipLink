@@ -16,11 +16,11 @@ function darkLayout(content: string) {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:40px auto;background:#141414;border-radius:16px;border:1px solid #222;overflow:hidden">
+<body style="margin:0;padding:0;background:#0a0a0d;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#f2f2f5">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:40px auto;background:#17171d;border-radius:16px;border:1px solid #2e2e38;overflow:hidden">
     ${content}
-    <tr><td style="padding:16px 32px;border-top:1px solid #1e1e1e;text-align:center">
-      <span style="font-size:11px;color:#444">© Digitip · Cashless tips via NFC</span>
+    <tr><td style="padding:16px 32px;border-top:1px solid #232329;text-align:center">
+      <span style="font-size:11px;color:#5a5a6a">© Digitip · Cashless tips via NFC</span>
     </td></tr>
   </table>
 </body>
@@ -28,9 +28,9 @@ function darkLayout(content: string) {
 }
 
 function infoRow(label: string, value: string) {
-  return `<tr style="border-bottom:1px solid #222">
-    <td style="padding:12px 16px;font-size:12px;color:#666">${label}</td>
-    <td style="padding:12px 16px;font-size:12px;color:#aaa;text-align:right">${value}</td>
+  return `<tr style="border-bottom:1px solid #232329">
+    <td style="padding:12px 16px;font-size:12px;color:#5a5a6a">${label}</td>
+    <td style="padding:12px 16px;font-size:12px;color:#9898a8;text-align:right">${value}</td>
   </tr>`;
 }
 
@@ -64,23 +64,23 @@ export async function sendTipReceipt(opts: {
     to,
     subject: `Your tip receipt — ${formatted}`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Tip receipt</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Tip receipt</div>
     </td></tr>
     <tr><td style="padding:28px 32px">
-      <div style="font-size:40px;font-weight:800;letter-spacing:-0.04em;color:#fff;margin-bottom:4px">${formatted}</div>
-      <div style="font-size:14px;color:#888">Tip sent to <strong style="color:#ccc">${staffName}</strong> at ${establishmentName}</div>
+      <div style="font-size:40px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:4px">${formatted}</div>
+      <div style="font-size:14px;color:#9898a8">Tip sent to <strong style="color:#f2f2f5">${staffName}</strong> at ${establishmentName}</div>
     </td></tr>
     <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow('Status', '<span style="color:#22c55e;font-weight:600">● Succeeded</span>')}
         ${infoRow('Reference', `<span style="font-family:monospace">${shortRef}</span>`)}
         ${infoRow('Processor', 'Stripe ✓')}
       </table>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:12px;color:#444;margin:0;line-height:1.6">
+      <p style="font-size:12px;color:#5a5a6a;margin:0;line-height:1.6">
         Your payment went directly to ${staffName}'s bank account via Stripe Connect. Digitip never holds your funds.
       </p>
     </td></tr>`),
@@ -142,11 +142,11 @@ export async function sendOrderConfirmation(opts: {
 
   const setupSection = setupUrl
     ? `<tr><td style="padding:0 32px 28px">
-        <div style="background:#1a1a2e;border:1px solid #3b3b6e;border-radius:12px;padding:20px 24px">
-          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">
+        <div style="background:#2b1b22;border:1px solid #57313d;border-radius:12px;padding:20px 24px">
+          <div style="font-size:14px;font-weight:700;color:#f2f2f5;margin-bottom:6px">
             ${isFr ? '🎉 Configurez votre salon maintenant' : '🎉 Set up your salon now'}
           </div>
-          <div style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.5">
+          <div style="font-size:13px;color:#9898a8;margin-bottom:16px;line-height:1.5">
             ${isFr
               ? 'Créez votre espace Digitip en 2 minutes : nom du salon, votre équipe, et vous êtes prêts à encaisser des pourboires.'
               : 'Set up your Digitip space in 2 minutes: salon name, your team, and you\'re ready to collect tips.'}
@@ -163,35 +163,35 @@ export async function sendOrderConfirmation(opts: {
     to,
     subject,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">${headline}</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">${headline}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${isFr ? 'Paiement reçu' : 'Payment received'}</div>
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:6px">${headline}</div>
-      <div style="font-size:14px;color:#888">${subline}</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:6px">${headline}</div>
+      <div style="font-size:14px;color:#9898a8">${subline}</div>
     </td></tr>
     <tr><td style="padding:0 32px 24px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow(orderLabel, label)}
         ${infoRow(qtyLabel, String(quantity))}
         ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
-        ${invoicePdfUrl ? infoRow(invoiceRow, `<a href="${invoicePdfUrl}" style="color:#60a5fa;text-decoration:none">PDF ↓</a>`) : ''}
+        ${invoicePdfUrl ? infoRow(invoiceRow, `<a href="${invoicePdfUrl}" style="color:#E57A97;text-decoration:none">PDF ↓</a>`) : ''}
       </table>
     </td></tr>
     ${invoiceSection}
     ${setupSection}
     <tr><td style="padding:0 32px 28px">
-      <div style="font-size:13px;font-weight:600;color:#ccc;margin-bottom:12px">${nextStepsTitle}</div>
-      <div style="font-size:13px;color:#888;line-height:1.7">
+      <div style="font-size:13px;font-weight:600;color:#f2f2f5;margin-bottom:12px">${nextStepsTitle}</div>
+      <div style="font-size:13px;color:#9898a8;line-height:1.7">
         <div style="margin-bottom:6px">① ${step1}</div>
         <div style="margin-bottom:6px">② ${step2}</div>
         <div>③ ${step3}</div>
       </div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:12px;color:#444;margin:0;line-height:1.6">${footer}</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:0;line-height:1.6">${footer}</p>
     </td></tr>`),
   });
 }
@@ -234,11 +234,11 @@ export async function sendOrderShipped(opts: {
 
   const onboardingSection = onboardingUrl
     ? `<tr><td style="padding:0 32px 24px">
-        <div style="background:#1a1a2e;border:1px solid #3b3b6e;border-radius:12px;padding:20px 24px">
-          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px">
+        <div style="background:#2b1b22;border:1px solid #57313d;border-radius:12px;padding:20px 24px">
+          <div style="font-size:14px;font-weight:700;color:#f2f2f5;margin-bottom:8px">
             ${isFr ? 'Vous voulez prendre de l\'avance ?' : 'Want a head start?'}
           </div>
-          <div style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.6">
+          <div style="font-size:13px;color:#9898a8;margin-bottom:16px;line-height:1.6">
             ${isFr
               ? 'Vous pouvez configurer votre espace Digitip maintenant — ou attendre la réception de vos SmartTags et simplement scanner l\'un des QR codes. Les deux fonctionnent parfaitement.'
               : 'You can set up your Digitip space now — or wait until your SmartTags arrive and simply scan one of the QR codes. Both work perfectly.'}
@@ -255,29 +255,29 @@ export async function sendOrderShipped(opts: {
     to,
     subject,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">${headline}</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">${headline}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#3b82f622;color:#60a5fa;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${isFr ? 'En transit' : 'In transit'}</div>
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:6px">${headline}</div>
-      <div style="font-size:14px;color:#888">${subline}</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:6px">${headline}</div>
+      <div style="font-size:14px;color:#9898a8">${subline}</div>
     </td></tr>
     <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow(orderLabel, label)}
         ${infoRow(isFr ? 'Quantité' : 'Quantity', String(quantity))}
         ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
         ${infoRow(trackingTitle, trackingNumber
-          ? `<span style="font-family:monospace;color:#ccc">${trackingNumber}</span>`
+          ? `<span style="font-family:monospace;color:#f2f2f5">${trackingNumber}</span>`
           : noTracking)}
         ${infoRow(estDelivery, estDays)}
       </table>
     </td></tr>
     ${onboardingSection}
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:12px;color:#444;margin:0;line-height:1.6">${footer}</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:0;line-height:1.6">${footer}</p>
     </td></tr>`),
   });
 }
@@ -302,18 +302,18 @@ export async function sendPaymentFailed(opts: {
     to,
     subject: `Your tip payment did not go through — ${formatted}`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Payment issue</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Payment issue</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Payment failed</div>
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:10px">We couldn't process your tip</div>
-      <div style="font-size:14px;color:#888">Your tip of <strong style="color:#ccc">${formatted}</strong> to <strong style="color:#ccc">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} was not completed.</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:10px">We couldn't process your tip</div>
+      <div style="font-size:14px;color:#9898a8">Your tip of <strong style="color:#f2f2f5">${formatted}</strong> to <strong style="color:#f2f2f5">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} was not completed.</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:13px;color:#888;margin:0;line-height:1.6">No charge was made to your card. If you'd like to try again, simply scan the NFC tag or visit the tip page again.</p>
-      <p style="font-size:12px;color:#444;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
+      <p style="font-size:13px;color:#9898a8;margin:0;line-height:1.6">No charge was made to your card. If you'd like to try again, simply scan the NFC tag or visit the tip page again.</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
     </td></tr>`),
   });
 }
@@ -333,7 +333,7 @@ export async function sendTipRefunded(opts: {
   const fmt = new Intl.NumberFormat('en', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 });
   const formatted = fmt.format(amount / 100);
   const contextLine = staffName
-    ? `Your tip to <strong style="color:#ccc">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} has been refunded.`
+    ? `Your tip to <strong style="color:#f2f2f5">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} has been refunded.`
     : 'Your tip has been refunded.';
 
   await resend.emails.send({
@@ -341,18 +341,18 @@ export async function sendTipRefunded(opts: {
     to,
     subject: `Your tip has been refunded — ${formatted}`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Refund confirmation</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Refund confirmation</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#f59e0b22;color:#fbbf24;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Refunded</div>
-      <div style="font-size:40px;font-weight:800;letter-spacing:-0.04em;color:#fff;margin-bottom:4px">${formatted}</div>
-      <div style="font-size:14px;color:#888">${contextLine}</div>
+      <div style="font-size:40px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:4px">${formatted}</div>
+      <div style="font-size:14px;color:#9898a8">${contextLine}</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:13px;color:#888;margin:0;line-height:1.6">The refunded amount will appear on your original payment method within 5–10 business days, depending on your bank.</p>
-      <p style="font-size:12px;color:#444;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
+      <p style="font-size:13px;color:#9898a8;margin:0;line-height:1.6">The refunded amount will appear on your original payment method within 5–10 business days, depending on your bank.</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
     </td></tr>`),
   });
 }
@@ -372,17 +372,17 @@ export async function sendAmbassadorApplicationConfirmation(opts: {
     to,
     subject: `Candidature ambassadeur reçue — Digitip`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Programme ambassadeur</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Candidature reçue</div>
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:10px">Merci ${firstName} !</div>
-      <div style="font-size:14px;color:#888">Ta candidature au programme ambassadeur Digitip a bien été reçue.</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:10px">Merci ${firstName} !</div>
+      <div style="font-size:14px;color:#9898a8">Ta candidature au programme ambassadeur Digitip a bien été reçue.</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Notre équipe l'examine et revient vers toi très prochainement. En attendant, n'hésite pas à répondre à cet email si tu as des questions.</p>
+      <p style="font-size:13px;color:#9898a8;margin:0;line-height:1.7">Notre équipe l'examine et revient vers toi très prochainement. En attendant, n'hésite pas à répondre à cet email si tu as des questions.</p>
     </td></tr>`),
   });
 }
@@ -409,17 +409,17 @@ export async function sendAmbassadorApplicationAdmin(opts: {
     replyTo: email,
     subject: `Nouvelle candidature ambassadeur — ${firstName} ${lastName}`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip Admin</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Nouvelle candidature ambassadeur</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip Admin</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Nouvelle candidature ambassadeur</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:4px">${firstName} ${lastName}</div>
-      <div style="font-size:14px;color:#888">${city}</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:4px">${firstName} ${lastName}</div>
+      <div style="font-size:14px;color:#9898a8">${city}</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
-        ${infoRow('Email', `<a href="mailto:${email}" style="color:#60a5fa;text-decoration:none">${email}</a>`)}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
+        ${infoRow('Email', `<a href="mailto:${email}" style="color:#E57A97;text-decoration:none">${email}</a>`)}
         ${infoRow('Téléphone', phone)}
         ${infoRow('Ville', city)}
         ${infoRow('SIRET', `<span style="font-family:monospace">${siret}</span>`)}
@@ -444,18 +444,18 @@ export async function sendAmbassadorBankingConfirmation(opts: {
     to,
     subject: `Compte bancaire configuré — Digitip Ambassadeur`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Programme ambassadeur</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Compte configuré</div>
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:10px">Tout est prêt, ${firstName} !</div>
-      <div style="font-size:14px;color:#888">Ton compte bancaire Stripe a bien été enregistré. Tu recevras tes commissions directement sur ton IBAN lors de chaque virement.</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:10px">Tout est prêt, ${firstName} !</div>
+      <div style="font-size:14px;color:#9898a8">Ton compte bancaire Stripe a bien été enregistré. Tu recevras tes commissions directement sur ton IBAN lors de chaque virement.</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Les virements sont déclenchés manuellement par notre équipe après validation. Tu seras notifié par email à chaque paiement.</p>
-      <p style="font-size:12px;color:#444;margin:16px 0 0;line-height:1.6">Questions ? Réponds à cet email ou écris à support@digitip.app.</p>
+      <p style="font-size:13px;color:#9898a8;margin:0;line-height:1.7">Les virements sont déclenchés manuellement par notre équipe après validation. Tu seras notifié par email à chaque paiement.</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:16px 0 0;line-height:1.6">Questions ? Réponds à cet email ou écris à support@digitip.app.</p>
     </td></tr>`),
   });
 }
@@ -484,16 +484,16 @@ export async function sendAdminNewOrder(opts: {
     ...(customerEmail ? { replyTo: customerEmail } : {}),
     subject: `Nouvelle commande — ${label} · ${customerName}`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip Admin</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Nouvelle commande SmartTag</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip Admin</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Nouvelle commande SmartTag</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:4px">${customerName}</div>
-      ${customerEmail ? `<div style="font-size:14px;color:#888">${customerEmail}</div>` : ''}
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:4px">${customerName}</div>
+      ${customerEmail ? `<div style="font-size:14px;color:#9898a8">${customerEmail}</div>` : ''}
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow('Pack', label)}
         ${infoRow('Quantité', String(quantity))}
         ${infoRow('Référence', `<span style="font-family:monospace">${shortRef}</span>`)}
@@ -556,17 +556,17 @@ export async function sendOrderDelivered(opts: {
     to,
     subject,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">${headline}</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">${headline}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${isFr ? 'Livré' : 'Delivered'}</div>
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:6px">${headline} 🎉</div>
-      <div style="font-size:14px;color:#888">${subline}</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:6px">${headline} 🎉</div>
+      <div style="font-size:14px;color:#9898a8">${subline}</div>
     </td></tr>
     <tr><td style="padding:0 32px 24px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow(isFr ? 'Pack livré' : 'Delivered pack', label)}
         ${infoRow(isFr ? 'Quantité' : 'Quantity', String(quantity))}
         ${infoRow(isFr ? 'Référence' : 'Reference', `<span style="font-family:monospace">${shortRef}</span>`)}
@@ -574,15 +574,15 @@ export async function sendOrderDelivered(opts: {
     </td></tr>
     ${ctaSection}
     <tr><td style="padding:0 32px 28px">
-      <div style="font-size:13px;font-weight:600;color:#ccc;margin-bottom:12px">${nextTitle}</div>
-      <div style="font-size:13px;color:#888;line-height:1.7">
+      <div style="font-size:13px;font-weight:600;color:#f2f2f5;margin-bottom:12px">${nextTitle}</div>
+      <div style="font-size:13px;color:#9898a8;line-height:1.7">
         <div style="margin-bottom:6px">① ${step1}</div>
         <div style="margin-bottom:6px">② ${step2}</div>
         <div>③ ${step3}</div>
       </div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:12px;color:#444;margin:0;line-height:1.6">${footer}</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:0;line-height:1.6">${footer}</p>
     </td></tr>`),
   });
 }
@@ -624,17 +624,17 @@ export async function sendOrderCanceled(opts: {
     to,
     subject,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">${headline}</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">${headline}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${headline}</div>
-      <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:6px">${headline}</div>
-      <div style="font-size:14px;color:#888;line-height:1.6">${subline}</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:6px">${headline}</div>
+      <div style="font-size:14px;color:#9898a8;line-height:1.6">${subline}</div>
     </td></tr>
     <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow(orderLabel, label)}
         ${infoRow(qtyLabel, String(quantity))}
         ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
@@ -642,7 +642,7 @@ export async function sendOrderCanceled(opts: {
       </table>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:12px;color:#444;margin:0;line-height:1.6">${footer}</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:0;line-height:1.6">${footer}</p>
     </td></tr>`),
   });
 }
@@ -673,20 +673,20 @@ export async function sendOrderCustomNote(opts: {
     to,
     subject,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">${escapeHtml(subject)}</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">${escapeHtml(subject)}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="font-size:14px;color:#d4d4d4;line-height:1.7">${safeBody}</div>
+      <div style="font-size:14px;color:#e2e2ea;line-height:1.7">${safeBody}</div>
     </td></tr>
     <tr><td style="padding:0 32px 18px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
       </table>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:12px;color:#666;margin:0;line-height:1.6">${signature}</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:0;line-height:1.6">${signature}</p>
     </td></tr>`),
   });
 }
@@ -714,11 +714,11 @@ export async function sendAmbassadorTemplatedEmail(opts: {
   const { to, subject, bodyHtml, replyTo } = opts;
 
   const html = darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Programme ambassadeur</div>
     </td></tr>
-    <tr><td style="padding:28px 32px 16px;color:#ddd;font-size:14px;line-height:1.6">
+    <tr><td style="padding:28px 32px 16px;color:#e2e2ea;font-size:14px;line-height:1.6">
       ${bodyHtml}
     </td></tr>`);
 
@@ -748,17 +748,17 @@ export async function sendAmbassadorContractInvitation(opts: {
     to,
     subject: `Contrat à signer — ${contractTitle}`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Contrat ambassadeur</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Contrat ambassadeur</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:8px">${firstName}, un contrat t'attend</div>
-      <div style="font-size:14px;color:#888;line-height:1.6">Tu peux le lire et le signer en ligne, depuis ton dashboard sécurisé par PIN. Aucune impression ni signature manuscrite requise.</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:8px">${firstName}, un contrat t'attend</div>
+      <div style="font-size:14px;color:#9898a8;line-height:1.6">Tu peux le lire et le signer en ligne, depuis ton dashboard sécurisé par PIN. Aucune impression ni signature manuscrite requise.</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p><a href="${dashboardUrl}" style="display:inline-block;padding:12px 22px;background:#22c55e;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Lire &amp; signer le contrat →</a></p>
-      <p style="font-size:12px;color:#444;margin:18px 0 0;line-height:1.6">Pour ta protection, la signature s'effectue après lecture intégrale et acceptation explicite. Une copie te sera envoyée par email après signature.</p>
+      <p><a href="${dashboardUrl}" style="display:inline-block;padding:12px 22px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Lire &amp; signer le contrat →</a></p>
+      <p style="font-size:12px;color:#5a5a6a;margin:18px 0 0;line-height:1.6">Pour ta protection, la signature s'effectue après lecture intégrale et acceptation explicite. Une copie te sera envoyée par email après signature.</p>
     </td></tr>`),
   });
 }
@@ -782,24 +782,24 @@ export async function sendSignedContractCopy(opts: {
     to,
     subject: `Contrat signé — ${contractTitle}`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Contrat signé</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Contrat signé</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Signé</div>
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:8px">${firstName}, ton contrat est signé ✓</div>
-      <div style="font-size:14px;color:#888;line-height:1.6">${contractTitle}</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5;margin-bottom:8px">${firstName}, ton contrat est signé ✓</div>
+      <div style="font-size:14px;color:#9898a8;line-height:1.6">${contractTitle}</div>
     </td></tr>
     <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:10px;border:1px solid #222;overflow:hidden">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1f1f27;border-radius:10px;border:1px solid #2e2e38;overflow:hidden">
         ${infoRow('Signé le', new Date(signedAt).toLocaleString('fr-FR'))}
         ${infoRow('Empreinte SHA-256', `<span style="font-family:monospace">${shortHash}…</span>`)}
       </table>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p><a href="${downloadUrl}" style="display:inline-block;padding:10px 18px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #333">Télécharger / imprimer →</a></p>
-      <p style="font-size:12px;color:#444;margin:18px 0 0;line-height:1.6">Conserve cet email comme preuve. Le contenu intégral du contrat reste accessible depuis ton dashboard et ne peut plus être modifié.</p>
+      <p><a href="${downloadUrl}" style="display:inline-block;padding:10px 18px;background:#1f1f27;color:#f2f2f5;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #2e2e38">Télécharger / imprimer →</a></p>
+      <p style="font-size:12px;color:#5a5a6a;margin:18px 0 0;line-height:1.6">Conserve cet email comme preuve. Le contenu intégral du contrat reste accessible depuis ton dashboard et ne peut plus être modifié.</p>
     </td></tr>`),
   });
 }
@@ -820,7 +820,7 @@ export async function sendAmbassadorApplicationReminder(opts: {
     ? `On a vu ta candidature, ${firstName} 👀`
     : `Dernière chance, ${firstName} ⏳`;
   const body = step === 1
-    ? `Ton dossier est en cours d'examen. Pour accélérer, assure-toi que ton SIRET et ton RIB sont à jour. Tu n'as pas encore de SIRET ? <a href="https://autoentrepreneur.urssaf.fr" style="color:#60a5fa">Crée-le gratuitement ici</a> (10 min, c'est instantané).`
+    ? `Ton dossier est en cours d'examen. Pour accélérer, assure-toi que ton SIRET et ton RIB sont à jour. Tu n'as pas encore de SIRET ? <a href="https://autoentrepreneur.urssaf.fr" style="color:#E57A97">Crée-le gratuitement ici</a> (10 min, c'est instantané).`
     : `Sans nouvelle de ta part dans les prochains jours, on devra archiver ta candidature. Si tu es toujours motivé(e), réponds à cet email — un humain te recontactera dans la journée.`;
 
   await resend.emails.send({
@@ -828,16 +828,16 @@ export async function sendAmbassadorApplicationReminder(opts: {
     to,
     subject,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Programme ambassadeur</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Programme ambassadeur</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">${headline}</div>
-      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">${body}</p>
+      <div style="font-size:24px;font-weight:800;color:#f2f2f5;margin-bottom:10px">${headline}</div>
+      <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0">${body}</p>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:12px;color:#666;margin:0">Une question ? Réponds simplement à ce mail.</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:0">Une question ? Réponds simplement à ce mail.</p>
     </td></tr>`),
   });
 }
@@ -856,17 +856,17 @@ export async function sendReferralWelcomeToCandidate(opts: {
     to,
     subject: `${parrainName} t'a recommandé(e) — Bienvenue chez Digitip`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Recommandé par ${parrainName}</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Recommandé par ${parrainName}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Candidature reçue</div>
-      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">Salut ${firstName} !</div>
-      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">Ta candidature au programme ambassadeur Digitip vient d'arriver via la recommandation de <strong style="color:#fff">${parrainName}</strong>. On l'examine et on revient vers toi rapidement.</p>
+      <div style="font-size:24px;font-weight:800;color:#f2f2f5;margin-bottom:10px">Salut ${firstName} !</div>
+      <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0">Ta candidature au programme ambassadeur Digitip vient d'arriver via la recommandation de <strong style="color:#f2f2f5">${parrainName}</strong>. On l'examine et on revient vers toi rapidement.</p>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Pas de SIRET ? C'est gratuit et instantané : <a href="https://autoentrepreneur.urssaf.fr" style="color:#60a5fa">autoentrepreneur.urssaf.fr</a></p>
+      <p style="font-size:13px;color:#9898a8;margin:0;line-height:1.7">Pas de SIRET ? C'est gratuit et instantané : <a href="https://autoentrepreneur.urssaf.fr" style="color:#E57A97">autoentrepreneur.urssaf.fr</a></p>
     </td></tr>`),
   });
 }
@@ -886,18 +886,18 @@ export async function sendReferralEmailFromAmbassador(opts: {
     to,
     subject: `${parrainName} t'invite à devenir ambassadeur Digitip`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Invitation perso</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Invitation perso</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">${parrainName} pense à toi</div>
-      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip — placer des SmartTags NFC chez des restos et toucher 25 à 35 € par vente. ${parrainName} pense que tu pourrais cartonner.</p>
-      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">Pas d'engagement, pas de stock à avancer — juste un SIRET (auto-entrepreneur) et l'envie de prospecter.</p>
+      <div style="font-size:24px;font-weight:800;color:#f2f2f5;margin-bottom:10px">${parrainName} pense à toi</div>
+      <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip — placer des SmartTags NFC chez des restos et toucher 25 à 35 € par vente. ${parrainName} pense que tu pourrais cartonner.</p>
+      <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0">Pas d'engagement, pas de stock à avancer — juste un SIRET (auto-entrepreneur) et l'envie de prospecter.</p>
     </td></tr>
     <tr><td style="padding:8px 32px 32px">
-      <p><a href="${link}" style="display:inline-block;padding:12px 22px;background:#22c55e;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">Découvrir le programme →</a></p>
-      <p style="font-size:12px;color:#555;margin:16px 0 0">Tu reçois ce mail parce que ${parrainName} t'a explicitement invité(e). Pour ne pas être recontacté(e), réponds simplement "stop".</p>
+      <p><a href="${link}" style="display:inline-block;padding:12px 22px;background:#E57A97;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">Découvrir le programme →</a></p>
+      <p style="font-size:12px;color:#5a5a6a;margin:16px 0 0">Tu reçois ce mail parce que ${parrainName} t'a explicitement invité(e). Pour ne pas être recontacté(e), réponds simplement "stop".</p>
     </td></tr>`),
   });
 }
@@ -924,16 +924,16 @@ export async function sendReferralValidatedToParrain(
     to: parrain.email,
     subject: `🎉 Parrainage validé : +${euros}€ pour toi`,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">Parrainage validé</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">Parrainage validé</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="font-size:28px;font-weight:800;color:#22c55e;margin-bottom:10px">+${euros}€</div>
-      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">Ton filleul <strong style="color:#fff">${filleulName}</strong> vient de réaliser sa 2ᵉ vente. Ton bonus de parrainage est crédité sur ton solde et payable lors de ta prochaine demande de virement.</p>
+      <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0">Ton filleul <strong style="color:#f2f2f5">${filleulName}</strong> vient de réaliser sa 2ᵉ vente. Ton bonus de parrainage est crédité sur ton solde et payable lors de ta prochaine demande de virement.</p>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p style="font-size:13px;color:#888;margin:0;line-height:1.7">Continue à inviter des potes — 5 filleuls validés = +100€ supplémentaires. 10 filleuls = +250€.</p>
+      <p style="font-size:13px;color:#9898a8;margin:0;line-height:1.7">Continue à inviter des potes — 5 filleuls validés = +100€ supplémentaires. 10 filleuls = +250€.</p>
     </td></tr>`),
   });
 }
@@ -941,9 +941,9 @@ export async function sendReferralValidatedToParrain(
 // ─── Cold email B2B sequence ────────────────────────────────────────────────
 
 function coldEmailFooter(unsubscribeUrl: string): string {
-  return `<tr><td style="padding:24px 32px;border-top:1px solid #1e1e1e;font-size:11px;color:#555;line-height:1.6">
+  return `<tr><td style="padding:24px 32px;border-top:1px solid #232329;font-size:11px;color:#5a5a6a;line-height:1.6">
     Vous recevez cet email car votre SIRET figure dans la base publique SIRENE de l'INSEE avec un code NAF compatible avec une activité commerciale. Conformément au RGPD et à notre intérêt légitime de recrutement B2B, vous pouvez vous opposer à tout traitement futur :
-    <a href="${unsubscribeUrl}" style="color:#60a5fa">se désinscrire</a> · Digitip · privacy@digitip.app
+    <a href="${unsubscribeUrl}" style="color:#E57A97">se désinscrire</a> · Digitip · privacy@digitip.app
   </td></tr>`;
 }
 
@@ -963,24 +963,24 @@ export async function sendColdEmailStep(opts: {
   const variants: Record<1 | 2 | 3, { subject: string; body: string }> = {
     1: {
       subject: `${firstName ? firstName + ', ' : ''}une idée pour ton activité`,
-      body: `<p style="font-size:14px;color:#ccc;line-height:1.6">${greet},</p>
-        <p style="font-size:14px;color:#aaa;line-height:1.6">Je tombe sur ton SIRET dans la base SIRENE — tu es enregistré(e) en activité commerciale${cityFragment}. On lance un programme ambassadeur Digitip : tu places des SmartTags NFC (pourboires sans contact) dans les restos, et tu touches <strong style="color:#fff">25 à 35€ par vente</strong>. Pas de stock, pas d'avance.</p>
-        <p style="font-size:14px;color:#aaa;line-height:1.6">Si ça te dit d'en savoir plus, jette un œil :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#22c55e;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Voir le programme →</a></p>`,
+      body: `<p style="font-size:14px;color:#f2f2f5;line-height:1.6">${greet},</p>
+        <p style="font-size:14px;color:#9898a8;line-height:1.6">Je tombe sur ton SIRET dans la base SIRENE — tu es enregistré(e) en activité commerciale${cityFragment}. On lance un programme ambassadeur Digitip : tu places des SmartTags NFC (pourboires sans contact) dans les restos, et tu touches <strong style="color:#f2f2f5">25 à 35€ par vente</strong>. Pas de stock, pas d'avance.</p>
+        <p style="font-size:14px;color:#9898a8;line-height:1.6">Si ça te dit d'en savoir plus, jette un œil :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Voir le programme →</a></p>`,
     },
     2: {
       subject: `${firstName ? firstName + ', ' : ''}exemple concret — un amba a fait 12 ventes en 3 sem`,
-      body: `<p style="font-size:14px;color:#ccc;line-height:1.6">${greet},</p>
-        <p style="font-size:14px;color:#aaa;line-height:1.6">Petit suivi sur mon mail précédent. Concrètement : un de nos ambassadeurs Lyon (BTS NDRC en alternance) vient de faire <strong style="color:#fff">12 ventes en 3 semaines</strong>, soit ~360€ en plus de sa formation. Il bosse ~5h/semaine.</p>
-        <p style="font-size:14px;color:#aaa;line-height:1.6">Si tu veux essayer, le SIRET que tu as déjà suffit :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#22c55e;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Postuler en 2 min →</a></p>`,
+      body: `<p style="font-size:14px;color:#f2f2f5;line-height:1.6">${greet},</p>
+        <p style="font-size:14px;color:#9898a8;line-height:1.6">Petit suivi sur mon mail précédent. Concrètement : un de nos ambassadeurs Lyon (BTS NDRC en alternance) vient de faire <strong style="color:#f2f2f5">12 ventes en 3 semaines</strong>, soit ~360€ en plus de sa formation. Il bosse ~5h/semaine.</p>
+        <p style="font-size:14px;color:#9898a8;line-height:1.6">Si tu veux essayer, le SIRET que tu as déjà suffit :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Postuler en 2 min →</a></p>`,
     },
     3: {
       subject: `Dernier mail`,
-      body: `<p style="font-size:14px;color:#ccc;line-height:1.6">${greet},</p>
-        <p style="font-size:14px;color:#aaa;line-height:1.6">Je te promets, c'est mon dernier mail. Si le sujet ne t'intéresse pas, pas de souci — désinscris-toi en 1 clic en bas du mail.</p>
-        <p style="font-size:14px;color:#aaa;line-height:1.6">Si tu hésites encore, voilà le lien :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #333">Découvrir Digitip Ambassadeur</a></p>`,
+      body: `<p style="font-size:14px;color:#f2f2f5;line-height:1.6">${greet},</p>
+        <p style="font-size:14px;color:#9898a8;line-height:1.6">Je te promets, c'est mon dernier mail. Si le sujet ne t'intéresse pas, pas de souci — désinscris-toi en 1 clic en bas du mail.</p>
+        <p style="font-size:14px;color:#9898a8;line-height:1.6">Si tu hésites encore, voilà le lien :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#1f1f27;color:#f2f2f5;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #2e2e38">Découvrir Digitip Ambassadeur</a></p>`,
     },
   };
 
@@ -1017,8 +1017,8 @@ export async function sendStaffInviteEmail(opts: {
 
   const heading = isFr ? 'Bienvenue dans l\'équipe' : 'Welcome to the team';
   const intro = isFr
-    ? `<strong style="color:#fff">${establishmentName}</strong> vous invite à rejoindre Digitip pour recevoir vos pourboires directement sur votre compte bancaire.`
-    : `<strong style="color:#fff">${establishmentName}</strong> is inviting you to join Digitip and receive tips straight into your bank account.`;
+    ? `<strong style="color:#f2f2f5">${establishmentName}</strong> vous invite à rejoindre Digitip pour recevoir vos pourboires directement sur votre compte bancaire.`
+    : `<strong style="color:#f2f2f5">${establishmentName}</strong> is inviting you to join Digitip and receive tips straight into your bank account.`;
   const ctaLabel = isFr ? 'Créer mon compte' : 'Create my account';
   const helper = isFr
     ? `Ce lien vous emmène directement à l'onboarding avec votre email pré-rempli (${to}). Pas besoin de mot de passe — vous choisirez le vôtre à la fin.`
@@ -1033,21 +1033,21 @@ export async function sendStaffInviteEmail(opts: {
     to,
     subject,
     html: darkLayout(`
-    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #1e1e1e">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.04em;color:#fff">Digitip</div>
-      <div style="font-size:13px;color:#666;margin-top:2px">${isFr ? 'Invitation équipe' : 'Team invite'}</div>
+    <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #232329">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#f2f2f5">Digitip</div>
+      <div style="font-size:13px;color:#9898a8;margin-top:2px">${isFr ? 'Invitation équipe' : 'Team invite'}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 12px">
-      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">${heading}</div>
-      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0 0 8px">${greeting}</p>
-      <p style="font-size:14px;color:#aaa;line-height:1.6;margin:0">${intro}</p>
+      <div style="font-size:24px;font-weight:800;color:#f2f2f5;margin-bottom:10px">${heading}</div>
+      <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0 0 8px">${greeting}</p>
+      <p style="font-size:14px;color:#9898a8;line-height:1.6;margin:0">${intro}</p>
     </td></tr>
     <tr><td style="padding:8px 32px 8px">
-      <p><a href="${inviteUrl}" style="display:inline-block;padding:12px 22px;background:#22c55e;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">${ctaLabel} →</a></p>
+      <p><a href="${inviteUrl}" style="display:inline-block;padding:12px 22px;background:#E57A97;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">${ctaLabel} →</a></p>
     </td></tr>
     <tr><td style="padding:8px 32px 32px">
-      <p style="font-size:12px;color:#666;margin:0 0 16px;line-height:1.6">${helper}</p>
-      <p style="font-size:11px;color:#444;margin:0;line-height:1.6">${footer}</p>
+      <p style="font-size:12px;color:#5a5a6a;margin:0 0 16px;line-height:1.6">${helper}</p>
+      <p style="font-size:11px;color:#5a5a6a;margin:0;line-height:1.6">${footer}</p>
     </td></tr>`),
   });
   return { ok: !result.error };
