@@ -162,7 +162,7 @@ export async function resolveReferralCode(
 
 export type ReferralStats = {
   pendingAdmin: number;       // candidatures referées encore en pending
-  pendingSales: number;       // ambas créés mais < 2 ventes
+  pendingSales: number;       // ambas créés mais < 3 ventes
   validated: number;          // referral_validated_at != null
   totalEarnedCents: number;   // somme des referral_payouts pour ce parrain
   toMilestone5: number;       // filleuls validés restants pour atteindre 5
