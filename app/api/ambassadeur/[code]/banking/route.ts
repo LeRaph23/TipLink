@@ -20,20 +20,11 @@ async function authenticateAmbassador(req: NextRequest, code: string) {
   return ambassadorId;
 }
 
+// SIRET format check: 14 digits only. No Luhn — see recruitment route for
+// why (La Poste and a few other valid SIRETs fail standard Luhn).
 function validateSiret(raw: string): string | null {
   const clean = raw.replace(/\s+/g, '');
-  if (!/^\d{14}$/.test(clean)) return null;
-  // Luhn check on SIRET
-  let sum = 0;
-  for (let i = 0; i < 14; i++) {
-    let d = parseInt(clean[i], 10);
-    if (i % 2 === 0) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-  }
-  return sum % 10 === 0 ? clean : null;
+  return /^\d{14}$/.test(clean) ? clean : null;
 }
 
 // POST — create Stripe Custom account + attach IBAN for this ambassador
