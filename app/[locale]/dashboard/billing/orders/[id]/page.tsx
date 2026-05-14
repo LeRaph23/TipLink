@@ -4,6 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
 import { Link } from '@/i18n/navigation';
+import { CancelOrderButton } from './CancelOrderButton';
+import { getOrderPaymentSummary } from '@/actions/billing/orders';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type Status =
   | 'pending_payment'
@@ -63,13 +68,30 @@ export default async function OrderDetailPage({
   // Fetch the order
   const { data: order } = await service
     .from('smarttag_orders')
-    .select('id, group_id, pack, quantity, status, tracking_number, created_at, shipped_at, delivered_at, fulfilled_at, stripe_invoice_id, stripe_checkout_session_id, shipping_address')
+    .select('id, group_id, pack, quantity, status, tracking_number, created_at, shipped_at, delivered_at, fulfilled_at, stripe_invoice_id, stripe_checkout_session_id, stripe_payment_intent_id, shipping_address, promo_code, discount_amount')
     .eq('id', id)
     .single();
 
   if (!order) notFound();
   // Security: only the order's group or super_admin can view
   if (!isSuperAdmin && !groupIds.includes(order.group_id)) notFound();
+
+  // Reserved SmartTags (with short_id + per-tag encoded state).
+  const { data: linkedTags } = await service
+    .from('smarttag_order_tags')
+    .select('sticker_id, encoded_at, nfc_stickers(short_id, establishment_id, establishments(name))')
+    .eq('order_id', id)
+    .order('encoded_at', { ascending: false });
+  type LinkRow = {
+    sticker_id: string;
+    encoded_at: string | null;
+    nfc_stickers: { short_id: string; establishment_id: string | null; establishments: { name: string } | null } | null;
+  };
+  const tags = (linkedTags ?? []) as unknown as LinkRow[];
+
+  // Stripe payment summary (amount, method, hosted receipt url)
+  const paySummary = await getOrderPaymentSummary(id);
+  const payment = paySummary.ok ? paySummary.data : null;
 
   // Fetch invoice PDF from Stripe if available
   let invoicePdfUrl: string | null = null;
@@ -81,6 +103,13 @@ export default async function OrderDetailPage({
       invoiceNumber = inv.number ?? null;
     } catch { /* graceful fallback */ }
   }
+
+  const cancellable = ['pending_payment', 'pending_fulfillment', 'encoding', 'ready_to_ship']
+    .includes(order.status);
+  const fmtMoney = (cents: number, currency: string) =>
+    new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-IE', {
+      style: 'currency', currency, minimumFractionDigits: 2,
+    }).format(cents / 100);
 
   const fmtDate = (iso: string | null) =>
     iso
@@ -209,6 +238,93 @@ export default async function OrderDetailPage({
           </div>
         )}
       </div>
+
+      {/* Payment summary */}
+      {payment && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius)', padding: 20, marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 14 }}>
+            {locale === 'fr' ? 'Paiement' : 'Payment'}
+          </div>
+          {[
+            { label: locale === 'fr' ? 'Montant' : 'Amount', value: fmtMoney(payment.amount, payment.currency) },
+            ...(payment.paymentMethod ? [{ label: locale === 'fr' ? 'Méthode' : 'Method', value: payment.paymentMethod }] : []),
+            ...((order.discount_amount ?? 0) > 0 ? [{ label: locale === 'fr' ? 'Code promo' : 'Promo code', value: `${order.promo_code} (−${fmtMoney(order.discount_amount ?? 0, payment.currency)})` }] : []),
+            ...(order.stripe_payment_intent_id ? [{ label: 'Payment intent', value: order.stripe_payment_intent_id, mono: true }] : []),
+          ].map(({ label, value, mono }) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
+              <span style={{ color: 'var(--text-3)' }}>{label}</span>
+              <span style={{ color: 'var(--text)', fontWeight: 500, textAlign: 'right', maxWidth: '60%', wordBreak: 'break-all', fontFamily: mono ? 'monospace' : undefined, fontSize: mono ? 12 : 13 }}>{value}</span>
+            </div>
+          ))}
+          {payment.receiptUrl && (
+            <div style={{ marginTop: 12 }}>
+              <a
+                href={payment.receiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 12.5, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}
+              >
+                {locale === 'fr' ? 'Voir le reçu Stripe →' : 'View Stripe receipt →'}
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reserved SmartTags */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius)', padding: 20, marginBottom: 16,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            {locale === 'fr' ? `SmartTags réservés (${tags.length}/${order.quantity})` : `Reserved SmartTags (${tags.length}/${order.quantity})`}
+          </div>
+        </div>
+        {tags.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
+            {locale === 'fr'
+              ? 'Vos SmartTags seront sélectionnés sous peu dans notre stock.'
+              : 'Your SmartTags will be picked from stock shortly.'}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {tags.map((tag) => {
+              const encoded = !!tag.encoded_at;
+              return (
+                <div key={tag.sticker_id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+                  fontSize: 13,
+                }}>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text)' }}>
+                    {tag.nfc_stickers?.short_id ?? tag.sticker_id.slice(0, 8)}
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600,
+                    color: encoded ? '#22c55e' : 'var(--text-3)',
+                  }}>
+                    {encoded
+                      ? (locale === 'fr' ? '● Programmé' : '● Programmed')
+                      : (locale === 'fr' ? '○ En attente' : '○ Pending')}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Cancel — only when status still allows it AND the caller can actually act */}
+      {cancellable && (
+        <div style={{ marginBottom: 16 }}>
+          <CancelOrderButton orderId={order.id} locale={locale} />
+        </div>
+      )}
 
       {/* Invoice */}
       {order.stripe_invoice_id && (
