@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
-import { PACKS, type PackId } from '@/lib/env';
+import { type PackId } from '@/lib/env';
+import { getPackPricing } from '@/lib/stripe/pricing';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase/service';
 
@@ -62,8 +63,10 @@ export async function POST(request: NextRequest) {
 
   const pack = body.pack;
   const locale = body.locale === 'fr' ? 'fr' : 'en';
-  const packDef = PACKS[pack];
-  const baseAmount = packDef.hardwareAmount;
+
+  // Stripe is the source of truth for the actual charged amount.
+  const pricing = await getPackPricing(pack);
+  const baseAmount = pricing.unitAmount;
 
   const supabase = createServiceClient();
 
@@ -82,13 +85,13 @@ export async function POST(request: NextRequest) {
   try {
     const intent = await stripe.paymentIntents.create({
       amount,
-      currency: 'eur',
+      currency: pricing.currency,
       automatic_payment_methods: { enabled: true },
-      description: `Digitip — Pack ${pack.charAt(0).toUpperCase() + pack.slice(1)}`,
+      description: pricing.productName,
       metadata: {
         source: 'pack-express',
         pack,
-        quantity: String(packDef.quantity),
+        quantity: String(pricing.quantity),
         locale,
         base_amount: String(baseAmount),
         discount_amount: String(discountAmount),

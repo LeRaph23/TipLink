@@ -3,16 +3,24 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { PackCheckout } from '@/components/checkout/PackCheckout';
+import { getPackPricing } from '@/lib/stripe/pricing';
+import type { PackId } from '@/lib/env';
 
-const PACK_INFO = {
-  solo: { qty: 1, price: '69,00 €', full: '89,00 €', save: '−22%', img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo', label: 'Pack Solo' },
-  duo:  { qty: 2, price: '99,00 €', full: '138,00 €', save: '−28%', img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip', label: 'Pack Duo' },
+const PACK_VISUAL = {
+  solo: { img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
+  duo:  { img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
 } as const;
 
-type Pack = keyof typeof PACK_INFO;
-
-function isValidPack(s: string | undefined): s is Pack {
+function isValidPack(s: string | undefined): s is PackId {
   return s === 'solo' || s === 'duo';
+}
+
+function formatPrice(cents: number, currency: string, locale: string): string {
+  return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 2,
+  }).format(cents / 100);
 }
 
 export default async function CheckoutPage({
@@ -30,7 +38,13 @@ export default async function CheckoutPage({
     notFound();
   }
 
-  const info = PACK_INFO[pack];
+  // Pricing comes from Stripe (single source of truth). Visual assets stay local.
+  const pricing = await getPackPricing(pack);
+  const visual = PACK_VISUAL[pack];
+  const formattedPrice = formatPrice(pricing.unitAmount, pricing.currency, locale);
+  const formattedList = pricing.listAmount != null
+    ? formatPrice(pricing.listAmount, pricing.currency, locale)
+    : null;
 
   return (
     <div style={{
@@ -107,29 +121,33 @@ export default async function CheckoutPage({
                 width: 80, height: 80, borderRadius: 12, overflow: 'hidden',
                 position: 'relative', background: '#ede9fe', flexShrink: 0,
               }}>
-                <Image src={info.img} alt={info.alt} fill sizes="80px" style={{ objectFit: 'cover' }} />
+                <Image src={visual.img} alt={visual.alt} fill sizes="80px" style={{ objectFit: 'cover' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0f1020' }}>
-                  {info.label}
+                  {pricing.productName}
                 </div>
                 <div style={{ fontSize: 12.5, color: '#6b6d85', marginTop: 2 }}>
-                  {info.qty} plaque{info.qty > 1 ? 's' : ''} époxy NFC
+                  {pricing.quantity} plaque{pricing.quantity > 1 ? 's' : ''} époxy NFC
                 </div>
-                <div style={{
-                  display: 'inline-block', marginTop: 6,
-                  fontSize: 11, fontWeight: 700, color: '#16a34a',
-                }}>
-                  {info.save} vs prix unitaire
-                </div>
+                {pricing.savingsPercent != null && (
+                  <div style={{
+                    display: 'inline-block', marginTop: 6,
+                    fontSize: 11, fontWeight: 700, color: '#16a34a',
+                  }}>
+                    −{pricing.savingsPercent}% vs prix unitaire
+                  </div>
+                )}
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>
-                  {info.price}
+                  {formattedPrice}
                 </div>
-                <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>
-                  {info.full}
-                </div>
+                {formattedList && (
+                  <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>
+                    {formattedList}
+                  </div>
+                )}
               </div>
             </div>
 
