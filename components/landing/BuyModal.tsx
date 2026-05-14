@@ -4,26 +4,27 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
+import type { PackPricing } from '@/lib/stripe/pricing';
+import { formatPriceCents } from '@/lib/format-price';
 
 type Pack = 'solo' | 'duo';
 
 type Props = {
   pack: Pack;
   onClose: () => void;
+  pricing: Record<Pack, PackPricing> | null;
 };
 
-const PACK_INFO: Record<Pack, { qty: number; price: string; full: string; save: string; img: string; alt: string }> = {
-  solo: { qty: 1, price: '69,00 €', full: '89,00 €', save: '−22%', img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
-  duo:  { qty: 2, price: '99,00 €', full: '138,00 €', save: '−28%', img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
+const VISUALS: Record<Pack, { img: string; alt: string }> = {
+  solo: { img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
+  duo:  { img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
 };
 
-export function BuyModal({ pack: initialPack, onClose }: Props) {
+export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
   const tc = useTranslations('common');
   const router = useRouter();
   const [selectedPack, setSelectedPack] = useState<Pack>(initialPack);
   const [loading, setLoading] = useState(false);
-
-  const info = PACK_INFO[selectedPack];
 
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
@@ -37,6 +38,12 @@ export function BuyModal({ pack: initialPack, onClose }: Props) {
     setLoading(true);
     router.push(`/checkout?pack=${selectedPack}`);
   }
+
+  const sel = pricing?.[selectedPack];
+  const visual = VISUALS[selectedPack];
+  const priceLabel = sel ? formatPriceCents(sel.unitAmount, sel.currency) : '…';
+  const listLabel = sel?.listAmount != null ? formatPriceCents(sel.listAmount, sel.currency) : null;
+  const savingsLabel = sel?.savingsPercent != null ? `−${sel.savingsPercent}%` : null;
 
   return (
     <div
@@ -67,8 +74,10 @@ export function BuyModal({ pack: initialPack, onClose }: Props) {
           {/* Pack selector */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
             {(['solo', 'duo'] as const).map((p) => {
-              const pi = PACK_INFO[p];
+              const pp = pricing?.[p];
               const active = selectedPack === p;
+              const ppPrice = pp ? formatPriceCents(pp.unitAmount, pp.currency) : '…';
+              const ppQty = pp?.quantity ?? (p === 'solo' ? 1 : 2);
               return (
                 <button
                   key={p}
@@ -91,7 +100,7 @@ export function BuyModal({ pack: initialPack, onClose }: Props) {
                     {p === 'solo' ? 'Solo' : 'Duo'}
                   </div>
                   <div style={{ fontSize: 11.5, color: '#6b6d85' }}>
-                    {pi.qty} plaque{pi.qty > 1 ? 's' : ''} · {pi.price}
+                    {ppQty} plaque{ppQty > 1 ? 's' : ''} · {ppPrice}
                   </div>
                 </button>
               );
@@ -110,8 +119,8 @@ export function BuyModal({ pack: initialPack, onClose }: Props) {
               position: 'relative', background: '#ede9fe',
             }}>
               <Image
-                src={info.img}
-                alt={info.alt}
+                src={visual.img}
+                alt={visual.alt}
                 fill
                 sizes="72px"
                 style={{ objectFit: 'cover' }}
@@ -124,9 +133,13 @@ export function BuyModal({ pack: initialPack, onClose }: Props) {
               </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{info.price}</div>
-              <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>{info.full}</div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#16a34a', marginTop: 2 }}>{info.save}</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{priceLabel}</div>
+              {listLabel && (
+                <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>{listLabel}</div>
+              )}
+              {savingsLabel && (
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#16a34a', marginTop: 2 }}>{savingsLabel}</div>
+              )}
             </div>
           </div>
 

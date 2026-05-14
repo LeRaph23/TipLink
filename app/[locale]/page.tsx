@@ -7,6 +7,12 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
 import { BuyModal } from '@/components/landing/BuyModal';
+import { fetchPackPricingAction } from '@/actions/pricing';
+import type { PackPricing } from '@/lib/stripe/pricing';
+import { formatPriceCents } from '@/lib/format-price';
+
+type PackId = 'solo' | 'duo';
+type PricingMap = Record<PackId, PackPricing>;
 
 // ─── Light theme ──────────────────────────────────────────────────────────────
 const LIGHT: React.CSSProperties = {
@@ -407,7 +413,7 @@ function ClaimSection() {
 }
 
 // ─── Product section (Digifeel-style full e-commerce) ─────────────────────────
-function ProductSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') => void }) {
+function ProductSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo' | 'duo') => void; pricing: PricingMap | null }) {
   const t = useTranslations('landing');
   return (
     <section id="produit" style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
@@ -426,7 +432,7 @@ function ProductSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') =>
           </div>
         </Reveal>
         <Reveal delay={60}>
-          <ProductCard onAddToCart={onOrderClick} locale="fr" />
+          <ProductCard onAddToCart={onOrderClick} locale="fr" pricing={pricing} />
         </Reveal>
       </div>
     </section>
@@ -520,11 +526,23 @@ function GuaranteeSection() {
 }
 
 // ─── Product grid ─────────────────────────────────────────────────────────────
-function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo') => void }) {
+function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo' | 'duo') => void; pricing: PricingMap | null }) {
   const t = useTranslations('landing');
+  const locale = useLocale();
+  function priceFor(id: PackId): { price: string; full: string | null; save: string | null } {
+    const p = pricing?.[id];
+    if (!p) return { price: '…', full: null, save: null };
+    return {
+      price: formatPriceCents(p.unitAmount, p.currency, locale),
+      full: p.listAmount != null ? formatPriceCents(p.listAmount, p.currency, locale) : null,
+      save: p.savingsPercent != null ? `${p.savingsPercent}%` : null,
+    };
+  }
+  const soloPrice = priceFor('solo');
+  const duoPrice = priceFor('duo');
   const packs = [
-    { key: 'solo' as const, name: t('grid.packS'), tags: t('grid.packSTag'), price: t('grid.packSPrice'), full: t('grid.packSFull'), save: '22%' },
-    { key: 'duo'  as const, name: t('grid.packM'), tags: t('grid.packMTag'), price: t('grid.packMPrice'), full: t('grid.packMFull'), save: '28%', popular: true },
+    { key: 'solo' as const, name: t('grid.packS'), tags: t('grid.packSTag'), price: soloPrice.price, full: soloPrice.full, save: soloPrice.save },
+    { key: 'duo'  as const, name: t('grid.packM'), tags: t('grid.packMTag'), price: duoPrice.price, full: duoPrice.full,  save: duoPrice.save,  popular: true },
   ];
   return (
     <section id="packs" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
@@ -552,9 +570,11 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
                     sizes="(max-width: 600px) 100vw, 320px"
                     style={{ objectFit: 'cover' }}
                   />
-                  <div style={{ position: 'absolute', top: 10, left: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 800, color: '#d97706' }}>
-                    ÉCONOMISEZ {p.save}
-                  </div>
+                  {p.save && (
+                    <div style={{ position: 'absolute', top: 10, left: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 800, color: '#d97706' }}>
+                      ÉCONOMISEZ {p.save}
+                    </div>
+                  )}
                 </div>
                 {/* Info */}
                 <div style={{ padding: '20px 22px 24px' }}>
@@ -562,7 +582,9 @@ function ProductGridSection({ onOrderClick }: { onOrderClick: (p: 'solo' | 'duo'
                   <p style={{ fontSize: 13, color: '#74748a', marginBottom: 14 }}>{p.tags}</p>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 16 }}>
                     <span style={{ fontSize: 24, fontWeight: 900, color: '#111118', letterSpacing: '-0.03em' }}>{p.price}</span>
-                    <span style={{ fontSize: 14, color: '#c4c4d4', textDecoration: 'line-through', fontWeight: 500 }}>{p.full}</span>
+                    {p.full && (
+                      <span style={{ fontSize: 14, color: '#c4c4d4', textDecoration: 'line-through', fontWeight: 500 }}>{p.full}</span>
+                    )}
                   </div>
                   <button onClick={() => onOrderClick(p.key)} style={{ width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer', background: p.popular ? '#E57A97' : '#111118', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', transition: 'all 140ms' }}>
                     {t('grid.choose')} →
@@ -846,7 +868,17 @@ export default function LandingPage() {
   const t = useTranslations('landing');
   const locale = useLocale();
   const [cartPack, setCartPack] = useState<'solo' | 'duo' | null>(null);
+  const [pricing, setPricing] = useState<PricingMap | null>(null);
   const openCart = (pack: 'solo' | 'duo' = 'duo') => setCartPack(pack);
+
+  // Pull pricing directly from Stripe (single source of truth).
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPackPricingAction()
+      .then((data) => { if (!cancelled) setPricing(data); })
+      .catch(() => { /* keep null → display falls back to "…" */ });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div style={{ ...LIGHT, minHeight: '100vh', fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)' }}>
@@ -856,18 +888,18 @@ export default function LandingPage() {
       <StatsStrip />
       <Marquee />
       <ClaimSection />
-      <ProductSection onOrderClick={openCart} />
+      <ProductSection onOrderClick={openCart} pricing={pricing} />
       <HowItWorksSection />
       <ShippingSection />
       <GuaranteeSection />
-      <ProductGridSection onOrderClick={openCart} />
+      <ProductGridSection onOrderClick={openCart} pricing={pricing} />
       <ReviewsSection />
       <FinalCTASection onOrderClick={() => openCart()} />
       <FAQSection />
       <DoubleGuaranteeSection />
       <FooterSection />
 
-      {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} />}
+      {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} pricing={pricing} />}
     </div>
   );
 }

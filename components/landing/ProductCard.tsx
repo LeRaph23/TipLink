@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
+import type { PackPricing } from '@/lib/stripe/pricing';
+import { formatPriceCents } from '@/lib/format-price';
 
 function StarIcon({ size = 15 }: { size?: number }) {
   return (
@@ -84,11 +86,7 @@ type Pack = 'solo' | 'duo';
 type Props = {
   onAddToCart: (pack: Pack) => void;
   locale: string;
-};
-
-const PACK_PRICES: Record<Pack, { offer: string; full: string; save: string }> = {
-  solo: { offer: '69,00 €', full: '89,00 €', save: 'ÉCONOMISEZ 22%' },
-  duo:  { offer: '99,00 €', full: '138,00 €', save: 'ÉCONOMISEZ 28%' },
+  pricing: Record<Pack, PackPricing> | null;
 };
 
 const PACK_GALLERIES: Record<Pack, { src: string; alt: string }[]> = {
@@ -104,13 +102,20 @@ const PACK_GALLERIES: Record<Pack, { src: string; alt: string }[]> = {
   ],
 };
 
-export function ProductCard({ onAddToCart, locale: _locale }: Props) {
+export function ProductCard({ onAddToCart, locale, pricing }: Props) {
   const t = useTranslations('landing');
   const [activeImg, setActiveImg] = useState(0);
   const [selectedPack, setSelectedPack] = useState<Pack>('duo');
 
   const gallery = PACK_GALLERIES[selectedPack];
-  const priceInfo = PACK_PRICES[selectedPack];
+  const selPricing = pricing?.[selectedPack];
+  const offer = selPricing ? formatPriceCents(selPricing.unitAmount, selPricing.currency, locale) : '…';
+  const fullStrike = selPricing?.listAmount != null
+    ? formatPriceCents(selPricing.listAmount, selPricing.currency, locale)
+    : null;
+  const savings = selPricing?.savingsPercent != null
+    ? `ÉCONOMISEZ ${selPricing.savingsPercent}%`
+    : null;
 
   const packs: Array<{ key: Pack; label: string; sub: string }> = [
     { key: 'solo', label: t('product.packS'), sub: t('product.packSLabel') },
@@ -234,12 +239,16 @@ export function ProductCard({ onAddToCart, locale: _locale }: Props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
-          <span style={{ fontSize: 32, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{priceInfo.offer}</span>
-          <span style={{ fontSize: 18, color: '#6b6d85', textDecoration: 'line-through' }}>{priceInfo.full}</span>
-          <span style={{
-            background: '#fef3c7', color: '#d97706', fontSize: 11, fontWeight: 800,
-            padding: '3px 10px', borderRadius: 6, letterSpacing: '0.04em',
-          }}>{priceInfo.save}</span>
+          <span style={{ fontSize: 32, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{offer}</span>
+          {fullStrike && (
+            <span style={{ fontSize: 18, color: '#6b6d85', textDecoration: 'line-through' }}>{fullStrike}</span>
+          )}
+          {savings && (
+            <span style={{
+              background: '#fef3c7', color: '#d97706', fontSize: 11, fontWeight: 800,
+              padding: '3px 10px', borderRadius: 6, letterSpacing: '0.04em',
+            }}>{savings}</span>
+          )}
         </div>
         <div style={{ fontSize: 12, color: '#6b6d85', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 5 }}>
           <BoltIcon size={12} color="#f59e0b" /> {t('product.get3s')}
