@@ -34,8 +34,10 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.try_advisory_lock_payout(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.release_advisory_lock_payout(uuid) FROM PUBLIC;
+-- Lock to the service role only — these are invoked server-side, never via
+-- /rest/v1/rpc/*. (anon/authenticated must not be able to call them directly.)
+REVOKE ALL ON FUNCTION public.try_advisory_lock_payout(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.release_advisory_lock_payout(uuid) FROM PUBLIC, anon, authenticated;
 
 -- ─── 2. Atomic NFC sticker claim during onboarding ────────────────────────────
 -- Replaces the SELECT … then UPDATE pattern with a single locked operation,
@@ -69,12 +71,17 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_nfc_stickers(text[], uuid) FROM PUBLIC;
+-- Server-side only — an anonymous caller must never be able to claim stickers.
+REVOKE ALL ON FUNCTION public.claim_nfc_stickers(text[], uuid) FROM PUBLIC, anon, authenticated;
 
 -- ─── 3. Atomic promo code redemption ──────────────────────────────────────────
 -- Replace the unconditional increment so that an attempt past max_redemptions
--- returns 0 rows updated; callers can detect the overflow and refuse.
-CREATE OR REPLACE FUNCTION public.increment_promo_redeemed(promo_id uuid)
+-- returns NULL (0 rows updated); callers can detect the overflow and refuse.
+-- The return type changes from void → integer, so the old function must be
+-- dropped first (Postgres forbids CREATE OR REPLACE across return types).
+DROP FUNCTION IF EXISTS public.increment_promo_redeemed(uuid);
+
+CREATE FUNCTION public.increment_promo_redeemed(promo_id uuid)
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -92,6 +99,9 @@ BEGIN
   RETURN new_count; -- NULL if the code was full / inactive / unknown
 END;
 $$;
+
+-- Server-side only (called by the Stripe webhook with the service role).
+REVOKE ALL ON FUNCTION public.increment_promo_redeemed(uuid) FROM PUBLIC, anon, authenticated;
 
 -- ─── 4. Dedup salon visits per ambassador per salon per day ───────────────────
 -- A retry / double-click no longer creates a phantom visit; ambassador deliberately
@@ -145,5 +155,6 @@ CREATE TABLE IF NOT EXISTS public.cold_email_unsubscribe_log (
 
 ALTER TABLE public.cold_email_unsubscribe_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "ceul_super_admin_select" ON public.cold_email_unsubscribe_log;
 CREATE POLICY "ceul_super_admin_select" ON public.cold_email_unsubscribe_log
   FOR SELECT TO authenticated USING (public.is_super_admin());
