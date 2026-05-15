@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
+import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -97,23 +98,48 @@ async function handleEvent(
       // Defensive: only flip to succeeded if Stripe confirms the PI is fully paid.
       if (intent.status !== 'succeeded') break;
 
+      const chargeId = typeof intent.latest_charge === 'string'
+        ? intent.latest_charge
+        : (intent.latest_charge as Stripe.Charge | null)?.id ?? null;
+
+      // For solo tips, the destination charge has a single transfer we need
+      // to know about in order to reverse it on refund/dispute. Retrieve it
+      // from the charge so we can store the transfer ID for later.
+      let soloTransferId: string | null = null;
+      if (chargeId && intent.metadata?.group_tip !== 'true') {
+        try {
+          const ch = await stripe.charges.retrieve(chargeId);
+          soloTransferId = typeof ch.transfer === 'string'
+            ? ch.transfer
+            : (ch.transfer as Stripe.Transfer | null)?.id ?? null;
+        } catch (err) {
+          console.error('failed to retrieve charge for transfer_id', { chargeId, err });
+        }
+      }
+
+      const applicationFeeAmount = intent.metadata?.application_fee_amount
+        ? parseInt(intent.metadata.application_fee_amount, 10)
+        : null;
+
       await supabase
         .from('transactions')
         .update({
           status: 'succeeded',
           stripe_payment_intent_id: intent.id,
-        })
+          succeeded_at: new Date().toISOString(),
+          stripe_charge_id: chargeId,
+          stripe_transfer_id: soloTransferId,
+          application_fee_amount: applicationFeeAmount,
+        } as never)
         .eq('id', transactionId)
         .eq('status', 'pending');
 
-      // For group tips: create Stripe transfers to each payable staff member equally
+      // For group tips: create Stripe transfers to each payable staff member
+      // equally, and persist each transfer ID so we can reverse them on refund.
       if (intent.metadata?.group_tip === 'true') {
         const netForStaff = parseInt(intent.metadata.net_for_staff ?? '0', 10);
         const transferGroup = intent.metadata.transfer_group;
         const establishmentId = intent.metadata.establishment_id;
-        const chargeId = typeof intent.latest_charge === 'string'
-          ? intent.latest_charge
-          : (intent.latest_charge as Stripe.Charge | null)?.id;
 
         if (netForStaff > 0 && transferGroup && establishmentId && chargeId) {
           const { data: staffMembers } = await supabase
@@ -127,17 +153,27 @@ async function handleEvent(
 
           if (staffMembers && staffMembers.length > 0) {
             const shareAmount = Math.floor(netForStaff / staffMembers.length);
-            await Promise.allSettled(
-              staffMembers.map((s) =>
-                stripe.transfers.create({
+            for (const s of staffMembers) {
+              try {
+                const transfer = await stripe.transfers.create({
                   amount: shareAmount,
                   currency: intent.currency,
                   destination: s.stripe_account_id!,
                   transfer_group: transferGroup,
                   source_transaction: chargeId,
-                })
-              )
-            );
+                });
+                await supabase
+                  .from('group_tip_transfers')
+                  .insert({
+                    transaction_id: transactionId,
+                    staff_id: s.id,
+                    stripe_transfer_id: transfer.id,
+                    amount: shareAmount,
+                  } as never);
+              } catch (err) {
+                console.error('group transfer create failed', { staffId: s.id, err });
+              }
+            }
           }
         }
       }
@@ -211,31 +247,263 @@ async function handleEvent(
 
       if (!paymentIntentId) break;
 
-      await supabase
+      const { data: txn } = await supabase
         .from('transactions')
-        .update({ status: 'refunded' })
+        .select('id, amount, currency, staff_profiles(full_name, establishments(name))')
         .eq('stripe_payment_intent_id', paymentIntentId)
-        .eq('status', 'succeeded');
+        .maybeSingle();
 
-      const customerEmail = charge.receipt_email ?? charge.billing_details.email;
-      if (customerEmail) {
-        const { data: txn } = await supabase
+      if (txn) {
+        const fullyRefunded = charge.amount_refunded >= charge.amount;
+        const newStatus = fullyRefunded ? 'refunded' : 'partially_refunded';
+
+        await supabase
           .from('transactions')
-          .select('amount, currency, staff_profiles(full_name, establishments(name))')
-          .eq('stripe_payment_intent_id', paymentIntentId)
-          .single();
+          .update({
+            status: newStatus,
+            refunded_amount: charge.amount_refunded,
+          } as never)
+          .eq('id', txn.id);
 
-        if (txn) {
-          const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
-          await sendTipRefunded({
-            to: customerEmail,
-            amount: charge.amount_refunded,
-            currency: charge.currency,
-            staffName: staff?.full_name ?? undefined,
-            establishmentName: staff?.establishments?.name ?? undefined,
-          }).catch(() => {});
+        // Reverse the transfer(s) to the connected account(s) so the platform
+        // doesn't end up bearing the refund alone. Idempotent — Stripe may
+        // have already reversed if the refund was created with reverse_transfer:true.
+        try {
+          await reverseTransactionTransfers(txn.id, supabase);
+        } catch (err) {
+          console.error('refund: transfer reversal failed', { transactionId: txn.id, err });
         }
       }
+
+      const customerEmail = charge.receipt_email ?? charge.billing_details.email;
+      if (customerEmail && txn) {
+        const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
+        await sendTipRefunded({
+          to: customerEmail,
+          amount: charge.amount_refunded,
+          currency: charge.currency,
+          staffName: staff?.full_name ?? undefined,
+          establishmentName: staff?.establishments?.name ?? undefined,
+        }).catch(() => {});
+      }
+
+      break;
+    }
+
+    case 'charge.dispute.created': {
+      const dispute = event.data.object as Stripe.Dispute;
+      const paymentIntentId =
+        typeof dispute.payment_intent === 'string'
+          ? dispute.payment_intent
+          : dispute.payment_intent?.id ?? null;
+      if (!paymentIntentId) break;
+
+      const { data: txn } = await supabase
+        .from('transactions')
+        .select('id, staff_id, amount')
+        .eq('stripe_payment_intent_id', paymentIntentId)
+        .maybeSingle();
+      if (!txn) break;
+
+      await supabase
+        .from('transactions')
+        .update({ status: 'disputed', dispute_id: dispute.id } as never)
+        .eq('id', txn.id);
+
+      // Freeze payouts for this staff member until the dispute is resolved.
+      if (txn.staff_id) {
+        await supabase
+          .from('staff_profiles')
+          .update({ payouts_frozen: true } as never)
+          .eq('id', txn.staff_id);
+      }
+
+      break;
+    }
+
+    case 'charge.dispute.closed': {
+      const dispute = event.data.object as Stripe.Dispute;
+      const paymentIntentId =
+        typeof dispute.payment_intent === 'string'
+          ? dispute.payment_intent
+          : dispute.payment_intent?.id ?? null;
+      if (!paymentIntentId) break;
+
+      const { data: txn } = await supabase
+        .from('transactions')
+        .select('id, staff_id')
+        .eq('stripe_payment_intent_id', paymentIntentId)
+        .maybeSingle();
+      if (!txn) break;
+
+      if (dispute.status === 'won' || dispute.status === 'warning_closed') {
+        // Funds restored — clear dispute marker and unfreeze if no other disputes.
+        await supabase
+          .from('transactions')
+          .update({ status: 'succeeded', dispute_id: null } as never)
+          .eq('id', txn.id);
+
+        if (txn.staff_id) {
+          const { data: stillDisputed } = await supabase
+            .from('transactions')
+            .select('id')
+            .eq('staff_id', txn.staff_id)
+            .eq('status', 'disputed')
+            .limit(1);
+          if (!stillDisputed || stillDisputed.length === 0) {
+            await supabase
+              .from('staff_profiles')
+              .update({ payouts_frozen: false } as never)
+              .eq('id', txn.staff_id);
+          }
+        }
+      } else if (dispute.status === 'lost') {
+        // Funds permanently withdrawn — make sure the transfer is reversed.
+        try {
+          await reverseTransactionTransfers(txn.id, supabase);
+        } catch (err) {
+          console.error('dispute lost: reversal failed', { transactionId: txn.id, err });
+        }
+        await supabase
+          .from('transactions')
+          .update({ status: 'reversed' } as never)
+          .eq('id', txn.id);
+      }
+
+      break;
+    }
+
+    case 'charge.dispute.funds_withdrawn':
+    case 'charge.dispute.funds_reinstated': {
+      // Bookkeeping only — actual status changes happen on dispute.created
+      // and dispute.closed. We just record that Stripe moved money.
+      const dispute = event.data.object as Stripe.Dispute;
+      const paymentIntentId =
+        typeof dispute.payment_intent === 'string'
+          ? dispute.payment_intent
+          : dispute.payment_intent?.id ?? null;
+      if (!paymentIntentId) break;
+
+      const { data: txn } = await supabase
+        .from('transactions')
+        .select('id, staff_id, amount')
+        .eq('stripe_payment_intent_id', paymentIntentId)
+        .maybeSingle();
+      if (!txn) break;
+
+      if (event.type === 'charge.dispute.funds_withdrawn' && txn.staff_id) {
+        await supabase.from('negative_balance_events').insert({
+          staff_id: txn.staff_id,
+          transaction_id: txn.id,
+          amount_owed: dispute.amount,
+          dispute_id: dispute.id,
+          status: 'owed',
+        } as never);
+      } else if (event.type === 'charge.dispute.funds_reinstated' && txn.staff_id) {
+        await supabase
+          .from('negative_balance_events')
+          .update({ status: 'recovered', resolved_at: new Date().toISOString() } as never)
+          .eq('dispute_id', dispute.id)
+          .eq('status', 'owed');
+      }
+
+      break;
+    }
+
+    case 'radar.early_fraud_warning.created': {
+      const efw = event.data.object as Stripe.Radar.EarlyFraudWarning;
+      const chargeId = typeof efw.charge === 'string' ? efw.charge : efw.charge?.id ?? null;
+      if (!chargeId || !efw.actionable) break;
+
+      const { data: txn } = await supabase
+        .from('transactions')
+        .select('id, status')
+        .eq('stripe_charge_id', chargeId)
+        .maybeSingle();
+      if (!txn) break;
+      if (txn.status === 'refunded' || txn.status === 'reversed') break;
+
+      // Refund now to dodge the 15 EUR dispute fee that follows shortly after EFW.
+      const res = await refundTransactionFull(txn.id, supabase, 'early_fraud_warning');
+      if (!res.ok) {
+        console.error('EFW auto-refund failed', { transactionId: txn.id, error: res.error });
+      }
+      break;
+    }
+
+    case 'transfer.reversed': {
+      const transfer = event.data.object as Stripe.Transfer;
+      const now = new Date().toISOString();
+
+      await supabase
+        .from('transactions')
+        .update({ reversed_at: now } as never)
+        .eq('stripe_transfer_id', transfer.id)
+        .is('reversed_at', null);
+
+      await supabase
+        .from('group_tip_transfers')
+        .update({ reversed_at: now } as never)
+        .eq('stripe_transfer_id', transfer.id)
+        .is('reversed_at', null);
+
+      break;
+    }
+
+    case 'payout.paid':
+    case 'payout.failed': {
+      const payout = event.data.object as Stripe.Payout;
+      // Stripe sends payout events on connected accounts; the staff_id is
+      // resolved via the account ID on the event.
+      const accountId = (event as Stripe.Event & { account?: string }).account ?? null;
+      if (!accountId) break;
+
+      const { data: staff } = await supabase
+        .from('staff_profiles')
+        .select('id')
+        .eq('stripe_account_id', accountId)
+        .maybeSingle();
+      if (!staff) break;
+
+      if (event.type === 'payout.paid') {
+        await supabase.from('staff_payouts').upsert({
+          staff_id: staff.id,
+          stripe_payout_id: payout.id,
+          amount: payout.amount,
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+        } as never, { onConflict: 'stripe_payout_id' });
+      } else {
+        await supabase.from('staff_payouts').upsert({
+          staff_id: staff.id,
+          stripe_payout_id: payout.id,
+          amount: payout.amount,
+          status: 'failed',
+          failure_code: payout.failure_code,
+          failure_message: payout.failure_message,
+          failed_at: new Date().toISOString(),
+        } as never, { onConflict: 'stripe_payout_id' });
+
+        await supabase
+          .from('staff_profiles')
+          .update({
+            last_payout_failure_code: payout.failure_code,
+            last_payout_failure_at: new Date().toISOString(),
+          } as never)
+          .eq('id', staff.id);
+      }
+
+      break;
+    }
+
+    case 'account.application.deauthorized': {
+      const accountId = (event as Stripe.Event & { account?: string }).account ?? null;
+      if (!accountId) break;
+
+      await supabase
+        .from('staff_profiles')
+        .update({ payouts_frozen: true, onboarding_status: 'deauthorized' } as never)
+        .eq('stripe_account_id', accountId);
 
       break;
     }

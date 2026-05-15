@@ -137,6 +137,9 @@ export async function POST(request: NextRequest) {
       // No on_behalf_of: payment lands on platform account, transfers created by webhook
       transfer_group: transferGroup,
       ...(validatedEmail ? { receipt_email: validatedEmail } : {}),
+      payment_method_options: {
+        card: { request_three_d_secure: 'automatic' },
+      },
       metadata: {
         transaction_id: transactionId,
         group_tip: 'true',

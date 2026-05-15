@@ -273,10 +273,13 @@ export type Database = {
           full_name: string;
           avatar_url: string | null;
           stripe_account_id: string | null;
-          onboarding_status: 'not_started' | 'pending' | 'complete';
+          onboarding_status: 'not_started' | 'pending' | 'complete' | 'deauthorized';
           is_active: boolean;
           created_at: string;
           deleted_at: string | null;
+          payouts_frozen: boolean;
+          last_payout_failure_code: string | null;
+          last_payout_failure_at: string | null;
         };
         Insert: {
           id?: string;
@@ -285,10 +288,13 @@ export type Database = {
           full_name: string;
           avatar_url?: string | null;
           stripe_account_id?: string | null;
-          onboarding_status?: 'not_started' | 'pending' | 'complete';
+          onboarding_status?: 'not_started' | 'pending' | 'complete' | 'deauthorized';
           is_active?: boolean;
           created_at?: string;
           deleted_at?: string | null;
+          payouts_frozen?: boolean;
+          last_payout_failure_code?: string | null;
+          last_payout_failure_at?: string | null;
         };
         Update: {
           id?: string;
@@ -297,10 +303,13 @@ export type Database = {
           full_name?: string;
           avatar_url?: string | null;
           stripe_account_id?: string | null;
-          onboarding_status?: 'not_started' | 'pending' | 'complete';
+          onboarding_status?: 'not_started' | 'pending' | 'complete' | 'deauthorized';
           is_active?: boolean;
           created_at?: string;
           deleted_at?: string | null;
+          payouts_frozen?: boolean;
+          last_payout_failure_code?: string | null;
+          last_payout_failure_at?: string | null;
         };
         Relationships: [
           {
@@ -359,10 +368,17 @@ export type Database = {
           establishment_id: string;
           stripe_payment_intent_id: string | null;
           stripe_session_id: string | null;
-          status: 'pending' | 'succeeded' | 'failed' | 'refunded';
+          status: 'pending' | 'succeeded' | 'failed' | 'refunded' | 'disputed' | 'reversed' | 'partially_refunded';
           metadata: Json;
           idempotency_key: string;
           created_at: string;
+          succeeded_at: string | null;
+          refunded_amount: number;
+          stripe_charge_id: string | null;
+          stripe_transfer_id: string | null;
+          application_fee_amount: number | null;
+          dispute_id: string | null;
+          reversed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -372,10 +388,17 @@ export type Database = {
           establishment_id: string;
           stripe_payment_intent_id?: string | null;
           stripe_session_id?: string | null;
-          status?: 'pending' | 'succeeded' | 'failed' | 'refunded';
+          status?: 'pending' | 'succeeded' | 'failed' | 'refunded' | 'disputed' | 'reversed' | 'partially_refunded';
           metadata?: Json;
           idempotency_key: string;
           created_at?: string;
+          succeeded_at?: string | null;
+          refunded_amount?: number;
+          stripe_charge_id?: string | null;
+          stripe_transfer_id?: string | null;
+          application_fee_amount?: number | null;
+          dispute_id?: string | null;
+          reversed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -385,10 +408,17 @@ export type Database = {
           establishment_id?: string;
           stripe_payment_intent_id?: string | null;
           stripe_session_id?: string | null;
-          status?: 'pending' | 'succeeded' | 'failed' | 'refunded';
+          status?: 'pending' | 'succeeded' | 'failed' | 'refunded' | 'disputed' | 'reversed' | 'partially_refunded';
           metadata?: Json;
           idempotency_key?: string;
           created_at?: string;
+          succeeded_at?: string | null;
+          refunded_amount?: number;
+          stripe_charge_id?: string | null;
+          stripe_transfer_id?: string | null;
+          application_fee_amount?: number | null;
+          dispute_id?: string | null;
+          reversed_at?: string | null;
         };
         Relationships: [
           {
@@ -1356,6 +1386,111 @@ export type Database = {
             referencedColumns: ['id'];
           }
         ];
+      };
+      group_tip_transfers: {
+        Row: {
+          id: string;
+          transaction_id: string;
+          staff_id: string;
+          stripe_transfer_id: string;
+          amount: number;
+          reversed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          transaction_id: string;
+          staff_id: string;
+          stripe_transfer_id: string;
+          amount: number;
+          reversed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          transaction_id?: string;
+          staff_id?: string;
+          stripe_transfer_id?: string;
+          amount?: number;
+          reversed_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      staff_payouts: {
+        Row: {
+          id: string;
+          staff_id: string;
+          stripe_payout_id: string;
+          amount: number;
+          status: 'pending' | 'paid' | 'in_transit' | 'failed' | 'canceled';
+          failure_code: string | null;
+          failure_message: string | null;
+          created_at: string;
+          paid_at: string | null;
+          failed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          staff_id: string;
+          stripe_payout_id: string;
+          amount: number;
+          status: 'pending' | 'paid' | 'in_transit' | 'failed' | 'canceled';
+          failure_code?: string | null;
+          failure_message?: string | null;
+          created_at?: string;
+          paid_at?: string | null;
+          failed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          staff_id?: string;
+          stripe_payout_id?: string;
+          amount?: number;
+          status?: 'pending' | 'paid' | 'in_transit' | 'failed' | 'canceled';
+          failure_code?: string | null;
+          failure_message?: string | null;
+          created_at?: string;
+          paid_at?: string | null;
+          failed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      negative_balance_events: {
+        Row: {
+          id: string;
+          staff_id: string;
+          transaction_id: string | null;
+          amount_owed: number;
+          dispute_id: string | null;
+          status: 'owed' | 'recovered' | 'written_off';
+          notes: string | null;
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          staff_id: string;
+          transaction_id?: string | null;
+          amount_owed: number;
+          dispute_id?: string | null;
+          status?: 'owed' | 'recovered' | 'written_off';
+          notes?: string | null;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          staff_id?: string;
+          transaction_id?: string | null;
+          amount_owed?: number;
+          dispute_id?: string | null;
+          status?: 'owed' | 'recovered' | 'written_off';
+          notes?: string | null;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

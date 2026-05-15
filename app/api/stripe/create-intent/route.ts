@@ -144,6 +144,12 @@ export async function POST(request: NextRequest) {
       transfer_data: { destination: staff.stripe_account_id },
       ...(applicationFeeAmount > 0 ? { application_fee_amount: applicationFeeAmount } : {}),
       ...(validatedEmail ? { receipt_email: validatedEmail } : {}),
+      // 3DS automatic: Stripe Radar decides per-payment. Apple Pay / Google
+      // Pay are inherently exempt (biometric SCA on device), so conversion
+      // on 1-5 EUR tips stays intact.
+      payment_method_options: {
+        card: { request_three_d_secure: 'automatic' },
+      },
       metadata: {
         transaction_id: transactionId,
         staff_id: staffId,
