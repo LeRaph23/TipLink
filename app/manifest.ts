@@ -2,10 +2,10 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Digitip — Pourboires cashless par NFC',
+    name: 'Digitip — Pourboires par CB via NFC',
     short_name: 'Digitip',
     description:
-      'Digitip : la solution de pourboires cashless par NFC. SmartTags pré-configurés pour coiffeurs, restaurants et hôtels — vos clients laissent un pourboire en un tap.',
+      'Digitip : la solution de pourboires sans contact par NFC. SmartTags pré-configurés pour coiffeurs, restaurants et hôtels — vos clients laissent un pourboire en un tap.',
     start_url: '/',
     display: 'standalone',
     background_color: '#f9f9f7',
