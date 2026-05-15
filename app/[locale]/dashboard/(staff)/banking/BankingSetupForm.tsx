@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AddressAutocomplete } from '@/components/onboarding/AddressAutocomplete';
 import { setupStaffBanking, updateBankAccountIBAN } from '@/actions/stripe';
 import type { BankingData } from '@/actions/stripe';
+import { validateIban, formatIbanFriendly } from '@/lib/banking/iban';
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '10px 12px', borderRadius: 8,
@@ -64,7 +65,8 @@ export function BankingSetupForm({ mode, fullName }: Props) {
   function handleSetup() {
     if (!dobDay || !dobMonth || !dobYear) { setError('Date de naissance requise'); return; }
     if (!address.trim()) { setError('Adresse requise'); return; }
-    if (iban.replace(/\s/g, '').length < 15) { setError('IBAN invalide'); return; }
+    const ibanResult = validateIban(iban);
+    if (!ibanResult.ok) { setError(ibanResult.error); return; }
     if (!tosAccepted) { setError('Vous devez accepter les conditions Stripe'); return; }
 
     setError(null);
@@ -74,7 +76,7 @@ export function BankingSetupForm({ mode, fullName }: Props) {
       lastName,
       dob: { day: parseInt(dobDay), month: parseInt(dobMonth), year: parseInt(dobYear) },
       address: { line1: parsed.line1, city: parsed.city, postal_code: parsed.postal_code, country: 'FR' },
-      iban,
+      iban: ibanResult.normalized,
       tosTimestamp: Math.floor(Date.now() / 1000),
     };
 
@@ -87,11 +89,12 @@ export function BankingSetupForm({ mode, fullName }: Props) {
   }
 
   function handleUpdate() {
-    if (iban.replace(/\s/g, '').length < 15) { setError('IBAN invalide'); return; }
+    const ibanResult = validateIban(iban);
+    if (!ibanResult.ok) { setError(ibanResult.error); return; }
     setError(null);
 
     startTransition(async () => {
-      const res = await updateBankAccountIBAN(iban, fullName);
+      const res = await updateBankAccountIBAN(ibanResult.normalized, fullName);
       if ('error' in res) { setError(res.error); return; }
       setSuccess(true);
       router.refresh();
@@ -125,6 +128,7 @@ export function BankingSetupForm({ mode, fullName }: Props) {
             style={inp}
             value={iban}
             onChange={e => setIban(e.target.value.toUpperCase())}
+            onBlur={() => iban.trim() && setIban(formatIbanFriendly(iban))}
             placeholder="FR76 3000 1007 9412 3456 7890 185"
           />
           <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 5 }}>
@@ -191,6 +195,7 @@ export function BankingSetupForm({ mode, fullName }: Props) {
           style={inp}
           value={iban}
           onChange={e => setIban(e.target.value.toUpperCase())}
+          onBlur={() => iban.trim() && setIban(formatIbanFriendly(iban))}
           placeholder="FR76 3000 1007 9412 3456 7890 185"
         />
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 5 }}>

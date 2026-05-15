@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { validateIban, formatIbanFriendly } from '@/lib/banking/iban';
 
 interface Props {
   code: string;
@@ -43,7 +44,8 @@ export function AmbassadeurBankingForm({ code, onDone, defaults }: Props) {
     if (!addressLine.trim() || !city.trim() || !/^\d{5}$/.test(postalCode)) {
       setError('Adresse complète requise (rue, code postal 5 chiffres, ville).'); return;
     }
-    if (iban.replace(/\s/g, '').length < 15) { setError('IBAN invalide.'); return; }
+    const ibanResult = validateIban(iban);
+    if (!ibanResult.ok) { setError(ibanResult.error); return; }
     if (!/^\d{14}$/.test(siret.replace(/\s+/g, ''))) {
       setError("SIRET invalide. Pas encore de SIRET ? Crée-le gratuitement sur autoentrepreneur.urssaf.fr."); return;
     }
@@ -61,7 +63,7 @@ export function AmbassadeurBankingForm({ code, onDone, defaults }: Props) {
           lastName: lastName.trim(),
           dob: { day: parseInt(dobDay), month: parseInt(dobMonth), year: parseInt(dobYear) },
           address: { line1: addressLine.trim(), city: city.trim(), postal_code: postalCode, country: 'FR' },
-          iban: iban.toUpperCase(),
+          iban: ibanResult.normalized,
           siret: siret.replace(/\s+/g, ''),
           email: email.trim(),
           phone: phone.trim() || undefined,
@@ -140,7 +142,13 @@ export function AmbassadeurBankingForm({ code, onDone, defaults }: Props) {
 
       <div>
         <span style={label}>IBAN</span>
-        <input style={inp} value={iban} onChange={e => setIban(e.target.value.toUpperCase())} placeholder="FR76 3000 1007 9412 3456 7890 185" />
+        <input
+          style={inp}
+          value={iban}
+          onChange={e => setIban(e.target.value.toUpperCase())}
+          onBlur={() => iban.trim() && setIban(formatIbanFriendly(iban))}
+          placeholder="FR76 3000 1007 9412 3456 7890 185"
+        />
       </div>
 
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>

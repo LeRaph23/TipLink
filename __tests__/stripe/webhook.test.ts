@@ -244,7 +244,7 @@ describe('Stripe Webhook Handler', () => {
     );
   });
 
-  it('charge.refunded marks transaction as refunded', async () => {
+  it('charge.refunded marks transaction as refunded and reverses transfers', async () => {
     const mockEvent = {
       id: 'evt_charge_refunded',
       type: 'charge.refunded',
@@ -252,6 +252,10 @@ describe('Stripe Webhook Handler', () => {
         object: {
           id: 'ch_test_1',
           payment_intent: 'pi_test_refund',
+          amount: 525,
+          amount_refunded: 525,
+          currency: 'eur',
+          billing_details: { email: null },
         },
       },
     };
@@ -261,11 +265,21 @@ describe('Stripe Webhook Handler', () => {
 
     const { createServiceClient } = await import('@/lib/supabase/service');
     const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnThis() });
+    const mockTxn = {
+      id: 'txn_1',
+      amount: 525,
+      currency: 'eur',
+      staff_profiles: { full_name: 'Test', establishments: { name: 'Salon' } },
+      stripe_transfer_id: null,
+      reversed_at: null,
+    };
     const mockSupabase = {
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        maybeSingle: vi.fn().mockResolvedValue({ data: mockTxn, error: null }),
         upsert: vi.fn().mockResolvedValue({ error: null }),
         update: updateFn,
       })),
@@ -282,7 +296,7 @@ describe('Stripe Webhook Handler', () => {
     );
 
     expect(updateFn).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'refunded' })
+      expect.objectContaining({ status: 'refunded', refunded_amount: 525 })
     );
   });
 

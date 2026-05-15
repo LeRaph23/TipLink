@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
 import { verifyCookieValue } from '../auth/route';
 import { sendAmbassadorBankingConfirmation } from '@/lib/email';
+import { validateIban } from '@/lib/banking/iban';
 
 export const runtime = 'nodejs';
 
@@ -54,8 +55,9 @@ export async function POST(
   if (!address?.line1 || !address.city || !address.postal_code) {
     return NextResponse.json({ error: 'Adresse complète requise' }, { status: 400 });
   }
-  if (!iban || iban.replace(/\s/g, '').length < 15) {
-    return NextResponse.json({ error: 'IBAN invalide' }, { status: 400 });
+  const ibanResult = validateIban(iban);
+  if (!ibanResult.ok) {
+    return NextResponse.json({ error: ibanResult.error }, { status: 400 });
   }
   if (!email) return NextResponse.json({ error: 'Email requis' }, { status: 400 });
   if (!tosAccepted) return NextResponse.json({ error: 'Vous devez accepter les conditions Stripe' }, { status: 400 });
@@ -79,7 +81,8 @@ export async function POST(
     return NextResponse.json({ error: 'Compte bancaire déjà configuré' }, { status: 400 });
   }
 
-  const country = (address.country ?? 'FR').toUpperCase();
+  const bankCountry = ibanResult.country;
+  const addressCountry = (address.country ?? bankCountry).toUpperCase();
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     req.headers.get('x-real-ip') ??
@@ -89,13 +92,13 @@ export async function POST(
   try {
     const account = await stripe.accounts.create({
       type: 'custom',
-      country,
+      country: bankCountry,
       business_type: 'individual',
       individual: {
         first_name: firstName,
         last_name: lastName,
         dob: { day: dob.day, month: dob.month, year: dob.year },
-        address: { line1: address.line1, city: address.city, postal_code: address.postal_code, country },
+        address: { line1: address.line1, city: address.city, postal_code: address.postal_code, country: addressCountry },
         email,
         phone,
       },
@@ -112,12 +115,12 @@ export async function POST(
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
-  const ibanClean = iban.replace(/\s/g, '').toUpperCase();
+  const ibanClean = ibanResult.normalized;
   try {
     await stripe.accounts.createExternalAccount(accountId, {
       external_account: {
         object: 'bank_account',
-        country,
+        country: bankCountry,
         currency: 'eur',
         account_holder_name: `${firstName} ${lastName}`,
         account_holder_type: 'individual',
