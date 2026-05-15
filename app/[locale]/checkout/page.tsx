@@ -102,11 +102,12 @@ export default async function CheckoutPage({
           <style>{`
             @media (max-width: 900px) {
               .checkout-grid { grid-template-columns: 1fr !important; }
+              .checkout-aside { position: static !important; top: auto !important; }
             }
           `}</style>
 
           {/* Left: order summary + trust signals */}
-          <aside style={{
+          <aside className="checkout-aside" style={{
             background: '#fff', borderRadius: 20, padding: 24,
             border: '1px solid #e6e6f0',
             boxShadow: '0 1px 2px rgba(15,16,32,0.04)',
