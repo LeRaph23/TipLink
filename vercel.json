@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/group-transfers-reconcile",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 4 * * *"
     }
   ]
 }
