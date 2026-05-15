@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "Digitip — Cashless tips via NFC",
-    "description": "Leave a cashless tip with a tap. SmartTags that arrive pre-configured, ready to place on your table."
+    "title": "Digitip — Cashless tips via NFC | digitip.app",
+    "description": "Digitip is the cashless tipping app powered by NFC: place a SmartTag, your customers tip in one tap. Built for hair salons, restaurants and hotels — available at digitip.app."
   },
   "common": {
     "login": "Log in",
@@ -168,6 +168,7 @@
     },
     "hero": {
       "badge": "4.8 / 5",
+      "srBrand": "Digitip — the cashless NFC tipping app, available at digitip.app.",
       "h1a": "The best way",
       "h1b": "to earn more",
       "h1c": "tips",
