@@ -38,9 +38,15 @@ export function StripeDashboardButton() {
         transition: 'color 150ms',
       }}
     >
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><circle cx="5" cy="11" r="1" fill="currentColor" stroke="none" />
-      </svg>
+      {status === 'loading' ? (
+        <svg width="13" height="13" viewBox="0 0 16 16" style={{ animation: 'spin .7s linear infinite' }}>
+          <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="28" strokeDashoffset="10" opacity="0.85" />
+        </svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><circle cx="5" cy="11" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      )}
       {status === 'loading' ? t('stripeLoading') : t('stripeDashboard')}
     </button>
   );

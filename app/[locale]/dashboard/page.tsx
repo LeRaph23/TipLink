@@ -3,36 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
 import { StripeDashboardButton } from '@/components/dashboard/StripeDashboardButton';
-
-function StatCard({
-  label,
-  value,
-  sub,
-  trend,
-  trendLabel,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  trend?: number;
-  trendLabel?: string;
-}) {
-  return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-      borderRadius: 'var(--radius)', padding: 20,
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>{label}</div>
-      <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>{sub}</div>}
-      {trend !== undefined && (
-        <div style={{ marginTop: 10, fontSize: 12, fontWeight: 500, color: trend >= 0 ? 'var(--success)' : 'var(--error)', display: 'flex', alignItems: 'center', gap: 3 }}>
-          {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% {trendLabel}
-        </div>
-      )}
-    </div>
-  );
-}
+import { StatCard } from '@/components/dashboard/StatCard';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
@@ -118,7 +89,7 @@ export default async function DashboardPage({
   const totalEarnings = allTimeRows?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
 
   return (
-    <div>
+    <div className="stagger">
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
           {t('home.dashboard')}
@@ -194,15 +165,18 @@ export default async function DashboardPage({
       )}
 
       <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
-        <StatCard label={t('totalEarned')}   value={fmt.format(totalEarnings / 100)} sub={t('allTime')} />
+        <StatCard label={t('totalEarned')} value={totalEarnings / 100} format="currency" currency={currency} locale={locale} sub={t('allTime')} />
         <StatCard
           label={t('thisWeek')}
-          value={fmt.format(thisWeekTotal / 100)}
+          value={thisWeekTotal / 100}
+          format="currency"
+          currency={currency}
+          locale={locale}
           sub={t('home.last7days')}
           trend={trend}
           trendLabel={t('home.trendVsPrev')}
         />
-        <StatCard label={t('transactions')}   value={String(thisWeekTxs.length)} sub={t('home.last7days')} />
+        <StatCard label={t('transactions')} value={thisWeekTxs.length} format="count" locale={locale} sub={t('home.last7days')} />
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)' }}>
@@ -225,7 +199,7 @@ export default async function DashboardPage({
               {!recentTransactions?.length ? (
                 <tr><td colSpan={3} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>{t('noTips')}</td></tr>
               ) : recentTransactions.map(tx => (
-                <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <tr key={tx.id} className="dash-row" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '11px 16px', color: 'var(--text-3)', fontSize: 12.5 }}>
                     {new Date(tx.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>

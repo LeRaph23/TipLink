@@ -55,13 +55,20 @@ export function DigitipCard({ staffId, locale }: Props) {
           type="button"
           onClick={handleCopy}
           style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '6px 12px', borderRadius: 7,
-            border: '1px solid var(--border)', background: 'none',
+            border: `1px solid ${copied ? 'var(--success)' : 'var(--border)'}`,
+            background: 'none',
             color: copied ? 'var(--success)' : 'var(--text-2)',
             fontSize: 12, fontWeight: 500, cursor: 'pointer',
-            fontFamily: 'var(--font)', transition: 'color 150ms', flexShrink: 0,
+            fontFamily: 'var(--font)', transition: 'color 150ms, border-color 150ms', flexShrink: 0,
           }}
         >
+          {copied && (
+            <svg className="check-in" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          )}
           {copied ? t('tipLinkCopied') : t('tipLinkCopy')}
         </button>
         {typeof navigator !== 'undefined' && 'share' in navigator && (

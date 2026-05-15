@@ -81,7 +81,7 @@ export function StickerList({ stickers, baseUrl }: Props) {
                 </tr>
               )}
               {stickers.map((s) => (
-                <tr key={s.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <tr key={s.id} className="dash-row" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '11px 16px' }}>
                     <code style={{
                       fontSize: 11.5, fontFamily: 'ui-monospace, monospace',
@@ -144,6 +144,7 @@ export function StickerList({ stickers, baseUrl }: Props) {
       {/* QR Modal */}
       {qrShortId && (
         <div
+          className="fade-in"
           onClick={() => setQrShortId(null)}
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
@@ -152,6 +153,7 @@ export function StickerList({ stickers, baseUrl }: Props) {
           }}
         >
           <div
+            className="scale-in"
             onClick={e => e.stopPropagation()}
             style={{
               background: 'var(--surface)', border: '1px solid var(--border)',

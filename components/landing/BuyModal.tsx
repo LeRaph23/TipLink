@@ -47,6 +47,7 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
 
   return (
     <div
+      className="fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -56,7 +57,7 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
         padding: '20px',
       }}
     >
-      <div style={{
+      <div className="scale-in" style={{
         background: '#fff', borderRadius: 20, width: '100%', maxWidth: 560,
         boxShadow: '0 24px 80px rgba(0,0,0,0.18)',
         overflow: 'hidden',
@@ -159,6 +160,7 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
           <button
             onClick={handleCheckout}
             disabled={loading}
+            className="btn-accent"
             style={{
               width: '100%', marginTop: 18, padding: '15px',
               borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer',

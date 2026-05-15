@@ -7,6 +7,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
 import { BuyModal } from '@/components/landing/BuyModal';
+import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
 import { fetchPackPricingAction } from '@/actions/pricing';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents } from '@/lib/format-price';
@@ -43,6 +44,40 @@ function Reveal({ children, delay = 0, style: s = {} }: { children: React.ReactN
       {children}
     </div>
   );
+}
+
+// Animated number that counts up once scrolled into view. Parses the leading
+// numeric part of a label ("400+", "4.8/5", "3 sec") and re-appends the suffix.
+function CountUp({ value }: { value: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const match = /^(\d+(?:\.\d+)?)(.*)$/.exec(value.trim());
+  const target = match ? parseFloat(match[1]) : 0;
+  const decimals = match && match[1].includes('.') ? match[1].split('.')[1].length : 0;
+  const suffix = match ? match[2] : '';
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      raf = requestAnimationFrame(() => setVal(target));
+      return () => cancelAnimationFrame(raf);
+    }
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      obs.disconnect();
+      const t0 = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min(1, (now - t0) / 900);
+        setVal(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, { threshold: 0.4 });
+    obs.observe(el);
+    return () => { obs.disconnect(); cancelAnimationFrame(raf); };
+  }, [target]);
+  if (!match) return <span ref={ref}>{value}</span>;
+  return <span ref={ref}>{val.toFixed(decimals)}{suffix}</span>;
 }
 
 function Badge({ children, variant = 'accent' }: { children: React.ReactNode; variant?: 'accent' | 'success' | 'warn' }) {
@@ -214,8 +249,8 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
         {/* Desktop buttons */}
         <div className="land-btns-desktop" style={{ gap: 8, alignItems: 'center' }}>
           <LanguageSwitcher variant="light" />
-          <Link href="/login" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500, background: '#fff' }}>{tc('login')}</Link>
-          <button onClick={onOrderClick} style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(229,122,151,0.38)', transition: 'all 140ms' }}>
+          <Link href="/login" className="btn-ghost" style={{ padding: '7px 16px', borderRadius: 8, textDecoration: 'none', border: '1px solid #e4e4ec', color: '#3a3b4f', fontSize: 13, fontWeight: 500, background: '#fff' }}>{tc('login')}</Link>
+          <button onClick={onOrderClick} className="btn-accent" style={{ padding: '8px 20px', borderRadius: 9, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 13.5, fontWeight: 700, border: 'none', boxShadow: '0 2px 16px rgba(229,122,151,0.38)', transition: 'all 140ms' }}>
             {t('hero.cta')} →
           </button>
         </div>
@@ -293,10 +328,10 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
             {t('hero.sub')}
           </p>
           <div className="fade-up land-hero-btns" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 28, animationDelay: '200ms' }}>
-            <button onClick={onOrderClick} className="land-hero-btn" style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(229,122,151,0.42)', transition: 'all 140ms', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={onOrderClick} className="land-hero-btn btn-accent" style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(229,122,151,0.42)', transition: 'all 140ms', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               {t('hero.cta')} →
             </button>
-            <a href="#comment-ca-marche" className="land-hero-btn" style={{ padding: '15px 24px', borderRadius: 11, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <a href="#comment-ca-marche" className="land-hero-btn btn-ghost" style={{ padding: '15px 24px', borderRadius: 11, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               {t('howItWorks.title')}
             </a>
           </div>
@@ -351,7 +386,7 @@ function StatsStrip() {
       <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
         {stats.map((s, i) => (
           <div key={i} className="land-stat-item" style={{ flex: '1 1 140px', padding: '20px 16px', textAlign: 'center', borderRight: i < stats.length - 1 ? '1px solid #e4e4ec' : 'none' }}>
-            <div style={{ fontSize: 26, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{s.n}</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}><CountUp value={s.n} /></div>
             <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
@@ -366,12 +401,12 @@ const VENUES = ['Salon Éclat Beauté', 'L\'Atelier Coiffure', 'Institut Harmoni
 function Marquee() {
   const items = [...VENUES, ...VENUES];
   return (
-    <div style={{ borderBottom: '1px solid #e4e4ec', background: '#fff' }}>
+    <div className="marquee" style={{ borderBottom: '1px solid #e4e4ec', background: '#fff' }}>
       <div style={{ textAlign: 'center', paddingTop: 14, fontSize: 11, fontWeight: 700, color: '#c4c4d4', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
         Utilisé par des équipes en Europe
       </div>
       <div style={{ overflow: 'hidden', padding: '10px 0 14px', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}>
-        <div style={{ display: 'flex', animation: 'marqueeScroll 32s linear infinite', width: 'max-content' }}>
+        <div className="marquee-track" style={{ display: 'flex', animation: 'marqueeScroll 32s linear infinite', width: 'max-content' }}>
           {items.map((v, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '0 18px', whiteSpace: 'nowrap' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: '#c4c4d4', letterSpacing: '0.01em' }}>{v}</span>
@@ -391,7 +426,7 @@ function ClaimSection() {
     <section style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         <Reveal>
-          <div className="land-claim-card" style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #E57A97' }}>
+          <div className="land-claim-card land-card-hover" style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #E57A97' }}>
             <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, color: '#E57A97', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>3s</div>
             <div className="land-claim-title" style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 10 }}>
               {t('claim.title')} <span style={{ color: '#E57A97' }}>{t('claim.titleAccent')}</span>
@@ -400,7 +435,7 @@ function ClaimSection() {
           </div>
         </Reveal>
         <Reveal delay={100}>
-          <div className="land-claim-card" style={{ background: '#E57A97', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #B03860', color: '#fff' }}>
+          <div className="land-claim-card land-card-hover" style={{ background: '#E57A97', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #B03860', color: '#fff' }}>
             <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12, color: '#FBDAE3' }}>×2</div>
             <div className="land-claim-title" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10 }}>
               {t('claim.claim2title')} <span style={{ color: '#FBDAE3' }}>{t('claim.claim2sub')}</span>
@@ -587,7 +622,7 @@ function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo
                       <span style={{ fontSize: 14, color: '#c4c4d4', textDecoration: 'line-through', fontWeight: 500 }}>{p.full}</span>
                     )}
                   </div>
-                  <button onClick={() => onOrderClick(p.key)} style={{ width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer', background: p.popular ? '#E57A97' : '#111118', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', transition: 'all 140ms' }}>
+                  <button onClick={() => onOrderClick(p.key)} className="btn-accent" style={{ width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer', background: p.popular ? '#E57A97' : '#111118', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', transition: 'all 140ms' }}>
                     {t('grid.choose')} →
                   </button>
                 </div>
@@ -726,7 +761,7 @@ function FinalCTASection({ onOrderClick }: { onOrderClick: () => void }) {
           </h2>
           <p style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.92)', marginBottom: 18 }}>{t('finalCta.sub')}</p>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', marginBottom: 36, lineHeight: 1.7 }}>{t('finalCta.body')}</p>
-          <button onClick={onOrderClick} style={{ padding: '17px 44px', borderRadius: 13, cursor: 'pointer', background: '#fff', color: '#E57A97', fontSize: 17, fontWeight: 900, border: 'none', boxShadow: '0 6px 28px rgba(0,0,0,0.22)', letterSpacing: '-0.01em' }}>
+          <button onClick={onOrderClick} className="btn-accent" style={{ padding: '17px 44px', borderRadius: 13, cursor: 'pointer', background: '#fff', color: '#E57A97', fontSize: 17, fontWeight: 900, border: 'none', boxShadow: '0 6px 28px rgba(0,0,0,0.22)', letterSpacing: '-0.01em' }}>
             {t('finalCta.cta')} →
           </button>
         </div>
@@ -765,11 +800,13 @@ function FAQSection() {
                   <span style={{ fontSize: 15.5, fontWeight: 700, color: '#111118', lineHeight: 1.4 }}>{item.q}</span>
                   <span style={{ fontSize: 20, color: '#E57A97', transition: 'transform 200ms', transform: open === i ? 'rotate(45deg)' : 'none', flexShrink: 0, lineHeight: 1 }}>+</span>
                 </button>
-                {open === i && (
-                  <div style={{ padding: '0 20px 20px', fontSize: 14.5, color: '#74748a', lineHeight: 1.8, borderTop: '1px solid #f0f0f0' }}>
-                    <div style={{ paddingTop: 14 }}>{item.a}</div>
+                <div className={`acc-panel${open === i ? ' is-open' : ''}`}>
+                  <div>
+                    <div style={{ padding: '14px 20px 20px', fontSize: 14.5, color: '#74748a', lineHeight: 1.8, borderTop: '1px solid #f0f0f0' }}>
+                      {item.a}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </Reveal>
           ))}
@@ -793,7 +830,7 @@ function DoubleGuaranteeSection() {
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
         {items.map((item, i) => (
           <Reveal key={i} delay={i * 60}>
-            <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 16, padding: '24px 22px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <div className="land-card-hover" style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 16, padding: '24px 22px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: `${item.accent}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{item.icon}</div>
               <div>
                 <h3 style={{ fontSize: 14, fontWeight: 800, color: '#111118', marginBottom: 6, letterSpacing: '-0.01em' }}>{item.title}</h3>
@@ -899,6 +936,7 @@ export default function LandingPage() {
       <FAQSection />
       <DoubleGuaranteeSection />
       <FooterSection />
+      <StickyMobileCTA onOrderClick={() => openCart()} />
 
       {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} pricing={pricing} />}
     </div>
