@@ -93,15 +93,18 @@ export type PackDefinition = {
   id: PackId;
   quantity: number;
   hardwareAmount: number; // cents, excl. VAT, one-time
+  listAmount: number;     // cents — pre-launch "regular" price, shown struck through
   currency: 'eur';
 };
 
 // Canonical product catalog. Hardware is billed once; revenue is then
 // earned via per-transaction commission (see groups.platform_fee_bps).
 // Keep amounts in sync with the Stripe Products/Prices in the dashboard.
+// `listAmount` is the fallback strikethrough price when a Stripe product has
+// no `list_price_cents` metadata.
 export const PACKS: Record<PackId, PackDefinition> = {
-  solo: { id: 'solo', quantity: 1, hardwareAmount: 6900, currency: 'eur' },
-  duo:  { id: 'duo',  quantity: 2, hardwareAmount: 9900, currency: 'eur' },
+  solo: { id: 'solo', quantity: 1, hardwareAmount: 6900, listAmount: 9900,  currency: 'eur' },
+  duo:  { id: 'duo',  quantity: 2, hardwareAmount: 9900, listAmount: 13900, currency: 'eur' },
 };
 
 // Default platform commission applied to every tip, in basis points.

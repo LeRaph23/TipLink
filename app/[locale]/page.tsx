@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
 import { BuyModal } from '@/components/landing/BuyModal';
 import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
+import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFlag';
 import { fetchPackPricingAction } from '@/actions/pricing';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents } from '@/lib/format-price';
@@ -344,24 +345,17 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
             <span style={{ color: '#e4e4ec' }}>·</span>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#74748a' }}>{t('hero.social')}</span>
             <span style={{ color: '#e4e4ec' }}>·</span>
-            <span style={{ fontSize: 16 }}>{t('hero.countries')}</span>
+            <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}>
+              {SHIPPING_COUNTRIES.map((c) => <CountryFlag key={c} code={c} size={22} />)}
+            </span>
           </div>
         </div>
 
         {/* Right: product visual — hidden on mobile */}
         <div className="fade-up land-hero-visual" style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: '160ms' }}>
-          <div style={{ position: 'relative', width: 300, height: 340 }}>
+          <div style={{ position: 'relative', width: 300, height: 300 }}>
             <div style={{ width: 300, height: 300, borderRadius: 24, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)', position: 'relative' }}>
               <Image src="/products/duo-double.jpg" alt="Plaques époxy NFC Digitip" fill sizes="300px" style={{ objectFit: 'cover' }} priority />
-            </div>
-            <div style={{ position: 'absolute', bottom: 0, right: -10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 28px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#E57A97', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CoinIcon size={16} color="#fff" />
-              </div>
-              <div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: '#111118' }}>+5,00 €</div>
-                <div style={{ fontSize: 10, color: '#74748a' }}>→ Léa C.</div>
-              </div>
             </div>
             <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#d97706', display: 'flex', alignItems: 'center', gap: 5 }}>
               <StarRow size={12} gap={1} /> 4.8
@@ -386,7 +380,7 @@ function StatsStrip() {
       <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
         {stats.map((s, i) => (
           <div key={i} className="land-stat-item" style={{ flex: '1 1 140px', padding: '20px 16px', textAlign: 'center', borderRight: i < stats.length - 1 ? '1px solid #e4e4ec' : 'none' }}>
-            <div style={{ fontSize: 26, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}><CountUp value={s.n} /></div>
+            <div style={{ fontFamily: 'var(--font-poppins), sans-serif', fontSize: 26, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}><CountUp value={s.n} /></div>
             <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
@@ -518,7 +512,7 @@ function ShippingSection() {
   const items: { icon: React.ReactNode; text: string }[] = [
     { icon: <BoltIcon size={17} color="#E57A97" />, text: t('shipping.processing') },
     { icon: <PlaneIcon size={17} color="#2563eb" />, text: t('shipping.freeEU') },
-    { icon: <span style={{ fontSize: 15, lineHeight: 1 }}>🇫🇷</span>, text: t('shipping.timezoneFR') },
+    { icon: <CountryFlag code="fr" size={20} />, text: t('shipping.timezoneFR') },
     { icon: <GlobeIcon size={17} color="#16a34a" />, text: t('shipping.timezoneEU') },
     { icon: <BoxIcon size={17} color="#74748a" />, text: t('shipping.tracking') },
   ];
