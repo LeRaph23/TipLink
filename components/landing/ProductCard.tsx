@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents } from '@/lib/format-price';
+import { CountryFlag } from '@/components/landing/CountryFlag';
 
 function StarIcon({ size = 15 }: { size?: number }) {
   return (
@@ -207,7 +208,7 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
             display: 'inline-flex', alignItems: 'center', gap: 6,
             background: '#FEF1F4', border: '1px solid #FBDAE3', borderRadius: 8,
             padding: '5px 12px', fontSize: 12.5, fontWeight: 700, color: '#E57A97',
-          }}>{t('product.frenchCompany')}</span>
+          }}>{t('product.frenchCompany')} <CountryFlag code="fr" size={16} /></span>
         </div>
 
         {/* Pack selector */}
