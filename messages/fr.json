@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "Digitip — Pourboires cashless par NFC",
-    "description": "Laissez un pourboire d'un simple tap. Des SmartTags pré-configurés, prêts à poser sur votre table."
+    "title": "Digitip — Pourboires cashless par NFC | digitip.app",
+    "description": "Digitip est l'app de pourboires cashless par NFC : posez un SmartTag, vos clients laissent un pourboire en un tap. Solution française pour coiffeurs, restaurants et hôtels — disponible sur digitip.app."
   },
   "common": {
     "login": "Connexion",
@@ -168,6 +168,7 @@
     },
     "hero": {
       "badge": "4.8 / 5",
+      "srBrand": "Digitip — l'app de pourboires cashless par NFC, disponible sur digitip.app.",
       "h1a": "Le meilleur moyen",
       "h1b": "d'encaisser plus de",
       "h1c": "pourboires",

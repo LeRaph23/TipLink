@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans, Space_Grotesk, Poppins } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
@@ -27,6 +27,14 @@ const poppins = Poppins({
   display: 'swap',
 });
 
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://digitip.app').replace(/\/$/, '');
+
+export const viewport: Viewport = {
+  themeColor: '#E57A97',
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -37,26 +45,195 @@ export async function generateMetadata({
     return { title: 'Digitip' };
   }
   const t = await getTranslations({ locale, namespace: 'metadata' });
+  const title = t('title');
+  const description = t('description');
+  const keywords =
+    locale === 'fr'
+      ? [
+          'Digitip',
+          'digitip',
+          'digitip app',
+          'digitip.app',
+          'pourboire NFC',
+          'pourboire cashless',
+          'pourboire sans contact',
+          'SmartTag NFC',
+          'plaque NFC pourboire',
+          'pourboire QR code',
+          'tip jar digital',
+          'pourboires coiffeur',
+          'pourboires restaurant',
+          'pourboires hôtel',
+          'Stripe pourboire',
+          'tipping cashless France',
+        ]
+      : [
+          'Digitip',
+          'digitip',
+          'digitip app',
+          'digitip.app',
+          'NFC tipping',
+          'cashless tip',
+          'contactless tip',
+          'NFC SmartTag',
+          'digital tip jar',
+          'QR code tipping',
+          'tip via phone',
+          'hairdresser tips',
+          'restaurant tips',
+          'hotel tipping',
+          'Stripe tipping',
+        ];
+
   return {
-    title: t('title'),
-    description: t('description'),
+    metadataBase: new URL(BASE_URL),
+    title: {
+      default: title,
+      template: '%s | Digitip',
+    },
+    description,
+    keywords,
+    applicationName: 'Digitip',
+    authors: [{ name: 'Digitip', url: BASE_URL }],
+    creator: 'Digitip',
+    publisher: 'Digitip',
+    referrer: 'origin-when-cross-origin',
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    category: 'business',
     alternates: {
-      canonical: `/${locale}`,
-      languages: Object.fromEntries(
-        routing.locales.map((l) => [l, `/${l}`])
-      ),
+      canonical: `${BASE_URL}/${locale}`,
+      languages: {
+        ...Object.fromEntries(
+          routing.locales.map((l) => [l, `${BASE_URL}/${l}`])
+        ),
+        'x-default': `${BASE_URL}/${routing.defaultLocale}`,
+      },
     },
     openGraph: {
-      title: t('title'),
-      description: t('description'),
-      locale,
+      title,
+      description,
+      url: `${BASE_URL}/${locale}`,
+      siteName: 'Digitip',
+      locale: locale === 'fr' ? 'fr_FR' : 'en_US',
+      alternateLocale: routing.locales.filter((l) => l !== locale).map((l) => (l === 'fr' ? 'fr_FR' : 'en_US')),
       type: 'website',
+      images: [
+        {
+          url: '/icon.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'Digitip — Pourboires cashless par NFC',
+        },
+      ],
     },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/icon.jpg'],
+      creator: '@digitip',
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-snippet': -1,
+        'max-image-preview': 'large',
+        'max-video-preview': -1,
+      },
+    },
+    icons: {
+      icon: '/icon.jpg',
+      apple: '/icon.jpg',
+      shortcut: '/icon.jpg',
+    },
+    manifest: '/manifest.webmanifest',
   };
 }
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
+}
+
+function buildJsonLd(locale: string) {
+  const description =
+    locale === 'fr'
+      ? "Digitip propose des SmartTags NFC pré-configurés pour collecter des pourboires cashless en un tap. Plateforme française disponible sur digitip.app."
+      : 'Digitip offers pre-configured NFC SmartTags to collect cashless tips with a single tap. French platform available at digitip.app.';
+
+  const organization = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${BASE_URL}#organization`,
+    name: 'Digitip',
+    alternateName: ['DigiTip', 'digitip.app', 'Digitip App'],
+    url: BASE_URL,
+    logo: `${BASE_URL}/icon.jpg`,
+    image: `${BASE_URL}/icon.jpg`,
+    description,
+    foundingDate: '2025',
+    legalName: 'YUZU LABS SAS',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: '11 rue de Lorraine',
+      postalCode: '68490',
+      addressLocality: 'Petit-Landau',
+      addressCountry: 'FR',
+    },
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        email: 'support@digitip.app',
+        availableLanguage: ['French', 'English'],
+      },
+    ],
+    sameAs: [`${BASE_URL}`],
+  };
+
+  const website = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${BASE_URL}#website`,
+    url: BASE_URL,
+    name: 'Digitip',
+    alternateName: 'digitip.app',
+    description,
+    inLanguage: locale === 'fr' ? 'fr-FR' : 'en-US',
+    publisher: { '@id': `${BASE_URL}#organization` },
+  };
+
+  const softwareApplication = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Digitip',
+    alternateName: 'Digitip App',
+    url: BASE_URL,
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web, iOS, Android',
+    description,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/InStock',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      bestRating: '5',
+      ratingCount: '400',
+    },
+    publisher: { '@id': `${BASE_URL}#organization` },
+  };
+
+  return [organization, website, softwareApplication];
 }
 
 export default async function LocaleLayout({
@@ -71,6 +248,7 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
+  const jsonLd = buildJsonLd(locale);
 
   return (
     <html
@@ -85,6 +263,13 @@ export default async function LocaleLayout({
             __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t;})()`,
           }}
         />
+        {jsonLd.map((entry, idx) => (
+          <script
+            key={idx}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(entry) }}
+          />
+        ))}
       </head>
       <body className="min-h-full flex flex-col antialiased">
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>

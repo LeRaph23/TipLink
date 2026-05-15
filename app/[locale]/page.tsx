@@ -198,7 +198,7 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
   return (
     <>
       <header style={{ position: 'sticky', top: 38, zIndex: 200, height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px, 4vw, 48px)', background: scrolled ? 'rgba(255,255,255,0.97)' : '#fff', backdropFilter: scrolled ? 'blur(12px)' : 'none', borderBottom: '1px solid #e4e4ec', transition: 'background 300ms' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <Link href="/" aria-label="Digitip — Accueil" title="Digitip" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
           <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
         </Link>
 
@@ -284,6 +284,7 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
               </span>
             </Badge>
           </div>
+          <p className="sr-only">{t('hero.srBrand')}</p>
           <h1 className="fade-up" style={{ fontSize: 'clamp(36px, 5.5vw, 72px)', fontWeight: 900, lineHeight: 0.96, letterSpacing: '-0.04em', color: '#111118', marginBottom: 20, animationDelay: '60ms' }}>
             {t('hero.h1a')}<br />{t('hero.h1b')}<br />
             <span style={{ color: '#E57A97' }}>{t('hero.h1c')}</span>
