@@ -132,6 +132,6 @@ export const config = {
     '/s/:path*',
     // All pages except: api, auth (Supabase callback), static assets.
     // next-intl matches /, /en, /fr, /en/*, /fr/*, /something (and redirects to default).
-    '/((?!_next/static|_next/image|favicon.ico|public|api/|auth/|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|avif)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|api/|auth/|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|avif)$).*)',
   ],
 };
