@@ -12,6 +12,7 @@ import { setupAdminPayments } from '@/actions/stripe';
 import type { BankingData } from '@/actions/stripe';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { getBaseUrl } from '@/lib/env';
+import { validateIban, formatIbanFriendly } from '@/lib/banking/iban';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -343,7 +344,8 @@ export function OnboardingWizard(props: Props) {
   const [iban, setIban] = useState('');
   const [tosAccepted, setTosAccepted] = useState(false);
 
-  const bankingFilled = dobDay && dobMonth && dobYear && bankingAddress.trim() && iban.trim().length >= 15 && tosAccepted;
+  const ibanValidation = validateIban(iban);
+  const bankingFilled = dobDay && dobMonth && dobYear && bankingAddress.trim() && ibanValidation.ok && tosAccepted;
 
   const goTo = useCallback(
     (step: string) => {
@@ -413,7 +415,7 @@ export function OnboardingWizard(props: Props) {
       lastName: nameParts.slice(1).join(' ') || (nameParts[0] ?? ''),
       dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
       address: { line1, city, postal_code, country: 'FR' },
-      iban: iban.replace(/\s/g, '').toUpperCase(),
+      iban: ibanValidation.ok ? ibanValidation.normalized : iban.replace(/\s/g, '').toUpperCase(),
       tosTimestamp: Math.floor(Date.now() / 1000),
     } as Parameters<typeof setupAdminPayments>[0]);
 
@@ -878,10 +880,16 @@ export function OnboardingWizard(props: Props) {
                 type="text"
                 value={iban}
                 onChange={(e) => setIban(e.target.value.toUpperCase())}
+                onBlur={() => iban.trim() && setIban(formatIbanFriendly(iban))}
                 placeholder="FR76 3000 4000 0312 3456 7890 143"
                 style={{ ...inp, fontFamily: 'monospace', letterSpacing: '0.05em' }}
                 autoComplete="off"
               />
+              {iban.trim().length > 4 && !ibanValidation.ok && (
+                <div style={{ fontSize: 11.5, color: 'var(--error)', marginTop: 5 }}>
+                  {ibanValidation.error}
+                </div>
+              )}
             </div>
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>

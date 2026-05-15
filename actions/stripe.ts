@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
+import { validateIban } from '@/lib/banking/iban';
 
 export interface BankingData {
   firstName: string;
@@ -21,7 +22,12 @@ export async function createCustomStripeAccount(
   staffProfileId: string,
   data: BankingData
 ): Promise<{ accountId: string } | { error: string }> {
-  const country = data.iban.replace(/\s/g, '').slice(0, 2).toUpperCase() || 'FR';
+  const ibanResult = validateIban(data.iban);
+  if (!ibanResult.ok) {
+    return { error: ibanResult.error };
+  }
+  const country = ibanResult.country;
+  const ibanClean = ibanResult.normalized;
 
   let accountId: string;
   try {
@@ -53,7 +59,6 @@ export async function createCustomStripeAccount(
     return { error: msg };
   }
 
-  const ibanClean = data.iban.replace(/\s/g, '').toUpperCase();
   try {
     await stripe.accounts.createExternalAccount(accountId, {
       external_account: {
@@ -66,9 +71,9 @@ export async function createCustomStripeAccount(
       } as Parameters<typeof stripe.accounts.createExternalAccount>[1]['external_account'],
     });
   } catch (err) {
-    // Clean up the account if IBAN fails
+    // Clean up the account if Stripe rejects the IBAN (rare since we pre-validated)
     await stripe.accounts.del(accountId).catch(() => null);
-    const msg = err instanceof Error ? err.message : 'IBAN invalide';
+    const msg = err instanceof Error ? err.message : 'IBAN refusé par Stripe';
     console.error('createCustomStripeAccount: external account failed', err);
     return { error: msg };
   }
@@ -143,9 +148,12 @@ export async function updateBankAccountIBAN(
 
   if (!profile?.stripe_account_id) return { error: 'Aucun compte Stripe trouvé' };
 
+  const ibanResult = validateIban(iban);
+  if (!ibanResult.ok) return { error: ibanResult.error };
+
   const accountId = profile.stripe_account_id;
-  const ibanClean = iban.replace(/\s/g, '').toUpperCase();
-  const country = ibanClean.slice(0, 2) || 'FR';
+  const ibanClean = ibanResult.normalized;
+  const country = ibanResult.country;
 
   // List existing bank accounts to delete after adding new one
   let oldBankIds: string[] = [];
