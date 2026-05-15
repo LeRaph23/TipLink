@@ -22,6 +22,18 @@ interface Entry {
 
 const buckets = new Map<string, Entry>();
 
+// Warn once at boot if running in production without a shared Redis backend:
+// the in-memory limiter is per-instance and a distributed attacker can dodge it.
+if (
+  process.env.NODE_ENV === 'production' &&
+  !(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+) {
+  console.warn(
+    '[rate-limit] Upstash Redis not configured — rate limiting is per-instance only. ' +
+      'Set UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN for cross-instance enforcement.'
+  );
+}
+
 function inMemoryRateLimit(
   key: string,
   { limit, windowMs }: { limit: number; windowMs: number }

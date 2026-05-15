@@ -51,20 +51,28 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
       ...(expiresAt ? { redeem_by: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
     });
 
-    const promotionCode = await stripe.promotionCodes.create({
-      promotion: { type: 'coupon', coupon: coupon.id },
-      code: normalizedCode,
-      active: true,
-      ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
-      ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
-    });
+    let promotionCodeId: string | null = null;
+    try {
+      const promotionCode = await stripe.promotionCodes.create({
+        promotion: { type: 'coupon', coupon: coupon.id },
+        code: normalizedCode,
+        active: true,
+        ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
+        ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
+      });
+      promotionCodeId = promotionCode.id;
+    } catch (err) {
+      // Roll back the orphan coupon so we don't leak Stripe resources.
+      await stripe.coupons.del(coupon.id).catch(() => {});
+      throw err;
+    }
 
     const { data: saved, error: dbErr } = await service
       .from('promo_codes')
       .insert({
         code: normalizedCode,
         stripe_coupon_id: coupon.id,
-        stripe_promo_code_id: promotionCode.id,
+        stripe_promo_code_id: promotionCodeId,
         percentage_off: percentageOff,
         max_redemptions: maxRedemptions ?? null,
         expires_at: expiresAt ?? null,
@@ -75,6 +83,10 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
       .single();
 
     if (dbErr || !saved) {
+      // DB write failed — roll back Stripe so we don't end up with orphan
+      // resources in Stripe that nobody can see in the admin UI.
+      await stripe.promotionCodes.update(promotionCodeId!, { active: false }).catch(() => {});
+      await stripe.coupons.del(coupon.id).catch(() => {});
       return { ok: false, error: `Erreur DB: ${dbErr?.message ?? 'unknown'}` };
     }
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocale } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { AddressAutocomplete } from '@/components/onboarding/AddressAutocomplete';
 
@@ -68,14 +69,6 @@ function parseAddressLabel(label: string): { line1: string; city: string; postal
 }
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-const MONTHS = [
-  { value: 1, label: 'Janvier' }, { value: 2, label: 'Février' },
-  { value: 3, label: 'Mars' }, { value: 4, label: 'Avril' },
-  { value: 5, label: 'Mai' }, { value: 6, label: 'Juin' },
-  { value: 7, label: 'Juillet' }, { value: 8, label: 'Août' },
-  { value: 9, label: 'Septembre' }, { value: 10, label: 'Octobre' },
-  { value: 11, label: 'Novembre' }, { value: 12, label: 'Décembre' },
-];
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1924 }, (_, i) => currentYear - 18 - i);
 
@@ -88,6 +81,16 @@ export function JoinForm({
   establishmentName: string;
   unclaimedProfiles: UnclaimedProfile[];
 }) {
+  const locale = useLocale();
+  // Month labels localized via Intl rather than a hardcoded French array.
+  const MONTHS = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { month: 'long' });
+    return Array.from({ length: 12 }, (_, i) => {
+      const label = fmt.format(new Date(2000, i, 1));
+      return { value: i + 1, label: label.charAt(0).toUpperCase() + label.slice(1) };
+    });
+  }, [locale]);
+
   const [step, setStep] = useState<Step>('welcome');
   const [selectedProfile, setSelectedProfile] = useState<UnclaimedProfile | null>(null);
 

@@ -4,6 +4,7 @@ import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
+import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -121,21 +122,11 @@ async function handleEvent(
         ? parseInt(intent.metadata.application_fee_amount, 10)
         : null;
 
-      await supabase
-        .from('transactions')
-        .update({
-          status: 'succeeded',
-          stripe_payment_intent_id: intent.id,
-          succeeded_at: new Date().toISOString(),
-          stripe_charge_id: chargeId,
-          stripe_transfer_id: soloTransferId,
-          application_fee_amount: applicationFeeAmount,
-        } as never)
-        .eq('id', transactionId)
-        .eq('status', 'pending');
-
-      // For group tips: create Stripe transfers to each payable staff member
-      // equally, and persist each transfer ID so we can reverse them on refund.
+      // For group tips: insert per-staff rows BEFORE marking the transaction
+      // succeeded, so a crash during the Stripe loop leaves recoverable state
+      // (the reconciliation cron picks up `pending` rows >5 min old).
+      // The rounding remainder is given to the first staff member so the full
+      // net amount is always distributed (no centimes left on the platform).
       if (intent.metadata?.group_tip === 'true') {
         const netForStaff = parseInt(intent.metadata.net_for_staff ?? '0', 10);
         const transferGroup = intent.metadata.transfer_group;
@@ -149,30 +140,93 @@ async function handleEvent(
             .eq('is_active', true)
             .eq('onboarding_status', 'complete')
             .is('deleted_at', null)
-            .not('stripe_account_id', 'is', null);
+            .not('stripe_account_id', 'is', null)
+            .order('id'); // deterministic remainder recipient
 
           if (staffMembers && staffMembers.length > 0) {
-            const shareAmount = Math.floor(netForStaff / staffMembers.length);
-            for (const s of staffMembers) {
-              try {
-                const transfer = await stripe.transfers.create({
-                  amount: shareAmount,
+            const n = staffMembers.length;
+            const baseShare = Math.floor(netForStaff / n);
+            const remainder = netForStaff - baseShare * n;
+
+            const rows = staffMembers.map((s, i) => ({
+              transaction_id: transactionId,
+              staff_id: s.id,
+              amount: baseShare + (i === 0 ? remainder : 0),
+              status: 'pending',
+            }));
+
+            await supabase.from('group_tip_transfers').insert(rows as never);
+          }
+        }
+      }
+
+      await supabase
+        .from('transactions')
+        .update({
+          status: 'succeeded',
+          stripe_payment_intent_id: intent.id,
+          succeeded_at: new Date().toISOString(),
+          stripe_charge_id: chargeId,
+          stripe_transfer_id: soloTransferId,
+          application_fee_amount: applicationFeeAmount,
+        } as never)
+        .eq('id', transactionId)
+        .eq('status', 'pending');
+
+      // Now drive the per-staff Stripe transfers. Each row already exists with
+      // status='pending'; on success we mark succeeded + transfer_id, on failure
+      // we mark failed + error so the cron can retry.
+      if (intent.metadata?.group_tip === 'true') {
+        const transferGroup = intent.metadata.transfer_group;
+        if (transferGroup && chargeId) {
+          // The new `status` column is not in generated types yet — query w/o
+          // .eq('status'…), filter in JS, and resolve staff accounts separately.
+          const { data: rowsRaw } = await supabase
+            .from('group_tip_transfers')
+            .select('id, staff_id, amount')
+            .eq('transaction_id', transactionId);
+
+          const pendingRows = ((rowsRaw ?? []) as Array<{ id: string; staff_id: string; amount: number; status?: string }>)
+            .filter((r) => (r.status ?? 'pending') === 'pending');
+
+          const staffAccountById = new Map<string, string | null>();
+          if (pendingRows.length > 0) {
+            const { data: staffAccts } = await supabase
+              .from('staff_profiles')
+              .select('id, stripe_account_id')
+              .in('id', pendingRows.map((r) => r.staff_id));
+            for (const s of staffAccts ?? []) staffAccountById.set(s.id, s.stripe_account_id);
+          }
+
+          for (const row of pendingRows) {
+            const staffAccount = staffAccountById.get(row.staff_id);
+            if (!staffAccount) continue;
+            try {
+              const transfer = await stripe.transfers.create(
+                {
+                  amount: row.amount,
                   currency: intent.currency,
-                  destination: s.stripe_account_id!,
+                  destination: staffAccount,
                   transfer_group: transferGroup,
                   source_transaction: chargeId,
-                });
-                await supabase
-                  .from('group_tip_transfers')
-                  .insert({
-                    transaction_id: transactionId,
-                    staff_id: s.id,
-                    stripe_transfer_id: transfer.id,
-                    amount: shareAmount,
-                  } as never);
-              } catch (err) {
-                console.error('group transfer create failed', { staffId: s.id, err });
-              }
+                },
+                { idempotencyKey: `gtt:${row.id}` }
+              );
+              await supabase
+                .from('group_tip_transfers')
+                .update({
+                  status: 'succeeded',
+                  stripe_transfer_id: transfer.id,
+                  attempts: 1,
+                } as never)
+                .eq('id', row.id);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'unknown';
+              console.error('group transfer create failed', { rowId: row.id, err });
+              await supabase
+                .from('group_tip_transfers')
+                .update({ status: 'failed', error: msg, attempts: 1 } as never)
+                .eq('id', row.id);
             }
           }
         }
@@ -195,7 +249,7 @@ async function handleEvent(
             staffName: staff?.full_name ?? 'your server',
             establishmentName: staff?.establishments?.name ?? '',
             transactionId,
-          }).catch(() => {}); // email failure must never break the webhook
+          }).catch((err) => console.error('[email] sendTipReceipt failed', err));
         }
       }
 
@@ -626,10 +680,12 @@ async function handleEvent(
         });
 
         // Build the setup URL embedded in the order confirmation email.
-        // The group UUID is cryptographically random — safe to include in the URL.
+        // The link is signed (HMAC) so a leaked / guessed group UUID alone
+        // cannot trigger the express onboarding wizard.
         if (email && newOrder) {
           const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
-          const setupUrl = `${base}/${expressLocale}/onboarding?group=${newGroup.id}&email=${encodeURIComponent(email)}`;
+          const onboardingToken = signOnboardingToken(newGroup.id, email);
+          const setupUrl = `${base}/${expressLocale}/onboarding?group=${newGroup.id}&token=${onboardingToken}&email=${encodeURIComponent(email)}`;
           await sendOrderConfirmation({
             to: email,
             pack,
@@ -638,7 +694,7 @@ async function handleEvent(
             invoicePdfUrl,
             setupUrl,
             locale: expressLocale,
-          }).catch(() => {});
+          }).catch((err) => console.error('[email] sendOrderConfirmation failed', err));
 
           await sendAdminNewOrder({
             customerName: legalName,
@@ -648,7 +704,7 @@ async function handleEvent(
             orderId: newOrder.id,
             promoCode: expressPromoCode,
             locale: expressLocale,
-          }).catch(() => {});
+          }).catch((err) => console.error('[email] sendAdminNewOrder failed', err));
         }
 
         break;
@@ -998,10 +1054,11 @@ async function handlePackExpressPaid(
     onboarding_status: 'not_started',
   });
 
-  // Send customer confirmation + setup link
+  // Send customer confirmation + setup link (signed HMAC token).
   if (email && newOrder) {
     const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
-    const setupUrl = `${base}/${locale}/onboarding?group=${newGroup.id}&email=${encodeURIComponent(email)}`;
+    const onboardingToken = signOnboardingToken(newGroup.id, email);
+    const setupUrl = `${base}/${locale}/onboarding?group=${newGroup.id}&token=${onboardingToken}&email=${encodeURIComponent(email)}`;
     await sendOrderConfirmation({
       to: email,
       pack,
@@ -1010,7 +1067,7 @@ async function handlePackExpressPaid(
       invoicePdfUrl: null,
       setupUrl,
       locale,
-    }).catch(() => {});
+    }).catch((err) => console.error('[email] sendOrderConfirmation failed', err));
 
     await sendAdminNewOrder({
       customerName: legalName,

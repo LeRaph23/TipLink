@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { GroupTipCheckout } from './GroupTipCheckout';
 
 const SERVICE_FEE_CENTS = 25;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function GroupAmountSelector({ establishmentId, currency, thresholds, staffCount }: Props) {
+  const t = useTranslations('pay');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [custom, setCustom] = useState('');
   const [customFocus, setCustomFocus] = useState(false);
@@ -37,7 +39,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
       }}>
         <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.09em', textAlign: 'center', marginBottom: 12 }}>
-          Choisir le montant
+          {t('group.selectAmountTitle')}
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
           {thresholds.map(amt => {
@@ -69,7 +71,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
             {currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '$'}
           </span>
           <input
-            type="number" placeholder="Autre montant" value={custom}
+            type="number" placeholder={t('group.customAmountLabel')} value={custom}
             onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
             onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
             style={{
@@ -109,7 +111,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
           background: 'var(--surface)', border: '1px solid var(--border-subtle)',
           textAlign: 'center', color: 'var(--text-3)', fontSize: 13,
         }}>
-          Sélectionnez un montant pour continuer
+          {t('group.selectAmountHelp')}
         </div>
       )}
     </>

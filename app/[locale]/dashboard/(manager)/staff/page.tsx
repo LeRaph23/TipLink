@@ -72,13 +72,27 @@ export default async function StaffListPage({
     : { data: null };
   const adminHasStaffProfile = !!adminStaffProfile;
 
-  // Fetch emails for staff who have joined (have a user_id)
+  // Fetch emails for staff who have joined (have a user_id).
+  // Supabase auth.admin.listUsers paginates by 50 — batch the lookups so that
+  // a tenant with hundreds of staff doesn't trigger O(N) sequential calls.
   const userIds = (staffMembers ?? []).filter((s) => s.user_id).map((s) => s.user_id!);
   const emailMap = new Map<string, string>();
   if (userIds.length > 0) {
-    const results = await Promise.all(userIds.map((id) => service.auth.admin.getUserById(id)));
-    for (const r of results) {
-      if (r.data?.user?.email) emailMap.set(r.data.user.id, r.data.user.email);
+    const wanted = new Set(userIds);
+    const PAGE_SIZE = 200;
+    let page = 1;
+    while (wanted.size > 0 && page <= 50) {
+      const { data: list } = await service.auth.admin.listUsers({ page, perPage: PAGE_SIZE });
+      const users = list?.users ?? [];
+      if (users.length === 0) break;
+      for (const u of users) {
+        if (u.email && wanted.has(u.id)) {
+          emailMap.set(u.id, u.email);
+          wanted.delete(u.id);
+        }
+      }
+      if (users.length < PAGE_SIZE) break;
+      page++;
     }
   }
 

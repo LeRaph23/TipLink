@@ -77,7 +77,10 @@ export async function GET(
   });
 }
 
-// POST — request a payout for the full available balance
+// POST — request a payout for the full available balance.
+// Serialized via a Postgres advisory lock + a partial unique index on
+// (ambassador_id) WHERE status='pending'. Two concurrent POSTs cannot both
+// create a pending payout for the same ambassador.
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -89,6 +92,7 @@ export async function POST(
   }
 
   const service = createServiceClient();
+
   const { data: amb } = await service
     .from('ambassadors')
     .select('id, stripe_account_id, name')
@@ -103,67 +107,95 @@ export async function POST(
     );
   }
 
-  const { available } = await computeAvailableCents(ambassadorId);
-
-  if (available < MIN_PAYOUT_CENTS) {
-    return NextResponse.json({
-      error: `Solde insuffisant (${(available / 100).toFixed(2)} €). Minimum 30 € pour un virement.`,
-    }, { status: 400 });
+  // Acquire the advisory lock — short-circuits parallel requests immediately.
+  // RPCs aren't in the generated types yet; cast minimally.
+  const tryLock = (service.rpc as unknown as (
+    fn: 'try_advisory_lock_payout',
+    args: { p_ambassador_id: string }
+  ) => Promise<{ data: boolean | null; error: unknown }>);
+  const { data: lockAcquired } = await tryLock('try_advisory_lock_payout', {
+    p_ambassador_id: ambassadorId,
+  });
+  if (!lockAcquired) {
+    return NextResponse.json({ error: 'Demande déjà en cours, réessaye dans un instant.' }, { status: 409 });
   }
 
-  // Record the payout request in DB. Transfer + Payout itself will be triggered
-  // by the super-admin from the admin panel (manual settlement) to keep
-  // platform-balance moves auditable.
-  const { data: inserted, error: insErr } = await service
-    .from('ambassador_payouts')
-    .insert({
-      ambassador_id: ambassadorId,
-      amount_cents: available,
-      status: 'pending',
-    })
-    .select('id, amount_cents')
-    .single();
-
-  if (insErr || !inserted) {
-    console.error('ambassador payout insert failed', insErr);
-    return NextResponse.json({ error: 'Erreur enregistrement de la demande' }, { status: 500 });
-  }
-
-  // Best-effort: trigger the Stripe transfer + payout immediately. If it fails,
-  // we keep the request as `pending` and the super-admin can retry/mark paid.
   try {
-    const transfer = await stripe.transfers.create({
-      amount: inserted.amount_cents,
-      currency: 'eur',
-      destination: amb.stripe_account_id,
-      metadata: { ambassador_id: ambassadorId, payout_id: inserted.id },
-    });
+    const { available } = await computeAvailableCents(ambassadorId);
 
-    const payout = await stripe.payouts.create(
-      { amount: inserted.amount_cents, currency: 'eur', method: 'standard' },
-      { stripeAccount: amb.stripe_account_id }
-    );
+    if (available < MIN_PAYOUT_CENTS) {
+      return NextResponse.json({
+        error: `Solde insuffisant (${(available / 100).toFixed(2)} €). Minimum 30 € pour un virement.`,
+      }, { status: 400 });
+    }
 
-    await service
+    const { data: inserted, error: insErr } = await service
       .from('ambassador_payouts')
-      .update({
-        status: 'paid',
-        stripe_transfer_id: transfer.id,
-        stripe_payout_id: payout.id,
-        paid_at: new Date().toISOString(),
+      .insert({
+        ambassador_id: ambassadorId,
+        amount_cents: available,
+        status: 'pending',
       })
-      .eq('id', inserted.id);
+      .select('id, amount_cents')
+      .single();
 
-    return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Stripe error';
-    console.error('ambassador payout stripe call failed', err);
-    // Keep as pending; super-admin will resolve.
-    return NextResponse.json({
-      ok: true,
-      amount: inserted.amount_cents,
-      status: 'pending',
-      note: `Virement en attente de validation par l'administrateur. (${msg})`,
-    });
+    if (insErr || !inserted) {
+      // 23505 = unique violation on (ambassador_id) WHERE status='pending'.
+      if (insErr && (insErr as { code?: string }).code === '23505') {
+        return NextResponse.json({ error: 'Demande déjà en cours.' }, { status: 409 });
+      }
+      console.error('ambassador payout insert failed', insErr);
+      return NextResponse.json({ error: 'Erreur enregistrement de la demande' }, { status: 500 });
+    }
+
+    // Trigger the Stripe transfer + payout. On failure mark `failed` so the
+    // payout doesn't stay pending forever — super-admin can retry from admin UI.
+    try {
+      const transfer = await stripe.transfers.create({
+        amount: inserted.amount_cents,
+        currency: 'eur',
+        destination: amb.stripe_account_id,
+        metadata: { ambassador_id: ambassadorId, payout_id: inserted.id },
+      }, { idempotencyKey: `amb_payout_transfer:${inserted.id}` });
+
+      const payout = await stripe.payouts.create(
+        { amount: inserted.amount_cents, currency: 'eur', method: 'standard' },
+        { stripeAccount: amb.stripe_account_id, idempotencyKey: `amb_payout:${inserted.id}` }
+      );
+
+      await service
+        .from('ambassador_payouts')
+        .update({
+          status: 'paid',
+          stripe_transfer_id: transfer.id,
+          stripe_payout_id: payout.id,
+          paid_at: new Date().toISOString(),
+        })
+        .eq('id', inserted.id);
+
+      return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Stripe error';
+      console.error('ambassador payout stripe call failed', err);
+      await service
+        .from('ambassador_payouts')
+        .update({
+          status: 'failed',
+          failure_reason: msg,
+        })
+        .eq('id', inserted.id);
+      return NextResponse.json({
+        ok: false,
+        amount: inserted.amount_cents,
+        status: 'failed',
+        error: 'Le virement a échoué — un administrateur va reprendre la demande.',
+      }, { status: 502 });
+    }
+  } finally {
+    const releaseLock = (service.rpc as unknown as (
+      fn: 'release_advisory_lock_payout',
+      args: { p_ambassador_id: string }
+    ) => Promise<unknown>);
+    await releaseLock('release_advisory_lock_payout', { p_ambassador_id: ambassadorId });
   }
 }

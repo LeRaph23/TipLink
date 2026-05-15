@@ -42,19 +42,10 @@ export async function POST(req: Request) {
   let staffProfileId: string;
 
   if (selectedProfileId) {
-    // Claiming an existing pending profile
-    const { data: profile } = await service
-      .from('staff_profiles')
-      .select('id, establishment_id, user_id')
-      .eq('id', selectedProfileId)
-      .eq('establishment_id', establishmentId)
-      .eq('is_active', false)
-      .is('deleted_at', null)
-      .single();
-
-    if (!profile) return NextResponse.json({ error: 'Profil introuvable ou déjà réclamé.' }, { status: 404 });
-
-    const { error: patchErr } = await service
+    // Claiming an existing pending profile. The UPDATE is guarded by
+    // `is_active = false` so two users racing for the same invite link
+    // cannot both win — the second UPDATE matches 0 rows.
+    const { data: claimed, error: patchErr } = await service
       .from('staff_profiles')
       .update({
         user_id: user.id,
@@ -63,9 +54,23 @@ export async function POST(req: Request) {
         onboarding_status: 'not_started',
         ...(fullName?.trim() ? { full_name: fullName.trim() } : {}),
       })
-      .eq('id', selectedProfileId);
+      .eq('id', selectedProfileId)
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', false)
+      .is('deleted_at', null)
+      .select('id');
 
-    if (patchErr) return NextResponse.json({ error: patchErr.message }, { status: 500 });
+    if (patchErr) {
+      // 23505 = unique (user_id, establishment_id) — this user already has a
+      // profile in this establishment.
+      if ((patchErr as { code?: string }).code === '23505') {
+        return NextResponse.json({ error: 'Tu fais déjà partie de cet établissement.' }, { status: 409 });
+      }
+      return NextResponse.json({ error: patchErr.message }, { status: 500 });
+    }
+    if (!claimed || claimed.length === 0) {
+      return NextResponse.json({ error: 'Profil introuvable ou déjà réclamé.' }, { status: 409 });
+    }
     staffProfileId = selectedProfileId;
   } else {
     // Creating a new profile
@@ -93,7 +98,13 @@ export async function POST(req: Request) {
       .select('id')
       .single();
 
-    if (insertErr || !newProfile) return NextResponse.json({ error: insertErr?.message ?? 'Insert failed' }, { status: 500 });
+    if (insertErr || !newProfile) {
+      // 23505 = unique (user_id, establishment_id) — concurrent double-submit.
+      if (insertErr && (insertErr as { code?: string }).code === '23505') {
+        return NextResponse.json({ error: 'Profil déjà créé.' }, { status: 409 });
+      }
+      return NextResponse.json({ error: insertErr?.message ?? 'Insert failed' }, { status: 500 });
+    }
     staffProfileId = newProfile.id;
   }
 

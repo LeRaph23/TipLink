@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
@@ -7,6 +8,20 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 
 const RATE_LIMIT = { limit: 5, windowMs: 60_000 };
+const SERVICE_FEE = 25;
+
+const BodySchema = z.object({
+  staffId: z.string().uuid(),
+  amount: z.number().int().positive(),
+  tipAmount: z.number().int().min(50).max(100_000_00),
+  currency: z.enum(['eur', 'EUR', 'usd', 'USD', 'gbp', 'GBP']),
+  nonce: z.string().min(8).max(128),
+  customerEmail: z.string().email().optional(),
+  // Establishment expected by the page (resolved from the NFC sticker scan).
+  // Optional for legacy /pay/[staffId] callers that don't yet send it; when
+  // present the staff must belong to that establishment.
+  expectedEstablishmentId: z.string().uuid().optional(),
+});
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -23,34 +38,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { staffId: string; amount: number; tipAmount: number; currency: string; nonce: string; customerEmail?: string };
-
+  let json: unknown;
   try {
-    body = await request.json();
+    json = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { staffId, amount, tipAmount, currency, nonce, customerEmail } = body;
-
-  const SERVICE_FEE = 25;
-
-  // Validate optional email
-  const validatedEmail = customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(customerEmail)
-    ? customerEmail
-    : undefined;
-
-  if (
-    !staffId ||
-    typeof tipAmount !== 'number' ||
-    !Number.isFinite(tipAmount) ||
-    tipAmount < 50 ||
-    tipAmount > 100_000_00 ||
-    amount !== tipAmount + SERVICE_FEE ||
-    !currency ||
-    !nonce
-  ) {
+  const parsed = BodySchema.safeParse(json);
+  if (!parsed.success) {
     return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
+  }
+  const { staffId, amount, tipAmount, currency, nonce, customerEmail, expectedEstablishmentId } = parsed.data;
+
+  if (amount !== tipAmount + SERVICE_FEE) {
+    return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
   }
 
   const supabase = createServiceClient();
@@ -70,8 +72,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Cross-tenant guard: when the page provides the scanned establishment id,
+  // refuse to charge a staff that doesn't belong to it.
+  if (expectedEstablishmentId && staff.establishment_id !== expectedEstablishmentId) {
+    return NextResponse.json(
+      { error: 'Staff does not belong to this establishment' },
+      { status: 403 }
+    );
+  }
+
   // Resolve the platform commission rate: establishment -> group -> default.
-  // The group owns the commercial relationship; the rate lives on groups.
   let platformFeeBps = 500;
   if (staff.establishment_id) {
     const { data: estab } = await supabase
@@ -90,15 +100,10 @@ export async function POST(request: NextRequest) {
       }
     }
   }
-  // Commission is computed on tipAmount only (not the service fee).
-  // We also add the service fee (25 cents) to the application fee so it
-  // stays with the platform and offsets Stripe's fixed per-transaction cost.
   const applicationFeeAmount = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000)) + SERVICE_FEE;
 
   const idempotencyKey = generateIdempotencyKey({ staffId, amount, nonce });
 
-  // Insert pending transaction before Stripe call for full audit trail.
-  // 23505 = unique_violation (safe to ignore — idempotent replay scenario).
   const { data: txn, error: txnError } = await supabase
     .from('transactions')
     .insert({
@@ -138,15 +143,9 @@ export async function POST(request: NextRequest) {
       amount,
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true },
-      // Destination charge: platform is the merchant of record and bears
-      // Stripe's processing fees. Staff receives exactly
-      // amount - application_fee_amount (no hidden Stripe deductions).
       transfer_data: { destination: staff.stripe_account_id },
       ...(applicationFeeAmount > 0 ? { application_fee_amount: applicationFeeAmount } : {}),
-      ...(validatedEmail ? { receipt_email: validatedEmail } : {}),
-      // 3DS automatic: Stripe Radar decides per-payment. Apple Pay / Google
-      // Pay are inherently exempt (biometric SCA on device), so conversion
-      // on 1-5 EUR tips stays intact.
+      ...(customerEmail ? { receipt_email: customerEmail } : {}),
       payment_method_options: {
         card: { request_three_d_secure: 'automatic' },
       },

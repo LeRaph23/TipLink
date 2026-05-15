@@ -3,6 +3,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
+import { verifyOnboardingToken } from '@/lib/auth/onboarding-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,10 @@ export default async function OnboardingPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ code?: string; step?: string; group?: string; email?: string }>;
+  searchParams: Promise<{ code?: string; step?: string; group?: string; email?: string; token?: string }>;
 }) {
   const { locale } = await params;
-  const { code, group: groupParam, email: emailParam } = await searchParams;
+  const { code, group: groupParam, email: emailParam, token } = await searchParams;
   setRequestLocale(locale);
 
   // NFC scan mode (unauthenticated allowed)
@@ -28,8 +29,14 @@ export default async function OnboardingPage({
     );
   }
 
-  // Express checkout mode: group UUID + email from order confirmation email link
+  // Express checkout mode: requires a token signed by the server when the
+  // confirmation email was sent. Without it any UUID could trigger the wizard.
   if (groupParam) {
+    const verified = verifyOnboardingToken(token, groupParam);
+    if (!verified.valid) {
+      redirect(`/${locale}/login`);
+    }
+
     const service = createServiceClient();
     const { data: group } = await service
       .from('groups')
@@ -37,13 +44,13 @@ export default async function OnboardingPage({
       .eq('id', groupParam)
       .maybeSingle();
 
-    // If group doesn't exist or already onboarded, fall through to login
     if (group && !group.onboarding_completed_at) {
       return (
         <OnboardingWizard
           mode="express"
           groupId={group.id}
-          initialEmail={emailParam ? decodeURIComponent(emailParam) : ''}
+          initialEmail={verified.email || (emailParam ? decodeURIComponent(emailParam) : '')}
+          token={token!}
           locale={locale}
         />
       );

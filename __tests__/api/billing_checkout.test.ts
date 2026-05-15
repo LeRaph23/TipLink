@@ -88,7 +88,12 @@ describe('POST /api/billing/checkout', () => {
     process.env.NEXT_PUBLIC_BASE_URL = 'https://test.example.com';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key-min-10-chars';
-    process.env.STRIPE_SECRET_KEY = 'sk_test';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit_1234567890';
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_unit_1234567890';
+    process.env.CRON_SECRET = 'cron-test-secret-must-be-16-chars-or-more';
+    process.env.COLD_EMAIL_UNSUB_SECRET = 'cold-email-test-secret-must-be-16-chars';
+    process.env.ONBOARDING_TOKEN_SECRET = 'onboarding-test-secret-must-be-at-least-32-chars-long';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-test-1234567890';
     process.env.STRIPE_PRICE_PACK_SOLO_HARDWARE = 'price_solo_hw';
     process.env.STRIPE_PRICE_PACK_DUO_HARDWARE  = 'price_duo_hw';
   });

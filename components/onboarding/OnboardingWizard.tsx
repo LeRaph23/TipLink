@@ -63,6 +63,7 @@ type Props =
       establishment?: null;
       groupId: string;
       initialEmail: string;
+      token: string;
     };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
@@ -504,6 +505,7 @@ export function OnboardingWizard(props: Props) {
       // session. Otherwise the user logs in later with no role at all.
       const result = await completeExpressOnboarding({
         groupId: props.groupId,
+        token: props.token,
         establishmentName: state.establishmentName,
         address: state.address,
         adminFullName: state.adminFullName,

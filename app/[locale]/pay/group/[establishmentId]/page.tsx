@@ -181,10 +181,10 @@ export default async function GroupTipPage({
                 </div>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: '-0.01em', display: 'block' }}>
-                    Toute l&apos;équipe
+                    {t('group.wholeTeam')}
                   </span>
                   <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-                    Réparti équitablement entre {payableStaff.length} membres
+                    {t('group.splitEqually', { count: payableStaff.length })}
                   </span>
                 </div>
                 <span aria-hidden style={{ fontSize: 18, color: 'var(--accent)', opacity: 0.8 }}>→</span>

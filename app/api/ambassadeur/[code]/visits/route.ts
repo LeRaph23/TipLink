@@ -130,6 +130,12 @@ export async function POST(
     .single();
 
   if (error || !data) {
+    if (error && (error as { code?: string }).code === '23505') {
+      return NextResponse.json(
+        { error: 'Visite déjà enregistrée pour ce salon aujourd\'hui.' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: error?.message ?? 'Erreur DB' }, { status: 500 });
   }
 

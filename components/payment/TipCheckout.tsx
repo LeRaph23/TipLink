@@ -16,6 +16,9 @@ interface Props {
   amount: number;    // total charge in cents = tipAmount + service fee
   tipAmount: number; // the tip the customer selected, in cents
   currency: string;
+  // When the page reached this checkout via a group/establishment scan, pass
+  // the establishment id so the server can refuse cross-establishment tipping.
+  expectedEstablishmentId?: string;
 }
 
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -27,7 +30,7 @@ function getStripe() {
   return stripePromise;
 }
 
-export function TipCheckout({ staffId, amount, tipAmount, currency }: Props) {
+export function TipCheckout({ staffId, amount, tipAmount, currency, expectedEstablishmentId }: Props) {
   const options = useMemo<StripeElementsOptions>(
     () => ({
       mode: 'payment',
@@ -48,12 +51,12 @@ export function TipCheckout({ staffId, amount, tipAmount, currency }: Props) {
 
   return (
     <Elements stripe={getStripe()} options={options}>
-      <InnerCheckout staffId={staffId} amount={amount} tipAmount={tipAmount} currency={currency} />
+      <InnerCheckout staffId={staffId} amount={amount} tipAmount={tipAmount} currency={currency} expectedEstablishmentId={expectedEstablishmentId} />
     </Elements>
   );
 }
 
-function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
+function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablishmentId }: Props) {
   const stripe = useStripe();
   const elements = useElements();
   const t = useTranslations('pay');
@@ -78,7 +81,15 @@ function InnerCheckout({ staffId, amount, tipAmount, currency }: Props) {
     const res = await fetch('/api/stripe/create-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staffId, amount, tipAmount, currency, nonce, customerEmail: customerEmail.trim() || undefined }),
+      body: JSON.stringify({
+        staffId,
+        amount,
+        tipAmount,
+        currency,
+        nonce,
+        customerEmail: customerEmail.trim() || undefined,
+        ...(expectedEstablishmentId ? { expectedEstablishmentId } : {}),
+      }),
     });
     const data = await res.json();
     if (!res.ok || !data.clientSecret) {

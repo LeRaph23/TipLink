@@ -1,22 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createServiceClient } from '@/lib/supabase/service';
+import { serverEnv } from '@/lib/env';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 
-function verifyToken(token: string): string | null {
-  const lastDot = token.lastIndexOf('.');
-  if (lastDot === -1) return null;
-  const siret = token.slice(0, lastDot);
-  const sig = token.slice(lastDot + 1);
+// Token format: <siret>.<exp>.<sig> where sig = HMAC-SHA256("<siret>|<exp>", secret).
+// `exp` is a unix-ms timestamp; refusing past tokens prevents indefinite link reuse.
+function verifyToken(token: string): { siret: string } | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [siret, expStr, sig] = parts;
   if (!/^\d{14}$/.test(siret)) return null;
-  const secret = process.env.COLD_EMAIL_UNSUB_SECRET ?? process.env.CRON_SECRET ?? '';
-  const expected = crypto.createHmac('sha256', secret).update(siret).digest('hex').slice(0, 32);
+  const exp = Number(expStr);
+  if (!Number.isFinite(exp) || Date.now() > exp) return null;
+
+  const secret = serverEnv().COLD_EMAIL_UNSUB_SECRET;
+  const expected = crypto.createHmac('sha256', secret).update(`${siret}|${expStr}`).digest('hex').slice(0, 32);
   const sigBuf = Buffer.from(sig, 'hex');
   const expectedBuf = Buffer.from(expected, 'hex');
   if (sigBuf.length !== expectedBuf.length) return null;
   if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
-  return siret;
+  return { siret };
 }
 
 function html(body: string, status: 'ok' | 'err'): string {
@@ -44,12 +50,21 @@ function html(body: string, status: 'ok' | 'err'): string {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  const ip = getClientIp(new Headers(req.headers));
+  const rl = await rateLimit(`cold-email-unsub:${ip}`, { limit: 10, windowMs: 60_000 });
+  if (!rl.ok) {
+    return new NextResponse(html('Trop de requêtes. Réessaye dans une minute.', 'err'), {
+      status: 429,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    });
+  }
+
   const { token } = await params;
-  const siret = verifyToken(token);
-  if (!siret) {
+  const verified = verifyToken(token);
+  if (!verified) {
     return new NextResponse(html('Lien invalide ou expiré.', 'err'), {
       status: 400,
       headers: { 'content-type': 'text/html; charset=utf-8' },
@@ -60,7 +75,13 @@ export async function GET(
   await service
     .from('cold_email_prospects')
     .update({ unsubscribed_at: new Date().toISOString() })
-    .eq('siret', siret);
+    .eq('siret', verified.siret);
+
+  // Idempotent dedup log so subsequent hits are no-ops.
+  // The new table is not in generated types yet — cast minimally.
+  await (service.from('cold_email_unsubscribe_log') as unknown as {
+    upsert: (v: { siret: string }, opts: { onConflict: string }) => Promise<unknown>;
+  }).upsert({ siret: verified.siret }, { onConflict: 'siret' });
 
   return new NextResponse(
     html('Tu es désinscrit(e). On ne te recontactera plus. Si c\'était une erreur, écris-nous à privacy@digitip.app.', 'ok'),

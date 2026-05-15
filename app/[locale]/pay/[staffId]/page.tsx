@@ -92,8 +92,11 @@ export default async function StaffTipPage({
 
   const t = await getTranslations('pay');
 
+  // Resolve establishment id once: used both by the "tip the team" link in
+  // the not-payable view and by the AmountSelector cross-tenant guard below.
+  const establishmentId = await fetchEstablishmentId(staffId);
+
   if (!staff.is_payable) {
-    const establishmentId = await fetchEstablishmentId(staffId);
 
     return (
       <main
@@ -260,6 +263,7 @@ export default async function StaffTipPage({
             staffId={staff.id}
             currency={currency}
             thresholds={tipThresholds}
+            expectedEstablishmentId={establishmentId ?? undefined}
           />
         </Suspense>
 

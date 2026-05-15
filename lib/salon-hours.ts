@@ -11,17 +11,58 @@ export type OpeningHours = {
 
 export const WEEKDAYS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
+// "Friday" → 5 (matching JS getDay() / Google's day index).
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
+};
+
+// Compute the local weekday + minutes-of-day for an instant in a given IANA timezone.
+function localDayAndMinutes(at: Date, timezone: string): { day: number; minutes: number } {
+  // Intl.DateTimeFormat with `weekday: long` and 24h time emits values for the
+  // requested timezone; this is the cheapest reliable conversion in pure JS.
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  let weekday = 'Sunday';
+  let hour = 0;
+  let minute = 0;
+  for (const part of fmt.formatToParts(at)) {
+    if (part.type === 'weekday') weekday = part.value;
+    if (part.type === 'hour') hour = part.value === '24' ? 0 : parseInt(part.value, 10);
+    if (part.type === 'minute') minute = parseInt(part.value, 10);
+  }
+  return { day: WEEKDAY_INDEX[weekday] ?? at.getDay(), minutes: hour * 60 + minute };
+}
+
 /**
  * Is the salon open right now according to its Google opening_hours?
  * Returns null if we can't tell (no hours data).
+ *
+ * `timezone` is the salon's IANA timezone (e.g. "Europe/Paris"). When omitted
+ * the salon's local time is assumed to match the host's — only safe in tests
+ * or for back-compat with call sites that don't yet have the column.
  */
 export function isOpenNow(
   hours: OpeningHours,
-  at: Date = new Date()
+  at: Date = new Date(),
+  timezone: string = 'Europe/Paris'
 ): { open: boolean; nextChange: string | null } | null {
   if (!hours?.periods?.length) return null;
-  const day = at.getDay(); // 0 = Sunday, matching Google's day index
-  const minutesNow = at.getHours() * 60 + at.getMinutes();
+
+  let day: number;
+  let minutesNow: number;
+  try {
+    const local = localDayAndMinutes(at, timezone);
+    day = local.day;
+    minutesNow = local.minutes;
+  } catch {
+    day = at.getDay();
+    minutesNow = at.getHours() * 60 + at.getMinutes();
+  }
 
   for (const p of hours.periods) {
     if (!p.open || !p.close) continue;

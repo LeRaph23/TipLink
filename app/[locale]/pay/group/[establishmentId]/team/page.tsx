@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { GroupAmountSelector } from '@/components/payment/GroupAmountSelector';
 
@@ -46,6 +46,7 @@ export default async function TeamTipPage({
 }) {
   const { locale, establishmentId } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pay');
 
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(establishmentId)) {
     notFound();
@@ -57,6 +58,9 @@ export default async function TeamTipPage({
   const header = rows[0]!;
   const payableStaff = rows.filter((r) => r.staff_id && r.is_payable);
   if (payableStaff.length === 0) notFound();
+  const memberLabel = payableStaff.length === 1
+    ? t('group.memberOne')
+    : t('group.memberOther', { count: payableStaff.length });
 
   const salonName = header.establishment_name ?? 'Digitip';
   const currency = header.establishment_currency ?? 'EUR';
@@ -96,7 +100,7 @@ export default async function TeamTipPage({
             {salonName}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
-            Toute l&apos;équipe · {payableStaff.length} membre{payableStaff.length > 1 ? 's' : ''}
+            {t('group.wholeTeam')} · {memberLabel}
           </p>
         </div>
 
@@ -112,7 +116,7 @@ export default async function TeamTipPage({
             href={`/pay/group/${establishmentId}`}
             style={{ fontSize: 12.5, color: 'var(--text-3)', textDecoration: 'none' }}
           >
-            ← Choisir un membre en particulier
+            {t('group.pickIndividual')}
           </Link>
         </div>
 

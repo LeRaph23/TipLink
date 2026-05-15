@@ -552,8 +552,18 @@
       "pickStaffTitle": "Choisissez votre praticien·ne",
       "pickStaffSubtitle": "Sélectionnez la personne qui vous a servi·e pour lui laisser un pourboire.",
       "noStaff": "Aucun membre de l'équipe n'est encore prêt à recevoir des pourboires.",
-      "poweredBy": "Propulsé par Digitip"
+      "poweredBy": "Propulsé par Digitip",
+      "wholeTeam": "Toute l'équipe",
+      "memberOne": "1 membre",
+      "memberOther": "{count} membres",
+      "splitEqually": "Réparti équitablement entre {count} membres",
+      "perPerson": "{amount} / pers",
+      "pickIndividual": "← Choisir un membre en particulier",
+      "selectAmountTitle": "Choisir le montant",
+      "customAmountLabel": "Autre montant",
+      "selectAmountHelp": "Sélectionnez un montant pour continuer"
     },
+    "or": "ou",
     "errors": {
       "initFailed": "Impossible d'initier le paiement",
       "validationFailed": "Validation impossible",

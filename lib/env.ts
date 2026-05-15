@@ -33,6 +33,21 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(10),
   STRIPE_SECRET_KEY: z.string().min(10),
   STRIPE_WEBHOOK_SECRET: z.string().min(10),
+  // Cron + cold-email — required so /api/cron/* and /api/cold-email/unsubscribe
+  // are never accidentally publicly callable. Must be distinct so a leak of one
+  // does not allow forging the other.
+  CRON_SECRET: z.string().min(16),
+  COLD_EMAIL_UNSUB_SECRET: z.string().min(16),
+  // Onboarding express token signing secret. Used by lib/auth/onboarding-token.
+  ONBOARDING_TOKEN_SECRET: z.string().min(32),
+  // Stripe Price IDs — required at boot so a missed env var cannot silently
+  // fall back to a dev/zero price.
+  STRIPE_PRICE_PACK_SOLO_HARDWARE: z.string().min(3),
+  STRIPE_PRICE_PACK_DUO_HARDWARE: z.string().min(3),
+  // Dev-only routes (seed-demo) gated by an explicit boolean rather than
+  // NODE_ENV so a preview deployment with NODE_ENV=production can't be tricked
+  // into exposing them.
+  SEED_DEMO_ENABLED: z.enum(['true', 'false']).optional().default('false'),
   // Ambassador system (optional — ambassador routes degrade to 500 when absent)
   TELEGRAM_BOT_TOKEN: z.string().min(10).optional(),
   TELEGRAM_CHAT_ID: z.string().min(1).optional(),
@@ -48,6 +63,12 @@ export function serverEnv() {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    CRON_SECRET: process.env.CRON_SECRET,
+    COLD_EMAIL_UNSUB_SECRET: process.env.COLD_EMAIL_UNSUB_SECRET,
+    ONBOARDING_TOKEN_SECRET: process.env.ONBOARDING_TOKEN_SECRET,
+    STRIPE_PRICE_PACK_SOLO_HARDWARE: process.env.STRIPE_PRICE_PACK_SOLO_HARDWARE,
+    STRIPE_PRICE_PACK_DUO_HARDWARE: process.env.STRIPE_PRICE_PACK_DUO_HARDWARE,
+    SEED_DEMO_ENABLED: process.env.SEED_DEMO_ENABLED,
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
     TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
     AMBASSADOR_SESSION_SECRET: process.env.AMBASSADOR_SESSION_SECRET,
@@ -91,17 +112,12 @@ type StripePackPrices = {
   hardware: string;
 };
 
-function req(name: string): string {
-  const v = process.env[name];
-  if (!v) {
-    throw new Error(`${name} is not set. Define it in your environment.`);
-  }
-  return v;
-}
-
 export function getPackPrices(pack: PackId): StripePackPrices {
-  const suffix = pack.toUpperCase();
+  const env = serverEnv();
   return {
-    hardware: req(`STRIPE_PRICE_PACK_${suffix}_HARDWARE`),
+    hardware:
+      pack === 'solo'
+        ? env.STRIPE_PRICE_PACK_SOLO_HARDWARE
+        : env.STRIPE_PRICE_PACK_DUO_HARDWARE,
   };
 }

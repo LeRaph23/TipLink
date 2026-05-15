@@ -552,8 +552,18 @@
       "pickStaffTitle": "Choose your stylist",
       "pickStaffSubtitle": "Select the person who served you to leave them a tip.",
       "noStaff": "No team members are ready to receive tips yet.",
-      "poweredBy": "Powered by Digitip"
+      "poweredBy": "Powered by Digitip",
+      "wholeTeam": "The whole team",
+      "memberOne": "1 member",
+      "memberOther": "{count} members",
+      "splitEqually": "Split equally between {count} members",
+      "perPerson": "{amount} / person",
+      "pickIndividual": "← Pick an individual member",
+      "selectAmountTitle": "Choose the amount",
+      "customAmountLabel": "Other amount",
+      "selectAmountHelp": "Select an amount to continue"
     },
+    "or": "or",
     "errors": {
       "initFailed": "Payment init failed",
       "validationFailed": "Validation failed",

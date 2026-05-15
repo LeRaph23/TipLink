@@ -61,8 +61,9 @@ describe('searchSirene', () => {
     const url0 = String(fetchMock.mock.calls[0]![0]);
     const url1 = String(fetchMock.mock.calls[1]![0]);
     expect(url0).toContain('etatAdministratifEtablissement%3AA');
-    expect(url0).toContain('4791B');
-    expect(url1).toContain('7022Z');
+    // The lib normalizes 5-char NAF codes to dotted form (47.91B not 4791B).
+    expect(url0).toContain('47.91B');
+    expect(url1).toContain('70.22Z');
     expect(url0).toContain('2024-01-01');
     expect(url0).toContain('2025-01-01');
   });

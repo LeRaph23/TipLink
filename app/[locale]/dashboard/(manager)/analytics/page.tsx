@@ -15,10 +15,14 @@ export default async function AnalyticsPage({
   await supabase.auth.getUser();
 
   // Find staff ids this user manages (through group/establishment via RLS).
+  // Capped to keep the page responsive on large tenants.
+  const STAFF_LIMIT = 5000;
+  const TX_LIMIT = 50_000;
   const { data: staffRows } = await supabase
     .from('staff_profiles')
     .select('id, full_name')
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .limit(STAFF_LIMIT);
 
   const staffIds = staffRows?.map((s) => s.id) ?? [];
   const staffNameById = new Map((staffRows ?? []).map((s) => [s.id, s.full_name] as const));
@@ -33,7 +37,8 @@ export default async function AnalyticsPage({
     .in('staff_id', staffIds.length ? staffIds : ['00000000-0000-0000-0000-000000000000'])
     .eq('status', 'succeeded')
     .gte('created_at', thirtyDaysAgo)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(TX_LIMIT);
 
   const currency = txs?.[0]?.currency ?? 'EUR';
 

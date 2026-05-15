@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { inviteStaffMember } from './staff';
+import { verifyOnboardingToken } from '@/lib/auth/onboarding-token';
 
 const ColleagueSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -62,12 +63,17 @@ function makeSlug(name: string): string {
 export async function validateSmartTagCode(
   code: string
 ): Promise<{ valid: boolean; id?: string }> {
+  const normalized = code.trim().toLowerCase();
+  if (normalized.length < 4 || !/^[a-z0-9_-]+$/.test(normalized)) {
+    return { valid: false };
+  }
   const service = createServiceClient();
   const { data } = await service
     .from('nfc_stickers')
     .select('id')
-    .ilike('short_id', code.trim())
+    .eq('short_id', normalized)
     .is('establishment_id', null)
+    .is('staff_id', null)
     .maybeSingle();
 
   return data ? { valid: true, id: data.id } : { valid: false };
@@ -176,6 +182,9 @@ export async function completePostPurchaseOnboarding(
 
 const ExpressOnboardingSchema = z.object({
   groupId: z.string().uuid(),
+  // HMAC token signed by the server when the order confirmation email was sent.
+  // Without it the wizard cannot be completed for an arbitrary group UUID.
+  token: z.string().min(10),
   establishmentName: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
@@ -196,7 +205,12 @@ export async function completeExpressOnboarding(
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
 
   const service = createServiceClient();
-  const { groupId, establishmentName, address, adminFullName, colleagues, locale, userId } = parsed.data;
+  const { groupId, token, establishmentName, address, adminFullName, colleagues, locale, userId } = parsed.data;
+
+  const verified = verifyOnboardingToken(token, groupId);
+  if (!verified.valid) {
+    return { error: 'Lien d\'activation invalide ou expiré.' };
+  }
 
   const supabase = await createClient();
   const { data: { user: sessionUser } } = await supabase.auth.getUser();
@@ -316,23 +330,7 @@ export async function completeNfcOnboarding(
   const { data: { user }, error: userErr } = await service.auth.admin.getUserById(userId);
   if (userErr || !user) return { error: 'Utilisateur introuvable.' };
 
-  // Verify all NFC codes are valid unassigned stickers
   const normalizedCodes = nfcCodes.map((c) => c.trim().toLowerCase());
-  const { data: stickers } = await service
-    .from('nfc_stickers')
-    .select('id, short_id')
-    .is('establishment_id', null);
-
-  const foundCodes = new Set((stickers ?? []).map((s) => s.short_id.toLowerCase()));
-  const invalid = normalizedCodes.filter((c) => !foundCodes.has(c));
-  if (invalid.length > 0) {
-    return { error: `Codes invalides ou déjà assignés : ${invalid.join(', ')}` };
-  }
-
-  const matchingStickers = (stickers ?? []).filter((s) =>
-    normalizedCodes.includes(s.short_id.toLowerCase())
-  );
-
   const slug = makeSlug(establishmentName);
 
   // Create group
@@ -370,12 +368,31 @@ export async function completeNfcOnboarding(
     return { error: estErr?.message ?? 'Erreur lors de la création de l\'établissement.' };
   }
 
-  // Assign only the entered stickers to this establishment
-  if (matchingStickers.length > 0) {
-    await service
-      .from('nfc_stickers')
-      .update({ establishment_id: est.id })
-      .in('id', matchingStickers.map((s) => s.id));
+  // Atomically claim the stickers via the SECURITY DEFINER RPC. Two parallel
+  // onboardings cannot grab the same sticker thanks to FOR UPDATE SKIP LOCKED.
+  // RPC name is not yet in the generated types — cast the rpc() call.
+  const claimRpc = (service.rpc as unknown as (
+    fn: 'claim_nfc_stickers',
+    args: { p_short_ids: string[]; p_establishment_id: string }
+  ) => Promise<{ data: Array<{ id: string; short_id: string }> | null; error: { message: string } | null }>);
+  const { data: claimed, error: claimErr } = await claimRpc('claim_nfc_stickers', {
+    p_short_ids: normalizedCodes,
+    p_establishment_id: est.id,
+  });
+
+  if (claimErr) {
+    await service.from('establishments').update({ deleted_at: new Date().toISOString() }).eq('id', est.id);
+    await service.from('groups').update({ deleted_at: new Date().toISOString() }).eq('id', group.id);
+    return { error: claimErr.message };
+  }
+
+  const claimedCodes = new Set((claimed ?? []).map((r) => r.short_id.toLowerCase()));
+  const missing = normalizedCodes.filter((c) => !claimedCodes.has(c));
+  if (missing.length > 0) {
+    // Roll back everything — the user must restart with valid codes.
+    await service.from('establishments').update({ deleted_at: new Date().toISOString() }).eq('id', est.id);
+    await service.from('groups').update({ deleted_at: new Date().toISOString() }).eq('id', group.id);
+    return { error: `Codes invalides ou déjà assignés : ${missing.join(', ')}` };
   }
 
   // Create group_admin role for the new user

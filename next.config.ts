@@ -37,8 +37,10 @@ const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
   // Enforce HTTPS for 1 year (Vercel/CDN may add this too, belt-and-suspenders)
   { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-  // CSP in report-only mode first — convert to enforcing after validating no violations
-  { key: 'Content-Security-Policy-Report-Only', value: CSP },
+  // CSP enforced. 'unsafe-inline' on script-src is required for Next.js
+  // bootstrap; the rest of the policy still blocks unauthorized origins,
+  // frames, form actions, and base-uri overrides.
+  { key: 'Content-Security-Policy', value: CSP },
 ];
 
 const nextConfig: NextConfig = {

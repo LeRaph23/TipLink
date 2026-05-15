@@ -5,17 +5,16 @@ import { createServiceClient } from '@/lib/supabase/service';
 // can log in and exercise the whole dashboard without running the real
 // onboarding + Stripe checkout flow.
 //
-// Guarded behind NODE_ENV !== 'production' AND an explicit env flag so it
-// can never leak on a prod deployment even if someone flips NODE_ENV.
+// Gated behind a SINGLE explicit env var (SEED_DEMO_ENABLED=true). NODE_ENV
+// is intentionally NOT consulted — a preview deployment with NODE_ENV set to
+// "production" must still be opened by setting SEED_DEMO_ENABLED.
 export const runtime = 'nodejs';
 
 const DEMO_EMAIL = 'demo@tiplink.dev';
 const DEMO_PASSWORD = 'demo1234!';
 
 function isDevEnabled() {
-  if (process.env.NODE_ENV === 'production') return false;
-  if (process.env.DISABLE_DEMO_SEED === '1') return false;
-  return true;
+  return process.env.SEED_DEMO_ENABLED === 'true';
 }
 
 function rand<T>(arr: T[]): T {

@@ -10,9 +10,10 @@ interface Props {
   staffId: string;
   currency: string;
   thresholds: number[];
+  expectedEstablishmentId?: string;
 }
 
-export function AmountSelector({ staffId, currency, thresholds }: Props) {
+export function AmountSelector({ staffId, currency, thresholds, expectedEstablishmentId }: Props) {
   const t = useTranslations('pay');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [custom, setCustom] = useState('');
@@ -109,6 +110,7 @@ export function AmountSelector({ staffId, currency, thresholds }: Props) {
           tipAmount={tipAmount}
           amount={tipAmount + SERVICE_FEE_CENTS}
           currency={currency}
+          expectedEstablishmentId={expectedEstablishmentId}
         />
       )}
 

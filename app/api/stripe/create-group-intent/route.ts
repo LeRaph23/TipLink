@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
@@ -8,6 +9,15 @@ export const runtime = 'nodejs';
 
 const RATE_LIMIT = { limit: 5, windowMs: 60_000 };
 const SERVICE_FEE = 25;
+
+const BodySchema = z.object({
+  establishmentId: z.string().uuid(),
+  amount: z.number().int().positive(),
+  tipAmount: z.number().int().min(50).max(100_000_00),
+  currency: z.enum(['eur', 'EUR', 'usd', 'USD', 'gbp', 'GBP']),
+  nonce: z.string().min(8).max(128),
+  customerEmail: z.string().email().optional(),
+});
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -19,30 +29,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { establishmentId: string; amount: number; tipAmount: number; currency: string; nonce: string; customerEmail?: string };
+  let json: unknown;
   try {
-    body = await request.json();
+    json = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { establishmentId, amount, tipAmount, currency, nonce, customerEmail } = body;
-
-  const validatedEmail = customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)
-    ? customerEmail
-    : undefined;
-
-  if (
-    !establishmentId ||
-    typeof tipAmount !== 'number' ||
-    !Number.isFinite(tipAmount) ||
-    tipAmount < 50 ||
-    tipAmount > 100_000_00 ||
-    amount !== tipAmount + SERVICE_FEE ||
-    !currency ||
-    !nonce
-  ) {
+  const parsed = BodySchema.safeParse(json);
+  if (!parsed.success) {
     return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
+  }
+  const { establishmentId, amount, tipAmount, currency, nonce, customerEmail } = parsed.data;
+
+  if (amount !== tipAmount + SERVICE_FEE) {
+    return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
   }
 
   const supabase = createServiceClient();
@@ -84,7 +85,6 @@ export async function POST(request: NextRequest) {
   }
 
   const platformFee = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000));
-  // Platform keeps: platformFee + SERVICE_FEE. Staff receive the rest split equally.
 
   const idempotencyKey = generateIdempotencyKey({ staffId: establishmentId, amount, nonce });
 
@@ -134,9 +134,8 @@ export async function POST(request: NextRequest) {
       amount,
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true },
-      // No on_behalf_of: payment lands on platform account, transfers created by webhook
       transfer_group: transferGroup,
-      ...(validatedEmail ? { receipt_email: validatedEmail } : {}),
+      ...(customerEmail ? { receipt_email: customerEmail } : {}),
       payment_method_options: {
         card: { request_three_d_secure: 'automatic' },
       },

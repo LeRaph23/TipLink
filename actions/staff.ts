@@ -270,6 +270,18 @@ export async function deactivateStaffMember(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
 
+  // Block soft-delete when there are pending tips: the FK is ON DELETE RESTRICT
+  // and the UI would silently get an opaque error from the DB layer.
+  const { count: pendingCount } = await supabase
+    .from('transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('staff_id', staffId)
+    .eq('status', 'pending');
+
+  if ((pendingCount ?? 0) > 0) {
+    return { error: 'Ce membre a des paiements en attente. Réessaie une fois qu\'ils sont réglés.' };
+  }
+
   const { data: updated, error } = await supabase
     .from('staff_profiles')
     .update({ is_active: false, deleted_at: new Date().toISOString() })

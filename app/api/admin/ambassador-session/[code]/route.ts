@@ -2,23 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { buildCookieValue } from '@/app/api/ambassadeur/[code]/auth/route';
+import { logAdminAction } from '@/lib/admin/audit';
 
 export const runtime = 'nodejs';
 
-async function isSuperAdmin(): Promise<boolean> {
+async function getSuperAdminUserId(): Promise<string | null> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+    if (!user) return null;
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .eq('role', 'super_admin')
       .limit(1);
-    return (roles?.length ?? 0) > 0;
+    return (roles?.length ?? 0) > 0 ? user.id : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -28,7 +29,8 @@ export async function GET(
 ) {
   const { code } = await params;
 
-  if (!(await isSuperAdmin())) {
+  const adminUserId = await getSuperAdminUserId();
+  if (!adminUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -58,6 +60,12 @@ export async function GET(
   if (!ambassador) {
     return NextResponse.json({ error: 'Ambassadeur introuvable ou inactif' }, { status: 404 });
   }
+
+  // Audit: record that a super-admin took over this ambassador's dashboard.
+  await logAdminAction('ambassador_session_takeover', {
+    ambassador_id: ambassador.id,
+    code: code.toLowerCase(),
+  });
 
   const cookieValue = buildCookieValue(ambassador.id, code, secret);
   const dashboardUrl = `/fr/ambassadeur/${code.toLowerCase()}`;

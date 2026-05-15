@@ -136,7 +136,7 @@ describe('POST /api/stripe/create-intent', () => {
     const { POST } = await import('@/app/api/stripe/create-intent/route');
     const res = await POST(
       buildRequest(
-        { staffId: 'missing', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'n' },
+        { staffId: '550e8400-e29b-41d4-a716-446655440002', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-missing-long' },
         '10.0.0.3'
       )
     );
@@ -164,7 +164,7 @@ describe('POST /api/stripe/create-intent', () => {
     const { POST } = await import('@/app/api/stripe/create-intent/route');
     const res = await POST(
       buildRequest(
-        { staffId: 'staff-1', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-1' },
+        { staffId: '550e8400-e29b-41d4-a716-446655440001', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-1-long-enough' },
         '10.0.0.4'
       )
     );
@@ -207,7 +207,7 @@ describe('POST /api/stripe/create-intent', () => {
     const { POST } = await import('@/app/api/stripe/create-intent/route');
     const res = await POST(
       buildRequest(
-        { staffId: 'staff-1', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-dup' },
+        { staffId: '550e8400-e29b-41d4-a716-446655440001', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-dup-long-enough' },
         '10.0.0.5'
       )
     );
@@ -240,7 +240,7 @@ describe('POST /api/stripe/create-intent', () => {
     const ip = '99.99.99.99';
     const mkReq = (i: number) =>
       buildRequest(
-        { staffId: 'staff-1', amount: 525, tipAmount: 500, currency: 'EUR', nonce: `n-${i}` },
+        { staffId: '550e8400-e29b-41d4-a716-446655440001', amount: 525, tipAmount: 500, currency: 'EUR', nonce: `nonce-${i}-long-enough` },
         ip
       );
 
