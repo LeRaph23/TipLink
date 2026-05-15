@@ -126,7 +126,7 @@ export async function generateMetadata({
           url: '/icon.jpg',
           width: 1200,
           height: 630,
-          alt: 'Digitip — Pourboires cashless par NFC',
+          alt: 'Digitip — Pourboires par CB via NFC',
         },
       ],
     },
@@ -164,7 +164,7 @@ export function generateStaticParams() {
 function buildJsonLd(locale: string) {
   const description =
     locale === 'fr'
-      ? "Digitip propose des SmartTags NFC pré-configurés pour collecter des pourboires cashless en un tap. Plateforme française disponible sur digitip.app."
+      ? "Digitip propose des SmartTags NFC pré-configurés pour collecter des pourboires sans contact en un tap. Plateforme française disponible sur digitip.app."
       : 'Digitip offers pre-configured NFC SmartTags to collect cashless tips with a single tap. French platform available at digitip.app.';
 
   const organization = {

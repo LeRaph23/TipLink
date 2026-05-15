@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "Digitip - Pourboires par CB via NFC | digitip.app",
-    "description": "Digitip est l'app de pourboires cashless par NFC : posez un SmartTag, vos clients laissent un pourboire en un tap. Solution française pour coiffeurs, restaurants et hôtels — disponible sur digitip.app."
+    "description": "Digitip est l'app de pourboires sans contact par NFC : posez un SmartTag, vos clients laissent un pourboire en un tap. Solution française pour coiffeurs, restaurants et hôtels — disponible sur digitip.app."
   },
   "common": {
     "login": "Connexion",
@@ -80,7 +80,7 @@
       "title": "Conditions générales",
       "intro": "Ces conditions régissent votre utilisation de Digitip. En créant un compte ou en passant commande, vous les acceptez dans leur intégralité.",
       "s1Title": "1. Le service",
-      "s1Body": "Digitip fournit des SmartTags NFC et une plateforme logicielle permettant aux clients de laisser des pourboires cashless au personnel. Les pourboires sont traités via Stripe Connect et versés directement sur les comptes bancaires des membres du personnel.",
+      "s1Body": "Digitip fournit des SmartTags NFC et une plateforme logicielle permettant aux clients de laisser des pourboires sans contact au personnel. Les pourboires sont traités via Stripe Connect et versés directement sur les comptes bancaires des membres du personnel.",
       "s2Title": "2. Éligibilité",
       "s2Body": "Vous devez avoir au moins 18 ans, être habilité à engager votre entreprise, et exploiter une activité légale d'hôtellerie, de restauration ou de service dans un pays où Stripe Connect est disponible.",
       "s3Title": "3. Abonnement & commandes",
@@ -168,7 +168,7 @@
     },
     "hero": {
       "badge": "4.8 / 5",
-      "srBrand": "Digitip — l'app de pourboires cashless par NFC, disponible sur digitip.app.",
+      "srBrand": "Digitip — l'app de pourboires sans contact par NFC, disponible sur digitip.app.",
       "h1a": "Le meilleur moyen",
       "h1b": "d'encaisser plus de",
       "h1c": "pourboires",
