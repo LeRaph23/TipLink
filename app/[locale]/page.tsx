@@ -11,7 +11,7 @@ import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
 import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFlag';
 import { fetchPackPricingAction } from '@/actions/pricing';
 import type { PackPricing } from '@/lib/stripe/pricing';
-import { formatPriceCents } from '@/lib/format-price';
+import { formatPriceCents, htSuffix } from '@/lib/format-price';
 
 type PackId = 'solo' | 'duo';
 type PricingMap = Record<PackId, PackPricing>;
@@ -612,6 +612,7 @@ function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo
                   <p style={{ fontSize: 13, color: '#74748a', marginBottom: 14 }}>{p.tags}</p>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 16 }}>
                     <span style={{ fontSize: 24, fontWeight: 900, color: '#111118', letterSpacing: '-0.03em' }}>{p.price}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#a0a0b8' }}>{htSuffix(locale)}</span>
                     {p.full && (
                       <span style={{ fontSize: 14, color: '#c4c4d4', textDecoration: 'line-through', fontWeight: 500 }}>{p.full}</span>
                     )}

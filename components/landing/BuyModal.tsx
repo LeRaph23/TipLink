@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import type { PackPricing } from '@/lib/stripe/pricing';
-import { formatPriceCents } from '@/lib/format-price';
+import { formatPriceCents, htSuffix } from '@/lib/format-price';
 
 type Pack = 'solo' | 'duo';
 
@@ -101,7 +101,7 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
                     {p === 'solo' ? 'Solo' : 'Duo'}
                   </div>
                   <div style={{ fontSize: 11.5, color: '#6b6d85' }}>
-                    {ppQty} plaque{ppQty > 1 ? 's' : ''} · {ppPrice}
+                    {ppQty} plaque{ppQty > 1 ? 's' : ''} · {ppPrice} {htSuffix('fr')}
                   </div>
                 </button>
               );
@@ -134,7 +134,10 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
               </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{priceLabel}</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>
+                {priceLabel}
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#a0a0b8', marginLeft: 3 }}>{htSuffix('fr')}</span>
+              </div>
               {listLabel && (
                 <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>{listLabel}</div>
               )}

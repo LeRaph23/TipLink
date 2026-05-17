@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS, type PackId } from '@/lib/env';
+import { htSuffix } from '@/lib/format-price';
 import { createClient } from '@/lib/supabase/server';
 
 function Check() {
@@ -145,6 +146,7 @@ export default async function PricingPage({
                       <span style={{ fontSize: 42, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>
                         {formatPrice(def.hardwareAmount)}
                       </span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#a0a0b8' }}>{htSuffix(locale)}</span>
                     </div>
                     <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4 }}>
                       {t('oneTime')} · {t('tagsIncluded', { count: def.quantity })}

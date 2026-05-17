@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { PACKS } from '@/lib/env';
 import type { OrderState, Step } from '@/lib/order-validation';
 import { formatPrice } from './OrderSummary';
+import { htSuffix } from '@/lib/format-price';
 
 function Row({
   label,
@@ -115,7 +116,7 @@ export function StepReview({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: 'var(--text-2)' }}>
             <span>{t('hardware')}</span>
-            <span style={{ color: 'var(--text)', fontWeight: 600 }}>{formatPrice(def.hardwareAmount, locale)}</span>
+            <span style={{ color: 'var(--text)', fontWeight: 600 }}>{formatPrice(def.hardwareAmount, locale)} {htSuffix(locale)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: 'var(--text-2)' }}>
             <span>{t('commission')}</span>

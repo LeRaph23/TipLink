@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import type { PackPricing } from '@/lib/stripe/pricing';
-import { formatPriceCents } from '@/lib/format-price';
+import { formatPriceCents, htSuffix } from '@/lib/format-price';
 import { CountryFlag } from '@/components/landing/CountryFlag';
 
 function StarIcon({ size = 15 }: { size?: number }) {
@@ -241,6 +241,7 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
           <span style={{ fontSize: 32, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>{offer}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#a0a0b8' }}>{htSuffix(locale)}</span>
           {fullStrike && (
             <span style={{ fontSize: 18, color: '#6b6d85', textDecoration: 'line-through' }}>{fullStrike}</span>
           )}

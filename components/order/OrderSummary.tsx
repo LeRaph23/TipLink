@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
+import { htSuffix } from '@/lib/format-price';
 
 const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
   solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
@@ -84,7 +85,7 @@ export function OrderSummary({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <Row label={t('hardware')} value={formatPrice(def.hardwareAmount, locale)} />
+        <Row label={t('hardware')} value={`${formatPrice(def.hardwareAmount, locale)} ${htSuffix(locale)}`} />
         <Row label={t('shipping')} value={t('free')} />
         <Row label={t('commission')} value={t('commissionValue')} />
       </div>
@@ -99,6 +100,7 @@ export function OrderSummary({
           fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em',
         }}>
           {formatPrice(def.hardwareAmount, locale)}
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', marginLeft: 4 }}>{htSuffix(locale)}</span>
         </span>
       </div>
     </div>

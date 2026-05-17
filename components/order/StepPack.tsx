@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
 import { formatPrice } from './OrderSummary';
+import { htSuffix } from '@/lib/format-price';
 
 const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
   solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
@@ -103,6 +104,7 @@ export function StepPack({
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
                 {formatPrice(def.hardwareAmount, locale)}
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginLeft: 3 }}>{htSuffix(locale)}</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
                 {t('oneTime')}
