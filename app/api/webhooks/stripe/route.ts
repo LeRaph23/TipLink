@@ -1118,10 +1118,19 @@ async function handlePackExpressPaid(
   let invoicePdfUrl: string | null = null;
   if (customerId && newOrder?.id) {
     try {
+      // HT (excl. VAT) so the invoice breaks out VAT consistently with the
+      // amount charged. `ht_amount` is written by /api/billing/pack-tax;
+      // fall back to base_amount − discount for older PIs.
+      const htAmount = intent.metadata?.ht_amount
+        ? parseInt(intent.metadata.ht_amount, 10)
+        : (intent.metadata?.base_amount
+            ? Math.max(0, parseInt(intent.metadata.base_amount, 10) - discountAmount)
+            : null);
       const { invoiceId, invoicePdfUrl: pdf } = await createPackInvoiceForPaymentIntent({
         paymentIntent: intent,
         customerId,
         description: `Digitip — Pack ${pack === 'solo' ? 'Solo' : 'Duo'} (${quantity} SmartTag${quantity > 1 ? 's' : ''})`,
+        htAmount,
       });
       invoicePdfUrl = pdf;
       await supabase

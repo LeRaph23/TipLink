@@ -343,7 +343,7 @@ export default async function OrderDetailPage({
           </div>
           {invoicePdfUrl ? (
             <a
-              href={invoicePdfUrl}
+              href={`/${locale}/dashboard/billing/orders/${order.id}/invoice`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
