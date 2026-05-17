@@ -7,6 +7,7 @@ import {
   sendReferralWelcomeToCandidate,
 } from '@/lib/email';
 import { resolveReferralCode } from '@/lib/referrals';
+import { getSuperAdminEmails } from '@/lib/admin/super-admins';
 
 export const runtime = 'nodejs';
 
@@ -102,11 +103,23 @@ export async function POST(req: NextRequest) {
   const phoneStr = String(phone).trim();
   const emailStr = String(email).trim();
 
+  // Notify every super admin so a new application is never missed, even if
+  // nobody is watching the dashboard. ADMIN_NOTIFICATION_EMAIL is kept as an
+  // extra recipient when set.
+  const superAdminEmails = await getSuperAdminEmails(service).catch(() => []);
+  const adminRecipients = [
+    ...new Set([
+      ...superAdminEmails,
+      ...(process.env.ADMIN_NOTIFICATION_EMAIL ? [process.env.ADMIN_NOTIFICATION_EMAIL] : []),
+    ]),
+  ];
+
   await Promise.all([
     referrer
       ? sendReferralWelcomeToCandidate({ to: emailStr, firstName: firstNameStr, parrainName: referrer.name }).catch(() => {})
       : sendAmbassadorApplicationConfirmation({ to: emailStr, firstName: firstNameStr }).catch(() => {}),
     sendAmbassadorApplicationAdmin({
+      to: adminRecipients,
       firstName: firstNameStr,
       lastName: lastNameStr,
       city: cityStr,

@@ -444,6 +444,7 @@ export async function sendAmbassadorApplicationConfirmation(opts: {
 // ─── Ambassador recruitment — internal admin alert ────────────────────────────
 
 export async function sendAmbassadorApplicationAdmin(opts: {
+  to: string[];
   firstName: string;
   lastName: string;
   city: string;
@@ -452,14 +453,12 @@ export async function sendAmbassadorApplicationAdmin(opts: {
   siret: string;
   notes?: string | null;
 }): Promise<void> {
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (!resend || !adminEmail) return;
-
-  const { firstName, lastName, city, phone, email, siret, notes } = opts;
+  const { to, firstName, lastName, city, phone, email, siret, notes } = opts;
+  if (!resend || to.length === 0) return;
 
   await resend.emails.send({
     from: FROM,
-    to: adminEmail,
+    to,
     replyTo: email,
     subject: `Nouvelle candidature ambassadeur — ${firstName} ${lastName}`,
     html: themedLayout(`
