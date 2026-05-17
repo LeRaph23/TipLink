@@ -5,6 +5,7 @@ import { AmbassadeurPayoutPanel } from './AmbassadeurBanking';
 import { AmbassadeurContracts } from './AmbassadeurContracts';
 import { AmbassadeurReferralPanel } from './AmbassadeurReferralPanel';
 import { AmbassadeurSalonsTracker } from './AmbassadeurSalonsTracker';
+import { AmbassadeurStatement } from './AmbassadeurStatement';
 
 type AuthState = 'loading' | 'pin-required' | 'pin-setup' | 'pin-setup-invalid' | 'authenticated';
 
@@ -588,6 +589,9 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             onChanged={refreshBankingAndPayout}
           />
         )}
+
+        {/* Relevé de compte — détail du solde */}
+        <AmbassadeurStatement code={code} />
 
         {/* Leaderboard du mois */}
         <div style={{
