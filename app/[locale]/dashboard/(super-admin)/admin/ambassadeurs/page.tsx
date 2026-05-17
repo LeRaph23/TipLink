@@ -5,12 +5,14 @@ import { AmbassadeursManager } from './AmbassadeursManager';
 import { AmbassadeursOverview, type AmbassadorOverviewRow, type PendingPayoutRow } from './AmbassadeursOverview';
 import { RecruitmentApplications, type RecruitmentApplicationRow } from './RecruitmentApplications';
 import { ReferralsPanel, type ReferralFilleulRow, type ReferralMilestoneRow } from './ReferralsPanel';
+import { BonusesPanel, type BonusReviewRow } from './BonusesPanel';
 import {
   getWeekBounds,
   getMonthBounds,
   getWeeklyTier,
   computeTotalBaseCommission,
-  computeClosedWeekBonuses,
+  computeClosedWeekBonusBreakdown,
+  computeClosedMonthlyBonuses,
 } from '@/lib/ambassador-tiers';
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -157,6 +159,62 @@ export default async function AdminAmbassadeursPage({
   // Slim list for the "parrain" picker in the create-ambassador form.
   const referrerOptions = (ambassadors ?? []).map((a) => ({ id: a.id, name: a.name }));
 
+  // ─── Bonuses to review ─────────────────────────────────────────────────────
+  // Every bonus is paid manually. We list each bonus earned from current
+  // (non-voided) sales and flag which ones a super-admin has already credited.
+  const { data: bonusCreditRows } = await service
+    .from('ambassador_bonus_credits')
+    .select('ambassador_id, kind, period_key, amount_cents');
+
+  const creditedBonusKeys = new Set(
+    (bonusCreditRows ?? []).map((c) => `${c.ambassador_id}|${c.kind}|${c.period_key}`)
+  );
+  const creditedBonusByAmb: Record<string, number> = {};
+  for (const c of bonusCreditRows ?? []) {
+    creditedBonusByAmb[c.ambassador_id] = (creditedBonusByAmb[c.ambassador_id] ?? 0) + c.amount_cents;
+  }
+
+  const fmtDay = (iso: string) =>
+    new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' });
+  const fmtMonth = (periodKey: string) => {
+    const [y, m] = periodKey.split('-').map(Number);
+    return new Date(y, (m ?? 1) - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  };
+
+  const bonusReviewRows: BonusReviewRow[] = [];
+  for (const a of ambassadors ?? []) {
+    for (const w of computeClosedWeekBonusBreakdown(salesByAmb[a.id] ?? [], now)) {
+      bonusReviewRows.push({
+        key: `${a.id}|weekly_tier|${w.periodKey}`,
+        ambassadorId: a.id,
+        ambassadorName: a.name,
+        kind: 'weekly_tier',
+        periodKey: w.periodKey,
+        label: `Palier ${w.tierLabel} — semaine du ${fmtDay(w.weekStartIso)}`,
+        detail: `${w.count} ventes`,
+        amountCents: w.bonusCents,
+        credited: creditedBonusKeys.has(`${a.id}|weekly_tier|${w.periodKey}`),
+      });
+    }
+  }
+  for (const m of computeClosedMonthlyBonuses(salesRows ?? [], now)) {
+    bonusReviewRows.push({
+      key: `${m.ambassadorId}|monthly_challenge|${m.periodKey}`,
+      ambassadorId: m.ambassadorId,
+      ambassadorName: nameById.get(m.ambassadorId) ?? '—',
+      kind: 'monthly_challenge',
+      periodKey: m.periodKey,
+      label: `Défi mensuel — ${fmtMonth(m.periodKey)}`,
+      detail: `${m.count} ventes · #1`,
+      amountCents: m.bonusCents,
+      credited: creditedBonusKeys.has(`${m.ambassadorId}|monthly_challenge|${m.periodKey}`),
+    });
+  }
+  // "À vérifier" first, then most recent period first.
+  bonusReviewRows.sort(
+    (x, y) => Number(x.credited) - Number(y.credited) || y.periodKey.localeCompare(x.periodKey)
+  );
+
   // Fetch active promo codes not yet linked to an ambassador (for the create form)
   const linkedPromoCodeIds = (ambassadors ?? [])
     .map((a) => {
@@ -204,9 +262,10 @@ export default async function AdminAmbassadeursPage({
     const mthCount = monthCountByAmb[a.id] ?? 0;
     const tier = getWeeklyTier(wkCount);
     const base = computeTotalBaseCommission(allSales);
-    const closed = computeClosedWeekBonuses(allSales, now);
-    // Credited referral rewards add to the parrain's withdrawable balance.
-    const earned = base + closed + (creditedReferralByReferrer[a.id] ?? 0);
+    // Bonuses (weekly + monthly) and referral rewards count only once a
+    // super-admin has credited them — nothing is automatic.
+    const earned =
+      base + (creditedBonusByAmb[a.id] ?? 0) + (creditedReferralByReferrer[a.id] ?? 0);
     const paid = paidOrPendingByAmb[a.id] ?? 0;
     return {
       id: a.id,
@@ -311,6 +370,8 @@ export default async function AdminAmbassadeursPage({
         monthLeaderboard={monthLeaderboard}
         pendingPayouts={pendingPayouts}
       />
+
+      <BonusesPanel rows={bonusReviewRows} />
 
       <ReferralsPanel
         filleuls={referralFilleuls}

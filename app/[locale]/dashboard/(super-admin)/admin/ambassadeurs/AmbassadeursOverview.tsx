@@ -66,7 +66,7 @@ export function AmbassadeursOverview({
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-            🏆 Classement du mois (200€ au #1)
+            🏆 Classement du mois (100€ au #1)
           </h2>
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
             Mois civil — auto Lundi/1er

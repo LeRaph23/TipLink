@@ -9,7 +9,11 @@ import {
   recomputeReferralAfterSaleChange,
   recomputeMilestones,
 } from '@/lib/referrals';
-import { REFERRAL_VALIDATION_MIN_SALES } from '@/lib/ambassador-tiers';
+import {
+  REFERRAL_VALIDATION_MIN_SALES,
+  computeClosedWeekBonusBreakdown,
+  computeClosedMonthlyBonuses,
+} from '@/lib/ambassador-tiers';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -578,6 +582,81 @@ export async function voidReferralPayout(
       reason: payout.reason,
     });
     return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Credits a bonus (a weekly tier bonus or a monthly-challenge win) to an
+ * ambassador's withdrawable balance. Bonuses are never automatic — the
+ * super-admin reviews each one in the dashboard and releases it here.
+ *
+ * The bonus is recomputed from the current (non-voided) sales at credit time,
+ * so a bonus inflated by sales that were since refunded can never be paid.
+ * The UNIQUE (ambassador, kind, period) constraint makes double-credit
+ * impossible.
+ */
+export async function creditBonus(
+  ambassadorId: string,
+  kind: 'weekly_tier' | 'monthly_challenge',
+  periodKey: string
+): Promise<{ ok: true; amountCents: number } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    if (kind !== 'weekly_tier' && kind !== 'monthly_challenge') {
+      return { ok: false, error: 'Type de bonus invalide.' };
+    }
+
+    let amountCents: number;
+
+    if (kind === 'weekly_tier') {
+      const { data: sales } = await service
+        .from('ambassador_sales')
+        .select('created_at')
+        .eq('ambassador_id', ambassadorId)
+        .is('voided_at', null);
+      const item = computeClosedWeekBonusBreakdown(sales ?? []).find(
+        (b) => b.periodKey === periodKey
+      );
+      if (!item) {
+        return { ok: false, error: 'Bonus hebdo introuvable — palier non atteint ou semaine non clôturée.' };
+      }
+      amountCents = item.bonusCents;
+    } else {
+      const { data: sales } = await service
+        .from('ambassador_sales')
+        .select('ambassador_id, created_at')
+        .is('voided_at', null);
+      const item = computeClosedMonthlyBonuses(sales ?? []).find(
+        (m) => m.periodKey === periodKey && m.ambassadorId === ambassadorId
+      );
+      if (!item) {
+        return { ok: false, error: 'Bonus mensuel introuvable — cet ambassadeur n\'est pas #1 ce mois-là.' };
+      }
+      amountCents = item.bonusCents;
+    }
+
+    const { error } = await service.from('ambassador_bonus_credits').insert({
+      ambassador_id: ambassadorId,
+      kind,
+      period_key: periodKey,
+      amount_cents: amountCents,
+    });
+
+    if (error) {
+      if ((error as { code?: string }).code === '23505') {
+        return { ok: false, error: 'Ce bonus a déjà été crédité.' };
+      }
+      return { ok: false, error: error.message };
+    }
+
+    await logAdminAction('ambassadors.credit_bonus', {
+      ambassadorId, kind, periodKey, amountCents,
+    });
+    return { ok: true, amountCents };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }

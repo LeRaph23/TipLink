@@ -11,6 +11,7 @@ import {
   MONTHLY_CHALLENGE,
 } from '@/lib/ambassador-tiers';
 import { sumCreditedReferralCents } from '@/lib/referrals';
+import { sumCreditedBonusCents } from '@/lib/ambassadeur/bonuses';
 
 export const runtime = 'nodejs';
 
@@ -115,11 +116,16 @@ export async function GET(
     isYou: id === ambassadorId,
   }));
 
-  // Closed weekly bonuses (past weeks only, current week excluded — still in play)
+  // Closed weekly bonuses earned (informational — bonuses are only paid once a
+  // super-admin has validated them; they are NOT automatically withdrawable).
   const closedWeeklyBonuses = computeClosedWeekBonuses(allSales, now);
-  // Referral rewards a super-admin has credited to this ambassador as a parrain.
-  const referralCreditedCents = await sumCreditedReferralCents(supabase, ambassadorId);
-  const earnedTotal = totalBaseCommission + closedWeeklyBonuses + referralCreditedCents;
+  // Money actually in the withdrawable balance: base commission + bonuses and
+  // referral rewards a super-admin has explicitly credited.
+  const [referralCreditedCents, bonusCreditedCents] = await Promise.all([
+    sumCreditedReferralCents(supabase, ambassadorId),
+    sumCreditedBonusCents(supabase, ambassadorId),
+  ]);
+  const earnedTotal = totalBaseCommission + bonusCreditedCents + referralCreditedCents;
 
   return NextResponse.json({
     name: ambassador.name,
@@ -150,6 +156,7 @@ export async function GET(
     },
     closedWeeklyBonuses,
     referralCreditedCents,
+    bonusCreditedCents,
     earnedTotal,
     recentSales: allSales.slice(0, 10).map((s) => ({
       id: s.id,

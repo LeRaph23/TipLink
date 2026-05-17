@@ -691,6 +691,41 @@ export type Database = {
           }
         ];
       };
+      ambassador_bonus_credits: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          kind: 'weekly_tier' | 'monthly_challenge';
+          period_key: string;
+          amount_cents: number;
+          credited_at: string;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          kind: 'weekly_tier' | 'monthly_challenge';
+          period_key: string;
+          amount_cents: number;
+          credited_at?: string;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          kind?: 'weekly_tier' | 'monthly_challenge';
+          period_key?: string;
+          amount_cents?: number;
+          credited_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_bonus_credits_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       ambassador_pin_attempts: {
         Row: {
           id: string;

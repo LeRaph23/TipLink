@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
 import { verifyCookieValue } from '../auth/route';
-import {
-  computeTotalBaseCommission,
-  computeClosedWeekBonuses,
-  MIN_PAYOUT_CENTS,
-} from '@/lib/ambassador-tiers';
+import { computeTotalBaseCommission, MIN_PAYOUT_CENTS } from '@/lib/ambassador-tiers';
 import { sumCreditedReferralCents } from '@/lib/referrals';
+import { sumCreditedBonusCents } from '@/lib/ambassadeur/bonuses';
+import { sendAmbassadorPayoutAdmin } from '@/lib/email';
+import { getSuperAdminEmails } from '@/lib/admin/super-admins';
 
 export const runtime = 'nodejs';
 
@@ -27,12 +26,12 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
 }> {
   const service = createServiceClient();
 
-  const [{ data: sales }, { data: payouts }, referralCredited] = await Promise.all([
+  const [{ data: sales }, { data: payouts }, referralCredited, bonusCredited] = await Promise.all([
     // Voided sales (refunded / charged-back / canceled orders) earn no
     // commission and must never count toward the withdrawable balance.
     service
       .from('ambassador_sales')
-      .select('commission_amount, created_at')
+      .select('commission_amount')
       .eq('ambassador_id', ambassadorId)
       .is('voided_at', null),
     service
@@ -40,14 +39,15 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
       .select('amount_cents, status, stripe_transfer_id')
       .eq('ambassador_id', ambassadorId)
       .in('status', ['pending', 'paid', 'failed']),
-    // Referral rewards a super-admin has credited to this ambassador as a
-    // parrain — these add to the withdrawable balance.
+    // Referral rewards a super-admin has credited to this ambassador.
     sumCreditedReferralCents(service, ambassadorId),
+    // Weekly/monthly bonuses a super-admin has credited. Bonuses are NEVER
+    // automatic — only what was explicitly credited counts.
+    sumCreditedBonusCents(service, ambassadorId),
   ]);
 
   const baseCommission = computeTotalBaseCommission(sales ?? []);
-  const closedBonuses = computeClosedWeekBonuses(sales ?? []);
-  const earnedTotal = baseCommission + closedBonuses + referralCredited;
+  const earnedTotal = baseCommission + bonusCredited + referralCredited;
   // A `failed` payout frees its amount back into the balance — UNLESS the
   // Stripe transfer leg already went through (the platform-side money has
   // left). Counting a failed-with-transfer payout as committed prevents a
@@ -62,6 +62,28 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
   const available = Math.max(0, earnedTotal - paidOrPendingTotal);
 
   return { available, earnedTotal, paidOrPendingTotal };
+}
+
+/** Best-effort: emails every super-admin that an ambassador withdrawal ran. */
+async function notifySuperAdminsOfPayout(
+  service: ReturnType<typeof createServiceClient>,
+  ambassadorName: string,
+  amountCents: number,
+  status: 'paid' | 'failed'
+): Promise<void> {
+  try {
+    const emails = await getSuperAdminEmails(service);
+    const recipients = [
+      ...new Set([
+        ...emails,
+        ...(process.env.ADMIN_NOTIFICATION_EMAIL ? [process.env.ADMIN_NOTIFICATION_EMAIL] : []),
+      ]),
+    ];
+    if (recipients.length === 0) return;
+    await sendAmbassadorPayoutAdmin({ to: recipients, ambassadorName, amountCents, status });
+  } catch (err) {
+    console.error('payout admin notification failed', err);
+  }
 }
 
 // GET — return available balance + payout history
@@ -213,6 +235,7 @@ export async function POST(
         })
         .eq('id', inserted.id);
 
+      void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'paid');
       return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Stripe error';
@@ -225,6 +248,7 @@ export async function POST(
           stripe_transfer_id: transferId,
         })
         .eq('id', inserted.id);
+      void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'failed');
       return NextResponse.json({
         ok: false,
         amount: inserted.amount_cents,

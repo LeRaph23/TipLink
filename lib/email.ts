@@ -515,6 +515,47 @@ export async function sendAmbassadorBankingConfirmation(opts: {
   });
 }
 
+// ─── Admin — ambassador payout (withdrawal) notification ─────────────────────
+
+export async function sendAmbassadorPayoutAdmin(opts: {
+  to: string[];
+  ambassadorName: string;
+  amountCents: number;
+  status: 'paid' | 'failed';
+}): Promise<void> {
+  const { to, ambassadorName, amountCents, status } = opts;
+  if (!resend || to.length === 0) return;
+
+  const amount = (amountCents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+  const paid = status === 'paid';
+  const badge = paid
+    ? '<div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Virement effectué</div>'
+    : '<div style="display:inline-block;background:#ef444422;color:#ef4444;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Virement échoué — à reprendre</div>';
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Virement ambassadeur — ${ambassadorName} (${amount} €)`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Demande de virement ambassadeur</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      ${badge}
+      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${ambassadorName}</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">a déclenché un virement de <strong>${amount} €</strong>.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
+        ${infoRow('Montant', `<strong>${amount} €</strong>`)}
+        ${infoRow('Statut', paid ? 'Versé sur le compte Stripe de l\'ambassadeur' : 'Échec — à reprendre depuis le dashboard admin')}
+      </table>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Le solde ne contient que la commission de base et les bonus que tu as validés.</p>
+    </td></tr>`),
+  });
+}
+
 // ─── Admin — new SmartTag order alert ─────────────────────────────────────────
 
 export async function sendAdminNewOrder(opts: {
