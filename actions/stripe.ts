@@ -4,8 +4,9 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { stripe } from '@/lib/stripe/client';
+import { stripe, CONNECT_BUSINESS_PROFILE } from '@/lib/stripe/client';
 import { validateIban } from '@/lib/banking/iban';
+import { fileToDocument, uploadIdentityDocument } from '@/lib/stripe/identity';
 
 export interface BankingData {
   firstName: string;
@@ -35,6 +36,7 @@ export async function createCustomStripeAccount(
       type: 'custom',
       country,
       business_type: 'individual',
+      business_profile: { ...CONNECT_BUSINESS_PROFILE },
       individual: {
         first_name: data.firstName,
         last_name: data.lastName,
@@ -485,5 +487,47 @@ export async function setupAdminPayments(
   });
 
   if ('error' in result) return { error: result.error };
+  return { ok: true };
+}
+
+// Called from /dashboard/banking when Stripe requests an identity document.
+// Lets the staff member upload it without ever leaving the site.
+export async function uploadStaffIdentityDocument(
+  formData: FormData
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const service = createServiceClient();
+  const { data: profile } = await service
+    .from('staff_profiles')
+    .select('stripe_account_id')
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (!profile?.stripe_account_id) return { error: 'Aucun compte Stripe trouvé' };
+
+  const front = await fileToDocument(formData.get('front'));
+  if ('error' in front) return { error: front.error };
+
+  const backRaw = formData.get('back');
+  let back = null;
+  if (backRaw instanceof File && backRaw.size > 0) {
+    const parsed = await fileToDocument(backRaw);
+    if ('error' in parsed) return { error: parsed.error };
+    back = parsed;
+  }
+
+  try {
+    await uploadIdentityDocument(profile.stripe_account_id, front, back);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Envoi du document échoué';
+    console.error('uploadStaffIdentityDocument failed', err);
+    return { error: msg };
+  }
+
+  revalidatePath('/dashboard/banking');
   return { ok: true };
 }

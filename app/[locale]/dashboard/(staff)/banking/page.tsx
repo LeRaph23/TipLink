@@ -2,8 +2,10 @@ import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getStaffStripeBalance } from '@/actions/stripe';
+import { getAccountVerificationStatus } from '@/lib/stripe/identity';
 import { BankingSetupForm } from './BankingSetupForm';
 import { PayoutSection } from './PayoutSection';
+import { StaffIdentityUpload } from './StaffIdentityUpload';
 
 export default async function BankingPage({
   params,
@@ -29,6 +31,15 @@ export default async function BankingPage({
   const fullName = staffProfile?.full_name ?? user.email?.split('@')[0] ?? 'Utilisateur';
 
   const balance = hasStripeAccount ? await getStaffStripeBalance() : null;
+
+  let verification = null;
+  if (hasStripeAccount && staffProfile?.stripe_account_id) {
+    try {
+      verification = await getAccountVerificationStatus(staffProfile.stripe_account_id);
+    } catch {
+      verification = null;
+    }
+  }
 
   return (
     <div style={{ maxWidth: 520 }}>
@@ -82,6 +93,11 @@ export default async function BankingPage({
                   Vous recevez déjà des pourboires. Vous pouvez mettre à jour votre IBAN ci-dessous.
                 </div>
               </div>
+            </div>
+          )}
+          {verification?.needsIdentityDocument && (
+            <div style={{ marginBottom: 20 }}>
+              <StaffIdentityUpload pendingVerification={verification.pendingVerification} />
             </div>
           )}
           <BankingSetupForm mode={mode} fullName={fullName} />
