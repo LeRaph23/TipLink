@@ -678,6 +678,7 @@
       "colDate": "Date",
       "colAmount": "Amount",
       "colStatus": "Status",
+      "colReceipt": "Receipt",
       "empty": "No transactions yet"
     },
     "onboarding": {
@@ -941,6 +942,7 @@
         "colGroup": "Group",
         "colStaff": "Staff",
         "colStatus": "Status",
+        "colReceipt": "Receipt",
         "colStripe": "Stripe"
       },
       "users": {

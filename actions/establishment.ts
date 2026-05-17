@@ -2,8 +2,8 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
 
 const EstSchema = z.object({
   name: z.string().min(1).max(200),
@@ -12,27 +12,14 @@ const EstSchema = z.object({
   currency: z.string().length(3),
 });
 
-async function resolveGroupId(): Promise<string | null> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await supabase
-    .from('user_roles')
-    .select('group_id')
-    .in('role', ['group_admin', 'super_admin'])
-    .eq('user_id', user.id)
-    .not('group_id', 'is', null)
-    .limit(1)
-    .maybeSingle();
-
-  return data?.group_id ?? null;
-}
-
 export async function createEstablishment(
   input: z.infer<typeof EstSchema>
 ): Promise<{ id: string } | { error: string }> {
-  const groupId = await resolveGroupId();
+  const scope = await getManageScope();
+  if (!scope) return { error: 'Unauthorized' };
+
+  // The new establishment is created under a group the caller administers.
+  const groupId = scope.groupIds[0];
   if (!groupId) return { error: 'Unauthorized' };
 
   const parsed = EstSchema.safeParse(input);
@@ -66,8 +53,8 @@ export async function updateEstablishment(
   estId: string,
   input: Partial<z.infer<typeof EstSchema>>
 ): Promise<{ success: true } | { error: string }> {
-  const groupId = await resolveGroupId();
-  if (!groupId) return { error: 'Unauthorized' };
+  const scope = await getManageScope();
+  if (!scope) return { error: 'Unauthorized' };
 
   const service = createServiceClient();
 
@@ -78,7 +65,8 @@ export async function updateEstablishment(
     .is('deleted_at', null)
     .single();
 
-  if (!est || est.group_id !== groupId) return { error: 'Not found' };
+  // Service client bypasses RLS — ownership must be checked here.
+  if (!est || !canManageGroup(scope, est.group_id)) return { error: 'Not found' };
 
   if (Object.keys(input).length === 0) return { success: true };
 
@@ -101,8 +89,8 @@ export async function updateEstablishment(
 export async function deleteEstablishment(
   estId: string
 ): Promise<{ success: true } | { error: string }> {
-  const groupId = await resolveGroupId();
-  if (!groupId) return { error: 'Unauthorized' };
+  const scope = await getManageScope();
+  if (!scope) return { error: 'Unauthorized' };
 
   const service = createServiceClient();
 
@@ -113,7 +101,8 @@ export async function deleteEstablishment(
     .is('deleted_at', null)
     .single();
 
-  if (!est || est.group_id !== groupId) return { error: 'Not found' };
+  // Service client bypasses RLS — ownership must be checked here.
+  if (!est || !canManageGroup(scope, est.group_id)) return { error: 'Not found' };
 
   const { error } = await service
     .from('establishments')

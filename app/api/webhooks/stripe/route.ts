@@ -4,6 +4,7 @@ import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
+import { createPackInvoiceForPaymentIntent } from '@/lib/stripe/pack-invoice';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
@@ -107,22 +108,36 @@ async function handleEvent(
 
       // For solo tips, the destination charge has a single transfer we need
       // to know about in order to reverse it on refund/dispute. Retrieve it
-      // from the charge so we can store the transfer ID for later.
+      // from the charge so we can store the transfer ID for later. The charge
+      // is also the authoritative source for the platform fee actually taken.
       let soloTransferId: string | null = null;
+      let chargeApplicationFee: number | null = null;
       if (chargeId && intent.metadata?.group_tip !== 'true') {
         try {
           const ch = await stripe.charges.retrieve(chargeId);
           soloTransferId = typeof ch.transfer === 'string'
             ? ch.transfer
             : (ch.transfer as Stripe.Transfer | null)?.id ?? null;
+          chargeApplicationFee = typeof ch.application_fee_amount === 'number'
+            ? ch.application_fee_amount
+            : null;
         } catch (err) {
           console.error('failed to retrieve charge for transfer_id', { chargeId, err });
         }
       }
 
-      const applicationFeeAmount = intent.metadata?.application_fee_amount
+      // Defense-in-depth: trust the Stripe charge over the (mutable) intent
+      // metadata for the stored fee. Metadata is set by our own backend today,
+      // but the webhook must not depend on that to record an accurate amount.
+      const metadataFee = intent.metadata?.application_fee_amount
         ? parseInt(intent.metadata.application_fee_amount, 10)
         : null;
+      if (chargeApplicationFee != null && metadataFee != null && chargeApplicationFee !== metadataFee) {
+        console.error('application_fee_amount mismatch — storing charge value', {
+          intent: intent.id, chargeApplicationFee, metadataFee,
+        });
+      }
+      const applicationFeeAmount = chargeApplicationFee ?? metadataFee;
 
       // For group tips: insert per-staff rows BEFORE marking the transaction
       // succeeded, so a crash during the Stripe loop leaves recoverable state
@@ -130,7 +145,27 @@ async function handleEvent(
       // The rounding remainder is given to the first staff member so the full
       // net amount is always distributed (no centimes left on the platform).
       if (intent.metadata?.group_tip === 'true') {
-        const netForStaff = parseInt(intent.metadata.net_for_staff ?? '0', 10);
+        // Defense-in-depth: recompute the staff-distributable amount from our
+        // own transaction record (written server-side at intent creation),
+        // never from the PaymentIntent metadata. A tampered `net_for_staff`
+        // must not be able to redirect funds.
+        const { data: txnRow } = await supabase
+          .from('transactions')
+          .select('metadata')
+          .eq('id', transactionId)
+          .single();
+        const txnMeta = (txnRow?.metadata ?? {}) as Record<string, unknown>;
+        const dbTipAmount = Number(txnMeta.tip_amount);
+        const dbPlatformFee = Number(txnMeta.platform_fee);
+        const metaNet = parseInt(intent.metadata.net_for_staff ?? '0', 10);
+        const netForStaff = Number.isFinite(dbTipAmount) && Number.isFinite(dbPlatformFee)
+          ? Math.max(0, dbTipAmount - dbPlatformFee)
+          : metaNet;
+        if (netForStaff !== metaNet) {
+          console.error('group net_for_staff mismatch — using DB value', {
+            intent: intent.id, netForStaff, metaNet,
+          });
+        }
         const transferGroup = intent.metadata.transfer_group;
         const establishmentId = intent.metadata.establishment_id;
 
@@ -1002,9 +1037,39 @@ async function handlePackExpressPaid(
   const discountAmount = Number(intent.metadata?.discount_amount ?? 0) || 0;
   const locale = intent.metadata?.locale === 'fr' ? 'fr' : 'en';
 
-  const customerId = typeof intent.customer === 'string'
+  let customerId = typeof intent.customer === 'string'
     ? intent.customer
     : (intent.customer as Stripe.Customer | null)?.id ?? null;
+
+  // The embedded /checkout flow charges a bare PaymentIntent with no Stripe
+  // customer. Create one now so the order can be issued a real invoice below.
+  if (!customerId) {
+    try {
+      const customer = await stripe.customers.create(
+        {
+          ...(email ? { email } : {}),
+          name: legalName,
+          ...(shipping?.address
+            ? {
+                address: {
+                  line1: shipping.address.line1 ?? undefined,
+                  line2: shipping.address.line2 ?? undefined,
+                  city: shipping.address.city ?? undefined,
+                  postal_code: shipping.address.postal_code ?? undefined,
+                  state: shipping.address.state ?? undefined,
+                  country: shipping.address.country ?? undefined,
+                },
+              }
+            : {}),
+          metadata: { source: 'pack-express', payment_intent: intent.id },
+        },
+        { idempotencyKey: `pack-express-customer:${intent.id}` },
+      );
+      customerId = customer.id;
+    } catch (err) {
+      console.error('[pack-express] customer create failed', err);
+    }
+  }
 
   // Create the group on the fly (mirror of express checkout.session.completed)
   const { data: newGroup, error: groupErr } = await supabase
@@ -1045,6 +1110,27 @@ async function handlePackExpressPaid(
 
   if (orderErr || !newOrder) {
     throw new Error(`pack-express: failed to create smarttag_order — ${orderErr?.message ?? 'unknown'}`);
+  }
+
+  // Issue a downloadable invoice for the order. The embedded checkout pays a
+  // raw PaymentIntent, so Stripe's invoice_creation (Checkout-only) can't
+  // apply — build and pay the invoice out of band. Best-effort: never throw.
+  let invoicePdfUrl: string | null = null;
+  if (customerId && newOrder?.id) {
+    try {
+      const { invoiceId, invoicePdfUrl: pdf } = await createPackInvoiceForPaymentIntent({
+        paymentIntent: intent,
+        customerId,
+        description: `Digitip — Pack ${pack === 'solo' ? 'Solo' : 'Duo'} (${quantity} SmartTag${quantity > 1 ? 's' : ''})`,
+      });
+      invoicePdfUrl = pdf;
+      await supabase
+        .from('smarttag_orders')
+        .update({ stripe_invoice_id: invoiceId })
+        .eq('id', newOrder.id);
+    } catch (err) {
+      console.error('[pack-express] invoice generation failed', err);
+    }
   }
 
   if (newOrder?.id) {
@@ -1095,7 +1181,7 @@ async function handlePackExpressPaid(
       pack,
       quantity,
       orderId: newOrder.id,
-      invoicePdfUrl: null,
+      invoicePdfUrl,
       setupUrl,
       locale,
     }).catch((err) => console.error('[email] sendOrderConfirmation failed', err));

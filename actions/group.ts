@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
 
 interface UpdateGroupInput {
   groupId: string;
@@ -19,6 +20,10 @@ export async function updateGroup(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
+
+  // Defense-in-depth: authorize at the application layer, not on RLS alone.
+  const scope = await getManageScope();
+  if (!scope || !canManageGroup(scope, input.groupId)) return { error: 'Forbidden' };
 
   const { data: current } = await supabase
     .from('groups')

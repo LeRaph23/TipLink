@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       },
       phone_number_collection: { enabled: false },
       line_items: [getLineItem(pack)],
+      invoice_creation: { enabled: true },
       automatic_tax: { enabled: true },
       tax_id_collection: { enabled: true },
       allow_promotion_codes: true,

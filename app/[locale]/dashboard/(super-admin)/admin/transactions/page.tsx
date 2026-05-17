@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { ReceiptLink } from '@/components/dashboard/ReceiptLink';
 
 function formatAmount(cents: number, currency = 'EUR', locale = 'fr') {
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(cents / 100);
@@ -182,7 +183,7 @@ export default async function AdminTransactionsPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('colDate'), t('colAmount'), t('colEstablishment'), t('colGroup'), t('colStaff'), t('colStatus'), t('colStripe')].map((h, i) => (
+                {[t('colDate'), t('colAmount'), t('colEstablishment'), t('colGroup'), t('colStaff'), t('colStatus'), t('colReceipt'), t('colStripe')].map((h, i) => (
                   <th key={i} style={{
                     padding: '10px 14px', textAlign: i === 1 ? 'right' : 'left',
                     fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
@@ -208,6 +209,11 @@ export default async function AdminTransactionsPage({
                     <td style={{ padding: '10px 14px', color: 'var(--text-2)' }}>{est?.groups?.name ?? '—'}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-2)' }}>{staff?.full_name ?? '—'}</td>
                     <td style={{ padding: '10px 14px' }}><StatusBadge status={r.status} /></td>
+                    <td style={{ padding: '10px 14px' }}>
+                      {r.status === 'succeeded'
+                        ? <ReceiptLink transactionId={r.id} />
+                        : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                    </td>
                     <td style={{ padding: '10px 14px' }}>
                       {r.stripe_payment_intent_id ? (
                         <a
