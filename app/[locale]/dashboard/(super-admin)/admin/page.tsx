@@ -274,6 +274,7 @@ export default async function AdminOverviewPage({
               <QuickAction href="/dashboard/admin/ambassadeurs" label="Ambassadeurs" description="Candidatures et recrutements" />
               <QuickAction href="/dashboard/admin/salons" label="Salons & zones" description="Suivi terrain des ambassadeurs" />
               <QuickAction href="/dashboard/admin/cold-email" label="Prospection" description="Scraper SIRENE & tableau de suivi" />
+              <QuickAction href="/dashboard/admin/emails" label="Emails automatiques" description="Suivi des relances & onboarding" />
             </div>
           </section>
         </div>
