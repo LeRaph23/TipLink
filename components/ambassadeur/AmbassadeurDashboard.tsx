@@ -27,14 +27,14 @@ interface StatsData {
   earnedTotal: number;
   weeklyTier: { id: string; label: string; bonus: number } | null;
   weeklyBonusCents: number;
-  monthlyBonusUnlocked: boolean;
-  monthlyChallenge: { threshold: number; bonus: number; prize: string };
+  monthlyChallenge: { prizeCents: number; prize: string; endsAt: string } | null;
+  challengePrizeCents: number;
   tiers: TierInfo[];
   leaderboard: {
     rank: number;
     total: number;
     top3: Array<{ rank: number; firstName: string; count: number; isYou: boolean }>;
-  };
+  } | null;
   recentSales: Array<{
     id: string;
     pack: string;
@@ -473,13 +473,9 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
 
   // ── Dashboard ─────────────────────────────────────────────────────────────────
   const { weekCount, monthCount, totalBaseCommission, weeklyBonusCents,
-    tiers, leaderboard, recentSales } = stats;
+    tiers, recentSales } = stats;
 
-  const rankLabel = leaderboard.rank === 1 ? '🏆' : `#${leaderboard.rank}`;
   const firstName = ambassadorName.split(' ')[0];
-  const top3 = leaderboard.top3 ?? [];
-  const leader = top3[0];
-  const gapToLeader = leader && !leader.isYou ? Math.max(0, leader.count - monthCount) : 0;
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', fontFamily: 'var(--font)' }}>
@@ -589,74 +585,91 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           />
         )}
 
-        {/* Leaderboard du mois */}
-        <div style={{
-          background: leaderboard.rank === 1 ? 'var(--warning-bg)' : 'var(--surface)',
-          border: `1px solid ${leaderboard.rank === 1 ? 'var(--warning)' : 'var(--border-subtle)'}`,
-          borderRadius: 'var(--radius)',
-          padding: 18,
-          marginBottom: 16,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-                Classement du mois
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: leaderboard.rank === 1 ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
-                🏆 {stats.monthlyChallenge.prize}
-              </div>
-            </div>
+        {/* Challenge mensuel — affiché uniquement quand un super-admin l'a activé */}
+        {(() => {
+          const lb = stats.leaderboard;
+          const mc = stats.monthlyChallenge;
+          if (!lb || !mc) return null;
+
+          const rankLabel = lb.rank === 1 ? '🏆' : `#${lb.rank}`;
+          const top3 = lb.top3 ?? [];
+          const leader = top3[0];
+          const gapToLeader = leader && !leader.isYou ? Math.max(0, leader.count - monthCount) : 0;
+          const endsLabel = new Date(mc.endsAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' });
+
+          return (
             <div style={{
-              background: 'var(--surface-2)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-sm)', padding: '8px 12px', textAlign: 'center', flexShrink: 0,
+              background: lb.rank === 1 ? 'var(--warning-bg)' : 'var(--surface)',
+              border: `1px solid ${lb.rank === 1 ? 'var(--warning)' : 'var(--border-subtle)'}`,
+              borderRadius: 'var(--radius)',
+              padding: 18,
+              marginBottom: 16,
             }}>
-              <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', color: leaderboard.rank === 1 ? 'var(--warning)' : 'var(--text)', lineHeight: 1 }}>
-                {rankLabel}
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>/ {leaderboard.total}</div>
-            </div>
-          </div>
-
-          {/* Top 3 podium */}
-          {top3.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-              {top3.map((entry) => {
-                const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉';
-                const max = top3[0]?.count ?? 1;
-                const pct = max > 0 ? (entry.count / max) * 100 : 0;
-                return (
-                  <div key={entry.rank} style={{
-                    display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: 8, alignItems: 'center',
-                    padding: '6px 8px', borderRadius: 8,
-                    background: entry.isYou ? 'var(--accent-muted)' : 'transparent',
-                    border: entry.isYou ? '1px solid var(--accent-border)' : '1px solid transparent',
-                  }}>
-                    <span style={{ fontSize: 14 }}>{medal}</span>
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: entry.isYou ? 'var(--accent)' : 'var(--text-2)' }}>
-                        {entry.firstName}
-                      </div>
-                      <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, marginTop: 3, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${pct}%`, background: entry.rank === 1 ? 'var(--warning)' : 'var(--accent)', borderRadius: 99 }} />
-                      </div>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{entry.count}</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+                    Challenge du mois
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: lb.rank === 1 ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
+                    🏆 {mc.prize}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>
+                    Jusqu&apos;au {endsLabel}
+                  </div>
+                </div>
+                <div style={{
+                  background: 'var(--surface-2)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)', padding: '8px 12px', textAlign: 'center', flexShrink: 0,
+                }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', color: lb.rank === 1 ? 'var(--warning)' : 'var(--text)', lineHeight: 1 }}>
+                    {rankLabel}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>/ {lb.total}</div>
+                </div>
+              </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-            <span style={{ color: 'var(--text-3)' }}>
-              {leaderboard.rank === 1
-                ? `🔥 Tu es en tête (${monthCount} ventes) !`
-                : gapToLeader === 0
-                  ? `Égalité avec le leader (${monthCount} ventes)`
-                  : `${gapToLeader} vente${gapToLeader !== 1 ? 's' : ''} de retard sur le #1`}
-            </span>
-          </div>
-        </div>
+              {/* Top 3 podium */}
+              {top3.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                  {top3.map((entry) => {
+                    const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉';
+                    const max = top3[0]?.count ?? 1;
+                    const pct = max > 0 ? (entry.count / max) * 100 : 0;
+                    return (
+                      <div key={entry.rank} style={{
+                        display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: 8, alignItems: 'center',
+                        padding: '6px 8px', borderRadius: 8,
+                        background: entry.isYou ? 'var(--accent-muted)' : 'transparent',
+                        border: entry.isYou ? '1px solid var(--accent-border)' : '1px solid transparent',
+                      }}>
+                        <span style={{ fontSize: 14 }}>{medal}</span>
+                        <div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: entry.isYou ? 'var(--accent)' : 'var(--text-2)' }}>
+                            {entry.firstName}
+                          </div>
+                          <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, marginTop: 3, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pct}%`, background: entry.rank === 1 ? 'var(--warning)' : 'var(--accent)', borderRadius: 99 }} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{entry.count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+                <span style={{ color: 'var(--text-3)' }}>
+                  {lb.rank === 1
+                    ? `🔥 Tu es en tête (${monthCount} ventes) !`
+                    : gapToLeader === 0
+                      ? `Égalité avec le leader (${monthCount} ventes)`
+                      : `${gapToLeader} vente${gapToLeader !== 1 ? 's' : ''} de retard sur le #1`}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Dernières ventes */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>

@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 import { generateUniqueReferralCode } from '@/lib/referrals';
+import { MONTHLY_CHALLENGE } from '@/lib/ambassador-tiers';
+import { settleExpiredChallenges } from '@/lib/ambassador-monthly-challenge';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -287,6 +289,67 @@ export async function cancelAmbassadorPayout(
       ambassadorId: payout.ambassador_id,
       reason,
     });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Activates or deactivates the monthly challenge (100€ to the #1 ambassador).
+ * Activating starts a fresh one-month window; deactivating cancels the running
+ * challenge without crediting a winner. Elapsed challenges are settled first so
+ * a finished month always pays its winner even if the cron has not run yet.
+ */
+export async function setMonthlyChallengeActive(
+  active: boolean
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const user = await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    await settleExpiredChallenges(service);
+
+    if (active) {
+      const { data: running } = await service
+        .from('ambassador_monthly_challenges')
+        .select('id')
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (running) return { ok: false, error: 'Un challenge est déjà en cours.' };
+
+      const startsAt = new Date();
+      const endsAt = new Date(startsAt);
+      endsAt.setMonth(endsAt.getMonth() + 1);
+
+      const { error } = await service
+        .from('ambassador_monthly_challenges')
+        .insert({
+          prize_cents: MONTHLY_CHALLENGE.bonus,
+          starts_at: startsAt.toISOString(),
+          ends_at: endsAt.toISOString(),
+          status: 'active',
+          activated_by: user.id,
+        });
+
+      if (error) return { ok: false, error: error.message };
+
+      await logAdminAction('ambassadors.monthly_challenge_activated', {
+        prizeCents: MONTHLY_CHALLENGE.bonus,
+        endsAt: endsAt.toISOString(),
+      });
+    } else {
+      const { error } = await service
+        .from('ambassador_monthly_challenges')
+        .update({ status: 'canceled' })
+        .eq('status', 'active');
+
+      if (error) return { ok: false, error: error.message };
+
+      await logAdminAction('ambassadors.monthly_challenge_canceled', {});
+    }
+
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };

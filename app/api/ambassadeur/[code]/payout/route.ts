@@ -7,6 +7,7 @@ import {
   computeClosedWeekBonuses,
   MIN_PAYOUT_CENTS,
 } from '@/lib/ambassador-tiers';
+import { getChallengePrizeCents } from '@/lib/ambassador-monthly-challenge';
 
 export const runtime = 'nodejs';
 
@@ -40,7 +41,8 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
 
   const baseCommission = computeTotalBaseCommission(sales ?? []);
   const closedBonuses = computeClosedWeekBonuses(sales ?? []);
-  const earnedTotal = baseCommission + closedBonuses;
+  const challengePrizes = await getChallengePrizeCents(service, ambassadorId);
+  const earnedTotal = baseCommission + closedBonuses + challengePrizes;
   const paidOrPendingTotal = (payouts ?? []).reduce((s, p) => s + p.amount_cents, 0);
   const available = Math.max(0, earnedTotal - paidOrPendingTotal);
 

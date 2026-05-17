@@ -11,6 +11,10 @@ import {
   computeTotalBaseCommission,
   computeClosedWeekBonuses,
 } from '@/lib/ambassador-tiers';
+import {
+  getActiveChallenge,
+  getChallengePrizesByAmbassador,
+} from '@/lib/ambassador-monthly-challenge';
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -55,8 +59,17 @@ export default async function AdminAmbassadeursPage({
   const { start: weekStart, end: weekEnd } = getWeekBounds(now);
   const { start: monthStart, end: monthEnd } = getMonthBounds(now);
 
+  const activeChallenge = await getActiveChallenge(service, now);
+  const challengePrizesByAmb = await getChallengePrizesByAmbassador(service);
+  // Leaderboard window: the challenge window while one runs, else the calendar month.
+  const lbStart = activeChallenge ? new Date(activeChallenge.startsAt) : monthStart;
+  const lbEnd = activeChallenge
+    ? new Date(Math.min(now.getTime(), new Date(activeChallenge.endsAt).getTime()))
+    : monthEnd;
+
   const weekCountByAmb: Record<string, number> = {};
   const monthCountByAmb: Record<string, number> = {};
+  const lbCountByAmb: Record<string, number> = {};
   const salesByAmb: Record<string, Array<{ commission_amount: number; created_at: string }>> = {};
   for (const s of salesRows ?? []) {
     if (!salesByAmb[s.ambassador_id]) salesByAmb[s.ambassador_id] = [];
@@ -67,6 +80,9 @@ export default async function AdminAmbassadeursPage({
     }
     if (d >= monthStart && d <= monthEnd) {
       monthCountByAmb[s.ambassador_id] = (monthCountByAmb[s.ambassador_id] ?? 0) + 1;
+    }
+    if (d >= lbStart && d <= lbEnd) {
+      lbCountByAmb[s.ambassador_id] = (lbCountByAmb[s.ambassador_id] ?? 0) + 1;
     }
   }
 
@@ -130,7 +146,7 @@ export default async function AdminAmbassadeursPage({
     const tier = getWeeklyTier(wkCount);
     const base = computeTotalBaseCommission(allSales);
     const closed = computeClosedWeekBonuses(allSales, now);
-    const earned = base + closed;
+    const earned = base + closed + (challengePrizesByAmb[a.id] ?? 0);
     const paid = paidOrPendingByAmb[a.id] ?? 0;
     return {
       id: a.id,
@@ -146,7 +162,7 @@ export default async function AdminAmbassadeursPage({
     };
   });
 
-  const monthLeaderboard = Object.entries(monthCountByAmb)
+  const monthLeaderboard = Object.entries(lbCountByAmb)
     .map(([id, count]) => {
       const amb = (ambassadors ?? []).find((x) => x.id === id);
       return { id, name: amb?.name ?? '—', count };
@@ -229,6 +245,11 @@ export default async function AdminAmbassadeursPage({
         rows={overviewRows}
         monthLeaderboard={monthLeaderboard}
         pendingPayouts={pendingPayouts}
+        monthlyChallenge={
+          activeChallenge
+            ? { endsAt: activeChallenge.endsAt, prizeCents: activeChallenge.prizeCents }
+            : null
+        }
       />
 
       <AmbassadeursManager

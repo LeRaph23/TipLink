@@ -1492,6 +1492,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      ambassador_monthly_challenges: {
+        Row: {
+          id: string;
+          prize_cents: number;
+          starts_at: string;
+          ends_at: string;
+          status: 'active' | 'settled' | 'canceled';
+          winner_ambassador_id: string | null;
+          winner_sales_count: number | null;
+          activated_by: string | null;
+          settled_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          prize_cents?: number;
+          starts_at?: string;
+          ends_at: string;
+          status?: 'active' | 'settled' | 'canceled';
+          winner_ambassador_id?: string | null;
+          winner_sales_count?: number | null;
+          activated_by?: string | null;
+          settled_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          prize_cents?: number;
+          starts_at?: string;
+          ends_at?: string;
+          status?: 'active' | 'settled' | 'canceled';
+          winner_ambassador_id?: string | null;
+          winner_sales_count?: number | null;
+          activated_by?: string | null;
+          settled_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
