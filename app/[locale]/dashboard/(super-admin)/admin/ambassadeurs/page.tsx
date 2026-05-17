@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { AmbassadeursManager } from './AmbassadeursManager';
 import { AmbassadeursOverview, type AmbassadorOverviewRow, type PendingPayoutRow } from './AmbassadeursOverview';
 import { RecruitmentApplications, type RecruitmentApplicationRow } from './RecruitmentApplications';
+import { ReferralsPanel, type ReferralFilleulRow, type ReferralMilestoneRow } from './ReferralsPanel';
 import {
   getWeekBounds,
   getMonthBounds,
@@ -38,7 +39,7 @@ export default async function AdminAmbassadeursPage({
   // Fetch ambassadors with their promo code info + banking fields
   const { data: ambassadors } = await service
     .from('ambassadors')
-    .select('id, name, is_active, payouts_frozen, created_at, stripe_account_id, siret, promo_codes(id, code, percentage_off)')
+    .select('id, name, is_active, payouts_frozen, created_at, stripe_account_id, siret, referrer_ambassador_id, referral_validated_at, promo_codes(id, code, percentage_off)')
     .order('created_at', { ascending: false });
 
   // Aggregate sales per ambassador (full rows needed for week/month/bonus
@@ -63,6 +64,11 @@ export default async function AdminAmbassadeursPage({
       p.status === 'paid' ||
       (p.status === 'failed' && p.stripe_transfer_id)
   );
+
+  // Referral rewards (validation + milestones) across all ambassadors.
+  const { data: referralPayouts } = await service
+    .from('referral_payouts')
+    .select('id, referrer_ambassador_id, referred_ambassador_id, amount_cents, reason, status, credited_at, created_at');
 
   const now = new Date();
   const { start: weekStart, end: weekEnd } = getWeekBounds(now);
@@ -96,6 +102,60 @@ export default async function AdminAmbassadeursPage({
     salesByAmbassador[s.ambassador_id].count += 1;
     salesByAmbassador[s.ambassador_id].totalCommission += s.commission_amount;
   }
+
+  // ─── Referral program data ─────────────────────────────────────────────────
+  const nameById = new Map((ambassadors ?? []).map((a) => [a.id, a.name]));
+  const allReferralPayouts = referralPayouts ?? [];
+
+  // Credited referral rewards add to the parrain's withdrawable balance.
+  const creditedReferralByReferrer: Record<string, number> = {};
+  for (const p of allReferralPayouts) {
+    if (p.status === 'credited') {
+      creditedReferralByReferrer[p.referrer_ambassador_id] =
+        (creditedReferralByReferrer[p.referrer_ambassador_id] ?? 0) + p.amount_cents;
+    }
+  }
+
+  // One row per filleul (every ambassador created with a parrain), showing the
+  // filleul's live sale count and the state of the 25€ validation reward.
+  const referralFilleuls: ReferralFilleulRow[] = (ambassadors ?? [])
+    .filter((a) => a.referrer_ambassador_id)
+    .map((a) => {
+      const payout = allReferralPayouts.find(
+        (p) =>
+          p.reason === 'validation' &&
+          p.referred_ambassador_id === a.id &&
+          p.referrer_ambassador_id === a.referrer_ambassador_id
+      );
+      return {
+        filleulId: a.id,
+        filleulName: a.name,
+        parrainName: nameById.get(a.referrer_ambassador_id!) ?? '—',
+        liveSales: salesByAmbassador[a.id]?.count ?? 0,
+        validated: !!a.referral_validated_at,
+        payoutId: payout?.id ?? null,
+        payoutStatus: (payout?.status as 'pending' | 'credited' | 'voided' | undefined) ?? null,
+        payoutAmountCents: payout?.amount_cents ?? 2500,
+        creditedAt: payout?.credited_at ?? null,
+      };
+    })
+    .sort((x, y) => Number(!!y.payoutId) - Number(!!x.payoutId) || y.liveSales - x.liveSales);
+
+  // One row per milestone reward (5 / 10 validated filleuls).
+  const referralMilestones: ReferralMilestoneRow[] = allReferralPayouts
+    .filter((p) => p.reason === 'milestone_5' || p.reason === 'milestone_10')
+    .map((p) => ({
+      payoutId: p.id,
+      parrainName: nameById.get(p.referrer_ambassador_id) ?? '—',
+      reason: p.reason as 'milestone_5' | 'milestone_10',
+      amountCents: p.amount_cents,
+      payoutStatus: p.status as 'pending' | 'credited' | 'voided',
+      creditedAt: p.credited_at,
+    }))
+    .sort((x, y) => x.parrainName.localeCompare(y.parrainName));
+
+  // Slim list for the "parrain" picker in the create-ambassador form.
+  const referrerOptions = (ambassadors ?? []).map((a) => ({ id: a.id, name: a.name }));
 
   // Fetch active promo codes not yet linked to an ambassador (for the create form)
   const linkedPromoCodeIds = (ambassadors ?? [])
@@ -144,7 +204,8 @@ export default async function AdminAmbassadeursPage({
     const tier = getWeeklyTier(wkCount);
     const base = computeTotalBaseCommission(allSales);
     const closed = computeClosedWeekBonuses(allSales, now);
-    const earned = base + closed;
+    // Credited referral rewards add to the parrain's withdrawable balance.
+    const earned = base + closed + (creditedReferralByReferrer[a.id] ?? 0);
     const paid = paidOrPendingByAmb[a.id] ?? 0;
     return {
       id: a.id,
@@ -171,7 +232,7 @@ export default async function AdminAmbassadeursPage({
   // Recruitment applications
   const { data: recruitmentRaw } = await service
     .from('ambassador_recruitment_applications')
-    .select('id, first_name, last_name, city, phone, email, siret, no_fraud_pledge, notes, status, reviewed_at, created_at')
+    .select('id, first_name, last_name, city, phone, email, siret, no_fraud_pledge, notes, status, reviewed_at, created_at, referrer_ambassador_id, referrer_code_used')
     .order('created_at', { ascending: false });
 
   const recruitmentApplications: RecruitmentApplicationRow[] = (recruitmentRaw ?? []).map((r) => ({
@@ -187,6 +248,11 @@ export default async function AdminAmbassadeursPage({
     status: r.status as 'pending' | 'accepted' | 'rejected',
     reviewed_at: r.reviewed_at,
     created_at: r.created_at,
+    // Who recruited this candidate, so the admin knows which parrain to pick
+    // when creating the ambassador account.
+    referrerName: r.referrer_ambassador_id
+      ? (nameById.get(r.referrer_ambassador_id) ?? r.referrer_code_used ?? null)
+      : (r.referrer_code_used ?? null),
   }));
 
   // Pending payouts list (with ambassador name)
@@ -245,9 +311,15 @@ export default async function AdminAmbassadeursPage({
         pendingPayouts={pendingPayouts}
       />
 
+      <ReferralsPanel
+        filleuls={referralFilleuls}
+        milestones={referralMilestones}
+      />
+
       <AmbassadeursManager
         ambassadors={ambassadorsWithStats}
         availablePromoCodes={allPromoCodes ?? []}
+        referrerOptions={referrerOptions}
       />
     </div>
   );

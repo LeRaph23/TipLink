@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 import { generateUniqueReferralCode } from '@/lib/referrals';
+import { REFERRAL_VALIDATION_MIN_SALES } from '@/lib/ambassador-tiers';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -77,6 +78,19 @@ export async function createAmbassador(
 
     if (existing) {
       return { ok: false, error: 'Ce code promo est déjà lié à un ambassadeur.' };
+    }
+
+    // Validate the parrain (referrer) so the referral chain is never built on
+    // a dangling id — the referral payouts depend on it being a real ambassador.
+    if (referrerAmbassadorId) {
+      const { data: referrer } = await service
+        .from('ambassadors')
+        .select('id')
+        .eq('id', referrerAmbassadorId)
+        .maybeSingle();
+      if (!referrer) {
+        return { ok: false, error: 'Parrain introuvable.' };
+      }
     }
 
     const id = crypto.randomUUID();
@@ -358,6 +372,120 @@ export async function reviewRecruitmentApplication(
 
     await logAdminAction(`ambassadors.recruitment_${status}`, { id });
 
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Credits a referral reward to the parrain's withdrawable balance. The reward
+ * row is created automatically once its condition is met (a filleul reaches
+ * the sale threshold, or the parrain reaches a milestone), but it stays
+ * `pending` until a super-admin explicitly credits it here — that is the
+ * manual gate over referral money.
+ *
+ * The underlying condition is re-verified at credit time so a reward can never
+ * be granted on sales that were since refunded.
+ */
+export async function creditReferralPayout(
+  payoutId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: payout } = await service
+      .from('referral_payouts')
+      .select('id, status, reason, referrer_ambassador_id, referred_ambassador_id, amount_cents')
+      .eq('id', payoutId)
+      .maybeSingle();
+
+    if (!payout) return { ok: false, error: 'Prime de parrainage introuvable.' };
+    if (payout.status === 'credited') return { ok: false, error: 'Cette prime est déjà créditée.' };
+    if (payout.status === 'voided') return { ok: false, error: 'Cette prime a été annulée.' };
+
+    // Re-verify the condition still holds — refunds may have collapsed it.
+    if (payout.reason === 'validation') {
+      const { count } = await service
+        .from('ambassador_sales')
+        .select('id', { count: 'exact', head: true })
+        .eq('ambassador_id', payout.referred_ambassador_id)
+        .is('voided_at', null);
+      if ((count ?? 0) < REFERRAL_VALIDATION_MIN_SALES) {
+        return {
+          ok: false,
+          error: `Le filleul n'a plus ${REFERRAL_VALIDATION_MIN_SALES} ventes valides — prime non créditable.`,
+        };
+      }
+    } else {
+      const threshold = payout.reason === 'milestone_5' ? 5 : 10;
+      const { count } = await service
+        .from('ambassadors')
+        .select('id', { count: 'exact', head: true })
+        .eq('referrer_ambassador_id', payout.referrer_ambassador_id)
+        .not('referral_validated_at', 'is', null);
+      if ((count ?? 0) < threshold) {
+        return { ok: false, error: `Palier non atteint (${count ?? 0}/${threshold} filleuls validés).` };
+      }
+    }
+
+    const { error } = await service
+      .from('referral_payouts')
+      .update({ status: 'credited', credited_at: new Date().toISOString() })
+      .eq('id', payoutId)
+      .eq('status', 'pending');
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('referral.credit', {
+      payoutId,
+      referrerId: payout.referrer_ambassador_id,
+      reason: payout.reason,
+      amountCents: payout.amount_cents,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Rejects a still-pending referral reward (e.g. suspected fraud). A credited
+ * reward cannot be voided this way — it is already in the parrain's balance.
+ */
+export async function voidReferralPayout(
+  payoutId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: payout } = await service
+      .from('referral_payouts')
+      .select('id, status, referrer_ambassador_id, reason')
+      .eq('id', payoutId)
+      .maybeSingle();
+
+    if (!payout) return { ok: false, error: 'Prime de parrainage introuvable.' };
+    if (payout.status === 'credited') {
+      return { ok: false, error: 'Impossible d\'annuler une prime déjà créditée.' };
+    }
+    if (payout.status === 'voided') return { ok: false, error: 'Cette prime est déjà annulée.' };
+
+    const { error } = await service
+      .from('referral_payouts')
+      .update({ status: 'voided' })
+      .eq('id', payoutId)
+      .eq('status', 'pending');
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('referral.void', {
+      payoutId,
+      referrerId: payout.referrer_ambassador_id,
+      reason: payout.reason,
+    });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };

@@ -10,6 +10,7 @@ import {
   WEEKLY_TIERS,
   MONTHLY_CHALLENGE,
 } from '@/lib/ambassador-tiers';
+import { sumCreditedReferralCents } from '@/lib/referrals';
 
 export const runtime = 'nodejs';
 
@@ -116,7 +117,9 @@ export async function GET(
 
   // Closed weekly bonuses (past weeks only, current week excluded — still in play)
   const closedWeeklyBonuses = computeClosedWeekBonuses(allSales, now);
-  const earnedTotal = totalBaseCommission + closedWeeklyBonuses;
+  // Referral rewards a super-admin has credited to this ambassador as a parrain.
+  const referralCreditedCents = await sumCreditedReferralCents(supabase, ambassadorId);
+  const earnedTotal = totalBaseCommission + closedWeeklyBonuses + referralCreditedCents;
 
   return NextResponse.json({
     name: ambassador.name,
@@ -146,6 +149,7 @@ export async function GET(
       top3,
     },
     closedWeeklyBonuses,
+    referralCreditedCents,
     earnedTotal,
     recentSales: allSales.slice(0, 10).map((s) => ({
       id: s.id,

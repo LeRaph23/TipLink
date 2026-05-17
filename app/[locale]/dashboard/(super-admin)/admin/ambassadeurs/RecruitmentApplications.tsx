@@ -16,6 +16,7 @@ export interface RecruitmentApplicationRow {
   status: 'pending' | 'accepted' | 'rejected';
   reviewed_at: string | null;
   created_at: string;
+  referrerName: string | null;
 }
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
@@ -81,7 +82,7 @@ export function RecruitmentApplications({
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
       <thead>
         <tr>
-          {['Date', 'Nom', 'Ville', 'Email', 'Téléphone', 'SIRET', 'Statut',
+          {['Date', 'Nom', 'Ville', 'Email', 'Téléphone', 'SIRET', 'Parrain', 'Statut',
             ...(showActions ? ['Actions'] : [])
           ].map((h, i) => (
             <th key={i} style={thStyle}>{h}</th>
@@ -123,6 +124,11 @@ export function RecruitmentApplications({
                   {app.siret ?? <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>non renseigné</span>}
                 </td>
                 <td style={tdStyle}>
+                  {app.referrerName
+                    ? <span style={{ fontWeight: 600 }}>{app.referrerName}</span>
+                    : <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>—</span>}
+                </td>
+                <td style={tdStyle}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,
                     padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
@@ -154,7 +160,7 @@ export function RecruitmentApplications({
               </tr>
               {isExpanded && app.notes && (
                 <tr key={`${app.id}-notes`} style={{ background: 'var(--surface-2)' }}>
-                  <td colSpan={showActions ? 8 : 7} style={{ padding: '8px 14px 12px 28px' }}>
+                  <td colSpan={showActions ? 9 : 8} style={{ padding: '8px 14px 12px 28px' }}>
                     <p style={{ fontSize: 12.5, color: 'var(--text)', margin: 0, fontStyle: 'italic' }}>
                       {app.notes}
                     </p>

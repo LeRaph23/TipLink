@@ -7,6 +7,7 @@ import {
   computeClosedWeekBonuses,
   MIN_PAYOUT_CENTS,
 } from '@/lib/ambassador-tiers';
+import { sumCreditedReferralCents } from '@/lib/referrals';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +27,7 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
 }> {
   const service = createServiceClient();
 
-  const [{ data: sales }, { data: payouts }] = await Promise.all([
+  const [{ data: sales }, { data: payouts }, referralCredited] = await Promise.all([
     // Voided sales (refunded / charged-back / canceled orders) earn no
     // commission and must never count toward the withdrawable balance.
     service
@@ -39,11 +40,14 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
       .select('amount_cents, status, stripe_transfer_id')
       .eq('ambassador_id', ambassadorId)
       .in('status', ['pending', 'paid', 'failed']),
+    // Referral rewards a super-admin has credited to this ambassador as a
+    // parrain — these add to the withdrawable balance.
+    sumCreditedReferralCents(service, ambassadorId),
   ]);
 
   const baseCommission = computeTotalBaseCommission(sales ?? []);
   const closedBonuses = computeClosedWeekBonuses(sales ?? []);
-  const earnedTotal = baseCommission + closedBonuses;
+  const earnedTotal = baseCommission + closedBonuses + referralCredited;
   // A `failed` payout frees its amount back into the balance — UNLESS the
   // Stripe transfer leg already went through (the platform-side money has
   // left). Counting a failed-with-transfer payout as committed prevents a

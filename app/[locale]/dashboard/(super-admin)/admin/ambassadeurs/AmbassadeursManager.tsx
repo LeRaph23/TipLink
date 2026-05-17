@@ -28,6 +28,11 @@ interface AvailablePromoCode {
   percentage_off: number;
 }
 
+interface ReferrerOption {
+  id: string;
+  name: string;
+}
+
 function fmtEuros(cents: number) {
   return `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €`;
 }
@@ -35,9 +40,11 @@ function fmtEuros(cents: number) {
 export function AmbassadeursManager({
   ambassadors: initialAmbassadors,
   availablePromoCodes,
+  referrerOptions,
 }: {
   ambassadors: Ambassador[];
   availablePromoCodes: AvailablePromoCode[];
+  referrerOptions: ReferrerOption[];
 }) {
   const [ambassadors, setAmbassadors] = useState(initialAmbassadors);
   const [showForm, setShowForm] = useState(false);
@@ -48,6 +55,7 @@ export function AmbassadeursManager({
   // Create form
   const [name, setName] = useState('');
   const [promoCodeId, setPromoCodeId] = useState('');
+  const [referrerAmbassadorId, setReferrerAmbassadorId] = useState('');
 
   // Delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<Ambassador | null>(null);
@@ -64,8 +72,9 @@ export function AmbassadeursManager({
     if (!promoCodeId) { setFormError('Sélectionne un code promo.'); return; }
 
     const ambName = name.trim();
+    const refId = referrerAmbassadorId || null;
     startTransition(async () => {
-      const result = await createAmbassador({ name: ambName, promoCodeId });
+      const result = await createAmbassador({ name: ambName, promoCodeId, referrerAmbassadorId: refId });
       if (!result.ok) {
         setFormError(result.error);
         return;
@@ -84,7 +93,7 @@ export function AmbassadeursManager({
         totalCommission: 0,
       }, ...prev]);
       setCreatedSetupUrl({ name: ambName, url: result.setupUrl, expiresAt: result.expiresAt });
-      setName(''); setPromoCodeId('');
+      setName(''); setPromoCodeId(''); setReferrerAmbassadorId('');
       setShowForm(false);
     });
   };
@@ -193,6 +202,25 @@ export function AmbassadeursManager({
                 </p>
               )}
             </div>
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
+              Parrain (optionnel)
+            </label>
+            <select
+              style={{ ...inputStyle, maxWidth: 320 }}
+              value={referrerAmbassadorId}
+              onChange={e => setReferrerAmbassadorId(e.target.value)}
+            >
+              <option value="">Aucun parrain</option>
+              {referrerOptions.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '4px 0 0' }}>
+              Si ce candidat a été recruté via un code de parrainage, sélectionne le parrain :
+              il touchera 25 € une fois que ce filleul aura fait 3 ventes (crédit à valider par toi).
+            </p>
           </div>
           <div style={{ marginTop: 10 }}>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 4px' }}>

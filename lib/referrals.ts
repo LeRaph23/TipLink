@@ -265,11 +265,12 @@ export async function resolveReferralCode(
 }
 
 export type ReferralStats = {
-  pendingAdmin: number;       // candidatures referées encore en pending
-  pendingSales: number;       // ambas créés mais < 3 ventes
-  validated: number;          // referral_validated_at != null
-  totalEarnedCents: number;   // somme des referral_payouts pour ce parrain
-  toMilestone5: number;       // filleuls validés restants pour atteindre 5
+  pendingAdmin: number;         // candidatures referées encore en pending
+  pendingSales: number;         // ambas créés mais < 3 ventes
+  validated: number;            // referral_validated_at != null
+  totalEarnedCents: number;     // referral_payouts CRÉDITÉS par le super-admin
+  awaitingCreditCents: number;  // referral_payouts en attente de validation admin
+  toMilestone5: number;         // filleuls validés restants pour atteindre 5
   toMilestone10: number;
 };
 
@@ -297,17 +298,41 @@ export async function getReferralStats(
   const refs = refsRes.data ?? [];
   const validated = refs.filter(r => r.referral_validated_at).length;
   const pendingSales = refs.length - validated;
-  const totalEarnedCents = (payoutsRes.data ?? []).reduce(
-    (sum, p) => sum + (p.amount_cents ?? 0),
-    0
-  );
+  // Only rewards a super-admin has actually credited count as earned money —
+  // a `pending` reward is awaiting admin validation and is not yet the
+  // parrain's to withdraw.
+  const payouts = payoutsRes.data ?? [];
+  const totalEarnedCents = payouts
+    .filter(p => p.status === 'credited')
+    .reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
+  const awaitingCreditCents = payouts
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
 
   return {
     pendingAdmin: pendingAdminRes.count ?? 0,
     pendingSales,
     validated,
     totalEarnedCents,
+    awaitingCreditCents,
     toMilestone5: Math.max(0, 5 - validated),
     toMilestone10: Math.max(0, 10 - validated),
   };
+}
+
+/**
+ * Sum (in cents) of referral rewards a super-admin has explicitly credited to
+ * this parrain. Credited rewards become part of the parrain's withdrawable
+ * balance; `pending` ones do not (they await admin validation).
+ */
+export async function sumCreditedReferralCents(
+  service: ServiceClient,
+  referrerId: string
+): Promise<number> {
+  const { data } = await service
+    .from('referral_payouts')
+    .select('amount_cents')
+    .eq('referrer_ambassador_id', referrerId)
+    .eq('status', 'credited');
+  return (data ?? []).reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
 }

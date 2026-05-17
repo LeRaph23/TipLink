@@ -215,7 +215,7 @@ export function AmbassadeurReferralPanel({ code }: { code: string }) {
 function FilleulRow({ name, status }: { name: string; status: 'pending_admin' | 'pending_sales' | 'validated' }) {
   const cfg = {
     pending_admin: { label: 'Examen admin', color: 'var(--text-3)', bg: 'var(--surface-3)' },
-    pending_sales: { label: '< 2 ventes', color: 'var(--warning, #eab308)', bg: 'var(--warning-bg, rgba(234,179,8,0.12))' },
+    pending_sales: { label: '< 3 ventes', color: 'var(--warning, #eab308)', bg: 'var(--warning-bg, rgba(234,179,8,0.12))' },
     validated:     { label: 'Validé · +25€', color: 'var(--success, #22c55e)', bg: 'rgba(34,197,94,0.12)' },
   }[status];
 
