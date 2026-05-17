@@ -63,8 +63,9 @@ export function RecruitmentLandingForm() {
     if (!city.trim()) { setError('Ville requise.'); return; }
     if (!phone.trim()) { setError('Téléphone requis.'); return; }
     if (!email.trim() || !email.includes('@')) { setError('Email valide requis.'); return; }
-    if (!/^\d{14}$/.test(siret.replace(/\s+/g, ''))) {
-      setError('SIRET : 14 chiffres. Pas encore de SIRET ? Crée-le gratuitement sur autoentrepreneur.urssaf.fr.');
+    const siretClean = siret.replace(/\s+/g, '');
+    if (siretClean && !/^\d{14}$/.test(siretClean)) {
+      setError('SIRET : 14 chiffres. Laisse le champ vide si tu n\'en as pas encore.');
       return;
     }
     if (!pledge) { setError("Tu dois accepter l'engagement de non-fraude."); return; }
@@ -81,7 +82,7 @@ export function RecruitmentLandingForm() {
           city: city.trim(),
           phone: phone.trim(),
           email: email.trim(),
-          siret: siret.replace(/\s+/g, ''),
+          siret: siretClean || undefined,
           noFraudPledge: true,
           notes: notes.trim() || undefined,
           referrerCode: referrerCode || undefined,
@@ -147,10 +148,11 @@ export function RecruitmentLandingForm() {
       </div>
 
       <div>
-        <span style={label}>SIRET (14 chiffres)</span>
-        <input style={inp} value={siret} onChange={e => setSiret(e.target.value)} placeholder="12345678901234" inputMode="numeric" />
+        <span style={label}>SIRET (14 chiffres) — optionnel</span>
+        <input style={inp} value={siret} onChange={e => setSiret(e.target.value)} placeholder="Pas encore de SIRET ? Laisse vide" inputMode="numeric" />
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 5, lineHeight: 1.4 }}>
-          Obligatoire pour le paiement. Pas encore de SIRET ? Crée-le gratuitement sur{' '}
+          Pas besoin de SIRET pour postuler ni pour commencer. Il sera demandé plus tard,
+          uniquement au moment de toucher tes commissions. Tu peux le créer gratuitement sur{' '}
           <a href="https://autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
             autoentrepreneur.urssaf.fr
           </a>{' '}(10 min, c&apos;est instantané).

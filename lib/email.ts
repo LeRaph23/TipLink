@@ -450,7 +450,7 @@ export async function sendAmbassadorApplicationAdmin(opts: {
   city: string;
   phone: string;
   email: string;
-  siret: string;
+  siret: string | null;
   notes?: string | null;
 }): Promise<void> {
   const { to, firstName, lastName, city, phone, email, siret, notes } = opts;
@@ -475,7 +475,9 @@ export async function sendAmbassadorApplicationAdmin(opts: {
         ${infoRow('Email', `<a href="mailto:${email}" style="color:#E57A97;text-decoration:none">${email}</a>`)}
         ${infoRow('Téléphone', phone)}
         ${infoRow('Ville', city)}
-        ${infoRow('SIRET', `<span style="font-family:monospace">${siret}</span>`)}
+        ${infoRow('SIRET', siret
+          ? `<span style="font-family:monospace">${siret}</span>`
+          : '<span style="color:#9ca3af">Non renseigné — à fournir avant paiement</span>')}
         ${notes ? infoRow('Notes', notes) : ''}
       </table>
     </td></tr>`),

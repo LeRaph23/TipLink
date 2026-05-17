@@ -35,18 +35,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Lien invalide' }, { status: 403 });
   }
 
-  if (!firstName || !lastName || !city || !phone || !email || !siret) {
+  if (!firstName || !lastName || !city || !phone || !email) {
     return NextResponse.json({ error: 'Tous les champs sont obligatoires.' }, { status: 400 });
   }
   if (!noFraudPledge) {
     return NextResponse.json({ error: 'Vous devez accepter l\'engagement de non-fraude.' }, { status: 400 });
   }
 
-  const siretClean = validateSiret(String(siret));
-  if (!siretClean) {
-    return NextResponse.json({
-      error: "SIRET invalide. Pas encore de SIRET ? Crée-le gratuitement sur autoentrepreneur.urssaf.fr.",
-    }, { status: 400 });
+  // SIRET is optional at application time — required later for payouts. When
+  // provided, it must be well-formed; an empty value is accepted as null.
+  let siretClean: string | null = null;
+  if (siret !== undefined && String(siret).trim() !== '') {
+    siretClean = validateSiret(String(siret));
+    if (!siretClean) {
+      return NextResponse.json({
+        error: "SIRET invalide. Laisse le champ vide si tu n'en as pas encore.",
+      }, { status: 400 });
+    }
   }
 
   const ip =

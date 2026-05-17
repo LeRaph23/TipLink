@@ -755,7 +755,7 @@ export type Database = {
           city: string;
           phone: string;
           email: string;
-          siret: string;
+          siret: string | null;
           no_fraud_pledge: boolean;
           notes: string | null;
           status: 'pending' | 'accepted' | 'rejected';
@@ -775,7 +775,7 @@ export type Database = {
           city: string;
           phone: string;
           email: string;
-          siret: string;
+          siret?: string | null;
           no_fraud_pledge: boolean;
           notes?: string | null;
           status?: 'pending' | 'accepted' | 'rejected';
@@ -795,7 +795,7 @@ export type Database = {
           city?: string;
           phone?: string;
           email?: string;
-          siret?: string;
+          siret?: string | null;
           no_fraud_pledge?: boolean;
           notes?: string | null;
           status?: 'pending' | 'accepted' | 'rejected';
