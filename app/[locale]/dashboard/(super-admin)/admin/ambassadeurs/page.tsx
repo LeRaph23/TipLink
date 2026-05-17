@@ -193,6 +193,7 @@ export default async function AdminAmbassadeursPage({
       percentageOff: pc?.percentage_off ?? 0,
       salesCount: stats.count,
       totalCommission: stats.totalCommission,
+      referrerAmbassadorId: a.referrer_ambassador_id ?? null,
     };
   });
 

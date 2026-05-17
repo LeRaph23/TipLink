@@ -7,6 +7,7 @@ import {
   deleteAmbassador,
   regenerateAmbassadorSetupToken,
   setAmbassadorPayoutsFrozen,
+  setAmbassadorReferrer,
 } from '@/actions/admin/ambassadors';
 
 interface Ambassador {
@@ -20,6 +21,7 @@ interface Ambassador {
   percentageOff: number;
   salesCount: number;
   totalCommission: number;
+  referrerAmbassadorId: string | null;
 }
 
 interface AvailablePromoCode {
@@ -91,6 +93,7 @@ export function AmbassadeursManager({
         percentageOff: promoCode?.percentage_off ?? 0,
         salesCount: 0,
         totalCommission: 0,
+        referrerAmbassadorId: refId,
       }, ...prev]);
       setCreatedSetupUrl({ name: ambName, url: result.setupUrl, expiresAt: result.expiresAt });
       setName(''); setPromoCodeId(''); setReferrerAmbassadorId('');
@@ -117,6 +120,23 @@ export function AmbassadeursManager({
       if (!result.ok) { setDeleteError(result.error); return; }
       setAmbassadors(prev => prev.filter(a => a.id !== targetId));
       setDeleteTarget(null);
+    });
+  };
+
+  const [referrerError, setReferrerError] = useState<string | null>(null);
+
+  const handleSetReferrer = (id: string, newReferrerId: string) => {
+    const prevValue = ambassadors.find(a => a.id === id)?.referrerAmbassadorId ?? null;
+    const next = newReferrerId || null;
+    setReferrerError(null);
+    // Optimistic update.
+    setAmbassadors(prev => prev.map(a => a.id === id ? { ...a, referrerAmbassadorId: next } : a));
+    startTransition(async () => {
+      const result = await setAmbassadorReferrer(id, next);
+      if (!result.ok) {
+        setReferrerError(result.error);
+        setAmbassadors(prev => prev.map(a => a.id === id ? { ...a, referrerAmbassadorId: prevValue } : a));
+      }
     });
   };
 
@@ -247,6 +267,12 @@ export function AmbassadeursManager({
         </div>
       )}
 
+      {referrerError && (
+        <div style={{ marginBottom: 12, color: 'var(--error)', fontSize: 13, padding: '8px 12px', background: 'var(--error-bg)', borderRadius: 6 }}>
+          {referrerError}
+        </div>
+      )}
+
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
         {ambassadors.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -256,7 +282,7 @@ export function AmbassadeursManager({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {['Nom', 'Code promo', 'Ventes', 'Commissions', 'Dashboard', 'Statut', 'Actions'].map((h, i) => (
+                {['Nom', 'Code promo', 'Parrain', 'Ventes', 'Commissions', 'Dashboard', 'Statut', 'Actions'].map((h, i) => (
                   <th key={i} style={{
                     padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600,
                     color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em',
@@ -272,6 +298,27 @@ export function AmbassadeursManager({
                   <td style={{ padding: '11px 14px', fontWeight: 600, color: 'var(--text)' }}>{a.name}</td>
                   <td style={{ padding: '11px 14px', fontFamily: 'var(--font-mono, monospace)', color: 'var(--accent)', fontSize: 12 }}>
                     {a.promoCode} {a.percentageOff > 0 && <span style={{ color: 'var(--text-3)', fontFamily: 'inherit' }}>(-{a.percentageOff}%)</span>}
+                  </td>
+                  <td style={{ padding: '11px 14px' }}>
+                    <select
+                      value={a.referrerAmbassadorId ?? ''}
+                      onChange={e => handleSetReferrer(a.id, e.target.value)}
+                      disabled={isPending}
+                      title="Parrain de cet ambassadeur — il touche 25€ une fois ce filleul à 3 ventes"
+                      style={{
+                        padding: '5px 8px', borderRadius: 6, fontSize: 12,
+                        border: '1px solid var(--border)', background: 'var(--surface)',
+                        color: a.referrerAmbassadorId ? 'var(--text)' : 'var(--text-3)',
+                        maxWidth: 150, outline: 'none',
+                      }}
+                    >
+                      <option value="">— Aucun —</option>
+                      {referrerOptions
+                        .filter(r => r.id !== a.id)
+                        .map(r => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                    </select>
                   </td>
                   <td style={{ padding: '11px 14px', fontWeight: 700 }}>{a.salesCount}</td>
                   <td style={{ padding: '11px 14px', color: 'var(--success)', fontWeight: 600 }}>{fmtEuros(a.totalCommission)}</td>

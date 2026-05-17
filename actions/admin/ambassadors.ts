@@ -4,7 +4,11 @@ import crypto from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
-import { generateUniqueReferralCode } from '@/lib/referrals';
+import {
+  generateUniqueReferralCode,
+  recomputeReferralAfterSaleChange,
+  recomputeMilestones,
+} from '@/lib/referrals';
 import { REFERRAL_VALIDATION_MIN_SALES } from '@/lib/ambassador-tiers';
 
 async function requireSuperAdminUser() {
@@ -277,6 +281,93 @@ export async function setAmbassadorPayoutsFrozen(
       frozen ? 'ambassadors.freeze_payouts' : 'ambassadors.unfreeze_payouts',
       { id, name: amb.name }
     );
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Sets or changes an ambassador's parrain after creation — for the case where
+ * an ambassador was created without linking the referrer. Voids any pending
+ * referral reward owed to the previous parrain, then recomputes the referral
+ * state for the new one (a filleul who already has 3+ sales immediately gets
+ * a pending 25€ reward for the new parrain, which the super-admin then credits).
+ */
+export async function setAmbassadorReferrer(
+  ambassadorId: string,
+  referrerAmbassadorId: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: amb } = await service
+      .from('ambassadors')
+      .select('id, name, referrer_ambassador_id')
+      .eq('id', ambassadorId)
+      .maybeSingle();
+
+    if (!amb) return { ok: false, error: 'Ambassadeur introuvable.' };
+
+    const newReferrer = referrerAmbassadorId || null;
+    const oldReferrer = amb.referrer_ambassador_id;
+    if (newReferrer === oldReferrer) return { ok: true };
+
+    if (newReferrer) {
+      if (newReferrer === ambassadorId) {
+        return { ok: false, error: 'Un ambassadeur ne peut pas être son propre parrain.' };
+      }
+      // Walk up the proposed parrain's chain — reject if it loops back here.
+      let cursor: string | null = newReferrer;
+      for (let depth = 0; cursor && depth < 50; depth++) {
+        if (cursor === ambassadorId) {
+          return { ok: false, error: 'Ce choix créerait une boucle de parrainage.' };
+        }
+        const { data: up }: { data: { referrer_ambassador_id: string | null } | null } =
+          await service
+            .from('ambassadors')
+            .select('referrer_ambassador_id')
+            .eq('id', cursor)
+            .maybeSingle();
+        if (!up) {
+          if (cursor === newReferrer) return { ok: false, error: 'Parrain introuvable.' };
+          break;
+        }
+        cursor = up.referrer_ambassador_id;
+      }
+    }
+
+    // Detach from the previous parrain: a still-pending validation reward owed
+    // to them is no longer due (a credited one is left — money already given).
+    if (oldReferrer) {
+      await service
+        .from('referral_payouts')
+        .update({ status: 'voided' })
+        .eq('referrer_ambassador_id', oldReferrer)
+        .eq('referred_ambassador_id', ambassadorId)
+        .eq('reason', 'validation')
+        .eq('status', 'pending');
+    }
+
+    const { error } = await service
+      .from('ambassadors')
+      .update({ referrer_ambassador_id: newReferrer })
+      .eq('id', ambassadorId);
+
+    if (error) return { ok: false, error: error.message };
+
+    // Recompute both sides: the old parrain may lose a milestone, the new one
+    // gains a filleul (and a pending reward if the 3-sale threshold is met).
+    if (oldReferrer) await recomputeMilestones(service, oldReferrer);
+    if (newReferrer) await recomputeReferralAfterSaleChange(service, ambassadorId);
+
+    await logAdminAction('ambassadors.set_referrer', {
+      id: ambassadorId,
+      name: amb.name,
+      oldReferrer,
+      newReferrer,
+    });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
