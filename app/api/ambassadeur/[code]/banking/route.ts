@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { stripe } from '@/lib/stripe/client';
+import { stripe, CONNECT_BUSINESS_PROFILE } from '@/lib/stripe/client';
+import { getAccountVerificationStatus } from '@/lib/stripe/identity';
 import { verifyCookieValue } from '../auth/route';
 import { sendAmbassadorBankingConfirmation } from '@/lib/email';
 
@@ -91,6 +92,7 @@ export async function POST(
       type: 'custom',
       country,
       business_type: 'individual',
+      business_profile: { ...CONNECT_BUSINESS_PROFILE },
       individual: {
         first_name: firstName,
         last_name: lastName,
@@ -173,6 +175,20 @@ export async function GET(
     .eq('id', ambassadorId)
     .maybeSingle();
 
+  let needsIdentityDocument = false;
+  let pendingVerification = false;
+  let payoutsEnabled = false;
+  if (amb?.stripe_account_id) {
+    try {
+      const status = await getAccountVerificationStatus(amb.stripe_account_id);
+      needsIdentityDocument = status.needsIdentityDocument;
+      pendingVerification = status.pendingVerification;
+      payoutsEnabled = status.payoutsEnabled;
+    } catch (err) {
+      console.error('ambassador banking verification status failed', err);
+    }
+  }
+
   return NextResponse.json({
     hasStripeAccount: !!amb?.stripe_account_id,
     onboardingStatus: amb?.onboarding_status ?? 'not_started',
@@ -180,5 +196,8 @@ export async function GET(
     email: amb?.email ?? null,
     phone: amb?.phone ?? null,
     city: amb?.city ?? null,
+    needsIdentityDocument,
+    pendingVerification,
+    payoutsEnabled,
   });
 }

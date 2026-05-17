@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { IdentityDocumentUpload } from '@/components/banking/IdentityDocumentUpload';
 
 interface Props {
   code: string;
@@ -251,6 +252,20 @@ export function AmbassadeurPayoutPanel({
     );
   }
 
+  async function handleIdentityUpload(front: File, back: File | null) {
+    const fd = new FormData();
+    fd.append('front', front);
+    if (back) fd.append('back', back);
+    const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/identity-document`, {
+      method: 'POST',
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: data.error ?? 'Erreur.' };
+    onChanged();
+    return { ok: true as const };
+  }
+
   // Banking is configured — show available balance + payout button
   const available = payout?.available ?? 0;
   const minCents = payout?.minPayoutCents ?? 3000;
@@ -287,6 +302,15 @@ export function AmbassadeurPayoutPanel({
       {successMsg && (
         <div style={{ fontSize: 12.5, color: 'var(--success)', padding: '8px 12px', background: 'var(--success-bg)', borderRadius: 8, marginBottom: 10 }}>
           {successMsg}
+        </div>
+      )}
+
+      {banking.needsIdentityDocument && (
+        <div style={{ marginBottom: 12 }}>
+          <IdentityDocumentUpload
+            onUpload={handleIdentityUpload}
+            pendingVerification={banking.pendingVerification}
+          />
         </div>
       )}
 
@@ -345,6 +369,9 @@ interface BankingPanelData {
   email: string | null;
   phone: string | null;
   city: string | null;
+  needsIdentityDocument?: boolean;
+  pendingVerification?: boolean;
+  payoutsEnabled?: boolean;
 }
 
 interface PayoutData {

@@ -51,6 +51,9 @@ interface BankingState {
   email: string | null;
   phone: string | null;
   city: string | null;
+  needsIdentityDocument?: boolean;
+  pendingVerification?: boolean;
+  payoutsEnabled?: boolean;
 }
 
 interface PayoutState {
