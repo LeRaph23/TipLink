@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { markAmbassadorPayoutPaid, cancelAmbassadorPayout } from '@/actions/admin/ambassadors';
+import { useRouter } from 'next/navigation';
+import {
+  markAmbassadorPayoutPaid,
+  cancelAmbassadorPayout,
+  setMonthlyChallengeActive,
+} from '@/actions/admin/ambassadors';
+import { MONTHLY_CHALLENGE } from '@/lib/ambassador-tiers';
 
 export interface AmbassadorOverviewRow {
   id: string;
@@ -28,18 +34,41 @@ export interface PendingPayoutRow {
 const fmtEur = (cents: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
 export function AmbassadeursOverview({
   rows,
   monthLeaderboard,
   pendingPayouts,
+  monthlyChallenge,
 }: {
   rows: AmbassadorOverviewRow[];
   monthLeaderboard: Array<{ id: string; name: string; count: number }>;
   pendingPayouts: PendingPayoutRow[];
+  monthlyChallenge: { endsAt: string; prizeCents: number } | null;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [pendingList, setPendingList] = useState(pendingPayouts);
+
+  const challengeActive = !!monthlyChallenge;
+
+  const handleToggleChallenge = () => {
+    if (
+      challengeActive &&
+      !confirm('Désactiver le challenge en cours ? Le mois est annulé et aucun gagnant ne sera crédité.')
+    ) {
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const res = await setMonthlyChallengeActive(!challengeActive);
+      if (!res.ok) { setError(res.error); return; }
+      router.refresh();
+    });
+  };
 
   const handleMarkPaid = (id: string) => {
     setError(null);
@@ -62,18 +91,41 @@ export function AmbassadeursOverview({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 28 }}>
-      {/* Monthly leaderboard */}
+      {/* Monthly challenge — super-admin toggle + standings */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-            🏆 Classement du mois (200€ au #1)
+            🏆 Challenge du mois — {Math.round(MONTHLY_CHALLENGE.bonus / 100)}€ au #1
           </h2>
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            Mois civil — auto Lundi/1er
-          </span>
+          <button
+            onClick={handleToggleChallenge}
+            disabled={isPending}
+            style={{
+              padding: '7px 14px', fontSize: 12.5, fontWeight: 600, borderRadius: 6,
+              border: challengeActive ? '1px solid var(--border)' : 'none',
+              background: challengeActive ? 'transparent' : 'var(--accent)',
+              color: challengeActive ? 'var(--text-3)' : '#fff',
+              cursor: isPending ? 'default' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            {challengeActive ? 'Désactiver' : 'Activer (1 mois)'}
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: challengeActive ? 'var(--success)' : 'var(--text-3)', marginBottom: 14 }}>
+          {challengeActive && monthlyChallenge
+            ? `● Actif — se termine le ${fmtDate(monthlyChallenge.endsAt)}. Visible par les ambassadeurs ; le #1 est crédité automatiquement à la fin.`
+            : '○ Inactif — masqué côté ambassadeurs. À activer quand assez d\'ambassadeurs participent.'}
+        </div>
+        {error && (
+          <div style={{ fontSize: 12.5, color: 'var(--error)', padding: '8px 12px', background: 'var(--error-bg)', borderRadius: 8, marginBottom: 10 }}>
+            {error}
+          </div>
+        )}
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+          {challengeActive ? 'Classement du challenge' : 'Aperçu — classement du mois civil'}
         </div>
         {monthLeaderboard.length === 0 ? (
-          <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Aucune vente ce mois-ci.</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Aucune vente sur la période.</div>
         ) : (
           <ol style={{ margin: 0, padding: 0, listStyle: 'none' }}>
             {monthLeaderboard.map((entry, idx) => {

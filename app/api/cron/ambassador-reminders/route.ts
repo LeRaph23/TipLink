@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendAmbassadorApplicationReminder } from '@/lib/email';
 import { isAuthorizedCronRequest } from '@/lib/auth/require-cron';
+import { settleExpiredChallenges } from '@/lib/ambassador-monthly-challenge';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -43,5 +44,19 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, considered: candidates?.length ?? 0, sent });
+  // Settle any monthly challenge whose one-month window has elapsed: this picks
+  // the #1 ambassador and credits their prize into the withdrawable balance.
+  let challengesSettled = 0;
+  try {
+    challengesSettled = await settleExpiredChallenges(service);
+  } catch (e) {
+    console.error('monthly challenge settlement failed', e);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    considered: candidates?.length ?? 0,
+    sent,
+    challengesSettled,
+  });
 }

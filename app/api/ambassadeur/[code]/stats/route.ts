@@ -3,13 +3,15 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { verifyCookieValue } from '../auth/route';
 import {
   getWeekBounds,
-  getMonthBounds,
   getWeeklyTier,
   computeTotalBaseCommission,
   computeClosedWeekBonuses,
   WEEKLY_TIERS,
-  MONTHLY_CHALLENGE,
 } from '@/lib/ambassador-tiers';
+import {
+  getActiveChallenge,
+  getChallengePrizeCents,
+} from '@/lib/ambassador-monthly-challenge';
 
 export const runtime = 'nodejs';
 
@@ -56,7 +58,6 @@ export async function GET(
 
   const now = new Date();
   const { start: weekStart, end: weekEnd } = getWeekBounds(now);
-  const { start: monthStart, end: monthEnd } = getMonthBounds(now);
 
   const allSales = sales ?? [];
 
@@ -65,54 +66,78 @@ export async function GET(
     return d >= weekStart && d <= weekEnd;
   });
 
-  const monthSales = allSales.filter((s) => {
-    const d = new Date(s.created_at);
-    return d >= monthStart && d <= monthEnd;
-  });
-
   const weekCount = weekSales.length;
-  const monthCount = monthSales.length;
-
   const weeklyTier = getWeeklyTier(weekCount);
   const weeklyBonusCents = weeklyTier?.bonus ?? 0;
-  const monthlyBonusUnlocked = monthCount >= MONTHLY_CHALLENGE.threshold;
 
   const totalBaseCommission = computeTotalBaseCommission(allSales);
-
-  // Leaderboard: all ambassadors' monthly sale counts, ordered desc
-  const { data: allMonthSales } = await supabase
-    .from('ambassador_sales')
-    .select('ambassador_id')
-    .gte('created_at', monthStart.toISOString())
-    .lte('created_at', monthEnd.toISOString());
-
-  const countsByAmbassador: Record<string, number> = {};
-  for (const s of allMonthSales ?? []) {
-    countsByAmbassador[s.ambassador_id] = (countsByAmbassador[s.ambassador_id] ?? 0) + 1;
-  }
-
-  const leaderboard = Object.entries(countsByAmbassador)
-    .sort(([, a], [, b]) => b - a);
-
-  const leaderboardRank = leaderboard.findIndex(([id]) => id === ambassadorId) + 1;
-  const leaderboardTotal = leaderboard.length;
-
-  // Top 3 first names + counts, for live competition display
-  const topIds = leaderboard.slice(0, 3).map(([id]) => id);
-  const { data: topAmbassadors } = topIds.length > 0
-    ? await supabase.from('ambassadors').select('id, name').in('id', topIds)
-    : { data: [] };
-  const nameById = new Map((topAmbassadors ?? []).map((a) => [a.id, a.name.split(' ')[0]]));
-  const top3 = leaderboard.slice(0, 3).map(([id, count], idx) => ({
-    rank: idx + 1,
-    firstName: id === ambassadorId ? 'Toi' : (nameById.get(id) ?? '—'),
-    count,
-    isYou: id === ambassadorId,
-  }));
-
   // Closed weekly bonuses (past weeks only, current week excluded — still in play)
   const closedWeeklyBonuses = computeClosedWeekBonuses(allSales, now);
-  const earnedTotal = totalBaseCommission + closedWeeklyBonuses;
+  const challengePrizeCents = await getChallengePrizeCents(supabase, ambassadorId);
+  const earnedTotal = totalBaseCommission + closedWeeklyBonuses + challengePrizeCents;
+
+  // Monthly challenge — surfaced only while a super-admin has one running.
+  // When inactive, the competition (prize + leaderboard) is hidden entirely.
+  const activeChallenge = await getActiveChallenge(supabase, now);
+  let monthlyChallenge: { prizeCents: number; prize: string; endsAt: string } | null = null;
+  let leaderboard: {
+    rank: number;
+    total: number;
+    top3: Array<{ rank: number; firstName: string; count: number; isYou: boolean }>;
+  } | null = null;
+  let monthCount = 0;
+
+  if (activeChallenge) {
+    const winStart = new Date(activeChallenge.startsAt);
+    const winEnd = new Date(
+      Math.min(now.getTime(), new Date(activeChallenge.endsAt).getTime())
+    );
+
+    monthCount = allSales.filter((s) => {
+      const d = new Date(s.created_at);
+      return d >= winStart && d <= winEnd;
+    }).length;
+
+    // Leaderboard: every ambassador's sale count within the challenge window
+    const { data: windowSales } = await supabase
+      .from('ambassador_sales')
+      .select('ambassador_id')
+      .gte('created_at', winStart.toISOString())
+      .lte('created_at', winEnd.toISOString());
+
+    const countsByAmbassador: Record<string, number> = {};
+    for (const s of windowSales ?? []) {
+      countsByAmbassador[s.ambassador_id] = (countsByAmbassador[s.ambassador_id] ?? 0) + 1;
+    }
+
+    const ranked = Object.entries(countsByAmbassador).sort(([, a], [, b]) => b - a);
+    const rank = ranked.findIndex(([id]) => id === ambassadorId) + 1;
+    const total = ranked.length;
+
+    // Top 3 first names + counts, for live competition display
+    const topIds = ranked.slice(0, 3).map(([id]) => id);
+    const { data: topAmbassadors } = topIds.length > 0
+      ? await supabase.from('ambassadors').select('id, name').in('id', topIds)
+      : { data: [] };
+    const nameById = new Map((topAmbassadors ?? []).map((a) => [a.id, a.name.split(' ')[0]]));
+    const top3 = ranked.slice(0, 3).map(([id, count], idx) => ({
+      rank: idx + 1,
+      firstName: id === ambassadorId ? 'Toi' : (nameById.get(id) ?? '—'),
+      count,
+      isYou: id === ambassadorId,
+    }));
+
+    monthlyChallenge = {
+      prizeCents: activeChallenge.prizeCents,
+      prize: `${Math.round(activeChallenge.prizeCents / 100)}€ pour le #1 du classement`,
+      endsAt: activeChallenge.endsAt,
+    };
+    leaderboard = {
+      rank: rank || total + 1,
+      total: Math.max(total, 1),
+      top3,
+    };
+  }
 
   return NextResponse.json({
     name: ambassador.name,
@@ -124,8 +149,8 @@ export async function GET(
       ? { id: weeklyTier.id, label: weeklyTier.label, bonus: weeklyTier.bonus }
       : null,
     weeklyBonusCents,
-    monthlyBonusUnlocked,
-    monthlyChallenge: MONTHLY_CHALLENGE,
+    monthlyChallenge,
+    challengePrizeCents,
     tiers: WEEKLY_TIERS.map((t) => ({
       id: t.id,
       label: t.label,
@@ -136,11 +161,7 @@ export async function GET(
       bonus: t.bonus,
       unlocked: weekCount >= t.threshold,
     })),
-    leaderboard: {
-      rank: leaderboardRank || leaderboardTotal + 1,
-      total: Math.max(leaderboardTotal, 1),
-      top3,
-    },
+    leaderboard,
     closedWeeklyBonuses,
     earnedTotal,
     recentSales: allSales.slice(0, 10).map((s) => ({
@@ -151,6 +172,5 @@ export async function GET(
       created_at: s.created_at,
     })),
     weekBounds: { start: weekStart.toISOString(), end: weekEnd.toISOString() },
-    monthBounds: { start: monthStart.toISOString(), end: monthEnd.toISOString() },
   });
 }
