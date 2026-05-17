@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { PACKS, type PackId } from '@/lib/env';
+import { type PackId } from '@/lib/env';
 import {
   emptyOrder,
   parseStep,
@@ -22,7 +22,7 @@ import { StepShipping } from '@/components/order/StepShipping';
 import { StepBilling } from '@/components/order/StepBilling';
 import { StepAccount } from '@/components/order/StepAccount';
 import { StepReview } from '@/components/order/StepReview';
-import { formatPrice } from '@/components/order/OrderSummary';
+import { OrderPayment } from '@/components/order/OrderPayment';
 
 const STORAGE_KEY = (pack: PackId) => `tiplink.order.${pack}`;
 
@@ -106,6 +106,14 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState('');
+  // Once set, the wizard shows the in-page payment instead of the step form.
+  const [payment, setPayment] = useState<{
+    clientSecret: string;
+    htAmount: number;
+    taxAmount: number;
+    totalAmount: number;
+    taxRatePercent: number | null;
+  } | null>(null);
 
   const currentStep = parseStep(searchParams.get('step'));
 
@@ -267,15 +275,28 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
         return;
       }
 
-      const data = (await res.json()) as { url?: string };
-      if (!data.url) {
-        setError('checkout_failed::missing_url');
+      const data = (await res.json()) as {
+        clientSecret?: string;
+        amount?: number;
+        htAmount?: number;
+        taxAmount?: number;
+        taxRatePercent?: number | null;
+      };
+      if (!data.clientSecret) {
+        setError('checkout_failed::missing_secret');
         setSubmitting(false);
         return;
       }
 
       try { window.localStorage.removeItem(STORAGE_KEY(pack)); } catch { /* ignore */ }
-      window.location.href = data.url;
+      setPayment({
+        clientSecret: data.clientSecret,
+        htAmount: data.htAmount ?? 0,
+        taxAmount: data.taxAmount ?? 0,
+        totalAmount: data.amount ?? 0,
+        taxRatePercent: data.taxRatePercent ?? null,
+      });
+      setSubmitting(false);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Unknown error';
       setError(`checkout_failed::${message}`);
@@ -325,8 +346,6 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
     }
   };
 
-  const total = PACKS[state.pack].hardwareAmount;
-
   const footer = (
     <>
       {errorMessage && (
@@ -350,13 +369,41 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
         ) : (
           <ContinueBtn onClick={handleSubmit} disabled={submitting}>
             {submitting
-              ? t('redirecting')
-              : t('payAmount', { amount: formatPrice(total, locale) })}
+              ? (locale === 'fr' ? 'Chargement…' : 'Loading…')
+              : (locale === 'fr' ? 'Procéder au paiement →' : 'Proceed to payment →')}
           </ContinueBtn>
         )}
       </div>
     </>
   );
+
+  // Payment view — shown after the review step, in-page (no Stripe redirect).
+  if (payment) {
+    return (
+      <OrderLayout
+        pack={state.pack}
+        locale={locale}
+        step="review"
+        reachable={maxReachable(state, activeSteps)}
+        steps={activeSteps}
+        title={locale === 'fr' ? 'Paiement' : 'Payment'}
+        subtitle={locale === 'fr' ? 'Réglez votre commande en toute sécurité.' : 'Pay for your order securely.'}
+        footer={<BackBtn onBack={() => setPayment(null)} label={t('back')} />}
+        onStepClick={(s) => { setPayment(null); goToStep(s); }}
+        onExit={handleExit}
+        showSummary
+      >
+        <OrderPayment
+          clientSecret={payment.clientSecret}
+          locale={locale}
+          htAmount={payment.htAmount}
+          taxAmount={payment.taxAmount}
+          totalAmount={payment.totalAmount}
+          taxRatePercent={payment.taxRatePercent}
+        />
+      </OrderLayout>
+    );
+  }
 
   const showSummary = currentStep !== 'pack';
 

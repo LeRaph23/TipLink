@@ -2,7 +2,6 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
-import { BillingPortalButton } from './BillingPortalButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -46,28 +45,17 @@ export default async function BillingPage({
     .filter((r) => r.role === 'group_admin' && r.group_id != null)
     .map((r) => r.group_id) as string[];
 
-  const primaryGroupId = ownedGroupIds[0] ?? null;
-
   const ordersQuery = service
     .from('smarttag_orders')
     .select('id, pack, quantity, status, tracking_number, created_at, stripe_invoice_id, shipped_at, delivered_at, group_id, groups(name)')
     .order('created_at', { ascending: false })
     .limit(50);
 
-  const [{ data: group }, { data: orders }] = await Promise.all([
-    primaryGroupId
-      ? service
-          .from('groups')
-          .select('id, stripe_customer_id')
-          .eq('id', primaryGroupId)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    isSuperAdmin
-      ? ordersQuery
-      : ownedGroupIds.length > 0
-        ? ordersQuery.in('group_id', ownedGroupIds)
-        : Promise.resolve({ data: [] }),
-  ]);
+  const { data: orders } = isSuperAdmin
+    ? await ordersQuery
+    : ownedGroupIds.length > 0
+      ? await ordersQuery.in('group_id', ownedGroupIds)
+      : { data: [] };
 
   return (
     <div>
@@ -95,9 +83,6 @@ export default async function BillingPage({
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {group?.stripe_customer_id && (
-            <BillingPortalButton label={t('invoicesPortal')} />
-          )}
           <Link href="/order/solo" style={{
             padding: '9px 16px', borderRadius: 8, textDecoration: 'none',
             background: 'var(--accent)', color: 'var(--accent-fg)',

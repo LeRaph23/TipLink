@@ -143,6 +143,7 @@ export default async function CheckoutPage({
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>
                   {formattedPrice}
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#a0a0b8', marginLeft: 4 }}>HT</span>
                 </div>
                 {formattedList && (
                   <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>

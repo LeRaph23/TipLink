@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { CsvExportButton } from '@/components/dashboard/CsvExportButton';
+import { ReceiptLink } from '@/components/dashboard/ReceiptLink';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
@@ -57,14 +58,14 @@ export default async function StaffTransactionsPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('colReference'), t('colDate'), t('colAmount'), t('colStatus')].map(h => (
+                {[t('colReference'), t('colDate'), t('colAmount'), t('colStatus'), t('colReceipt')].map(h => (
                   <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {!transactions?.length ? (
-                <tr><td colSpan={4} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>{t('empty')}</td></tr>
+                <tr><td colSpan={5} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>{t('empty')}</td></tr>
               ) : transactions.map(tx => (
                 <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '11px 16px' }}>
@@ -80,6 +81,11 @@ export default async function StaffTransactionsPage({
                   </td>
                   <td style={{ padding: '11px 16px' }}>
                     <StatusBadge status={tx.status} />
+                  </td>
+                  <td style={{ padding: '11px 16px' }}>
+                    {tx.status === 'succeeded'
+                      ? <ReceiptLink transactionId={tx.id} />
+                      : <span style={{ color: 'var(--text-3)' }}>—</span>}
                   </td>
                 </tr>
               ))}

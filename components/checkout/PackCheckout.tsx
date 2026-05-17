@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadStripe, type Stripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import {
   AddressElement,
@@ -40,6 +40,9 @@ type IntentData = {
 };
 
 type CachedIntent = { key: string; data: IntentData } | { key: string; error: string };
+
+// VAT breakdown returned by /api/billing/pack-tax (all cents).
+type Tax = { ht: number; tax: number; total: number; ratePct: number | null };
 
 export function PackCheckout({ pack, locale }: Props) {
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
@@ -177,6 +180,13 @@ function InnerCheckout({
   const [email, setEmail] = useState('');
   const [promoInput, setPromoInput] = useState(promoCode ?? '');
 
+  // Pack prices are stored excl. VAT (HT). VAT is resolved server-side from
+  // the shipping country (Stripe Tax) and the PaymentIntent amount is updated
+  // to HT + VAT before the customer can pay.
+  const [tax, setTax] = useState<Tax | null>(null);
+  const [taxLoading, setTaxLoading] = useState(false);
+  const taxKeyRef = useRef<string>('');
+
   const fmt = useMemo(
     () =>
       new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
@@ -187,16 +197,72 @@ function InnerCheckout({
     [locale]
   );
 
-  // Stripe doesn't auto-populate PI receipt_email / shipping for the express
-  // (Link/ApplePay/GooglePay) flow — we must pass them explicitly. The express
-  // event carries the email + shipping selected in the wallet sheet; for the
-  // card flow we fall back to the form's email state.
-  //
-  // We deliberately DO NOT pass receipt_email to confirmPayment — that would
-  // cause Stripe to send its own branded "Receipt from Yuzu Labs" email,
-  // duplicating our own Digitip confirmation. Instead we PATCH the PI with
-  // metadata.customer_email so the webhook can route the email exclusively
-  // through Resend with the Digitip template.
+  // Calls /api/billing/pack-tax, which recomputes VAT and updates the PI amount.
+  const fetchTax = useCallback(
+    async (country: string, postalCode?: string | null): Promise<Tax> => {
+      const res = await fetch('/api/billing/pack-tax', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientSecret, country, postalCode: postalCode ?? undefined }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? 'Échec du calcul de la TVA');
+      return { ht: d.htAmount, tax: d.taxAmount, total: d.totalAmount, ratePct: d.taxRatePercent };
+    },
+    [clientSecret]
+  );
+
+  // Card flow — recompute when the shipping country/postcode changes.
+  type AddressChange = {
+    complete: boolean;
+    value: { address: { country?: string; postal_code?: string } };
+  };
+  const onAddressChange = useCallback(
+    (event: AddressChange) => {
+      const addr = event.value?.address;
+      if (!addr?.country) return;
+      const key = `${addr.country}|${addr.postal_code ?? ''}`;
+      if (key === taxKeyRef.current) return;
+      taxKeyRef.current = key;
+      setTaxLoading(true);
+      setError(null);
+      fetchTax(addr.country, addr.postal_code)
+        .then(setTax)
+        .catch(() => { taxKeyRef.current = ''; setTax(null); })
+        .finally(() => setTaxLoading(false));
+    },
+    [fetchTax]
+  );
+
+  // Wallet flow (Apple/Google Pay) — recompute when the customer picks an
+  // address in the payment sheet, and feed the updated lines back to Stripe.
+  type ShippingChange = {
+    address: { country?: string; postal_code?: string; postalCode?: string };
+    resolve: (d?: { lineItems?: Array<{ name: string; amount: number }> }) => void;
+    reject: () => void;
+  };
+  const onShippingAddressChange = useCallback(
+    async (event: ShippingChange) => {
+      try {
+        const country = event.address?.country ?? '';
+        const postal = event.address?.postal_code ?? event.address?.postalCode ?? null;
+        if (!country) { event.reject(); return; }
+        const t = await fetchTax(country, postal);
+        setTax(t);
+        taxKeyRef.current = `${country}|${postal ?? ''}`;
+        event.resolve({
+          lineItems: [
+            { name: pack === 'duo' ? 'Pack Duo (HT)' : 'Pack Solo (HT)', amount: t.ht },
+            { name: `TVA${t.ratePct != null ? ` (${t.ratePct}%)` : ''}`, amount: t.tax },
+          ],
+        });
+      } catch {
+        event.reject();
+      }
+    },
+    [fetchTax, pack]
+  );
+
   type ExpressConfirmEvent = {
     billingDetails?: { email?: string | null; name?: string | null } | null;
     shippingAddress?: {
@@ -205,6 +271,9 @@ function InnerCheckout({
     } | null;
   };
 
+  // We deliberately DO NOT pass receipt_email to confirmPayment — that would
+  // trigger Stripe's own branded receipt email, duplicating the Digitip one.
+  // The webhook reads metadata.customer_email (set via attach-pi-email).
   async function handleConfirm(event?: ExpressConfirmEvent) {
     if (!stripe || !elements) return;
     const expressEmail = event?.billingDetails?.email ?? null;
@@ -213,13 +282,13 @@ function InnerCheckout({
       setError('Merci d’entrer un email — il est obligatoire pour recevoir la facture et le lien de configuration.');
       return;
     }
+    if (!tax) {
+      setError('Renseignez votre adresse de livraison pour calculer la TVA.');
+      return;
+    }
     setError(null);
     setIsLoading(true);
     try {
-      // Attach the email to the PI metadata so the webhook can pick it up
-      // without us needing Stripe's auto-receipt machinery. Best-effort:
-      // a failure here just means we'll fall back to billing_details.email
-      // in the webhook.
       await fetch('/api/billing/attach-pi-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -243,7 +312,6 @@ function InnerCheckout({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/${locale}/order/success`,
-          // receipt_email intentionally omitted — see comment above.
           ...(shipping ? { shipping } : {}),
         },
       });
@@ -261,6 +329,8 @@ function InnerCheckout({
   }
 
   const isPromoApplied = !!promoCode && promoCode === promoInput.trim().toUpperCase();
+  const displayTotal = tax ? tax.total : amount;
+  const canPay = !!tax && !taxLoading;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -277,6 +347,7 @@ function InnerCheckout({
       <div>
         <ExpressCheckoutElement
           onConfirm={handleConfirm}
+          onShippingAddressChange={onShippingAddressChange}
           options={{
             buttonHeight: 48,
             buttonType: { applePay: 'buy', googlePay: 'buy' },
@@ -320,7 +391,7 @@ function InnerCheckout({
         />
       </div>
 
-      {/* Shipping address */}
+      {/* Shipping address — drives the VAT calculation */}
       <div>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}>
           Adresse de livraison
@@ -332,6 +403,7 @@ function InnerCheckout({
             fields: { phone: 'always' },
             validation: { phone: { required: 'auto' } },
           }}
+          onChange={onAddressChange}
         />
       </div>
 
@@ -385,39 +457,51 @@ function InnerCheckout({
         )}
       </div>
 
-      {/* Totals */}
+      {/* Totals — prices are HT, VAT is added per the shipping country */}
       <div style={{
         background: '#FEF1F4', border: '1px solid #FBDAE3', borderRadius: 14,
         padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6,
       }}>
-        <Row label="Sous-total" value={fmt.format(baseAmount / 100)} />
+        <Row label="Sous-total HT" value={fmt.format(baseAmount / 100)} />
         {discountAmount > 0 && (
           <Row label="Remise" value={`- ${fmt.format(discountAmount / 100)}`} accent="#0ea36b" />
         )}
+        <Row
+          label={tax?.ratePct != null ? `TVA (${tax.ratePct}%)` : 'TVA'}
+          value={tax ? fmt.format(tax.tax / 100) : (taxLoading ? 'Calcul…' : 'Selon l’adresse')}
+          muted={!tax}
+        />
         <Row label="Livraison" value="Offerte" muted />
         <div style={{ height: 1, background: '#FBDAE3', margin: '4px 0' }} />
-        <Row label="Total" value={fmt.format(amount / 100)} bold />
+        <Row label="Total TTC" value={tax ? fmt.format(tax.total / 100) : '—'} bold />
       </div>
 
       {/* Pay button */}
       <button
         type="button"
         onClick={() => { void handleConfirm(); }}
-        disabled={!stripe || !elements || isLoading}
+        disabled={!stripe || !elements || isLoading || !canPay}
         style={{
           width: '100%', padding: '16px', borderRadius: 14, border: 'none',
-          background: isLoading ? '#F2B3C4' : '#E57A97', color: '#fff',
+          background: isLoading || !canPay ? '#F2B3C4' : '#E57A97', color: '#fff',
           fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em',
-          cursor: isLoading ? 'not-allowed' : 'pointer',
+          cursor: isLoading || !canPay ? 'not-allowed' : 'pointer',
           boxShadow: '0 6px 24px rgba(229,122,151,0.35)',
           transition: 'all 130ms',
         }}
       >
-        {isLoading ? 'Traitement…' : `Payer ${fmt.format(amount / 100)}`}
+        {isLoading
+          ? 'Traitement…'
+          : taxLoading
+            ? 'Calcul de la TVA…'
+            : tax
+              ? `Payer ${fmt.format(displayTotal / 100)}`
+              : 'Renseignez votre adresse de livraison'}
       </button>
 
       <p style={{ fontSize: 11, color: '#6b6d85', textAlign: 'center', lineHeight: 1.5, margin: 0 }}>
-        Paiement sécurisé par Stripe. En confirmant, vous acceptez nos CGV.
+        Paiement sécurisé par Stripe. TVA calculée selon votre pays de livraison.
+        En confirmant, vous acceptez nos CGV.
         {pack === 'duo' ? ' Pack Duo — 2 plaques NFC.' : ' Pack Solo — 1 plaque NFC.'}
       </p>
     </div>
