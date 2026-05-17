@@ -230,6 +230,45 @@ export async function toggleAmbassador(
   }
 }
 
+/**
+ * Freezes or unfreezes an ambassador's withdrawals. A frozen ambassador can
+ * still log in and see their dashboard but the payout route refuses any
+ * request — used to hold funds while investigating fraud or a dispute,
+ * without wiping the account the way deactivation does.
+ */
+export async function setAmbassadorPayoutsFrozen(
+  id: string,
+  frozen: boolean
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: amb } = await service
+      .from('ambassadors')
+      .select('name')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!amb) return { ok: false, error: 'Ambassadeur introuvable.' };
+
+    const { error } = await service
+      .from('ambassadors')
+      .update({ payouts_frozen: frozen })
+      .eq('id', id);
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction(
+      frozen ? 'ambassadors.freeze_payouts' : 'ambassadors.unfreeze_payouts',
+      { id, name: amb.name }
+    );
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
 export async function markAmbassadorPayoutPaid(
   payoutId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {

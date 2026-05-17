@@ -43,10 +43,13 @@ export async function GET(
       .select('id, name, is_active')
       .eq('id', ambassadorId)
       .single(),
+    // Only live sales: voided rows (refunded / charged-back / canceled orders)
+    // earn no commission and must not count toward tiers or the leaderboard.
     supabase
       .from('ambassador_sales')
       .select('id, pack, commission_amount, salon_name_partial, created_at')
       .eq('ambassador_id', ambassadorId)
+      .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ]);
 
@@ -83,6 +86,7 @@ export async function GET(
   const { data: allMonthSales } = await supabase
     .from('ambassador_sales')
     .select('ambassador_id')
+    .is('voided_at', null)
     .gte('created_at', monthStart.toISOString())
     .lte('created_at', monthEnd.toISOString());
 

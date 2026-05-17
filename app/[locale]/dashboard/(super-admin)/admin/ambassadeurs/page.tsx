@@ -38,18 +38,31 @@ export default async function AdminAmbassadeursPage({
   // Fetch ambassadors with their promo code info + banking fields
   const { data: ambassadors } = await service
     .from('ambassadors')
-    .select('id, name, is_active, created_at, stripe_account_id, siret, promo_codes(id, code, percentage_off)')
+    .select('id, name, is_active, payouts_frozen, created_at, stripe_account_id, siret, promo_codes(id, code, percentage_off)')
     .order('created_at', { ascending: false });
 
-  // Aggregate sales per ambassador (full rows needed for week/month/bonus computation)
+  // Aggregate sales per ambassador (full rows needed for week/month/bonus
+  // computation). Voided sales — refunded / charged-back / canceled orders —
+  // are excluded so commissions, bonuses and the leaderboard reflect only
+  // revenue the platform actually kept.
   const { data: salesRows } = await service
     .from('ambassador_sales')
-    .select('ambassador_id, commission_amount, created_at');
+    .select('ambassador_id, commission_amount, created_at')
+    .is('voided_at', null);
 
-  const { data: payoutsRows } = await service
+  const { data: payoutsRowsRaw } = await service
     .from('ambassador_payouts')
-    .select('id, ambassador_id, amount_cents, status, requested_at')
-    .in('status', ['pending', 'paid']);
+    .select('id, ambassador_id, amount_cents, status, stripe_transfer_id, requested_at')
+    .in('status', ['pending', 'paid', 'failed']);
+
+  // A `failed` payout only counts as money-out when its Stripe transfer leg
+  // already went through (mirrors computeAvailableCents in the payout route).
+  const payoutsRows = (payoutsRowsRaw ?? []).filter(
+    (p) =>
+      p.status === 'pending' ||
+      p.status === 'paid' ||
+      (p.status === 'failed' && p.stripe_transfer_id)
+  );
 
   const now = new Date();
   const { start: weekStart, end: weekEnd } = getWeekBounds(now);
@@ -113,6 +126,7 @@ export default async function AdminAmbassadeursPage({
       id: a.id,
       name: a.name,
       is_active: a.is_active,
+      payouts_frozen: a.payouts_frozen,
       created_at: a.created_at,
       promoCodeId: pc?.id ?? '',
       promoCode: pc?.code ?? '',

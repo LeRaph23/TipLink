@@ -27,21 +27,34 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
   const service = createServiceClient();
 
   const [{ data: sales }, { data: payouts }] = await Promise.all([
+    // Voided sales (refunded / charged-back / canceled orders) earn no
+    // commission and must never count toward the withdrawable balance.
     service
       .from('ambassador_sales')
       .select('commission_amount, created_at')
-      .eq('ambassador_id', ambassadorId),
+      .eq('ambassador_id', ambassadorId)
+      .is('voided_at', null),
     service
       .from('ambassador_payouts')
-      .select('amount_cents, status')
+      .select('amount_cents, status, stripe_transfer_id')
       .eq('ambassador_id', ambassadorId)
-      .in('status', ['pending', 'paid']),
+      .in('status', ['pending', 'paid', 'failed']),
   ]);
 
   const baseCommission = computeTotalBaseCommission(sales ?? []);
   const closedBonuses = computeClosedWeekBonuses(sales ?? []);
   const earnedTotal = baseCommission + closedBonuses;
-  const paidOrPendingTotal = (payouts ?? []).reduce((s, p) => s + p.amount_cents, 0);
+  // A `failed` payout frees its amount back into the balance — UNLESS the
+  // Stripe transfer leg already went through (the platform-side money has
+  // left). Counting a failed-with-transfer payout as committed prevents a
+  // second payout request from transferring the same funds twice.
+  const paidOrPendingTotal = (payouts ?? [])
+    .filter((p) =>
+      p.status === 'pending' ||
+      p.status === 'paid' ||
+      (p.status === 'failed' && p.stripe_transfer_id)
+    )
+    .reduce((s, p) => s + p.amount_cents, 0);
   const available = Math.max(0, earnedTotal - paidOrPendingTotal);
 
   return { available, earnedTotal, paidOrPendingTotal };
@@ -95,11 +108,26 @@ export async function POST(
 
   const { data: amb } = await service
     .from('ambassadors')
-    .select('id, stripe_account_id, name')
+    .select('id, stripe_account_id, name, is_active, payouts_frozen')
     .eq('id', ambassadorId)
     .maybeSingle();
 
   if (!amb) return NextResponse.json({ error: 'Ambassadeur introuvable' }, { status: 404 });
+  // Re-check status at payout time: a session cookie stays valid for 7 days,
+  // so a super-admin who deactivates or freezes an ambassador (e.g. after
+  // spotting fraud) must still block any in-flight withdrawal.
+  if (!amb.is_active) {
+    return NextResponse.json(
+      { error: 'Compte désactivé. Contacte Digitip.' },
+      { status: 403 }
+    );
+  }
+  if (amb.payouts_frozen) {
+    return NextResponse.json(
+      { error: 'Tes virements sont temporairement gelés. Contacte Digitip.' },
+      { status: 403 }
+    );
+  }
   if (!amb.stripe_account_id) {
     return NextResponse.json(
       { error: 'Configure d\'abord ton compte bancaire (RIB + SIRET).' },
@@ -150,6 +178,13 @@ export async function POST(
 
     // Trigger the Stripe transfer + payout. On failure mark `failed` so the
     // payout doesn't stay pending forever — super-admin can retry from admin UI.
+    //
+    // The transfer (platform → connected account) and the payout (connected
+    // account → bank) are two calls. If the transfer succeeds but the payout
+    // fails, the platform-side money has already moved: we MUST persist the
+    // transfer id so computeAvailableCents counts it as committed, otherwise a
+    // retry would transfer the same funds a second time.
+    let transferId: string | null = null;
     try {
       const transfer = await stripe.transfers.create({
         amount: inserted.amount_cents,
@@ -157,6 +192,7 @@ export async function POST(
         destination: amb.stripe_account_id,
         metadata: { ambassador_id: ambassadorId, payout_id: inserted.id },
       }, { idempotencyKey: `amb_payout_transfer:${inserted.id}` });
+      transferId = transfer.id;
 
       const payout = await stripe.payouts.create(
         { amount: inserted.amount_cents, currency: 'eur', method: 'standard' },
@@ -182,6 +218,7 @@ export async function POST(
         .update({
           status: 'failed',
           failure_reason: msg,
+          stripe_transfer_id: transferId,
         })
         .eq('id', inserted.id);
       return NextResponse.json({

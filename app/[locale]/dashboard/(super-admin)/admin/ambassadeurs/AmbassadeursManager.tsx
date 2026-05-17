@@ -6,12 +6,14 @@ import {
   toggleAmbassador,
   deleteAmbassador,
   regenerateAmbassadorSetupToken,
+  setAmbassadorPayoutsFrozen,
 } from '@/actions/admin/ambassadors';
 
 interface Ambassador {
   id: string;
   name: string;
   is_active: boolean;
+  payouts_frozen: boolean;
   created_at: string;
   promoCodeId: string;
   promoCode: string;
@@ -73,6 +75,7 @@ export function AmbassadeursManager({
         id: result.id,
         name: ambName,
         is_active: true,
+        payouts_frozen: false,
         created_at: new Date().toISOString(),
         promoCodeId,
         promoCode: promoCode?.code ?? '',
@@ -105,6 +108,16 @@ export function AmbassadeursManager({
       if (!result.ok) { setDeleteError(result.error); return; }
       setAmbassadors(prev => prev.filter(a => a.id !== targetId));
       setDeleteTarget(null);
+    });
+  };
+
+  const handleToggleFreeze = (id: string, currentFrozen: boolean) => {
+    startTransition(async () => {
+      const result = await setAmbassadorPayoutsFrozen(id, !currentFrozen);
+      if (!result.ok) { alert(result.error); return; }
+      setAmbassadors(prev =>
+        prev.map(a => a.id === id ? { ...a, payouts_frozen: !currentFrozen } : a)
+      );
     });
   };
 
@@ -247,15 +260,29 @@ export function AmbassadeursManager({
                     )}
                   </td>
                   <td style={{ padding: '11px 14px' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
-                      background: a.is_active ? 'var(--success-bg)' : 'var(--neutral-bg)',
-                      color: a.is_active ? 'var(--success)' : 'var(--neutral)',
-                    }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
-                      {a.is_active ? 'Actif' : 'Inactif'}
-                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
+                        background: a.is_active ? 'var(--success-bg)' : 'var(--neutral-bg)',
+                        color: a.is_active ? 'var(--success)' : 'var(--neutral)',
+                      }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
+                        {a.is_active ? 'Actif' : 'Inactif'}
+                      </span>
+                      {a.payouts_frozen && (
+                        <span
+                          title="Les virements de cet ambassadeur sont gelés."
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
+                            background: 'var(--warning-bg)', color: 'var(--warning)',
+                          }}
+                        >
+                          ❄ Gelé
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td style={{ padding: '11px 14px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -265,6 +292,16 @@ export function AmbassadeursManager({
                         disabled={isPending}
                       >
                         {a.is_active ? 'Désactiver' : 'Activer'}
+                      </button>
+                      <button
+                        style={btnSecondary}
+                        onClick={() => handleToggleFreeze(a.id, a.payouts_frozen)}
+                        disabled={isPending}
+                        title={a.payouts_frozen
+                          ? 'Réautorise les virements de cet ambassadeur'
+                          : 'Bloque les virements sans désactiver le compte'}
+                      >
+                        {a.payouts_frozen ? '☀ Dégeler' : '❄ Geler'}
                       </button>
                       <button
                         style={btnSecondary}

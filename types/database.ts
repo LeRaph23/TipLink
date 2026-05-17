@@ -586,6 +586,7 @@ export type Database = {
           referral_validated_at: string | null;
           pin_setup_token: string | null;
           pin_setup_expires_at: string | null;
+          payouts_frozen: boolean;
         };
         Insert: {
           id?: string;
@@ -606,6 +607,7 @@ export type Database = {
           referral_validated_at?: string | null;
           pin_setup_token?: string | null;
           pin_setup_expires_at?: string | null;
+          payouts_frozen?: boolean;
         };
         Update: {
           id?: string;
@@ -626,6 +628,7 @@ export type Database = {
           referral_validated_at?: string | null;
           pin_setup_token?: string | null;
           pin_setup_expires_at?: string | null;
+          payouts_frozen?: boolean;
         };
         Relationships: [
           {
@@ -646,6 +649,8 @@ export type Database = {
           commission_amount: number;
           salon_name_partial: string | null;
           created_at: string;
+          voided_at: string | null;
+          void_reason: string | null;
         };
         Insert: {
           id?: string;
@@ -655,6 +660,8 @@ export type Database = {
           commission_amount: number;
           salon_name_partial?: string | null;
           created_at?: string;
+          voided_at?: string | null;
+          void_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -664,6 +671,8 @@ export type Database = {
           commission_amount?: number;
           salon_name_partial?: string | null;
           created_at?: string;
+          voided_at?: string | null;
+          void_reason?: string | null;
         };
         Relationships: [
           {

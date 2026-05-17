@@ -12,6 +12,7 @@ import {
   sendOrderCustomNote,
 } from '@/lib/email';
 import { stripe } from '@/lib/stripe/client';
+import { voidAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -322,6 +323,12 @@ export async function forceOrderStatus(
 
   if (error) return { ok: false, error: error.message };
 
+  // Force-canceling an order voids the ambassador commission earned on it,
+  // mirroring the regular cancelOrder path.
+  if (newStatus === 'canceled') {
+    await voidAmbassadorSaleForOrder(service, orderId, 'order_canceled');
+  }
+
   await logAdminAction('orders.force_status', { orderId, newStatus });
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
@@ -423,6 +430,10 @@ export async function cancelOrder(
     .update({ status: 'canceled', tags_encoded_count: 0, fulfilled_at: null })
     .eq('id', orderId);
   if (orderErr) return { ok: false, error: orderErr.message };
+
+  // A canceled order produced no kept revenue — void any ambassador commission
+  // earned on it so it can no longer be counted or withdrawn.
+  await voidAmbassadorSaleForOrder(service, orderId, 'order_canceled');
 
   await logAdminAction('orders.cancel', {
     orderId,
