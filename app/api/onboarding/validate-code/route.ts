@@ -23,13 +23,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ valid: false });
   }
 
+  // A tag is "available for onboarding" when it exists and is not yet linked
+  // to an establishment. `staff_id` was dropped in migration 00014 — a tag is
+  // now scoped to an establishment only — so establishment_id IS NULL is the
+  // sole stock/unassigned check.
   const service = createServiceClient();
   const { data } = await service
     .from('nfc_stickers')
     .select('id')
     .eq('short_id', code)
     .is('establishment_id', null)
-    .is('staff_id', null)
     .maybeSingle();
 
   return NextResponse.json({ valid: !!data });
