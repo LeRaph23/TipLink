@@ -4,8 +4,16 @@ import crypto from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
-import { generateUniqueReferralCode } from '@/lib/referrals';
-import { MONTHLY_CHALLENGE } from '@/lib/ambassador-tiers';
+import {
+  generateUniqueReferralCode,
+  recomputeReferralAfterSaleChange,
+  recomputeMilestones,
+} from '@/lib/referrals';
+import {
+  MONTHLY_CHALLENGE,
+  REFERRAL_VALIDATION_MIN_SALES,
+  computeClosedWeekBonusBreakdown,
+} from '@/lib/ambassador-tiers';
 import { settleExpiredChallenges } from '@/lib/ambassador-monthly-challenge';
 
 async function requireSuperAdminUser() {
@@ -79,6 +87,19 @@ export async function createAmbassador(
 
     if (existing) {
       return { ok: false, error: 'Ce code promo est déjà lié à un ambassadeur.' };
+    }
+
+    // Validate the parrain (referrer) so the referral chain is never built on
+    // a dangling id — the referral payouts depend on it being a real ambassador.
+    if (referrerAmbassadorId) {
+      const { data: referrer } = await service
+        .from('ambassadors')
+        .select('id')
+        .eq('id', referrerAmbassadorId)
+        .maybeSingle();
+      if (!referrer) {
+        return { ok: false, error: 'Parrain introuvable.' };
+      }
     }
 
     const id = crypto.randomUUID();
@@ -232,6 +253,132 @@ export async function toggleAmbassador(
   }
 }
 
+/**
+ * Freezes or unfreezes an ambassador's withdrawals. A frozen ambassador can
+ * still log in and see their dashboard but the payout route refuses any
+ * request — used to hold funds while investigating fraud or a dispute,
+ * without wiping the account the way deactivation does.
+ */
+export async function setAmbassadorPayoutsFrozen(
+  id: string,
+  frozen: boolean
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: amb } = await service
+      .from('ambassadors')
+      .select('name')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!amb) return { ok: false, error: 'Ambassadeur introuvable.' };
+
+    const { error } = await service
+      .from('ambassadors')
+      .update({ payouts_frozen: frozen })
+      .eq('id', id);
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction(
+      frozen ? 'ambassadors.freeze_payouts' : 'ambassadors.unfreeze_payouts',
+      { id, name: amb.name }
+    );
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Sets or changes an ambassador's parrain after creation — for the case where
+ * an ambassador was created without linking the referrer. Voids any pending
+ * referral reward owed to the previous parrain, then recomputes the referral
+ * state for the new one (a filleul who already has 3+ sales immediately gets
+ * a pending 25€ reward for the new parrain, which the super-admin then credits).
+ */
+export async function setAmbassadorReferrer(
+  ambassadorId: string,
+  referrerAmbassadorId: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: amb } = await service
+      .from('ambassadors')
+      .select('id, name, referrer_ambassador_id')
+      .eq('id', ambassadorId)
+      .maybeSingle();
+
+    if (!amb) return { ok: false, error: 'Ambassadeur introuvable.' };
+
+    const newReferrer = referrerAmbassadorId || null;
+    const oldReferrer = amb.referrer_ambassador_id;
+    if (newReferrer === oldReferrer) return { ok: true };
+
+    if (newReferrer) {
+      if (newReferrer === ambassadorId) {
+        return { ok: false, error: 'Un ambassadeur ne peut pas être son propre parrain.' };
+      }
+      // Walk up the proposed parrain's chain — reject if it loops back here.
+      let cursor: string | null = newReferrer;
+      for (let depth = 0; cursor && depth < 50; depth++) {
+        if (cursor === ambassadorId) {
+          return { ok: false, error: 'Ce choix créerait une boucle de parrainage.' };
+        }
+        const { data: up }: { data: { referrer_ambassador_id: string | null } | null } =
+          await service
+            .from('ambassadors')
+            .select('referrer_ambassador_id')
+            .eq('id', cursor)
+            .maybeSingle();
+        if (!up) {
+          if (cursor === newReferrer) return { ok: false, error: 'Parrain introuvable.' };
+          break;
+        }
+        cursor = up.referrer_ambassador_id;
+      }
+    }
+
+    // Detach from the previous parrain: a still-pending validation reward owed
+    // to them is no longer due (a credited one is left — money already given).
+    if (oldReferrer) {
+      await service
+        .from('referral_payouts')
+        .update({ status: 'voided' })
+        .eq('referrer_ambassador_id', oldReferrer)
+        .eq('referred_ambassador_id', ambassadorId)
+        .eq('reason', 'validation')
+        .eq('status', 'pending');
+    }
+
+    const { error } = await service
+      .from('ambassadors')
+      .update({ referrer_ambassador_id: newReferrer })
+      .eq('id', ambassadorId);
+
+    if (error) return { ok: false, error: error.message };
+
+    // Recompute both sides: the old parrain may lose a milestone, the new one
+    // gains a filleul (and a pending reward if the 3-sale threshold is met).
+    if (oldReferrer) await recomputeMilestones(service, oldReferrer);
+    if (newReferrer) await recomputeReferralAfterSaleChange(service, ambassadorId);
+
+    await logAdminAction('ambassadors.set_referrer', {
+      id: ambassadorId,
+      name: amb.name,
+      oldReferrer,
+      newReferrer,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
 export async function markAmbassadorPayoutPaid(
   payoutId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -298,8 +445,9 @@ export async function cancelAmbassadorPayout(
 /**
  * Activates or deactivates the monthly challenge (100€ to the #1 ambassador).
  * Activating starts a fresh one-month window; deactivating cancels the running
- * challenge without crediting a winner. Elapsed challenges are settled first so
- * a finished month always pays its winner even if the cron has not run yet.
+ * challenge without recording a winner. Elapsed challenges are settled first so
+ * a finished month's winner is always recorded — the prize is then released
+ * manually from the "Bonus à vérifier" panel (no automatic credit).
  */
 export async function setMonthlyChallengeActive(
   active: boolean
@@ -383,6 +531,198 @@ export async function reviewRecruitmentApplication(
     await logAdminAction(`ambassadors.recruitment_${status}`, { id });
 
     return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Credits a referral reward to the parrain's withdrawable balance. The reward
+ * row is created automatically once its condition is met (a filleul reaches
+ * the sale threshold, or the parrain reaches a milestone), but it stays
+ * `pending` until a super-admin explicitly credits it here — that is the
+ * manual gate over referral money.
+ *
+ * The underlying condition is re-verified at credit time so a reward can never
+ * be granted on sales that were since refunded.
+ */
+export async function creditReferralPayout(
+  payoutId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: payout } = await service
+      .from('referral_payouts')
+      .select('id, status, reason, referrer_ambassador_id, referred_ambassador_id, amount_cents')
+      .eq('id', payoutId)
+      .maybeSingle();
+
+    if (!payout) return { ok: false, error: 'Prime de parrainage introuvable.' };
+    if (payout.status === 'credited') return { ok: false, error: 'Cette prime est déjà créditée.' };
+    if (payout.status === 'voided') return { ok: false, error: 'Cette prime a été annulée.' };
+
+    // Re-verify the condition still holds — refunds may have collapsed it.
+    if (payout.reason === 'validation') {
+      const { count } = await service
+        .from('ambassador_sales')
+        .select('id', { count: 'exact', head: true })
+        .eq('ambassador_id', payout.referred_ambassador_id)
+        .is('voided_at', null);
+      if ((count ?? 0) < REFERRAL_VALIDATION_MIN_SALES) {
+        return {
+          ok: false,
+          error: `Le filleul n'a plus ${REFERRAL_VALIDATION_MIN_SALES} ventes valides — prime non créditable.`,
+        };
+      }
+    } else {
+      const threshold = payout.reason === 'milestone_5' ? 5 : 10;
+      const { count } = await service
+        .from('ambassadors')
+        .select('id', { count: 'exact', head: true })
+        .eq('referrer_ambassador_id', payout.referrer_ambassador_id)
+        .not('referral_validated_at', 'is', null);
+      if ((count ?? 0) < threshold) {
+        return { ok: false, error: `Palier non atteint (${count ?? 0}/${threshold} filleuls validés).` };
+      }
+    }
+
+    const { error } = await service
+      .from('referral_payouts')
+      .update({ status: 'credited', credited_at: new Date().toISOString() })
+      .eq('id', payoutId)
+      .eq('status', 'pending');
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('referral.credit', {
+      payoutId,
+      referrerId: payout.referrer_ambassador_id,
+      reason: payout.reason,
+      amountCents: payout.amount_cents,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Rejects a still-pending referral reward (e.g. suspected fraud). A credited
+ * reward cannot be voided this way — it is already in the parrain's balance.
+ */
+export async function voidReferralPayout(
+  payoutId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    const { data: payout } = await service
+      .from('referral_payouts')
+      .select('id, status, referrer_ambassador_id, reason')
+      .eq('id', payoutId)
+      .maybeSingle();
+
+    if (!payout) return { ok: false, error: 'Prime de parrainage introuvable.' };
+    if (payout.status === 'credited') {
+      return { ok: false, error: 'Impossible d\'annuler une prime déjà créditée.' };
+    }
+    if (payout.status === 'voided') return { ok: false, error: 'Cette prime est déjà annulée.' };
+
+    const { error } = await service
+      .from('referral_payouts')
+      .update({ status: 'voided' })
+      .eq('id', payoutId)
+      .eq('status', 'pending');
+
+    if (error) return { ok: false, error: error.message };
+
+    await logAdminAction('referral.void', {
+      payoutId,
+      referrerId: payout.referrer_ambassador_id,
+      reason: payout.reason,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Credits a bonus (a weekly tier bonus or a monthly-challenge win) to an
+ * ambassador's withdrawable balance. Bonuses are never automatic — the
+ * super-admin reviews each one in the dashboard and releases it here.
+ *
+ * The bonus is recomputed from the current (non-voided) sales at credit time,
+ * so a bonus inflated by sales that were since refunded can never be paid.
+ * The UNIQUE (ambassador, kind, period) constraint makes double-credit
+ * impossible.
+ */
+export async function creditBonus(
+  ambassadorId: string,
+  kind: 'weekly_tier' | 'monthly_challenge',
+  periodKey: string
+): Promise<{ ok: true; amountCents: number } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const service = createServiceClient();
+
+    if (kind !== 'weekly_tier' && kind !== 'monthly_challenge') {
+      return { ok: false, error: 'Type de bonus invalide.' };
+    }
+
+    let amountCents: number;
+
+    if (kind === 'weekly_tier') {
+      const { data: sales } = await service
+        .from('ambassador_sales')
+        .select('created_at')
+        .eq('ambassador_id', ambassadorId)
+        .is('voided_at', null);
+      const item = computeClosedWeekBonusBreakdown(sales ?? []).find(
+        (b) => b.periodKey === periodKey
+      );
+      if (!item) {
+        return { ok: false, error: 'Bonus hebdo introuvable — palier non atteint ou semaine non clôturée.' };
+      }
+      amountCents = item.bonusCents;
+    } else {
+      // periodKey is the settled challenge id. The winner is whoever the
+      // settlement run recorded; we pay them the challenge's prize.
+      const { data: challenge } = await service
+        .from('ambassador_monthly_challenges')
+        .select('id, status, winner_ambassador_id, prize_cents')
+        .eq('id', periodKey)
+        .maybeSingle();
+      if (!challenge || challenge.status !== 'settled') {
+        return { ok: false, error: 'Challenge introuvable ou pas encore clôturé.' };
+      }
+      if (challenge.winner_ambassador_id !== ambassadorId) {
+        return { ok: false, error: 'Cet ambassadeur n\'est pas le gagnant de ce challenge.' };
+      }
+      amountCents = challenge.prize_cents;
+    }
+
+    const { error } = await service.from('ambassador_bonus_credits').insert({
+      ambassador_id: ambassadorId,
+      kind,
+      period_key: periodKey,
+      amount_cents: amountCents,
+    });
+
+    if (error) {
+      if ((error as { code?: string }).code === '23505') {
+        return { ok: false, error: 'Ce bonus a déjà été crédité.' };
+      }
+      return { ok: false, error: error.message };
+    }
+
+    await logAdminAction('ambassadors.credit_bonus', {
+      ambassadorId, kind, periodKey, amountCents,
+    });
+    return { ok: true, amountCents };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }

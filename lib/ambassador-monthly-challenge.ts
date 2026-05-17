@@ -57,9 +57,11 @@ export function pickChallengeWinner(
 
 /**
  * Settles every challenge whose one-month window has elapsed: records the #1
- * ambassador and flips status to 'settled' (which credits their prize). The
- * `status = 'active'` guard on the update makes concurrent runs idempotent.
- * Returns the number of challenges settled.
+ * ambassador and flips status to 'settled'. The winner's prize is NOT credited
+ * automatically — the settled challenge surfaces in the super-admin "Bonus à
+ * vérifier" panel, where the prize is released manually. The `status = 'active'`
+ * guard on the update makes concurrent runs idempotent. Returns the count
+ * settled. Voided sales (refunds / chargebacks) are excluded from the ranking.
  */
 export async function settleExpiredChallenges(
   service: Service,
@@ -78,6 +80,7 @@ export async function settleExpiredChallenges(
     const { data: sales } = await service
       .from('ambassador_sales')
       .select('ambassador_id')
+      .is('voided_at', null)
       .gte('created_at', ch.starts_at)
       .lte('created_at', ch.ends_at);
 
@@ -98,37 +101,4 @@ export async function settleExpiredChallenges(
     if (updated && updated.length > 0) settled += 1;
   }
   return settled;
-}
-
-/** Total prize (cents) credited to one ambassador across all challenges they won. */
-export async function getChallengePrizeCents(
-  service: Service,
-  ambassadorId: string
-): Promise<number> {
-  const { data } = await service
-    .from('ambassador_monthly_challenges')
-    .select('prize_cents')
-    .eq('status', 'settled')
-    .eq('winner_ambassador_id', ambassadorId);
-
-  return (data ?? []).reduce((sum, r) => sum + r.prize_cents, 0);
-}
-
-/** Map of ambassador id -> total challenge prize (cents) won, for all winners. */
-export async function getChallengePrizesByAmbassador(
-  service: Service
-): Promise<Record<string, number>> {
-  const { data } = await service
-    .from('ambassador_monthly_challenges')
-    .select('prize_cents, winner_ambassador_id')
-    .eq('status', 'settled')
-    .not('winner_ambassador_id', 'is', null);
-
-  const byAmbassador: Record<string, number> = {};
-  for (const r of data ?? []) {
-    if (!r.winner_ambassador_id) continue;
-    byAmbassador[r.winner_ambassador_id] =
-      (byAmbassador[r.winner_ambassador_id] ?? 0) + r.prize_cents;
-  }
-  return byAmbassador;
 }

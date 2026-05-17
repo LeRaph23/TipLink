@@ -8,10 +8,9 @@ import {
   computeClosedWeekBonuses,
   WEEKLY_TIERS,
 } from '@/lib/ambassador-tiers';
-import {
-  getActiveChallenge,
-  getChallengePrizeCents,
-} from '@/lib/ambassador-monthly-challenge';
+import { getActiveChallenge } from '@/lib/ambassador-monthly-challenge';
+import { sumCreditedReferralCents } from '@/lib/referrals';
+import { sumCreditedBonusCents } from '@/lib/ambassadeur/bonuses';
 
 export const runtime = 'nodejs';
 
@@ -45,10 +44,13 @@ export async function GET(
       .select('id, name, is_active')
       .eq('id', ambassadorId)
       .single(),
+    // Only live sales: voided rows (refunded / charged-back / canceled orders)
+    // earn no commission and must not count toward tiers or the leaderboard.
     supabase
       .from('ambassador_sales')
       .select('id, pack, commission_amount, salon_name_partial, created_at')
       .eq('ambassador_id', ambassadorId)
+      .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ]);
 
@@ -71,10 +73,9 @@ export async function GET(
   const weeklyBonusCents = weeklyTier?.bonus ?? 0;
 
   const totalBaseCommission = computeTotalBaseCommission(allSales);
-  // Closed weekly bonuses (past weeks only, current week excluded — still in play)
+  // Closed weekly bonuses earned (informational — bonuses are paid only once a
+  // super-admin has validated them; they are NOT automatically withdrawable).
   const closedWeeklyBonuses = computeClosedWeekBonuses(allSales, now);
-  const challengePrizeCents = await getChallengePrizeCents(supabase, ambassadorId);
-  const earnedTotal = totalBaseCommission + closedWeeklyBonuses + challengePrizeCents;
 
   // Monthly challenge — surfaced only while a super-admin has one running.
   // When inactive, the competition (prize + leaderboard) is hidden entirely.
@@ -98,10 +99,11 @@ export async function GET(
       return d >= winStart && d <= winEnd;
     }).length;
 
-    // Leaderboard: every ambassador's sale count within the challenge window
+    // Leaderboard: every ambassador's non-voided sale count in the window.
     const { data: windowSales } = await supabase
       .from('ambassador_sales')
       .select('ambassador_id')
+      .is('voided_at', null)
       .gte('created_at', winStart.toISOString())
       .lte('created_at', winEnd.toISOString());
 
@@ -139,6 +141,14 @@ export async function GET(
     };
   }
 
+  // Money actually in the withdrawable balance: base commission + the bonuses
+  // and referral rewards a super-admin has explicitly credited. Nothing auto.
+  const [referralCreditedCents, bonusCreditedCents] = await Promise.all([
+    sumCreditedReferralCents(supabase, ambassadorId),
+    sumCreditedBonusCents(supabase, ambassadorId),
+  ]);
+  const earnedTotal = totalBaseCommission + bonusCreditedCents + referralCreditedCents;
+
   return NextResponse.json({
     name: ambassador.name,
     allTimeSalesCount: allSales.length,
@@ -150,7 +160,6 @@ export async function GET(
       : null,
     weeklyBonusCents,
     monthlyChallenge,
-    challengePrizeCents,
     tiers: WEEKLY_TIERS.map((t) => ({
       id: t.id,
       label: t.label,
@@ -163,6 +172,8 @@ export async function GET(
     })),
     leaderboard,
     closedWeeklyBonuses,
+    referralCreditedCents,
+    bonusCreditedCents,
     earnedTotal,
     recentSales: allSales.slice(0, 10).map((s) => ({
       id: s.id,

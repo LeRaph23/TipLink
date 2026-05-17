@@ -55,6 +55,100 @@ export function computeClosedWeekBonuses(
   return total;
 }
 
+export type WeeklyBonusItem = {
+  periodKey: string;   // Paris week-start date, 'YYYY-MM-DD'
+  weekStartIso: string;
+  count: number;
+  tierId: string;
+  tierLabel: string;
+  bonusCents: number;
+};
+
+/**
+ * Per-closed-week tier bonuses (current week excluded — still in play).
+ * One item per week the ambassador reached at least Bronze. Used to build the
+ * super-admin "bonuses to review" list.
+ */
+export function computeClosedWeekBonusBreakdown(
+  sales: Array<{ created_at: string }>,
+  now: Date = new Date()
+): WeeklyBonusItem[] {
+  const currentWeekStart = getWeekBounds(now).start.getTime();
+  const buckets = new Map<number, number>(); // weekStartMs -> count
+
+  for (const s of sales) {
+    const d = new Date(s.created_at);
+    if (isNaN(d.getTime())) continue;
+    const weekStart = getWeekBounds(d).start.getTime();
+    if (weekStart >= currentWeekStart) continue;
+    buckets.set(weekStart, (buckets.get(weekStart) ?? 0) + 1);
+  }
+
+  const out: WeeklyBonusItem[] = [];
+  for (const [weekStartMs, count] of buckets) {
+    const tier = getWeeklyTier(count);
+    if (!tier) continue;
+    const weekStart = new Date(weekStartMs);
+    out.push({
+      periodKey: parisDateKey(weekStart),
+      weekStartIso: weekStart.toISOString(),
+      count,
+      tierId: tier.id,
+      tierLabel: tier.label,
+      bonusCents: tier.bonus,
+    });
+  }
+  return out.sort((a, b) => b.weekStartIso.localeCompare(a.weekStartIso));
+}
+
+export type MonthlyBonusItem = {
+  periodKey: string;   // Paris calendar month, 'YYYY-MM'
+  ambassadorId: string;
+  count: number;
+  bonusCents: number;
+};
+
+/**
+ * Monthly challenge winners for every CLOSED calendar month (current month
+ * excluded). The #1 ambassador of a month wins the bonus, provided they hit
+ * the sale threshold. On a tie the earliest-seen ambassador is returned.
+ */
+export function computeClosedMonthlyBonuses(
+  sales: Array<{ ambassador_id: string; created_at: string }>,
+  now: Date = new Date()
+): MonthlyBonusItem[] {
+  const currentMonthStart = getMonthBounds(now).start.getTime();
+  const buckets = new Map<number, Map<string, number>>(); // monthStartMs -> (ambId -> count)
+
+  for (const s of sales) {
+    const d = new Date(s.created_at);
+    if (isNaN(d.getTime())) continue;
+    const monthStart = getMonthBounds(d).start.getTime();
+    if (monthStart >= currentMonthStart) continue;
+    let perAmb = buckets.get(monthStart);
+    if (!perAmb) { perAmb = new Map(); buckets.set(monthStart, perAmb); }
+    perAmb.set(s.ambassador_id, (perAmb.get(s.ambassador_id) ?? 0) + 1);
+  }
+
+  const out: MonthlyBonusItem[] = [];
+  for (const [monthStartMs, perAmb] of buckets) {
+    let topId = '';
+    let topCount = 0;
+    for (const [id, c] of perAmb) {
+      if (c > topCount) { topCount = c; topId = id; }
+    }
+    if (topId && topCount >= MONTHLY_CHALLENGE.threshold) {
+      out.push({
+        periodKey: parisDateKey(new Date(monthStartMs)).slice(0, 7),
+        ambassadorId: topId,
+        count: topCount,
+        bonusCents: MONTHLY_CHALLENGE.bonus,
+      });
+    }
+  }
+  return out.sort((a, b) => b.periodKey.localeCompare(a.periodKey));
+}
+
 /**
  * Returns the Monday 00:00 and Sunday 23:59:59 of the week containing `now`,
  * expressed in UTC, with boundaries anchored to Paris midnight.
@@ -111,6 +205,15 @@ export function computeTotalBaseCommission(
 }
 
 // ─── internal helpers ─────────────────────────────────────────────────────────
+
+/** The Paris calendar date of an instant, as 'YYYY-MM-DD'. */
+function parisDateKey(date: Date): string {
+  // en-CA renders ISO-style YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(date);
+}
 
 /** UTC timestamp when the Paris clock shows midnight on the given Paris calendar date. */
 function parisMidnightUtc(year: number, month: number, day: number): Date {

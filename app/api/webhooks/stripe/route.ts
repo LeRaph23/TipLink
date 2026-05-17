@@ -5,6 +5,8 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
+import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
+import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -329,6 +331,13 @@ async function handleEvent(
         }
       }
 
+      // Not a tip — possibly a SmartTag pack purchase. A fully refunded pack
+      // produced no kept revenue, so the ambassador commission earned on it
+      // must be voided (otherwise it stays withdrawable on money returned).
+      if (!txn && charge.amount_refunded >= charge.amount) {
+        await voidAmbassadorCommissionByPaymentIntent(supabase, paymentIntentId, 'pack_refunded');
+      }
+
       const customerEmail = charge.receipt_email ?? charge.billing_details.email;
       if (customerEmail && txn) {
         const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
@@ -357,7 +366,12 @@ async function handleEvent(
         .select('id, staff_id, amount')
         .eq('stripe_payment_intent_id', paymentIntentId)
         .maybeSingle();
-      if (!txn) break;
+      if (!txn) {
+        // Not a tip — possibly a SmartTag pack purchase. Void the ambassador
+        // commission and freeze the seller until a super-admin reviews it.
+        await handlePackDisputeOpened(supabase, paymentIntentId);
+        break;
+      }
 
       await supabase
         .from('transactions')
@@ -388,7 +402,15 @@ async function handleEvent(
         .select('id, staff_id')
         .eq('stripe_payment_intent_id', paymentIntentId)
         .maybeSingle();
-      if (!txn) break;
+      if (!txn) {
+        // SmartTag pack dispute resolution. Won → the commission is earned
+        // again and is un-voided; lost → it stays voided. Either way the
+        // seller stays frozen until a super-admin reviews from the dashboard.
+        if (dispute.status === 'won' || dispute.status === 'warning_closed') {
+          await restoreAmbassadorCommissionByPaymentIntent(supabase, paymentIntentId);
+        }
+        break;
+      }
 
       if (dispute.status === 'won' || dispute.status === 'warning_closed') {
         // Funds restored — clear dispute marker and unfreeze if no other disputes.
@@ -581,6 +603,13 @@ async function handleEvent(
       // Legacy subscription sessions are ignored; everything is one-shot now.
       if (session.mode !== 'payment') break;
 
+      // Persist the PaymentIntent id on the order so a later refund/dispute
+      // webhook (which only carries the charge → PI) can reverse the
+      // ambassador commission tied to this purchase.
+      const sessionPaymentIntentId = typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : (session.payment_intent as { id?: string } | null)?.id ?? null;
+
       const groupId = session.metadata?.group_id;
       const rawPack = session.metadata?.pack;
       const pack = (['solo', 'duo'] as const).find((p) => p === rawPack);
@@ -636,6 +665,7 @@ async function handleEvent(
           pack,
           quantity,
           stripe_checkout_session_id: session.id,
+          stripe_payment_intent_id: sessionPaymentIntentId,
           stripe_invoice_id: invoiceId,
           status: 'pending_fulfillment',
           shipping_address: shipping
@@ -784,6 +814,7 @@ async function handleEvent(
             pack,
             quantity: quantity ?? (pack === 'solo' ? 1 : 2),
             stripe_checkout_session_id: session.id,
+            stripe_payment_intent_id: sessionPaymentIntentId,
             stripe_invoice_id: invoiceId,
             status: 'pending_fulfillment',
             shipping_address: shipping
@@ -1122,6 +1153,93 @@ async function autoAssignTagsToOrder(
 
 // ─── Ambassador helpers ───────────────────────────────────────────────────────
 
+/**
+ * Resolves the SmartTag order behind a Stripe charge so a refund/dispute can
+ * reverse the ambassador commission. Express PaymentIntent orders carry the PI
+ * directly; checkout-session orders are matched via the PI's session.
+ */
+async function resolveSmarttagOrderIdByPaymentIntent(
+  supabase: ReturnType<typeof createServiceClient>,
+  paymentIntentId: string
+): Promise<string | null> {
+  const { data: direct } = await supabase
+    .from('smarttag_orders')
+    .select('id')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+  if (direct) return direct.id;
+
+  // Fallback for orders created before the PI was persisted on the row.
+  try {
+    const sessions = await stripe.checkout.sessions.list({
+      payment_intent: paymentIntentId,
+      limit: 1,
+    });
+    const sessionId = sessions.data[0]?.id;
+    if (sessionId) {
+      const { data: bySession } = await supabase
+        .from('smarttag_orders')
+        .select('id')
+        .eq('stripe_checkout_session_id', sessionId)
+        .maybeSingle();
+      if (bySession) return bySession.id;
+    }
+  } catch (err) {
+    console.error('resolveSmarttagOrderIdByPaymentIntent: session lookup failed', err);
+  }
+  return null;
+}
+
+/** Voids the ambassador commission tied to a charge's SmartTag order. */
+async function voidAmbassadorCommissionByPaymentIntent(
+  supabase: ReturnType<typeof createServiceClient>,
+  paymentIntentId: string,
+  reason: string
+): Promise<void> {
+  const orderId = await resolveSmarttagOrderIdByPaymentIntent(supabase, paymentIntentId);
+  if (!orderId) return;
+  await voidAmbassadorSaleForOrder(supabase, orderId, reason);
+}
+
+/** Un-voids the ambassador commission tied to a charge's SmartTag order. */
+async function restoreAmbassadorCommissionByPaymentIntent(
+  supabase: ReturnType<typeof createServiceClient>,
+  paymentIntentId: string
+): Promise<void> {
+  const orderId = await resolveSmarttagOrderIdByPaymentIntent(supabase, paymentIntentId);
+  if (!orderId) return;
+  await restoreAmbassadorSaleForOrder(supabase, orderId);
+}
+
+/**
+ * Handles a dispute opened against a SmartTag pack purchase: freezes the
+ * selling ambassador's withdrawals (so a payout cannot drain funds while the
+ * money is at risk) and voids the commission earned on that order. The freeze
+ * is intentionally not auto-cleared — a super-admin reviews and unfreezes.
+ */
+async function handlePackDisputeOpened(
+  supabase: ReturnType<typeof createServiceClient>,
+  paymentIntentId: string
+): Promise<void> {
+  const orderId = await resolveSmarttagOrderIdByPaymentIntent(supabase, paymentIntentId);
+  if (!orderId) return;
+
+  const { data: sale } = await supabase
+    .from('ambassador_sales')
+    .select('ambassador_id')
+    .eq('smarttag_order_id', orderId)
+    .maybeSingle();
+
+  if (sale?.ambassador_id) {
+    await supabase
+      .from('ambassadors')
+      .update({ payouts_frozen: true })
+      .eq('id', sale.ambassador_id);
+  }
+
+  await voidAmbassadorSaleForOrder(supabase, orderId, 'pack_dispute_opened');
+}
+
 async function attributeAmbassadorSale(
   supabase: ReturnType<typeof createServiceClient>,
   promoCodeStr: string,
@@ -1147,17 +1265,21 @@ async function attributeAmbassadorSale(
 
     if (!ambassador) return;
 
-    const commissionAmount = pack === 'duo' ? 3500 : 2500;
+    const commissionAmount = COMMISSION_BY_PACK[pack];
     const trimmed = rawSalonName.trim();
     const salonPartial = trimmed.length >= 3 ? `***${trimmed.slice(-3)}` : '***';
 
-    await supabase.from('ambassador_sales').insert({
+    // The unique constraint on smarttag_order_id makes this a no-op if the
+    // order was already attributed (a re-delivered webhook). On any insert
+    // error, stop — don't fire the referral/Telegram side effects twice.
+    const { error: saleErr } = await supabase.from('ambassador_sales').insert({
       ambassador_id: ambassador.id,
       smarttag_order_id: orderId,
       pack,
       commission_amount: commissionAmount,
       salon_name_partial: salonPartial,
     });
+    if (saleErr) return;
 
     void notifyTelegram(ambassador.name, salonPartial, pack).catch(() => {});
 

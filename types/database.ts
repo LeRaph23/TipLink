@@ -586,6 +586,7 @@ export type Database = {
           referral_validated_at: string | null;
           pin_setup_token: string | null;
           pin_setup_expires_at: string | null;
+          payouts_frozen: boolean;
         };
         Insert: {
           id?: string;
@@ -606,6 +607,7 @@ export type Database = {
           referral_validated_at?: string | null;
           pin_setup_token?: string | null;
           pin_setup_expires_at?: string | null;
+          payouts_frozen?: boolean;
         };
         Update: {
           id?: string;
@@ -626,6 +628,7 @@ export type Database = {
           referral_validated_at?: string | null;
           pin_setup_token?: string | null;
           pin_setup_expires_at?: string | null;
+          payouts_frozen?: boolean;
         };
         Relationships: [
           {
@@ -646,6 +649,8 @@ export type Database = {
           commission_amount: number;
           salon_name_partial: string | null;
           created_at: string;
+          voided_at: string | null;
+          void_reason: string | null;
         };
         Insert: {
           id?: string;
@@ -655,6 +660,8 @@ export type Database = {
           commission_amount: number;
           salon_name_partial?: string | null;
           created_at?: string;
+          voided_at?: string | null;
+          void_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -664,6 +671,8 @@ export type Database = {
           commission_amount?: number;
           salon_name_partial?: string | null;
           created_at?: string;
+          voided_at?: string | null;
+          void_reason?: string | null;
         };
         Relationships: [
           {
@@ -678,6 +687,41 @@ export type Database = {
             columns: ['smarttag_order_id'];
             isOneToOne: false;
             referencedRelation: 'smarttag_orders';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ambassador_bonus_credits: {
+        Row: {
+          id: string;
+          ambassador_id: string;
+          kind: 'weekly_tier' | 'monthly_challenge';
+          period_key: string;
+          amount_cents: number;
+          credited_at: string;
+        };
+        Insert: {
+          id?: string;
+          ambassador_id: string;
+          kind: 'weekly_tier' | 'monthly_challenge';
+          period_key: string;
+          amount_cents: number;
+          credited_at?: string;
+        };
+        Update: {
+          id?: string;
+          ambassador_id?: string;
+          kind?: 'weekly_tier' | 'monthly_challenge';
+          period_key?: string;
+          amount_cents?: number;
+          credited_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ambassador_bonus_credits_ambassador_id_fkey';
+            columns: ['ambassador_id'];
+            isOneToOne: false;
+            referencedRelation: 'ambassadors';
             referencedColumns: ['id'];
           }
         ];

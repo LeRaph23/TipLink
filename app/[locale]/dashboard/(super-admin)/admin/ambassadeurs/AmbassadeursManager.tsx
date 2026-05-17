@@ -6,24 +6,33 @@ import {
   toggleAmbassador,
   deleteAmbassador,
   regenerateAmbassadorSetupToken,
+  setAmbassadorPayoutsFrozen,
+  setAmbassadorReferrer,
 } from '@/actions/admin/ambassadors';
 
 interface Ambassador {
   id: string;
   name: string;
   is_active: boolean;
+  payouts_frozen: boolean;
   created_at: string;
   promoCodeId: string;
   promoCode: string;
   percentageOff: number;
   salesCount: number;
   totalCommission: number;
+  referrerAmbassadorId: string | null;
 }
 
 interface AvailablePromoCode {
   id: string;
   code: string;
   percentage_off: number;
+}
+
+interface ReferrerOption {
+  id: string;
+  name: string;
 }
 
 function fmtEuros(cents: number) {
@@ -33,9 +42,11 @@ function fmtEuros(cents: number) {
 export function AmbassadeursManager({
   ambassadors: initialAmbassadors,
   availablePromoCodes,
+  referrerOptions,
 }: {
   ambassadors: Ambassador[];
   availablePromoCodes: AvailablePromoCode[];
+  referrerOptions: ReferrerOption[];
 }) {
   const [ambassadors, setAmbassadors] = useState(initialAmbassadors);
   const [showForm, setShowForm] = useState(false);
@@ -46,6 +57,7 @@ export function AmbassadeursManager({
   // Create form
   const [name, setName] = useState('');
   const [promoCodeId, setPromoCodeId] = useState('');
+  const [referrerAmbassadorId, setReferrerAmbassadorId] = useState('');
 
   // Delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<Ambassador | null>(null);
@@ -62,8 +74,9 @@ export function AmbassadeursManager({
     if (!promoCodeId) { setFormError('Sélectionne un code promo.'); return; }
 
     const ambName = name.trim();
+    const refId = referrerAmbassadorId || null;
     startTransition(async () => {
-      const result = await createAmbassador({ name: ambName, promoCodeId });
+      const result = await createAmbassador({ name: ambName, promoCodeId, referrerAmbassadorId: refId });
       if (!result.ok) {
         setFormError(result.error);
         return;
@@ -73,15 +86,17 @@ export function AmbassadeursManager({
         id: result.id,
         name: ambName,
         is_active: true,
+        payouts_frozen: false,
         created_at: new Date().toISOString(),
         promoCodeId,
         promoCode: promoCode?.code ?? '',
         percentageOff: promoCode?.percentage_off ?? 0,
         salesCount: 0,
         totalCommission: 0,
+        referrerAmbassadorId: refId,
       }, ...prev]);
       setCreatedSetupUrl({ name: ambName, url: result.setupUrl, expiresAt: result.expiresAt });
-      setName(''); setPromoCodeId('');
+      setName(''); setPromoCodeId(''); setReferrerAmbassadorId('');
       setShowForm(false);
     });
   };
@@ -105,6 +120,33 @@ export function AmbassadeursManager({
       if (!result.ok) { setDeleteError(result.error); return; }
       setAmbassadors(prev => prev.filter(a => a.id !== targetId));
       setDeleteTarget(null);
+    });
+  };
+
+  const [referrerError, setReferrerError] = useState<string | null>(null);
+
+  const handleSetReferrer = (id: string, newReferrerId: string) => {
+    const prevValue = ambassadors.find(a => a.id === id)?.referrerAmbassadorId ?? null;
+    const next = newReferrerId || null;
+    setReferrerError(null);
+    // Optimistic update.
+    setAmbassadors(prev => prev.map(a => a.id === id ? { ...a, referrerAmbassadorId: next } : a));
+    startTransition(async () => {
+      const result = await setAmbassadorReferrer(id, next);
+      if (!result.ok) {
+        setReferrerError(result.error);
+        setAmbassadors(prev => prev.map(a => a.id === id ? { ...a, referrerAmbassadorId: prevValue } : a));
+      }
+    });
+  };
+
+  const handleToggleFreeze = (id: string, currentFrozen: boolean) => {
+    startTransition(async () => {
+      const result = await setAmbassadorPayoutsFrozen(id, !currentFrozen);
+      if (!result.ok) { alert(result.error); return; }
+      setAmbassadors(prev =>
+        prev.map(a => a.id === id ? { ...a, payouts_frozen: !currentFrozen } : a)
+      );
     });
   };
 
@@ -181,6 +223,25 @@ export function AmbassadeursManager({
               )}
             </div>
           </div>
+          <div style={{ marginTop: 14 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
+              Parrain (optionnel)
+            </label>
+            <select
+              style={{ ...inputStyle, maxWidth: 320 }}
+              value={referrerAmbassadorId}
+              onChange={e => setReferrerAmbassadorId(e.target.value)}
+            >
+              <option value="">Aucun parrain</option>
+              {referrerOptions.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '4px 0 0' }}>
+              Si ce candidat a été recruté via un code de parrainage, sélectionne le parrain :
+              il touchera 25 € une fois que ce filleul aura fait 3 ventes (crédit à valider par toi).
+            </p>
+          </div>
           <div style={{ marginTop: 10 }}>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 4px' }}>
               Commissions : <strong>25 € / vente Solo</strong> · <strong>35 € / vente Duo</strong>
@@ -206,6 +267,12 @@ export function AmbassadeursManager({
         </div>
       )}
 
+      {referrerError && (
+        <div style={{ marginBottom: 12, color: 'var(--error)', fontSize: 13, padding: '8px 12px', background: 'var(--error-bg)', borderRadius: 6 }}>
+          {referrerError}
+        </div>
+      )}
+
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
         {ambassadors.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -215,7 +282,7 @@ export function AmbassadeursManager({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {['Nom', 'Code promo', 'Ventes', 'Commissions', 'Dashboard', 'Statut', 'Actions'].map((h, i) => (
+                {['Nom', 'Code promo', 'Parrain', 'Ventes', 'Commissions', 'Dashboard', 'Statut', 'Actions'].map((h, i) => (
                   <th key={i} style={{
                     padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600,
                     color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em',
@@ -232,6 +299,27 @@ export function AmbassadeursManager({
                   <td style={{ padding: '11px 14px', fontFamily: 'var(--font-mono, monospace)', color: 'var(--accent)', fontSize: 12 }}>
                     {a.promoCode} {a.percentageOff > 0 && <span style={{ color: 'var(--text-3)', fontFamily: 'inherit' }}>(-{a.percentageOff}%)</span>}
                   </td>
+                  <td style={{ padding: '11px 14px' }}>
+                    <select
+                      value={a.referrerAmbassadorId ?? ''}
+                      onChange={e => handleSetReferrer(a.id, e.target.value)}
+                      disabled={isPending}
+                      title="Parrain de cet ambassadeur — il touche 25€ une fois ce filleul à 3 ventes"
+                      style={{
+                        padding: '5px 8px', borderRadius: 6, fontSize: 12,
+                        border: '1px solid var(--border)', background: 'var(--surface)',
+                        color: a.referrerAmbassadorId ? 'var(--text)' : 'var(--text-3)',
+                        maxWidth: 150, outline: 'none',
+                      }}
+                    >
+                      <option value="">— Aucun —</option>
+                      {referrerOptions
+                        .filter(r => r.id !== a.id)
+                        .map(r => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                    </select>
+                  </td>
                   <td style={{ padding: '11px 14px', fontWeight: 700 }}>{a.salesCount}</td>
                   <td style={{ padding: '11px 14px', color: 'var(--success)', fontWeight: 600 }}>{fmtEuros(a.totalCommission)}</td>
                   <td style={{ padding: '11px 14px' }}>
@@ -247,15 +335,29 @@ export function AmbassadeursManager({
                     )}
                   </td>
                   <td style={{ padding: '11px 14px' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
-                      background: a.is_active ? 'var(--success-bg)' : 'var(--neutral-bg)',
-                      color: a.is_active ? 'var(--success)' : 'var(--neutral)',
-                    }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
-                      {a.is_active ? 'Actif' : 'Inactif'}
-                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
+                        background: a.is_active ? 'var(--success-bg)' : 'var(--neutral-bg)',
+                        color: a.is_active ? 'var(--success)' : 'var(--neutral)',
+                      }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
+                        {a.is_active ? 'Actif' : 'Inactif'}
+                      </span>
+                      {a.payouts_frozen && (
+                        <span
+                          title="Les virements de cet ambassadeur sont gelés."
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
+                            background: 'var(--warning-bg)', color: 'var(--warning)',
+                          }}
+                        >
+                          ❄ Gelé
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td style={{ padding: '11px 14px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -265,6 +367,16 @@ export function AmbassadeursManager({
                         disabled={isPending}
                       >
                         {a.is_active ? 'Désactiver' : 'Activer'}
+                      </button>
+                      <button
+                        style={btnSecondary}
+                        onClick={() => handleToggleFreeze(a.id, a.payouts_frozen)}
+                        disabled={isPending}
+                        title={a.payouts_frozen
+                          ? 'Réautorise les virements de cet ambassadeur'
+                          : 'Bloque les virements sans désactiver le compte'}
+                      >
+                        {a.payouts_frozen ? '☀ Dégeler' : '❄ Geler'}
                       </button>
                       <button
                         style={btnSecondary}

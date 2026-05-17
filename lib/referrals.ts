@@ -46,67 +46,111 @@ export async function generateUniqueReferralCode(
 }
 
 /**
- * Called after each ambassador_sales insert. If the seller has a referrer
- * and reaches the validation threshold for the first time, marks the referral
- * validated and inserts a pending referral_payout row for the parrain.
- * Then checks milestones for the parrain.
- *
- * Returns the validation event if it fired, or null. Best-effort: never throws.
+ * Counts a referred ambassador's *live* (non-voided) sales. Voided sales —
+ * refunded / charged-back / canceled orders — must not count toward the
+ * referral validation threshold, otherwise a parrain banks 25€ on revenue
+ * the platform never kept.
  */
-export async function checkAndValidateReferral(
+async function countLiveSales(
   service: ServiceClient,
   ambassadorId: string
-): Promise<{ validated: true; referrerId: string; amountCents: number } | null> {
+): Promise<number> {
+  const { count } = await service
+    .from('ambassador_sales')
+    .select('id', { count: 'exact', head: true })
+    .eq('ambassador_id', ambassadorId)
+    .is('voided_at', null);
+  return count ?? 0;
+}
+
+/**
+ * Re-evaluates a referred ambassador's referral state from scratch and brings
+ * the parrain's validation + milestone payouts in line with it.
+ *
+ * Idempotent and best-effort (never throws). Called both when a sale is added
+ * and when one is voided/restored, so it must converge to the correct state
+ * regardless of direction:
+ *  - >=3 live sales  → referral validated, validation payout pending.
+ *  - <3 live sales   → validation cleared; a still-PENDING validation payout is
+ *                      voided. A payout a super-admin already CREDITED is left
+ *                      untouched (manual reconciliation — never silently undo
+ *                      money already sent).
+ * Milestones are recomputed afterwards from the parrain's validated-filleul count.
+ */
+export async function recomputeReferralAfterSaleChange(
+  service: ServiceClient,
+  referredAmbassadorId: string
+): Promise<void> {
   try {
     const { data: amb } = await service
       .from('ambassadors')
       .select('id, referrer_ambassador_id, referral_validated_at')
-      .eq('id', ambassadorId)
+      .eq('id', referredAmbassadorId)
       .maybeSingle();
 
-    if (!amb || !amb.referrer_ambassador_id || amb.referral_validated_at) return null;
+    if (!amb || !amb.referrer_ambassador_id) return;
+    const referrerId = amb.referrer_ambassador_id;
 
-    const { count } = await service
-      .from('ambassador_sales')
-      .select('id', { count: 'exact', head: true })
-      .eq('ambassador_id', ambassadorId);
+    const liveSales = await countLiveSales(service, referredAmbassadorId);
+    const shouldValidate = liveSales >= REFERRAL_VALIDATION_MIN_SALES;
 
-    if ((count ?? 0) < REFERRAL_VALIDATION_MIN_SALES) return null;
+    const { data: payout } = await service
+      .from('referral_payouts')
+      .select('id, status')
+      .eq('referrer_ambassador_id', referrerId)
+      .eq('referred_ambassador_id', referredAmbassadorId)
+      .eq('reason', 'validation')
+      .maybeSingle();
 
-    const { error: updErr } = await service
-      .from('ambassadors')
-      .update({ referral_validated_at: new Date().toISOString() })
-      .eq('id', ambassadorId)
-      .is('referral_validated_at', null);
+    if (shouldValidate) {
+      if (!amb.referral_validated_at) {
+        await service
+          .from('ambassadors')
+          .update({ referral_validated_at: new Date().toISOString() })
+          .eq('id', referredAmbassadorId);
+      }
+      if (!payout) {
+        await service.from('referral_payouts').insert({
+          referrer_ambassador_id: referrerId,
+          referred_ambassador_id: referredAmbassadorId,
+          amount_cents: REFERRAL_REWARDS.validation,
+          reason: 'validation',
+          status: 'pending',
+        });
+      } else if (payout.status === 'voided') {
+        await service
+          .from('referral_payouts')
+          .update({ status: 'pending' })
+          .eq('id', payout.id);
+      }
+    } else {
+      if (amb.referral_validated_at) {
+        await service
+          .from('ambassadors')
+          .update({ referral_validated_at: null })
+          .eq('id', referredAmbassadorId);
+      }
+      if (payout && payout.status === 'pending') {
+        await service
+          .from('referral_payouts')
+          .update({ status: 'voided' })
+          .eq('id', payout.id);
+      }
+    }
 
-    if (updErr) return null;
-
-    await service.from('referral_payouts').insert({
-      referrer_ambassador_id: amb.referrer_ambassador_id,
-      referred_ambassador_id: ambassadorId,
-      amount_cents: REFERRAL_REWARDS.validation,
-      reason: 'validation',
-      status: 'pending',
-    });
-
-    await checkMilestones(service, amb.referrer_ambassador_id);
-
-    return {
-      validated: true,
-      referrerId: amb.referrer_ambassador_id,
-      amountCents: REFERRAL_REWARDS.validation,
-    };
+    await recomputeMilestones(service, referrerId);
   } catch {
-    return null;
+    // Best-effort: referral payouts are super-admin reviewed before being paid.
   }
 }
 
 /**
- * Counts validated filleuls for a parrain and inserts milestone payouts
- * if thresholds were just reached. UNIQUE constraint on (referrer, referred, reason)
- * prevents double-insert; we use a sentinel referred_id (the parrain himself) for milestones.
+ * Brings a parrain's milestone payouts in line with their current count of
+ * validated filleuls. Idempotent: re-opens a voided milestone when the
+ * threshold is met again, voids a still-pending milestone when it is no longer
+ * met, and never touches a milestone already credited by a super-admin.
  */
-export async function checkMilestones(
+export async function recomputeMilestones(
   service: ServiceClient,
   referrerId: string
 ): Promise<void> {
@@ -119,26 +163,86 @@ export async function checkMilestones(
 
     const validatedCount = count ?? 0;
 
-    if (validatedCount >= 5) {
-      await service.from('referral_payouts').insert({
-        referrer_ambassador_id: referrerId,
-        referred_ambassador_id: referrerId,
-        amount_cents: REFERRAL_REWARDS.milestone_5,
-        reason: 'milestone_5',
-        status: 'pending',
-      });
-    }
-    if (validatedCount >= 10) {
-      await service.from('referral_payouts').insert({
-        referrer_ambassador_id: referrerId,
-        referred_ambassador_id: referrerId,
-        amount_cents: REFERRAL_REWARDS.milestone_10,
-        reason: 'milestone_10',
-        status: 'pending',
-      });
+    const milestones = [
+      { threshold: 5, reason: 'milestone_5' as const, amount: REFERRAL_REWARDS.milestone_5 },
+      { threshold: 10, reason: 'milestone_10' as const, amount: REFERRAL_REWARDS.milestone_10 },
+    ];
+
+    for (const m of milestones) {
+      const { data: payout } = await service
+        .from('referral_payouts')
+        .select('id, status')
+        .eq('referrer_ambassador_id', referrerId)
+        .eq('referred_ambassador_id', referrerId)
+        .eq('reason', m.reason)
+        .maybeSingle();
+
+      const met = validatedCount >= m.threshold;
+
+      if (met) {
+        if (!payout) {
+          await service.from('referral_payouts').insert({
+            referrer_ambassador_id: referrerId,
+            referred_ambassador_id: referrerId,
+            amount_cents: m.amount,
+            reason: m.reason,
+            status: 'pending',
+          });
+        } else if (payout.status === 'voided') {
+          await service
+            .from('referral_payouts')
+            .update({ status: 'pending' })
+            .eq('id', payout.id);
+        }
+      } else if (payout && payout.status === 'pending') {
+        await service
+          .from('referral_payouts')
+          .update({ status: 'voided' })
+          .eq('id', payout.id);
+      }
     }
   } catch {
     // Best-effort: milestones are recoverable manually if needed.
+  }
+}
+
+/**
+ * Called after each ambassador_sales insert. Re-evaluates the seller's referral
+ * state and returns the validation event the first time it fires (so the caller
+ * can email the parrain). Best-effort: never throws.
+ */
+export async function checkAndValidateReferral(
+  service: ServiceClient,
+  ambassadorId: string
+): Promise<{ validated: true; referrerId: string; amountCents: number } | null> {
+  try {
+    const { data: before } = await service
+      .from('ambassadors')
+      .select('id, referrer_ambassador_id, referral_validated_at')
+      .eq('id', ambassadorId)
+      .maybeSingle();
+
+    if (!before || !before.referrer_ambassador_id) return null;
+    const wasValidated = !!before.referral_validated_at;
+
+    await recomputeReferralAfterSaleChange(service, ambassadorId);
+    if (wasValidated) return null;
+
+    const { data: after } = await service
+      .from('ambassadors')
+      .select('referral_validated_at')
+      .eq('id', ambassadorId)
+      .maybeSingle();
+
+    if (!after?.referral_validated_at) return null;
+
+    return {
+      validated: true,
+      referrerId: before.referrer_ambassador_id,
+      amountCents: REFERRAL_REWARDS.validation,
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -161,11 +265,12 @@ export async function resolveReferralCode(
 }
 
 export type ReferralStats = {
-  pendingAdmin: number;       // candidatures referées encore en pending
-  pendingSales: number;       // ambas créés mais < 3 ventes
-  validated: number;          // referral_validated_at != null
-  totalEarnedCents: number;   // somme des referral_payouts pour ce parrain
-  toMilestone5: number;       // filleuls validés restants pour atteindre 5
+  pendingAdmin: number;         // candidatures referées encore en pending
+  pendingSales: number;         // ambas créés mais < 3 ventes
+  validated: number;            // referral_validated_at != null
+  totalEarnedCents: number;     // referral_payouts CRÉDITÉS par le super-admin
+  awaitingCreditCents: number;  // referral_payouts en attente de validation admin
+  toMilestone5: number;         // filleuls validés restants pour atteindre 5
   toMilestone10: number;
 };
 
@@ -185,24 +290,49 @@ export async function getReferralStats(
       .eq('referrer_ambassador_id', referrerId),
     service
       .from('referral_payouts')
-      .select('amount_cents')
-      .eq('referrer_ambassador_id', referrerId),
+      .select('amount_cents, status')
+      .eq('referrer_ambassador_id', referrerId)
+      .neq('status', 'voided'),
   ]);
 
   const refs = refsRes.data ?? [];
   const validated = refs.filter(r => r.referral_validated_at).length;
   const pendingSales = refs.length - validated;
-  const totalEarnedCents = (payoutsRes.data ?? []).reduce(
-    (sum, p) => sum + (p.amount_cents ?? 0),
-    0
-  );
+  // Only rewards a super-admin has actually credited count as earned money —
+  // a `pending` reward is awaiting admin validation and is not yet the
+  // parrain's to withdraw.
+  const payouts = payoutsRes.data ?? [];
+  const totalEarnedCents = payouts
+    .filter(p => p.status === 'credited')
+    .reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
+  const awaitingCreditCents = payouts
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
 
   return {
     pendingAdmin: pendingAdminRes.count ?? 0,
     pendingSales,
     validated,
     totalEarnedCents,
+    awaitingCreditCents,
     toMilestone5: Math.max(0, 5 - validated),
     toMilestone10: Math.max(0, 10 - validated),
   };
+}
+
+/**
+ * Sum (in cents) of referral rewards a super-admin has explicitly credited to
+ * this parrain. Credited rewards become part of the parrain's withdrawable
+ * balance; `pending` ones do not (they await admin validation).
+ */
+export async function sumCreditedReferralCents(
+  service: ServiceClient,
+  referrerId: string
+): Promise<number> {
+  const { data } = await service
+    .from('referral_payouts')
+    .select('amount_cents')
+    .eq('referrer_ambassador_id', referrerId)
+    .eq('status', 'credited');
+  return (data ?? []).reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
 }
