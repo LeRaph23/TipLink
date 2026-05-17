@@ -10,7 +10,7 @@ export interface RecruitmentApplicationRow {
   city: string;
   phone: string;
   email: string;
-  siret: string;
+  siret: string | null;
   no_fraud_pledge: boolean;
   notes: string | null;
   status: 'pending' | 'accepted' | 'rejected';
@@ -120,7 +120,7 @@ export function RecruitmentApplications({
                 </td>
                 <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{app.phone}</td>
                 <td style={{ ...tdStyle, fontFamily: 'var(--font-mono, monospace)', fontSize: 12, whiteSpace: 'nowrap' }}>
-                  {app.siret}
+                  {app.siret ?? <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>non renseigné</span>}
                 </td>
                 <td style={tdStyle}>
                   <span style={{
