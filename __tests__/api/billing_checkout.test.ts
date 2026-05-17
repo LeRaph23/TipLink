@@ -1,16 +1,17 @@
 /**
  * /api/billing/checkout unit tests.
  *
- * Covers pack validation, auth, rate-limit, group creation + Stripe
- * Checkout session construction (mixed line_items).
+ * The authenticated pack checkout creates an in-page PaymentIntent
+ * (source: pack-order) rather than a Stripe-hosted Checkout Session.
+ * Covers pack validation, auth, rate-limit and PaymentIntent construction.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/stripe/client', () => ({
   stripe: {
-    customers: { create: vi.fn() },
-    checkout: { sessions: { create: vi.fn() } },
+    customers: { create: vi.fn(), update: vi.fn() },
+    paymentIntents: { create: vi.fn() },
   },
 }));
 
@@ -20,6 +21,14 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: vi.fn(),
+}));
+
+vi.mock('@/lib/stripe/pricing', () => ({
+  getPackPricing: vi.fn(),
+}));
+
+vi.mock('@/lib/stripe/tax', () => ({
+  computePackTax: vi.fn(),
 }));
 
 function buildRequest(body: unknown, ip = '5.5.5.5'): NextRequest {
@@ -66,13 +75,15 @@ function serviceClientMock(opts: {
       }
       if (table === 'groups') {
         return chain(
-          existingGroup ?? {
-            id: 'group-new',
-            legal_name: 'Acme',
-            vat_number: null,
-            stripe_customer_id: null,
-            shipping_address: null,
-          }
+          existingGroup
+            ? { ...existingGroup, legal_name: 'Acme', vat_number: null, shipping_address: null }
+            : {
+                id: 'group-new',
+                legal_name: 'Acme',
+                vat_number: null,
+                stripe_customer_id: null,
+                shipping_address: null,
+              }
         );
       }
       return chain(null);
@@ -80,11 +91,33 @@ function serviceClientMock(opts: {
   };
 }
 
+const validBusiness = {
+  legal_name: 'Acme',
+  shipping: { line1: '1 rue test', city: 'Paris', postal_code: '75001', country: 'FR' },
+  billing_same_as_shipping: true,
+};
+
+async function primePricingMocks() {
+  const { getPackPricing } = await import('@/lib/stripe/pricing');
+  const { computePackTax } = await import('@/lib/stripe/tax');
+  const { stripe } = await import('@/lib/stripe/client');
+  vi.mocked(getPackPricing).mockResolvedValue({
+    pack: 'duo', unitAmount: 9900, currency: 'eur',
+    productName: 'Digitip — Pack Duo', quantity: 2, listAmount: null, savingsPercent: null,
+  });
+  vi.mocked(computePackTax).mockResolvedValue({
+    htAmount: 9900, taxAmount: 1980, totalAmount: 11880,
+    taxRatePercent: 20, country: 'FR', calculationId: null,
+  });
+  vi.mocked(stripe.paymentIntents.create).mockResolvedValue({
+    id: 'pi_1', client_secret: 'pi_1_secret_x',
+  } as never);
+}
+
 describe('POST /api/billing/checkout', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.resetAllMocks();
-    // Required by lib/env.ts public schema validation (runs at module load)
     process.env.NEXT_PUBLIC_BASE_URL = 'https://test.example.com';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key-min-10-chars';
@@ -118,7 +151,7 @@ describe('POST /api/billing/checkout', () => {
     expect(res.status).toBe(401);
   });
 
-  it('creates Stripe checkout session for one-shot hardware purchase', async () => {
+  it('creates an in-page PaymentIntent for a one-shot hardware purchase', async () => {
     const { createClient } = await import('@/lib/supabase/server');
     const { createServiceClient } = await import('@/lib/supabase/service');
     const { stripe } = await import('@/lib/stripe/client');
@@ -131,47 +164,30 @@ describe('POST /api/billing/checkout', () => {
         existingGroup: { id: 'grp-1', stripe_customer_id: 'cus_123' },
       }) as never
     );
-
-    vi.mocked(stripe.checkout.sessions.create).mockResolvedValue({
-      id: 'cs_test_1',
-      url: 'https://checkout.stripe.com/test',
-    } as never);
+    await primePricingMocks();
 
     const { POST } = await import('@/app/api/billing/checkout/route');
     const res = await POST(
-      buildRequest({
-        pack: 'duo',
-        business: {
-          legal_name: 'Acme',
-          shipping: {
-            line1: '1 rue test',
-            city: 'Paris',
-            postal_code: '75001',
-            country: 'FR',
-          },
-          billing_same_as_shipping: true,
-        },
-      }, '6.6.6.6')
+      buildRequest({ pack: 'duo', business: validBusiness }, '6.6.6.6')
     );
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.url).toBe('https://checkout.stripe.com/test');
+    expect(body.clientSecret).toBe('pi_1_secret_x');
+    expect(body.amount).toBe(11880);
+    expect(body.taxAmount).toBe(1980);
 
-    const call = vi.mocked(stripe.checkout.sessions.create).mock.calls[0][0]!;
-    expect(call.mode).toBe('payment');
-    expect(call.line_items).toHaveLength(1);
-    expect(call.line_items![0].price).toBe('price_duo_hw');
-    expect(call.automatic_tax?.enabled).toBe(true);
-    expect(call.tax_id_collection?.enabled).toBe(true);
+    const call = vi.mocked(stripe.paymentIntents.create).mock.calls[0][0]!;
+    expect(call.amount).toBe(11880);
+    expect(call.customer).toBe('cus_123');
+    expect(call.metadata?.source).toBe('pack-order');
     expect(call.metadata?.group_id).toBe('grp-1');
     expect(call.metadata?.pack).toBe('duo');
   });
 
-  it('rate-limits after 5 requests per minute / IP', async () => {
+  it('returns 400 when the shipping address is missing', async () => {
     const { createClient } = await import('@/lib/supabase/server');
     const { createServiceClient } = await import('@/lib/supabase/service');
-    const { stripe } = await import('@/lib/stripe/client');
 
     vi.mocked(createClient).mockResolvedValue(
       serverClientMock({ id: 'u1', email: 'a@b.c' }) as never
@@ -181,19 +197,35 @@ describe('POST /api/billing/checkout', () => {
         existingGroup: { id: 'grp-1', stripe_customer_id: 'cus_123' },
       }) as never
     );
-    vi.mocked(stripe.checkout.sessions.create).mockResolvedValue({
-      id: 'cs',
-      url: 'https://checkout.stripe.com/x',
-    } as never);
+    await primePricingMocks();
+
+    const { POST } = await import('@/app/api/billing/checkout/route');
+    const res = await POST(buildRequest({ pack: 'duo' }, '7.7.7.7'));
+    expect(res.status).toBe(400);
+  });
+
+  it('rate-limits after 5 requests per minute / IP', async () => {
+    const { createClient } = await import('@/lib/supabase/server');
+    const { createServiceClient } = await import('@/lib/supabase/service');
+
+    vi.mocked(createClient).mockResolvedValue(
+      serverClientMock({ id: 'u1', email: 'a@b.c' }) as never
+    );
+    vi.mocked(createServiceClient).mockReturnValue(
+      serviceClientMock({
+        existingGroup: { id: 'grp-1', stripe_customer_id: 'cus_123' },
+      }) as never
+    );
+    await primePricingMocks();
 
     const { POST } = await import('@/app/api/billing/checkout/route');
 
     const sharedIp = '9.9.9.9';
     for (let i = 0; i < 5; i++) {
-      const ok = await POST(buildRequest({ pack: 'solo' }, sharedIp));
+      const ok = await POST(buildRequest({ pack: 'duo', business: validBusiness }, sharedIp));
       expect(ok.status).toBe(200);
     }
-    const limited = await POST(buildRequest({ pack: 'solo' }, sharedIp));
+    const limited = await POST(buildRequest({ pack: 'duo', business: validBusiness }, sharedIp));
     expect(limited.status).toBe(429);
   });
 });

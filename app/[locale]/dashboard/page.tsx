@@ -2,7 +2,6 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
-import { StripeDashboardButton } from '@/components/dashboard/StripeDashboardButton';
 import { StatCard } from '@/components/dashboard/StatCard';
 
 function StatusBadge({ status }: { status: string }) {
@@ -100,12 +99,7 @@ export default async function DashboardPage({
       </div>
 
       {staffProfile && staffProfile.onboarding_status === 'complete' && (
-        <>
-          <DigitipCard staffId={staffProfile.id} locale={locale} />
-          <div style={{ marginBottom: 20 }}>
-            <StripeDashboardButton />
-          </div>
-        </>
+        <DigitipCard staffId={staffProfile.id} locale={locale} />
       )}
 
       {/* Group admin without any staff profile yet → invite them to join as staff */}

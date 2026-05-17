@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { getBaseUrl, getPackPrices, PACKS, type PackId } from '@/lib/env';
+import { PACKS, type PackId } from '@/lib/env';
+import { getPackPricing } from '@/lib/stripe/pricing';
+import { computePackTax } from '@/lib/stripe/tax';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -27,10 +29,6 @@ type Body = {
     billing?: Address;
   };
 };
-
-const ALLOWED_SHIPPING_COUNTRIES = [
-  'FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR',
-] as const;
 
 function isValidPack(p: unknown): p is PackId {
   return p === 'solo' || p === 'duo';
@@ -164,69 +162,105 @@ export async function POST(request: NextRequest) {
       .eq('id', group.id);
   }
 
-  const prices = getPackPrices(body.pack);
   const pack = PACKS[body.pack];
-  const base = getBaseUrl();
   const locale = body.locale === 'fr' ? 'fr' : 'en';
+  const pricing = await getPackPricing(body.pack);
+  const baseAmount = pricing.unitAmount;
 
-  // Resolve promo code: look up our DB and get the Stripe coupon ID to apply directly
-  let stripeCouponId: string | undefined;
+  if (!biz?.shipping?.country) {
+    return NextResponse.json({ error: 'Shipping address required' }, { status: 400 });
+  }
+
+  // Resolve promo code to a percentage discount.
+  let promoCodeStr: string | null = null;
+  let promoCodeId: string | null = null;
+  let discountAmount = 0;
   if (body.promoCode) {
+    const code = body.promoCode.toUpperCase().trim();
     const { data: promoRow } = await service
       .from('promo_codes')
-      .select('stripe_coupon_id, is_active, expires_at, max_redemptions, times_redeemed')
-      .eq('code', body.promoCode.toUpperCase().trim())
+      .select('id, percentage_off, is_active, expires_at, max_redemptions, times_redeemed')
+      .eq('code', code)
       .maybeSingle();
     if (promoRow?.is_active) {
       const expired = promoRow.expires_at ? new Date(promoRow.expires_at) < new Date() : false;
       const exhausted = promoRow.max_redemptions !== null && promoRow.times_redeemed >= promoRow.max_redemptions;
       if (!expired && !exhausted) {
-        stripeCouponId = promoRow.stripe_coupon_id;
+        promoCodeStr = code;
+        promoCodeId = promoRow.id;
+        discountAmount = Math.floor((baseAmount * promoRow.percentage_off) / 100);
       }
     }
   }
 
-  // One-shot hardware purchase. Ongoing revenue comes from
-  // per-tip commission (groups.platform_fee_bps), not from subscription.
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
+  const htAmount = Math.max(0, baseAmount - discountAmount);
+
+  // VAT — pack prices are stored excl. VAT; Stripe Tax resolves the rate from
+  // the shipping country (and applies reverse-charge for valid EU VAT ids).
+  const tax = await computePackTax({
+    htAmount,
+    currency: pricing.currency,
+    country: biz.shipping.country,
+    vatNumber: group.vat_number,
+  });
+
+  // Persist the billing address on the Stripe customer so the invoice's
+  // automatic_tax can compute VAT.
+  const billingAddr = biz.billing_same_as_shipping ? biz.shipping : (biz.billing ?? biz.shipping);
+  try {
+    await stripe.customers.update(stripeCustomerId, {
+      address: {
+        line1: billingAddr.line1,
+        line2: billingAddr.line2 ?? undefined,
+        city: billingAddr.city,
+        postal_code: billingAddr.postal_code,
+        country: billingAddr.country,
+      },
+    });
+  } catch { /* non-blocking */ }
+
+  // One-shot hardware purchase, paid in-page via Stripe Elements. Ongoing
+  // revenue comes from per-tip commission (groups.platform_fee_bps).
+  const intent = await stripe.paymentIntents.create({
+    amount: tax.totalAmount,
+    currency: pricing.currency,
     customer: stripeCustomerId,
-    line_items: [
-      { price: prices.hardware, quantity: 1 },
-    ],
-    payment_intent_data: {
-      metadata: {
-        group_id: group.id,
-        pack: body.pack,
-        quantity: String(pack.quantity),
+    automatic_payment_methods: { enabled: true },
+    description: pricing.productName,
+    shipping: {
+      name: group.legal_name ?? biz.legal_name,
+      address: {
+        line1: biz.shipping.line1,
+        line2: biz.shipping.line2 ?? undefined,
+        city: biz.shipping.city,
+        postal_code: biz.shipping.postal_code,
+        country: biz.shipping.country,
       },
     },
-    invoice_creation: { enabled: true },
-    automatic_tax: { enabled: true },
-    tax_id_collection: { enabled: true },
-    customer_update: {
-      address: 'auto',
-      shipping: 'auto',
-      name: 'auto',
-    },
-    billing_address_collection: 'required',
-    shipping_address_collection: {
-      allowed_countries: [...ALLOWED_SHIPPING_COUNTRIES],
-    },
-    // Apply coupon directly if a valid promo code was provided; otherwise allow Stripe's native field
-    ...(stripeCouponId
-      ? { discounts: [{ coupon: stripeCouponId }] }
-      : { allow_promotion_codes: true }),
-    success_url: `${base}/${locale}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${base}/${locale}/pricing`,
     metadata: {
+      source: 'pack-order',
       group_id: group.id,
       pack: body.pack,
       quantity: String(pack.quantity),
       user_id: user.id,
-      ...(body.promoCode ? { promo_code: body.promoCode.toUpperCase().trim() } : {}),
+      locale,
+      base_amount: String(baseAmount),
+      discount_amount: String(discountAmount),
+      ht_amount: String(htAmount),
+      tax_amount: String(tax.taxAmount),
+      tax_country: tax.country,
+      ...(promoCodeStr ? { promo_code: promoCodeStr } : {}),
+      ...(promoCodeId ? { promo_code_id: promoCodeId } : {}),
     },
   });
 
-  return NextResponse.json({ url: session.url, sessionId: session.id });
+  return NextResponse.json({
+    clientSecret: intent.client_secret,
+    amount: tax.totalAmount,
+    htAmount,
+    taxAmount: tax.taxAmount,
+    taxRatePercent: tax.taxRatePercent,
+    discountAmount,
+    promoCode: promoCodeStr,
+  });
 }

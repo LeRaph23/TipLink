@@ -93,6 +93,13 @@ async function handleEvent(
         break;
       }
 
+      // ── Hardware pack order (the /order wizard, in-page payment) ──
+      if (intent.metadata?.source === 'pack-order') {
+        if (intent.status !== 'succeeded') break;
+        await handlePackOrderPaid(intent, supabase);
+        break;
+      }
+
       const transactionId = intent.metadata?.transaction_id;
 
       if (!transactionId) {
@@ -1204,6 +1211,158 @@ async function handlePackExpressPaid(
       promoCode: promoCodeStr,
       locale,
     }).catch(() => {});
+  }
+}
+
+// Handles a paid SmartTag pack order from the /order wizard (in-page Stripe
+// Elements). Unlike pack-express, the billing group already exists — the
+// PaymentIntent carries its id. Creates the order, invoice, tags and emails.
+async function handlePackOrderPaid(
+  intent: Stripe.PaymentIntent,
+  supabase: ReturnType<typeof createServiceClient>
+): Promise<void> {
+  const rawPack = intent.metadata?.pack;
+  const pack = (['solo', 'duo'] as const).find((p) => p === rawPack);
+  const groupId = intent.metadata?.group_id;
+  if (!pack || !groupId) {
+    throw new Error(`pack-order PI missing pack/group metadata: ${intent.id}`);
+  }
+
+  // Idempotency: if this PI already produced an order, exit silently.
+  const { data: existing } = await supabase
+    .from('smarttag_orders')
+    .select('id')
+    .eq('stripe_payment_intent_id', intent.id)
+    .maybeSingle();
+  if (existing) return;
+
+  const quantity = Number(intent.metadata?.quantity ?? 0) || (pack === 'solo' ? 1 : 2);
+  const promoCodeStr = intent.metadata?.promo_code ?? null;
+  const promoCodeId = intent.metadata?.promo_code_id ?? null;
+  const discountAmount = Number(intent.metadata?.discount_amount ?? 0) || 0;
+  const locale = intent.metadata?.locale === 'fr' ? 'fr' : 'en';
+  const customerId = typeof intent.customer === 'string'
+    ? intent.customer
+    : (intent.customer as Stripe.Customer | null)?.id ?? null;
+  const shipping = intent.shipping ?? null;
+
+  // Invoice — customer already has a billing address, so automatic_tax breaks
+  // out the VAT. Best-effort: never throw out of the webhook.
+  let invoiceId: string | null = null;
+  let invoicePdfUrl: string | null = null;
+  if (customerId) {
+    try {
+      const htAmount = intent.metadata?.ht_amount ? parseInt(intent.metadata.ht_amount, 10) : null;
+      const res = await createPackInvoiceForPaymentIntent({
+        paymentIntent: intent,
+        customerId,
+        description: `Digitip — Pack ${pack === 'solo' ? 'Solo' : 'Duo'} (${quantity} SmartTag${quantity > 1 ? 's' : ''})`,
+        htAmount,
+      });
+      invoiceId = res.invoiceId;
+      invoicePdfUrl = res.invoicePdfUrl;
+    } catch (err) {
+      console.error('[pack-order] invoice generation failed', err);
+    }
+  }
+
+  await supabase
+    .from('groups')
+    .update({
+      ...(customerId ? { stripe_customer_id: customerId } : {}),
+      ...(shipping?.address
+        ? { shipping_address: { name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json }
+        : {}),
+    })
+    .eq('id', groupId);
+
+  if (promoCodeId) {
+    try {
+      await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)(
+        'increment_promo_redeemed',
+        { promo_id: promoCodeId }
+      );
+    } catch { /* ignore */ }
+  }
+
+  const { data: order, error: orderErr } = await supabase
+    .from('smarttag_orders')
+    .upsert(
+      {
+        group_id: groupId,
+        pack,
+        quantity,
+        stripe_payment_intent_id: intent.id,
+        stripe_invoice_id: invoiceId,
+        status: 'pending_fulfillment',
+        shipping_address: shipping?.address
+          ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
+          : null,
+        promo_code: promoCodeStr,
+        promo_code_id: promoCodeId,
+        discount_amount: discountAmount,
+      },
+      { onConflict: 'stripe_payment_intent_id' }
+    )
+    .select('id')
+    .single();
+
+  if (orderErr || !order) {
+    throw new Error(`pack-order: failed to upsert smarttag_order — ${orderErr?.message ?? 'unknown'}`);
+  }
+
+  await autoAssignTagsToOrder(supabase, order.id, quantity);
+
+  if (promoCodeStr) {
+    await attributeAmbassadorSale(supabase, promoCodeStr, order.id, pack, shipping?.name ?? '');
+  }
+
+  // Order confirmation to the buyer + admin alert.
+  const userId = intent.metadata?.user_id;
+  if (userId) {
+    try {
+      const { data: { user: buyer } } = await supabase.auth.admin.getUserById(userId);
+      if (buyer?.email) {
+        await sendOrderConfirmation({
+          to: buyer.email, pack, quantity, orderId: order.id, invoicePdfUrl, locale,
+        }).catch((err) => console.error('[email] sendOrderConfirmation failed', err));
+        await sendAdminNewOrder({
+          customerName: shipping?.name ?? buyer.email,
+          customerEmail: buyer.email,
+          pack, quantity, orderId: order.id, promoCode: promoCodeStr, locale,
+        }).catch(() => {});
+      }
+    } catch { /* non-blocking */ }
+  }
+
+  // Auto-provision a starter establishment so the tip flow works immediately.
+  const { data: existingEst } = await supabase
+    .from('establishments')
+    .select('id')
+    .eq('group_id', groupId)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+  if (!existingEst) {
+    const { data: grp } = await supabase
+      .from('groups')
+      .select('name, legal_name')
+      .eq('id', groupId)
+      .single();
+    const estName = grp?.legal_name ?? grp?.name ?? 'Mon établissement';
+    const slug = estName.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const country = (shipping?.address?.country ?? 'FR').toUpperCase();
+    await supabase.from('establishments').insert({
+      group_id: groupId,
+      name: estName,
+      business_type: 'beauty',
+      slug: slug || `group-${groupId.slice(0, 8)}`,
+      country,
+      currency: 'eur',
+      onboarding_status: 'not_started',
+    });
   }
 }
 
