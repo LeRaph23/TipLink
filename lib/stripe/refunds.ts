@@ -51,6 +51,7 @@ export async function reverseTransactionTransfers(
     .is('reversed_at', null);
 
   for (const gt of groupTransfers ?? []) {
+    if (!gt.stripe_transfer_id) continue;
     try {
       await reverseTransferIfNeeded(gt.stripe_transfer_id);
       await supabase
