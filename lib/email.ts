@@ -1238,10 +1238,10 @@ export async function sendGroupOnboardingNudge(opts: {
       lifecycleBody({
         badge: 'Configuration', tone: 'pink',
         title: `${firstName}, finalisez votre espace Digitip`,
-        intro: `Votre commande est validée — il ne reste qu'une étape : créer votre espace Digitip. Ça prend <strong class="text-strong" style="color:#0f0f12">moins de 2 minutes</strong>.`,
+        intro: `Votre commande est validée. Dernière étape : créer votre espace Digitip — <strong class="text-strong" style="color:#0f0f12">moins de 2 minutes</strong>.`,
         bullets: ['① Nommez votre salon', '② Ajoutez vos employés', '③ Posez le SmartTag et encaissez'],
         ctaLabel: 'Configurer mon espace →', ctaUrl: setupUrl,
-        note: 'Une question ? Répondez simplement à cet email, on vous aide.',
+        note: 'Une question ? Répondez à cet email.',
         unsubscribeUrl,
       }));
   }
@@ -1249,9 +1249,9 @@ export async function sendGroupOnboardingNudge(opts: {
     lifecycleBody({
       badge: 'À finaliser', tone: 'amber',
       title: `${firstName}, ne laissez pas filer vos pourboires`,
-      intro: `Vos SmartTags sont programmés et n'attendent que vous. Tant que votre espace n'est pas configuré, <strong class="text-strong" style="color:#0f0f12">aucun pourboire ne peut être encaissé</strong> — chaque jour compte.`,
+      intro: `Vos SmartTags sont prêts. Tant que votre espace n'est pas configuré, <strong class="text-strong" style="color:#0f0f12">aucun pourboire ne peut être encaissé</strong>.`,
       ctaLabel: 'Activer mon espace maintenant →', ctaUrl: setupUrl,
-      note: 'La configuration prend 2 minutes. Besoin d\'aide ? Répondez à cet email.',
+      note: 'La configuration prend 2 minutes.',
       unsubscribeUrl,
     }));
 }
@@ -1328,7 +1328,9 @@ export async function sendStaffInviteReminder(opts: {
       title: `${firstName}, activez votre compte Digitip`,
       intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> vous a invité(e) à recevoir vos pourboires directement sur votre compte bancaire. Votre compte n'est pas encore activé — il suffit d'une minute.`,
       ctaLabel: 'Activer mon compte →', ctaUrl: joinUrl,
-      note: step === 2 ? 'Sans compte activé, vos pourboires ne peuvent pas vous être versés.' : 'Aucun mot de passe à retenir — vous le choisissez à la fin.',
+      note: step === 2
+        ? 'Sans compte activé, vos pourboires ne peuvent pas vous être versés.'
+        : 'Une minute suffit — vos pourboires arrivent ensuite directement sur votre compte.',
       unsubscribeUrl,
     }));
 }
