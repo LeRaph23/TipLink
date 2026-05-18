@@ -121,7 +121,6 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
         <div style={{ display: 'flex', gap: 10, marginTop: city ? 8 : 0, fontSize: 11, color: 'var(--text-3)', flexWrap: 'wrap' }}>
           <span>📍 {salons.length} établissements</span>
           <span>✓ {visitedByMe.length} faits par toi</span>
-          <span>🚫 {visitedByOthers.length} déjà faits</span>
         </div>
       </div>
 
