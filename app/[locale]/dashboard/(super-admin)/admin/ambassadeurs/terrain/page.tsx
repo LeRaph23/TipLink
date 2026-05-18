@@ -40,7 +40,7 @@ export default async function AdminSalonsPage({
 
   const service = createServiceClient();
 
-  const [zones, salons, visits, claims, ambassadors] = await Promise.all([
+  const [zones, salons, visits, ambassadors] = await Promise.all([
     fetchAll<{ id: string; city: string; name: string; is_active: boolean; created_at: string; bbox_min_lat: number | null; bbox_min_lon: number | null; bbox_max_lat: number | null; bbox_max_lon: number | null }>(
       (a, b) => service.from('salon_zones')
         .select('id, city, name, is_active, created_at, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
@@ -69,12 +69,6 @@ export default async function AdminSalonsPage({
       (a, b) => service.from('salon_visits')
         .select('id, salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at, location_verified, distance_m')
         .order('id')
-        .range(a, b)
-    ),
-    fetchAll<{ id: string; ambassador_id: string; zone_id: string; claimed_at: string; released_at: string | null }>(
-      (a, b) => service.from('ambassador_zone_claims')
-        .select('id, ambassador_id, zone_id, claimed_at, released_at')
-        .is('released_at', null)
         .range(a, b)
     ),
     fetchAll<{ id: string; name: string }>(
@@ -128,7 +122,6 @@ export default async function AdminSalonsPage({
 
   const ambassadorById = new Map((ambassadors ?? []).map((a) => [a.id, a.name]));
   const zoneById = new Map((zones ?? []).map((z) => [z.id, z]));
-  const claimByZone = new Map((claims ?? []).map((c) => [c.zone_id, c]));
 
   // Visits per salon, sorted newest first — used by the map popup
   const visitsBySalon = new Map<string, Array<{
@@ -177,24 +170,19 @@ export default async function AdminSalonsPage({
     };
   });
 
-  const mapZones = (zones ?? []).map((z) => {
-    const claim = claimByZone.get(z.id);
-    return {
-      id: z.id,
-      city: z.city,
-      name: z.name,
-      bbox: z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
-        ? {
-            minLat: Number(z.bbox_min_lat),
-            minLon: Number(z.bbox_min_lon),
-            maxLat: Number(z.bbox_max_lat),
-            maxLon: Number(z.bbox_max_lon),
-          }
-        : null,
-      claimedByAmbassadorId: claim?.ambassador_id ?? null,
-      claimedByAmbassadorName: claim ? (ambassadorById.get(claim.ambassador_id) ?? null) : null,
-    };
-  });
+  const mapZones = (zones ?? []).map((z) => ({
+    id: z.id,
+    city: z.city,
+    name: z.name,
+    bbox: z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
+      ? {
+          minLat: Number(z.bbox_min_lat),
+          minLon: Number(z.bbox_min_lon),
+          maxLat: Number(z.bbox_max_lat),
+          maxLon: Number(z.bbox_max_lon),
+        }
+      : null,
+  }));
 
   return (
     <div>
@@ -227,12 +215,6 @@ export default async function AdminSalonsPage({
           visitCount: visitCountBySalon.get(s.id) ?? 0,
           googleEnriched: !!s.google_enriched_at,
           businessStatus: (s.business_status as 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null) ?? null,
-        }))}
-        activeClaims={(claims ?? []).map((c) => ({
-          zoneId: c.zone_id,
-          ambassadorId: c.ambassador_id,
-          ambassadorName: ambassadorById.get(c.ambassador_id) ?? '—',
-          claimedAt: c.claimed_at,
         }))}
         visits={(visits ?? []).map((v) => ({
           id: v.id,

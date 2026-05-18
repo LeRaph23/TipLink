@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { isOpenNow, mapsLink as buildMapsLink } from '@/lib/salon-hours';
 import { CategoryIcon, type AmbassadorSalon } from '@/components/salons/SalonsMap';
@@ -14,24 +14,7 @@ const SalonsMap = dynamic(
   ) }
 );
 
-const ZonesMap = dynamic(
-  () => import('@/components/salons/ZonesMap').then((m) => m.ZonesMap),
-  { ssr: false, loading: () => (
-    <div style={{ height: '60vh', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13, background: 'var(--surface-2)', borderRadius: 'var(--radius)' }}>
-      Chargement de la carte…
-    </div>
-  ) }
-);
-
 type Bbox = { minLat: number; minLon: number; maxLat: number; maxLon: number };
-type ZoneSummary = {
-  id: string;
-  city: string;
-  name: string;
-  salonCount: number;
-  todoCount: number;
-  bbox: Bbox | null;
-};
 
 type Salon = AmbassadorSalon & { website: string | null };
 
@@ -70,70 +53,47 @@ function usePersistedView(key: string): ['map' | 'list', (v: 'map' | 'list') => 
 
 export function AmbassadeurSalonsTracker({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
-  const [zones, setZones] = useState<ZoneSummary[]>([]);
-  const [zoneCity, setZoneCity] = useState<string | null>(null);
-  const [selectedZone, setSelectedZone] = useState<ZoneSummary | null>(null);
   const [salons, setSalons] = useState<Salon[]>([]);
-  const [salonsLoading, setSalonsLoading] = useState(false);
-  const [zoneBbox, setZoneBbox] = useState<Bbox | null>(null);
+  const [city, setCity] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeVisitFor, setActiveVisitFor] = useState<Salon | null>(null);
   const [view, onChangeView] = usePersistedView('tiplink:salons-view');
-  const [zonesView, onChangeZonesView] = usePersistedView('tiplink:zones-view');
 
-  const refreshZones = useCallback(async () => {
+  const loadSalons = useCallback(async () => {
     try {
-      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/zones`);
+      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons`);
       const data = await res.json();
-      if (!res.ok) {
+      if (res.ok) {
+        setActionError(null);
+        setSalons(data.salons ?? []);
+        setCity(data.city ?? null);
+      } else {
         setActionError(data.error ?? 'Erreur');
-        return;
       }
-      setActionError(null);
-      setZones(data.zones ?? []);
-      setZoneCity(data.city ?? null);
     } finally {
       setLoading(false);
     }
   }, [code]);
 
-  useEffect(() => { void refreshZones(); }, [refreshZones]);
+  useEffect(() => { void loadSalons(); }, [loadSalons]);
 
-  const loadSalons = useCallback(async (zoneId: string) => {
-    setSalonsLoading(true);
-    setActionError(null);
-    try {
-      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons?zoneId=${encodeURIComponent(zoneId)}`);
-      const data = await res.json();
-      if (res.ok) {
-        setSalons(data.salons ?? []);
-        setZoneBbox(data.zone?.bbox ?? null);
-      } else {
-        setActionError(data.error ?? 'Erreur');
-      }
-    } finally {
-      setSalonsLoading(false);
+  // Fit the map to the salons that actually have coordinates.
+  const salonsBbox = useMemo<Bbox | null>(() => {
+    const pts = salons.filter((s) => s.lat != null && s.lon != null);
+    if (pts.length === 0) return null;
+    let minLat = Infinity, minLon = Infinity, maxLat = -Infinity, maxLon = -Infinity;
+    for (const s of pts) {
+      minLat = Math.min(minLat, s.lat as number);
+      maxLat = Math.max(maxLat, s.lat as number);
+      minLon = Math.min(minLon, s.lon as number);
+      maxLon = Math.max(maxLon, s.lon as number);
     }
-  }, [code]);
-
-  const openZone = useCallback(async (zone: ZoneSummary) => {
-    setSelectedZone(zone);
-    setSalons([]);
-    setZoneBbox(null);
-    await loadSalons(zone.id);
-  }, [loadSalons]);
-
-  const backToZones = useCallback(async () => {
-    setSelectedZone(null);
-    setSalons([]);
-    setZoneBbox(null);
-    setLoading(true);
-    await refreshZones();
-  }, [refreshZones]);
+    return { minLat, minLon, maxLat, maxLon };
+  }, [salons]);
 
   if (loading) {
     return (
-      <SectionShell title="Zones à démarcher">
+      <SectionShell title="Établissements à démarcher">
         <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
           Chargement…
         </div>
@@ -141,100 +101,24 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
     );
   }
 
-  // ── Zone overview ───────────────────────────────────────────────────────────
-  if (!selectedZone) {
-    const bboxZones = zones.filter((z): z is ZoneSummary & { bbox: Bbox } => z.bbox != null);
-    const hiddenCount = zones.length - bboxZones.length;
-
-    return (
-      <SectionShell title="Zones à démarcher">
-        <div style={{ padding: '14px 16px 0' }}>
-          <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.5 }}>
-            Choisis une <strong>zone</strong> pour voir ses établissements{zoneCity ? <> à <strong>{zoneCity}</strong></> : null}.
-            La pastille indique le nombre d’établissements à démarcher.
-          </div>
-          {actionError && (
-            <div style={{
-              background: 'var(--error-bg)', color: 'var(--error)',
-              borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-              fontSize: 12, marginBottom: 10,
-            }}>{actionError}</div>
-          )}
-        </div>
-
-        {zones.length === 0 ? (
-          <div style={{ padding: '4px 16px 20px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>
-            Aucune zone disponible pour le moment. Reviens plus tard.
-          </div>
-        ) : (
-          <>
-            <ViewToggle view={zonesView} onChange={onChangeZonesView} />
-
-            {zonesView === 'map' && bboxZones.length > 0 ? (
-              <div style={{ padding: 12 }}>
-                <ZonesMap zones={bboxZones} onSelect={(z) => { void openZone(z); }} />
-                {hiddenCount > 0 && (
-                  <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-3)', textAlign: 'center' }}>
-                    {hiddenCount} zone{hiddenCount > 1 ? 's' : ''} sans localisation — en vue Liste.
-                  </div>
-                )}
-              </div>
-            ) : zonesView === 'map' ? (
-              <div style={{ padding: '4px 16px 16px' }}>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: '10px 0 14px' }}>
-                  Aucune zone géolocalisée — voici la liste.
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {zones.map((z) => (
-                    <ZoneCard key={z.id} zone={z} onOpen={() => openZone(z)} />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{ padding: '12px 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {zones.map((z) => (
-                  <ZoneCard key={z.id} zone={z} onOpen={() => openZone(z)} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </SectionShell>
-    );
-  }
-
-  // ── Salons of the selected zone ─────────────────────────────────────────────
   const notVisited = salons.filter((s) => !s.visit);
   const visitedByOthers = salons.filter((s) => s.visit && !s.visit.visitedByMe);
   const visitedByMe = salons.filter((s) => s.visit?.visitedByMe);
 
   return (
-    <SectionShell
-      title="Établissements à démarcher"
-      right={
-        <button
-          onClick={backToZones}
-          style={{
-            fontSize: 11, padding: '4px 10px',
-            background: 'transparent', color: 'var(--text-3)',
-            border: '1px solid var(--border)', borderRadius: 99, cursor: 'pointer',
-          }}
-        >
-          ← Zones
-        </button>
-      }
-    >
+    <SectionShell title="Établissements à démarcher">
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-          Zone
-        </div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)', marginTop: 2 }}>
-          {selectedZone.name}
-          <span style={{ color: 'var(--text-3)', fontSize: 12, marginLeft: 6, fontWeight: 500 }}>
-            · {selectedZone.city}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 11, color: 'var(--text-3)' }}>
+        {city && (
+          <>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Secteur
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)', marginTop: 2 }}>
+              {city}
+            </div>
+          </>
+        )}
+        <div style={{ display: 'flex', gap: 10, marginTop: city ? 8 : 0, fontSize: 11, color: 'var(--text-3)', flexWrap: 'wrap' }}>
           <span>📍 {salons.length} établissements</span>
           <span>✓ {visitedByMe.length} faits par toi</span>
           <span>🚫 {visitedByOthers.length} déjà faits</span>
@@ -248,13 +132,9 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
         }}>{actionError}</div>
       )}
 
-      {salonsLoading ? (
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-          Chargement…
-        </div>
-      ) : salons.length === 0 ? (
+      {salons.length === 0 ? (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)', fontSize: 12 }}>
-          Aucun établissement dans cette zone pour le moment. Préviens l&apos;admin.
+          Aucun établissement à démarcher pour le moment. Reviens plus tard ou préviens l&apos;admin.
         </div>
       ) : (
         <>
@@ -265,7 +145,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
               <SalonsMap
                 variant="ambassador"
                 salons={salons}
-                initialBbox={zoneBbox}
+                initialBbox={salonsBbox}
                 onLogVisit={(s) => setActiveVisitFor(s as Salon)}
               />
             </div>
@@ -301,7 +181,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
           onClose={() => setActiveVisitFor(null)}
           onSaved={async () => {
             setActiveVisitFor(null);
-            await loadSalons(selectedZone.id);
+            await loadSalons();
           }}
         />
       )}
@@ -328,55 +208,6 @@ function ViewToggle({ view, onChange }: { view: 'map' | 'list'; onChange: (v: 'm
         </button>
       ))}
     </div>
-  );
-}
-
-function ZoneCard({ zone, onOpen }: { zone: ZoneSummary; onOpen: () => void }) {
-  const done = Math.max(0, zone.salonCount - zone.todoCount);
-  const pct = zone.salonCount > 0 ? (done / zone.salonCount) * 100 : 0;
-  const allDone = zone.salonCount > 0 && zone.todoCount === 0;
-
-  return (
-    <button
-      onClick={onOpen}
-      style={{
-        display: 'block', width: '100%', textAlign: 'left',
-        padding: '12px 14px', background: 'var(--surface-2)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-          {zone.name}
-          <span style={{ color: 'var(--text-3)', fontWeight: 500, fontSize: 11, marginLeft: 6 }}>
-            · {zone.city}
-          </span>
-        </span>
-        <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          Voir →
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 6, fontSize: 11, color: 'var(--text-3)' }}>
-        <span>📍 {zone.salonCount} établissement{zone.salonCount !== 1 ? 's' : ''}</span>
-        {zone.salonCount === 0 ? (
-          <span>Aucun établissement</span>
-        ) : allDone ? (
-          <span style={{ color: 'var(--success)', fontWeight: 600 }}>✓ Tout démarché</span>
-        ) : (
-          <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
-            {zone.todoCount} à démarcher
-          </span>
-        )}
-      </div>
-      <div style={{ marginTop: 8, height: 6, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
-        <div style={{
-          height: '100%', width: `${pct}%`,
-          background: allDone ? 'var(--success)' : 'var(--accent)',
-          borderRadius: 99,
-        }} />
-      </div>
-    </button>
   );
 }
 

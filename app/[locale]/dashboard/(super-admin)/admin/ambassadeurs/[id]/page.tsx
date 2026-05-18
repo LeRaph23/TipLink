@@ -37,7 +37,6 @@ export default async function AmbassadeurFichePage({
     { data: bonusCreditsRaw },
     { data: referralRewardsRaw },
     { data: filleulsRaw },
-    { data: claimsRaw },
     { data: visitsRaw },
     { data: contractsRaw },
     { data: emailsRaw },
@@ -59,10 +58,6 @@ export default async function AmbassadeurFichePage({
     service.from('ambassadors')
       .select('id, name, referral_validated_at')
       .eq('referrer_ambassador_id', id),
-    service.from('ambassador_zone_claims')
-      .select('id, claimed_at, released_at, salon_zones(id, name, city, is_active)')
-      .eq('ambassador_id', id)
-      .order('claimed_at', { ascending: false }),
     service.from('salon_visits')
       .select('id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at, location_verified, distance_m, salons(name, city)')
       .eq('ambassador_id', id)
@@ -197,17 +192,6 @@ export default async function AmbassadeurFichePage({
       amountCents: c.amount_cents,
       createdAt: c.credited_at,
     })),
-    zones: (claimsRaw ?? []).map((c) => {
-      const z = c.salon_zones as { id: string; name: string; city: string; is_active: boolean } | null;
-      return {
-        id: c.id,
-        zoneName: z?.name ?? '—',
-        city: z?.city ?? '—',
-        claimedAt: c.claimed_at,
-        releasedAt: c.released_at,
-        active: !!z?.is_active,
-      };
-    }),
     visits: (visitsRaw ?? []).map((v) => {
       const s = v.salons as { name: string; city: string } | null;
       return {

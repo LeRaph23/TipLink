@@ -212,25 +212,6 @@ export async function toggleZoneActive(
   }
 }
 
-export async function releaseZoneClaim(zoneId: string): Promise<VoidResult> {
-  try {
-    await requireSuperAdminUser();
-    const service = createServiceClient();
-    const { error } = await service
-      .from('ambassador_zone_claims')
-      .update({ released_at: new Date().toISOString(), released_by_admin: true })
-      .eq('zone_id', zoneId)
-      .is('released_at', null);
-    if (error) return { ok: false, error: error.message };
-
-    await logAdminAction('salons.zone_release', { zoneId });
-    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
-  }
-}
-
 // ─── Manual salon CRUD ───────────────────────────────────────────────────────
 export type CreateSalonInput = {
   zoneId: string | null;

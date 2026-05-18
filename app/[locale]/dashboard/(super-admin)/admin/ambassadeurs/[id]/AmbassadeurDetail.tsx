@@ -42,7 +42,6 @@ export interface FicheData {
   sales: { id: string; pack: string; commissionCents: number; createdAt: string; voided: boolean; salon: string | null }[];
   payouts: { id: string; amountCents: number; status: string; requestedAt: string; paidAt: string | null; failureReason: string | null }[];
   bonusCredits: { kind: string; periodKey: string; amountCents: number; createdAt: string }[];
-  zones: { id: string; zoneName: string; city: string; claimedAt: string; releasedAt: string | null; active: boolean }[];
   visits: { id: string; salonName: string; salonCity: string; visitedAt: string; flyerLeft: boolean; convinced: 'yes' | 'maybe' | 'no'; rating: number; notes: string | null; followUpAt: string | null; locationVerified: boolean; distanceM: number | null }[];
   filleuls: { id: string; name: string; salesCount: number; validated: boolean }[];
   referralRewards: { id: string; reason: string; amountCents: number; status: string; createdAt: string; creditedAt: string | null }[];
@@ -134,7 +133,7 @@ export function AmbassadeurDetail({ data }: { data: FicheData }) {
 
   const tabs: { key: SectionKey; label: string; count?: number }[] = [
     { key: 'activite', label: 'Activité', count: data.sales.length },
-    { key: 'terrain', label: 'Terrain', count: data.zones.length + data.visits.length },
+    { key: 'terrain', label: 'Terrain', count: data.visits.length },
     { key: 'parrainage', label: 'Parrainage', count: data.filleuls.length },
     { key: 'paiements', label: 'Paiements', count: data.payouts.length },
     { key: 'communications', label: 'Communications', count: data.contracts.length + data.emails.length },
@@ -329,33 +328,6 @@ function ActiviteSection({ data }: { data: FicheData }) {
 function TerrainSection({ data }: { data: FicheData }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <section style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0, padding: '16px 18px 10px' }}>
-          Zones réclamées
-        </h3>
-        {data.zones.length === 0 ? (
-          <Empty>Aucune zone réclamée.</Empty>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr><th style={thStyle}>Zone</th><th style={thStyle}>Ville</th><th style={thStyle}>Réclamée le</th><th style={thStyle}>État</th></tr></thead>
-              <tbody>
-                {data.zones.map((z) => (
-                  <tr key={z.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ ...tdStyle, fontWeight: 600 }}>{z.zoneName}</td>
-                    <td style={tdStyle}>{z.city}</td>
-                    <td style={tdStyle}>{fmtDate(z.claimedAt)}</td>
-                    <td style={tdStyle}>
-                      {z.releasedAt ? <Badge tone="neutral">Libérée</Badge> : <Badge tone="accent">🔒 Active</Badge>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
       <section style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0, padding: '16px 18px 10px' }}>
           Visites terrain

@@ -67,8 +67,6 @@ export type AdminZoneOverlay = {
   city: string;
   name: string;
   bbox: { minLat: number; minLon: number; maxLat: number; maxLon: number } | null;
-  claimedByAmbassadorId: string | null;
-  claimedByAmbassadorName: string | null;
 };
 
 type CommonProps = {
@@ -542,18 +540,6 @@ function AdminMap({
 }: AdminProps & { theme: 'light' | 'dark' }) {
   const f = useAdminFilters(salons);
 
-  // For bbox overlay: derive a deterministic colour per ambassador
-  const ambColor = useMemo(() => {
-    const palette = ['#E57A97', '#2563eb', '#16a34a', '#f59e0b', '#a855f7', '#06b6d4', '#ef4444', '#84cc16'];
-    const m = new Map<string, string>();
-    for (const z of zones ?? []) {
-      if (z.claimedByAmbassadorId && !m.has(z.claimedByAmbassadorId)) {
-        m.set(z.claimedByAmbassadorId, palette[m.size % palette.length]);
-      }
-    }
-    return m;
-  }, [zones]);
-
   return (
     <div>
       <div className="salon-map-filters">
@@ -617,12 +603,7 @@ function AdminMap({
                 [z.bbox.minLat, z.bbox.minLon],
                 [z.bbox.maxLat, z.bbox.maxLon],
               ]}
-              pathOptions={{
-                color: z.claimedByAmbassadorId ? (ambColor.get(z.claimedByAmbassadorId) ?? '#888') : '#888',
-                weight: 1.5,
-                fillOpacity: z.claimedByAmbassadorId ? 0.12 : 0.05,
-                dashArray: z.claimedByAmbassadorId ? undefined : '4',
-              }}
+              pathOptions={{ color: '#888', weight: 1.5, fillOpacity: 0.05, dashArray: '4' }}
             />
           ))}
 
@@ -639,7 +620,6 @@ function AdminMap({
       </div>
       <div className="salon-map-counter">
         {f.filtered.length} établissement{f.filtered.length > 1 ? 's' : ''} affiché{f.filtered.length > 1 ? 's' : ''} / {salons.length}
-        {f.state.showBboxes && (zones ?? []).length > 0 && ` · ${(zones ?? []).filter((z) => z.claimedByAmbassadorId).length} zone(s) réservée(s)`}
       </div>
     </div>
   );
