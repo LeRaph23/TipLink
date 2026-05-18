@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
+import { onTipSucceeded, onStaffBankingComplete, onPayoutFailed } from '@/lib/email/lifecycle-events';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
 import { createPackInvoiceForPaymentIntent } from '@/lib/stripe/pack-invoice';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
@@ -296,6 +297,10 @@ async function handleEvent(
           }).catch((err) => console.error('[email] sendTipReceipt failed', err));
         }
       }
+
+      // Lifecycle: first-tip celebration + earnings milestones (non-blocking).
+      await onTipSucceeded(supabase, transactionId).catch((err) =>
+        console.error('[lifecycle] onTipSucceeded failed', err));
 
       break;
     }
@@ -609,6 +614,9 @@ async function handleEvent(
             last_payout_failure_at: new Date().toISOString(),
           } as never)
           .eq('id', staff.id);
+
+        await onPayoutFailed(supabase, staff.id).catch((err) =>
+          console.error('[lifecycle] onPayoutFailed failed', err));
       }
 
       break;
@@ -629,10 +637,20 @@ async function handleEvent(
     case 'account.updated': {
       const account = event.data.object as Stripe.Account;
       if (account.details_submitted && account.charges_enabled) {
-        await supabase
+        const { data: staffRow } = await supabase
           .from('staff_profiles')
-          .update({ onboarding_status: 'complete' })
-          .eq('stripe_account_id', account.id);
+          .select('id, onboarding_status')
+          .eq('stripe_account_id', account.id)
+          .maybeSingle();
+        // Only act on the actual transition into 'complete'.
+        if (staffRow && staffRow.onboarding_status !== 'complete') {
+          await supabase
+            .from('staff_profiles')
+            .update({ onboarding_status: 'complete' })
+            .eq('id', staffRow.id);
+          await onStaffBankingComplete(supabase, staffRow.id).catch((err) =>
+            console.error('[lifecycle] onStaffBankingComplete failed', err));
+        }
       }
       break;
     }

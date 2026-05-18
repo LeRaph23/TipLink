@@ -1148,3 +1148,309 @@ export async function sendStaffInviteEmail(opts: {
   });
   return { ok: !result.error };
 }
+
+// ─── Lifecycle / automated emails ─────────────────────────────────────────────
+// Personalized onboarding, activation and retention emails (FR), consistent
+// with the cold-email / ambassador communication families. Each function
+// returns the Resend message id (null when email is disabled) and THROWS on a
+// send error so the lifecycle engine (lib/email/lifecycle.ts) records a 'failed'
+// log row.
+
+const LIFECYCLE_TONE: Record<'green' | 'pink' | 'blue' | 'amber', string> = {
+  green: '#22c55e', pink: '#E57A97', blue: '#60a5fa', amber: '#f59e0b',
+};
+
+function lifecycleFooter(unsubscribeUrl: string | null | undefined): string {
+  if (!unsubscribeUrl) return '';
+  return `<tr><td class="divider-strong text-muted" style="padding:20px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
+    Vous recevez ces conseils pour tirer le meilleur de Digitip. Vous pouvez
+    <a href="${unsubscribeUrl}" style="color:#E57A97">ne plus recevoir ces emails</a>. · Digitip · support@digitip.app
+  </td></tr>`;
+}
+
+function lifecycleBody(opts: {
+  badge: string;
+  tone: 'green' | 'pink' | 'blue' | 'amber';
+  title: string;
+  intro: string;
+  bullets?: string[];
+  ctaLabel?: string;
+  ctaUrl?: string;
+  note?: string;
+  unsubscribeUrl?: string | null;
+}): string {
+  const tone = LIFECYCLE_TONE[opts.tone];
+  const bullets = opts.bullets && opts.bullets.length
+    ? `<tr><td style="padding:6px 32px 2px">
+        <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb">
+          <tr><td style="padding:14px 18px">
+            <div class="text-secondary" style="font-size:13.5px;color:#5a5a6a;line-height:1.85">
+              ${opts.bullets.map((b) => `<div>${b}</div>`).join('')}
+            </div>
+          </td></tr>
+        </table></td></tr>`
+    : '';
+  const cta = opts.ctaLabel && opts.ctaUrl
+    ? `<tr><td style="padding:18px 32px 6px">
+        <a href="${opts.ctaUrl}" style="display:inline-block;padding:13px 26px;background:#E57A97;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">${opts.ctaLabel}</a>
+      </td></tr>`
+    : '';
+  const note = opts.note
+    ? `<tr><td style="padding:14px 32px 30px"><p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${opts.note}</p></td></tr>`
+    : `<tr><td style="padding:0 0 14px"></td></tr>`;
+  return `
+    <tr><td class="divider" style="padding:30px 32px 20px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+    </td></tr>
+    <tr><td style="padding:26px 32px 0">
+      <div style="display:inline-block;background:${tone}22;color:${tone};font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;margin-bottom:14px">● ${opts.badge}</div>
+      <div class="text-primary" style="font-size:23px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;line-height:1.32">${opts.title}</div>
+    </td></tr>
+    <tr><td style="padding:14px 32px 8px">
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.7">${opts.intro}</div>
+    </td></tr>
+    ${bullets}
+    ${cta}
+    ${note}
+    ${lifecycleFooter(opts.unsubscribeUrl)}`;
+}
+
+async function lifecycleSend(to: string, subject: string, inner: string): Promise<{ id: string | null }> {
+  if (!resend) return { id: null };
+  const result = await resend.emails.send({ from: FROM, to, subject, html: themedLayout(inner) });
+  if (result.error) throw new Error(result.error.message || 'Resend send failed');
+  return { id: result.data?.id ?? null };
+}
+
+function money(cents: number, currency = 'EUR'): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
+/** Group admin — onboarding not completed (J+2 = step 1, J+5 = step 2). */
+export async function sendGroupOnboardingNudge(opts: {
+  to: string; firstName: string; setupUrl: string; step: 1 | 2; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, setupUrl, step, unsubscribeUrl } = opts;
+  if (step === 1) {
+    return lifecycleSend(to, `${firstName}, votre salon est à 2 minutes d'encaisser des pourboires`,
+      lifecycleBody({
+        badge: 'Configuration', tone: 'pink',
+        title: `${firstName}, finalisez votre espace Digitip`,
+        intro: `Votre commande est validée. Dernière étape : créer votre espace Digitip — <strong class="text-strong" style="color:#0f0f12">moins de 2 minutes</strong>.`,
+        bullets: ['① Nommez votre salon', '② Ajoutez vos employés', '③ Posez le SmartTag et encaissez'],
+        ctaLabel: 'Configurer mon espace →', ctaUrl: setupUrl,
+        note: 'Une question ? Répondez à cet email.',
+        unsubscribeUrl,
+      }));
+  }
+  return lifecycleSend(to, `${firstName}, vos SmartTags sont prêts — mais pas encore actifs`,
+    lifecycleBody({
+      badge: 'À finaliser', tone: 'amber',
+      title: `${firstName}, ne laissez pas filer vos pourboires`,
+      intro: `Vos SmartTags sont prêts. Tant que votre espace n'est pas configuré, <strong class="text-strong" style="color:#0f0f12">aucun pourboire ne peut être encaissé</strong>.`,
+      ctaLabel: 'Activer mon espace maintenant →', ctaUrl: setupUrl,
+      note: 'La configuration prend 2 minutes.',
+      unsubscribeUrl,
+    }));
+}
+
+/** Group admin — hardware delivered, no tip yet: place the tag. */
+export async function sendTagDeliveredPlaceNudge(opts: {
+  to: string; firstName: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, dashboardUrl, unsubscribeUrl } = opts;
+  return lifecycleSend(to, `${firstName}, vos SmartTags sont arrivés — posez-en un maintenant`,
+    lifecycleBody({
+      badge: 'Livré', tone: 'green',
+      title: `${firstName}, sortez vos SmartTags de la boîte`,
+      intro: `Vos SmartTags pour <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> sont livrés. Le bon réflexe : en poser un <strong class="text-strong" style="color:#0f0f12">aujourd'hui</strong>, bien visible.`,
+      bullets: [
+        '① Posez le SmartTag sur le comptoir ou la caisse',
+        '② Scannez-le une fois pour vérifier',
+        '③ Dites à votre équipe d\'en parler à chaque client',
+      ],
+      ctaLabel: 'Voir mon tableau de bord →', ctaUrl: dashboardUrl,
+      note: 'Les salons qui posent leur tag le jour de la livraison encaissent beaucoup plus dès la première semaine.',
+      unsubscribeUrl,
+    }));
+}
+
+/** Group admin — onboarded but team is empty: invite staff. */
+export async function sendInviteTeamNudge(opts: {
+  to: string; firstName: string; establishmentName: string; inviteUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, inviteUrl, unsubscribeUrl } = opts;
+  return lifecycleSend(to, `${firstName}, ajoutez votre équipe pour ne rien rater`,
+    lifecycleBody({
+      badge: 'Votre équipe', tone: 'pink',
+      title: `${firstName}, vos employés peuvent recevoir leurs pourboires`,
+      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> n'a pas encore d'équipe sur Digitip. Chaque employé ajouté peut recevoir ses pourboires directement sur son compte — et c'est un vrai argument pour les motiver.`,
+      ctaLabel: 'Ajouter mon équipe →', ctaUrl: inviteUrl,
+      note: 'Ça prend 30 secondes par personne : un nom, un email, c\'est tout.',
+      unsubscribeUrl,
+    }));
+}
+
+/** Group admin — live for a while, still zero succeeded tips. */
+export async function sendActivationNudge(opts: {
+  to: string; firstName: string; establishmentName: string; dashboardUrl: string; daysSince: number; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, dashboardUrl, daysSince, unsubscribeUrl } = opts;
+  return lifecycleSend(to, `${firstName}, toujours 0 pourboire — réglons ça ensemble`,
+    lifecycleBody({
+      badge: 'Activation', tone: 'amber',
+      title: `${firstName}, votre SmartTag n'a encore rien encaissé`,
+      intro: `Cela fait ${daysSince} jours que <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> est prêt, mais aucun pourboire n'est passé. Dans 9 cas sur 10, c'est une de ces 3 choses :`,
+      bullets: [
+        '① Le tag est rangé ou peu visible → mettez-le sur le comptoir, à hauteur des yeux',
+        '② L\'équipe n\'en parle pas → un simple « vous pouvez laisser un pourboire ici » suffit',
+        '③ Le tag n\'a jamais été testé → scannez-le pour vérifier qu\'il fonctionne',
+      ],
+      ctaLabel: 'Vérifier mon installation →', ctaUrl: dashboardUrl,
+      note: 'Bloqué ? Répondez à cet email — on regarde votre cas avec vous, gratuitement.',
+      unsubscribeUrl,
+    }));
+}
+
+/** Staff — invitation not yet claimed (J+3 = step 1, J+7 = step 2). */
+export async function sendStaffInviteReminder(opts: {
+  to: string; firstName: string; establishmentName: string; joinUrl: string; step: 1 | 2; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, joinUrl, step, unsubscribeUrl } = opts;
+  const subject = step === 1
+    ? `${firstName}, ${establishmentName} vous attend sur Digitip`
+    : `${firstName}, vos pourboires vous attendent toujours`;
+  return lifecycleSend(to, subject,
+    lifecycleBody({
+      badge: 'Invitation', tone: 'pink',
+      title: `${firstName}, activez votre compte Digitip`,
+      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> vous a invité(e) à recevoir vos pourboires directement sur votre compte bancaire. Votre compte n'est pas encore activé — il suffit d'une minute.`,
+      ctaLabel: 'Activer mon compte →', ctaUrl: joinUrl,
+      note: step === 2
+        ? 'Sans compte activé, vos pourboires ne peuvent pas vous être versés.'
+        : 'Une minute suffit — vos pourboires arrivent ensuite directement sur votre compte.',
+      unsubscribeUrl,
+    }));
+}
+
+/** Staff — account claimed but Stripe banking not started (J+1 / J+3 / J+7). */
+export async function sendStaffBankingNudge(opts: {
+  to: string; firstName: string; bankingUrl: string; step: 1 | 2 | 3; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, bankingUrl, step, unsubscribeUrl } = opts;
+  const subject = step === 3
+    ? `${firstName}, vos pourboires sont en attente`
+    : `${firstName}, reliez votre compte pour recevoir vos pourboires`;
+  return lifecycleSend(to, subject,
+    lifecycleBody({
+      badge: 'Compte bancaire', tone: step === 3 ? 'amber' : 'blue',
+      title: `${firstName}, une dernière étape : votre RIB`,
+      intro: `Vos pourboires ne peuvent pas vous être versés tant que votre compte bancaire n'est pas relié. C'est <strong class="text-strong" style="color:#0f0f12">2 minutes</strong>, sécurisé par Stripe, et vous n'avez plus jamais à y revenir.`,
+      ctaLabel: 'Relier mon compte →', ctaUrl: bankingUrl,
+      note: step === 3
+        ? 'Chaque pourboire reçu reste en attente tant que votre RIB n\'est pas renseigné.'
+        : 'Vos coordonnées bancaires sont gérées par Stripe — Digitip n\'y a jamais accès.',
+      unsubscribeUrl,
+    }));
+}
+
+/** Staff — Stripe banking just completed (transactional). */
+export async function sendStaffBankingComplete(opts: {
+  to: string; firstName: string;
+}): Promise<{ id: string | null }> {
+  const { to, firstName } = opts;
+  return lifecycleSend(to, `${firstName}, tout est prêt — vos pourboires arrivent`,
+    lifecycleBody({
+      badge: 'Compte activé', tone: 'green',
+      title: `${firstName}, votre compte est prêt 🎉`,
+      intro: `Votre compte bancaire est relié et vérifié. À partir de maintenant, chaque pourboire laissé sur votre SmartTag <strong class="text-strong" style="color:#0f0f12">arrive directement sur votre compte</strong>. Il ne reste plus qu'à en parler à vos clients !`,
+      note: 'Digitip ne conserve jamais vos fonds — tout passe directement par Stripe.',
+    }));
+}
+
+/** Group admin — establishment received its very first tip. */
+export async function sendFirstTipCelebration(opts: {
+  to: string; firstName: string; amount: number; currency: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, amount, currency, establishmentName, dashboardUrl, unsubscribeUrl } = opts;
+  return lifecycleSend(to, `🎉 Premier pourboire encaissé chez ${establishmentName} !`,
+    lifecycleBody({
+      badge: 'Premier pourboire', tone: 'green',
+      title: `${firstName}, ${escapeHtml(establishmentName)} vient d'encaisser son 1er pourboire !`,
+      intro: `Un client vient de laisser <strong class="text-strong" style="color:#0f0f12">${money(amount, currency)}</strong> via votre SmartTag. C'est la preuve que ça marche — maintenant, le but est d'en faire une habitude.`,
+      bullets: [
+        '→ Posez un SmartTag à chaque poste / chaque caisse',
+        '→ Demandez à l\'équipe de le mentionner à chaque encaissement',
+      ],
+      ctaLabel: 'Voir mes pourboires →', ctaUrl: dashboardUrl,
+      unsubscribeUrl,
+    }));
+}
+
+/** Staff — cumulative earnings crossed a milestone (€100 / €500). */
+export async function sendEarningsMilestone(opts: {
+  to: string; firstName: string; milestoneAmount: number; currency: string; dashboardUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, milestoneAmount, currency, dashboardUrl, unsubscribeUrl } = opts;
+  return lifecycleSend(to, `${firstName}, vous avez dépassé ${money(milestoneAmount, currency)} de pourboires 🏆`,
+    lifecycleBody({
+      badge: 'Palier atteint', tone: 'green',
+      title: `${firstName}, ${money(milestoneAmount, currency)} de pourboires — bravo !`,
+      intro: `Vos pourboires Digitip viennent de dépasser <strong class="text-strong" style="color:#0f0f12">${money(milestoneAmount, currency)}</strong> au total. Continuez à proposer le SmartTag à vos clients — le prochain palier arrive vite.`,
+      ctaLabel: 'Voir mon total →', ctaUrl: dashboardUrl,
+      unsubscribeUrl,
+    }));
+}
+
+/** Group admin — establishment was active then went quiet (recurring). */
+export async function sendReEngagementEmail(opts: {
+  to: string; firstName: string; establishmentName: string; daysQuiet: number; dashboardUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, daysQuiet, dashboardUrl, unsubscribeUrl } = opts;
+  return lifecycleSend(to, `${firstName}, ${daysQuiet} jours sans pourboire chez ${establishmentName}`,
+    lifecycleBody({
+      badge: 'Reprise', tone: 'amber',
+      title: `${firstName}, ça fait calme du côté de ${escapeHtml(establishmentName)}`,
+      intro: `Aucun pourboire n'est passé depuis <strong class="text-strong" style="color:#0f0f12">${daysQuiet} jours</strong>. Ça arrive — et ça se règle vite. La cause la plus fréquente : le SmartTag a disparu de la vue.`,
+      bullets: [
+        '① Le tag est-il toujours bien en place et visible ?',
+        '② L\'équipe le propose-t-elle encore aux clients ?',
+        '③ Un test rapide : scannez-le pour vérifier qu\'il répond',
+      ],
+      ctaLabel: 'Reprendre la main →', ctaUrl: dashboardUrl,
+      note: 'On peut regarder votre cas ensemble — répondez simplement à cet email.',
+      unsubscribeUrl,
+    }));
+}
+
+/** Group admin — weekly recap of tips collected (recurring, Mondays). */
+export async function sendWeeklyTipRecap(opts: {
+  to: string; firstName: string; establishmentName: string; weekTotal: number; tipCount: number; currency: string; dashboardUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, weekTotal, tipCount, currency, dashboardUrl, unsubscribeUrl } = opts;
+  return lifecycleSend(to, `${establishmentName} : ${money(weekTotal, currency)} de pourboires cette semaine`,
+    lifecycleBody({
+      badge: 'Récap de la semaine', tone: 'green',
+      title: `${firstName}, ${escapeHtml(establishmentName)} a encaissé ${money(weekTotal, currency)} 🎉`,
+      intro: `Cette semaine, vos clients ont laissé <strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${tipCount > 1 ? 's' : ''}</strong> via Digitip, pour un total de <strong class="text-strong" style="color:#0f0f12">${money(weekTotal, currency)}</strong>. Bel élan — gardez le SmartTag bien visible pour faire encore mieux.`,
+      ctaLabel: 'Voir le détail →', ctaUrl: dashboardUrl,
+      unsubscribeUrl,
+    }));
+}
+
+/** Staff — a Stripe payout failed (transactional). */
+export async function sendPayoutFailedAlert(opts: {
+  to: string; firstName: string; bankingUrl: string;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, bankingUrl } = opts;
+  return lifecycleSend(to, `${firstName}, action requise — un virement a échoué`,
+    lifecycleBody({
+      badge: 'Action requise', tone: 'amber',
+      title: `${firstName}, un virement de vos pourboires a échoué`,
+      intro: `Un virement de vos pourboires n'a pas pu aboutir. C'est presque toujours un RIB incorrect ou expiré. Vérifiez vos coordonnées bancaires pour débloquer vos paiements.`,
+      ctaLabel: 'Vérifier mon RIB →', ctaUrl: bankingUrl,
+      note: 'Vos pourboires restent en sécurité — ils seront versés dès que votre compte sera à jour.',
+    }));
+}

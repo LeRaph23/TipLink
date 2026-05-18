@@ -38,6 +38,9 @@ const serverSchema = z.object({
   // does not allow forging the other.
   CRON_SECRET: z.string().min(16),
   COLD_EMAIL_UNSUB_SECRET: z.string().min(16),
+  // Lifecycle-email unsubscribe link signing secret. Optional: when absent,
+  // automated emails simply omit the one-click unsubscribe link.
+  LIFECYCLE_EMAIL_UNSUB_SECRET: z.string().min(16).optional(),
   // Onboarding express token signing secret. Used by lib/auth/onboarding-token.
   ONBOARDING_TOKEN_SECRET: z.string().min(32),
   // Stripe Price IDs — required at boot so a missed env var cannot silently
@@ -65,6 +68,7 @@ export function serverEnv() {
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
     COLD_EMAIL_UNSUB_SECRET: process.env.COLD_EMAIL_UNSUB_SECRET,
+    LIFECYCLE_EMAIL_UNSUB_SECRET: process.env.LIFECYCLE_EMAIL_UNSUB_SECRET,
     ONBOARDING_TOKEN_SECRET: process.env.ONBOARDING_TOKEN_SECRET,
     STRIPE_PRICE_PACK_SOLO_HARDWARE: process.env.STRIPE_PRICE_PACK_SOLO_HARDWARE,
     STRIPE_PRICE_PACK_DUO_HARDWARE: process.env.STRIPE_PRICE_PACK_DUO_HARDWARE,
