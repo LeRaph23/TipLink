@@ -7,6 +7,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './salons-map.css';
 import { isOpenNow, mapsLink, type OpeningHours } from '@/lib/salon-hours';
+import { UserLocation } from './UserLocation';
 
 // ─── Public types ────────────────────────────────────────────────────────────
 
@@ -216,23 +217,6 @@ function FitToBbox({ bbox }: { bbox: CommonProps['initialBbox'] }) {
     fittedRef.current = true;
   }, [bbox, map]);
   return null;
-}
-
-function LocateButton() {
-  const map = useMap();
-  const onClick = () => {
-    if (!('geolocation' in navigator)) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 15, { duration: 0.8 }),
-      () => {},
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  };
-  return (
-    <button className="salon-map-locate" onClick={onClick} title="Me localiser" aria-label="Me localiser">
-      📍
-    </button>
-  );
 }
 
 // ─── Filter chip primitive ───────────────────────────────────────────────────
@@ -514,7 +498,7 @@ function AmbassadorMap({
         >
           <TileLayer url={theme === 'dark' ? TILES_DARK : TILES_LIGHT} attribution={TILES_ATTRIB} />
           <FitToBbox bbox={initialBbox ?? null} />
-          <LocateButton />
+          <UserLocation />
           <MarkerClusterGroup chunkedLoading iconCreateFunction={clusterIcon}>
             {filtered.map((s) => (
               <Marker key={s.id} position={[s.lat as number, s.lon as number]} icon={ambassadorIcon(s)}>
@@ -624,7 +608,7 @@ function AdminMap({
         >
           <TileLayer url={theme === 'dark' ? TILES_DARK : TILES_LIGHT} attribution={TILES_ATTRIB} />
           <FitToBbox bbox={initialBbox ?? null} />
-          <LocateButton />
+          <UserLocation />
 
           {f.state.showBboxes && (zones ?? []).map((z) => z.bbox && (
             <Rectangle

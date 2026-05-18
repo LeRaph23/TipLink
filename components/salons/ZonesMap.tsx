@@ -6,6 +6,7 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './salons-map.css';
+import { UserLocation } from './UserLocation';
 
 export type ZoneMapItem = {
   id: string;
@@ -101,6 +102,7 @@ export function ZonesMap({
       <MapContainer center={points[0] ?? FRANCE} zoom={11} scrollWheelZoom>
         <TileLayer url={theme === 'dark' ? TILES_DARK : TILES_LIGHT} attribution={TILES_ATTRIB} />
         <FitToZones points={points} />
+        <UserLocation />
         <MarkerClusterGroup chunkedLoading iconCreateFunction={clusterIcon} maxClusterRadius={55}>
           {zones.map((z) => (
             <Marker key={z.id} position={centroid(z.bbox)} icon={zoneIcon(z)}>
