@@ -86,10 +86,10 @@ export default async function CommunicationsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', margin: 0 }}>
           Communications ambassadeurs
-        </h1>
+        </h2>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
           Envoyer des emails templatés et des contrats à signer, avec audit complet.
         </p>

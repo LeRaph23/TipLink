@@ -198,10 +198,10 @@ export default async function AdminSalonsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', margin: 0 }}>
           Établissements & zones
-        </h1>
+        </h2>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
           Import OSM, attribution des zones, suivi des visites par ambassadeur.
         </p>
