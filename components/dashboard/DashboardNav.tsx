@@ -66,11 +66,24 @@ function MailIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="3" width="13" height="10" rx="1.5" /><path d="M2 4l6 5 6-5" /></svg>;
 }
 
-function NavLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
+function NavSpinner() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, animation: 'spin 0.6s linear infinite' }}>
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path d="M8 2a6 6 0 016 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NavLink({ href, icon, label, active, pending, onNavigate }: { href: string; icon: React.ReactNode; label: string; active: boolean; pending: boolean; onNavigate: () => void }) {
   const [hov, setHov] = useState(false);
   return (
     <Link
       href={href}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        if (!active) onNavigate();
+      }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
@@ -84,7 +97,8 @@ function NavLink({ href, icon, label, active }: { href: string; icon: React.Reac
       }}
     >
       <span style={{ color: active ? 'var(--accent)' : 'currentColor', flexShrink: 0 }}>{icon}</span>
-      {label}
+      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      {pending && <NavSpinner />}
     </Link>
   );
 }
@@ -107,6 +121,13 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
   const td = useTranslations('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Optimistic navigation: highlight the clicked tab immediately instead of
+  // waiting for the server render to commit (which can take a second or two).
+  // The pending highlight is honoured only until the route actually changes.
+  const [pendingNav, setPendingNav] = useState<{ href: string; from: string } | null>(null);
+  const pendingHref = pendingNav && pendingNav.from === pathname ? pendingNav.href : null;
+  const activePath = pendingHref ?? pathname;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -195,14 +216,18 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
           adminLinks.map(l => (
             <NavLink
               key={l.href} href={l.href} icon={l.icon} label={l.label}
-              active={l.href === '/dashboard/admin' ? pathname === '/dashboard/admin' : pathname.startsWith(l.href)}
+              active={l.href === '/dashboard/admin' ? activePath === '/dashboard/admin' : activePath.startsWith(l.href)}
+              pending={pendingHref === l.href}
+              onNavigate={() => setPendingNav({ href: l.href, from: pathname })}
             />
           ))
         ) : (
           visibleLinks.map(l => (
             <NavLink
               key={l.href} href={l.href} icon={l.icon} label={l.label}
-              active={l.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(l.href)}
+              active={l.href === '/dashboard' ? activePath === '/dashboard' : activePath.startsWith(l.href)}
+              pending={pendingHref === l.href}
+              onNavigate={() => setPendingNav({ href: l.href, from: pathname })}
             />
           ))
         )}
