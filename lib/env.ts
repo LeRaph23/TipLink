@@ -43,8 +43,9 @@ const serverSchema = z.object({
   LIFECYCLE_EMAIL_UNSUB_SECRET: z.string().min(16).optional(),
   // Onboarding express token signing secret. Used by lib/auth/onboarding-token.
   ONBOARDING_TOKEN_SECRET: z.string().min(32),
-  // Stripe Price IDs — required at boot so a missed env var cannot silently
-  // fall back to a dev/zero price.
+  // Stripe Price IDs. Validated whenever serverEnv() is read (lazily). The
+  // pricing layer (lib/stripe/pricing.ts) reads these directly and logs an
+  // error if missing rather than silently falling back to a dev price.
   STRIPE_PRICE_PACK_SOLO_HARDWARE: z.string().min(3),
   STRIPE_PRICE_PACK_DUO_HARDWARE: z.string().min(3),
   // Dev-only routes (seed-demo) gated by an explicit boolean rather than

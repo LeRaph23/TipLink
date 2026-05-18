@@ -29,8 +29,14 @@ function computeSavings(unit: number, list: number | null): number | null {
 async function fetchPackPricing(pack: PackId): Promise<PackPricing> {
   const priceId = process.env[`STRIPE_PRICE_PACK_${pack.toUpperCase()}_HARDWARE`];
 
-  // Fallback: lib/env.ts PACKS amounts (dev/local without Stripe IDs configured)
+  // Fallback: lib/env.ts PACKS amounts (dev/local without Stripe IDs configured).
+  // Logged loudly — a missing var in production means prices are NOT linked to
+  // Stripe, so the failure must never be silent.
   if (!priceId) {
+    console.error(
+      `[pricing] STRIPE_PRICE_PACK_${pack.toUpperCase()}_HARDWARE not set — ` +
+        'falling back to the hardcoded lib/env.ts amount; prices are not linked to Stripe.'
+    );
     const def = PACKS[pack];
     return {
       pack,

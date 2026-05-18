@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { validatePack } from '@/lib/order-validation';
 import { createClient } from '@/lib/supabase/server';
+import { getAllPackPricing } from '@/lib/stripe/pricing';
 import { OrderWizard } from './OrderWizard';
 
 export default async function OrderPage({
@@ -20,9 +21,12 @@ export default async function OrderPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Pricing comes from Stripe (single source of truth).
+  const pricing = await getAllPackPricing();
+
   return (
     <Suspense>
-      <OrderWizard pack={pack} locale={locale} isAuthenticated={!!user} />
+      <OrderWizard pack={pack} locale={locale} isAuthenticated={!!user} pricing={pricing} />
     </Suspense>
   );
 }
