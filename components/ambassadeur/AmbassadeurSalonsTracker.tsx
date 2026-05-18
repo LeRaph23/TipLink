@@ -150,8 +150,8 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
       <SectionShell title="Zones à démarcher">
         <div style={{ padding: '14px 16px 0' }}>
           <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.5 }}>
-            Choisis une <strong>zone</strong>{zoneCity ? ` à ${zoneCity}` : ''} pour voir ses salons.
-            La pastille indique le nombre de salons qu&apos;il reste à démarcher.
+            Choisis une <strong>zone</strong> pour voir ses salons{zoneCity ? <> à <strong>{zoneCity}</strong></> : null}.
+            La pastille indique le nombre de salons à démarcher.
           </div>
           {actionError && (
             <div style={{

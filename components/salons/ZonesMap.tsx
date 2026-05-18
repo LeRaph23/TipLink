@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './salons-map.css';
@@ -38,23 +39,34 @@ function centroid(b: ZoneMapItem['bbox']): [number, number] {
   return [(b.minLat + b.maxLat) / 2, (b.minLon + b.maxLon) / 2];
 }
 
-// Marker bubble shows the count of salons left to canvass: pink when there is
-// work left, green check when the zone is fully done, grey when it has no salon.
+// One pill per zone: pink with the count of salons still to canvass, or green
+// when the zone is fully done.
 function zoneIcon(zone: ZoneMapItem): L.DivIcon {
-  const allDone = zone.salonCount > 0 && zone.todoCount === 0;
-  const empty = zone.salonCount === 0;
-  const bg = empty ? '#94a3b8' : allDone ? '#16a34a' : '#E57A97';
-  const label = empty ? '–' : allDone ? '✓' : String(zone.todoCount);
+  const allDone = zone.todoCount === 0;
+  const bg = allDone ? '#16a34a' : '#E57A97';
+  const label = allDone ? '✓' : String(zone.todoCount);
   return L.divIcon({
     className: '',
     html:
       `<div style="display:flex;align-items:center;justify-content:center;` +
-      `min-width:32px;height:32px;padding:0 8px;background:${bg};color:#fff;` +
-      `font-weight:800;font-size:13px;border-radius:99px;border:2px solid #fff;` +
-      `box-shadow:0 2px 6px rgba(0,0,0,0.35);">${label}</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+      `min-width:30px;height:30px;padding:0 9px;background:${bg};color:#fff;` +
+      `font-weight:800;font-size:12.5px;border-radius:99px;border:2.5px solid #fff;` +
+      `box-shadow:0 2px 6px rgba(0,0,0,0.4);">${label}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
     popupAnchor: [0, -16],
+  });
+}
+
+// Cluster bubble — number of zones grouped at this zoom level.
+type ClusterLike = { getChildCount: () => number };
+function clusterIcon(cluster: ClusterLike): L.DivIcon {
+  const count = cluster.getChildCount();
+  const size = count < 10 ? 38 : count < 50 ? 46 : 54;
+  return L.divIcon({
+    html: `<div class="salon-cluster" style="width:${size}px;height:${size}px;">${count}</div>`,
+    className: '',
+    iconSize: [size, size],
   });
 }
 
@@ -73,7 +85,7 @@ function FitToZones({ points }: { points: Array<[number, number]> }) {
   return null;
 }
 
-/** A picker map: one marker per zone, tap a marker to open that zone's salons. */
+/** A picker map: zones grouped into clusters, tap a marker to open its salons. */
 export function ZonesMap({
   zones,
   onSelect,
@@ -89,26 +101,27 @@ export function ZonesMap({
       <MapContainer center={points[0] ?? FRANCE} zoom={11} scrollWheelZoom>
         <TileLayer url={theme === 'dark' ? TILES_DARK : TILES_LIGHT} attribution={TILES_ATTRIB} />
         <FitToZones points={points} />
-        {zones.map((z) => (
-          <Marker key={z.id} position={centroid(z.bbox)} icon={zoneIcon(z)}>
-            <Popup>
-              <div className="salon-popup">
-                <div className="salon-popup__title">{z.name}</div>
-                <div className="salon-popup__addr">{z.city}</div>
-                <div className="salon-popup__visit">
-                  {z.salonCount} salon{z.salonCount !== 1 ? 's' : ''}
-                  {z.salonCount > 0 &&
-                    (z.todoCount > 0 ? ` · ${z.todoCount} à démarcher` : ' · tout démarché ✓')}
+        <MarkerClusterGroup chunkedLoading iconCreateFunction={clusterIcon} maxClusterRadius={55}>
+          {zones.map((z) => (
+            <Marker key={z.id} position={centroid(z.bbox)} icon={zoneIcon(z)}>
+              <Popup>
+                <div className="salon-popup">
+                  <div className="salon-popup__title">{z.name}</div>
+                  <div className="salon-popup__addr">{z.city}</div>
+                  <div className="salon-popup__visit">
+                    {z.salonCount} salon{z.salonCount !== 1 ? 's' : ''}
+                    {z.todoCount > 0 ? ` · ${z.todoCount} à démarcher` : ' · tout démarché ✓'}
+                  </div>
+                  <div className="salon-popup__actions">
+                    <button className="salon-popup__btn primary" onClick={() => onSelect(z)}>
+                      Voir les salons →
+                    </button>
+                  </div>
                 </div>
-                <div className="salon-popup__actions">
-                  <button className="salon-popup__btn primary" onClick={() => onSelect(z)}>
-                    Voir les salons →
-                  </button>
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   );
