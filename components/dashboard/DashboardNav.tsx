@@ -175,7 +175,6 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
     { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
     { href: '/dashboard/admin/promo-codes',   label: ta('promoCodes'),  icon: <TagIcon /> },
     { href: '/dashboard/admin/ambassadeurs',  label: ta('ambassadeurs'), icon: <UsersIcon /> },
-    { href: '/dashboard/admin/salons',        label: ta('salons'),      icon: <EstIcon /> },
     { href: '/dashboard/admin/cold-email',    label: ta('prospects'),    icon: <MailIcon /> },
   ];
 

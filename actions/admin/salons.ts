@@ -74,7 +74,7 @@ export async function importZonesFromOsm(
     }
 
     await logAdminAction('salons.import_zones', { input: trimmed, inserted, skipped });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true, inserted, skipped };
   } catch (e) {
     const raw = e instanceof Error ? e.message : 'Erreur inconnue';
@@ -154,7 +154,7 @@ export async function importSalonsForZone(
     await logAdminAction('salons.import_salons', {
       zoneId, city: zone.city, zone: zone.name, inserted, skipped,
     });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true, inserted, skipped };
   } catch (e) {
     const raw = e instanceof Error ? e.message : 'Erreur inconnue';
@@ -184,7 +184,7 @@ export async function createZone(
     if (error || !data) return { ok: false, error: error?.message ?? 'Erreur DB' };
 
     await logAdminAction('salons.zone_create', { city: c, name: n });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true, id: data.id };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
@@ -205,7 +205,7 @@ export async function toggleZoneActive(
     if (error) return { ok: false, error: error.message };
 
     await logAdminAction(isActive ? 'salons.zone_activate' : 'salons.zone_deactivate', { zoneId });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
@@ -224,7 +224,7 @@ export async function releaseZoneClaim(zoneId: string): Promise<VoidResult> {
     if (error) return { ok: false, error: error.message };
 
     await logAdminAction('salons.zone_release', { zoneId });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
@@ -264,7 +264,7 @@ export async function createSalon(input: CreateSalonInput): Promise<Result<{ id:
     if (error || !data) return { ok: false, error: error?.message ?? 'Erreur DB' };
 
     await logAdminAction('salons.salon_create', { city, name });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true, id: data.id };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
@@ -285,7 +285,7 @@ export async function toggleSalonActive(
     if (error) return { ok: false, error: error.message };
 
     await logAdminAction(isActive ? 'salons.salon_activate' : 'salons.salon_deactivate', { salonId });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
@@ -347,7 +347,7 @@ export async function enrichSalonAddressesForZone(
     }
 
     await logAdminAction('salons.enrich_addresses', { zoneId, enriched, skipped });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return { ok: true, enriched, total: needsAddress.length, skipped };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
@@ -469,7 +469,7 @@ export async function enrichSalonsViaGoogleForZone(
       zoneId, candidates: candidates.length, matched, closed, missing,
       firstError: firstError ?? null,
     });
-    revalidatePath('/dashboard/admin/salons', 'page');
+    revalidatePath('/dashboard/admin/ambassadeurs/terrain', 'page');
     return {
       ok: true,
       enriched: matched,

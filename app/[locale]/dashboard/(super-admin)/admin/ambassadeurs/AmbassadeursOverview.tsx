@@ -144,7 +144,7 @@ export function AmbassadeursOverview({
       </div>
 
       {/* Pending payouts */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
+      <div id="payouts" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18, scrollMarginTop: 20 }}>
         <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 12px' }}>
           💸 Virements en attente
         </h2>

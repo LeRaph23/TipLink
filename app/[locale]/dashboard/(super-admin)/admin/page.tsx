@@ -271,8 +271,8 @@ export default async function AdminOverviewPage({
               <QuickAction href="/dashboard/admin/orders" label="Commandes" description="Voir les commandes en attente" />
               <QuickAction href="/dashboard/admin/smarttags" label="SmartTags" description="Gérer le stock NFC" />
               <QuickAction href="/dashboard/admin/users" label="Utilisateurs" description="Rôles et accès" />
-              <QuickAction href="/dashboard/admin/ambassadeurs" label="Ambassadeurs" description="Candidatures et recrutements" />
-              <QuickAction href="/dashboard/admin/salons" label="Établissements & zones" description="Suivi terrain des ambassadeurs" />
+              <QuickAction href="/dashboard/admin/ambassadeurs" label="Ambassadeurs" description="Pilotage du programme ambassadeurs" />
+              <QuickAction href="/dashboard/admin/ambassadeurs/terrain" label="Terrain" description="Zones, établissements & visites" />
               <QuickAction href="/dashboard/admin/cold-email" label="Prospection" description="Scraper SIRENE & tableau de suivi" />
               <QuickAction href="/dashboard/admin/emails" label="Emails automatiques" description="Suivi des relances & onboarding" />
             </div>
