@@ -111,12 +111,12 @@ export function ZonesMap({
                   <div className="salon-popup__title">{z.name}</div>
                   <div className="salon-popup__addr">{z.city}</div>
                   <div className="salon-popup__visit">
-                    {z.salonCount} salon{z.salonCount !== 1 ? 's' : ''}
+                    {z.salonCount} établissement{z.salonCount !== 1 ? 's' : ''}
                     {z.todoCount > 0 ? ` · ${z.todoCount} à démarcher` : ' · tout démarché ✓'}
                   </div>
                   <div className="salon-popup__actions">
                     <button className="salon-popup__btn primary" onClick={() => onSelect(z)}>
-                      Voir les salons →
+                      Voir les établissements →
                     </button>
                   </div>
                 </div>
