@@ -14,6 +14,15 @@ const SalonsMap = dynamic(
   ) }
 );
 
+const ZonesMap = dynamic(
+  () => import('@/components/salons/ZonesMap').then((m) => m.ZonesMap),
+  { ssr: false, loading: () => (
+    <div style={{ height: '60vh', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13, background: 'var(--surface-2)', borderRadius: 'var(--radius)' }}>
+      Chargement de la carte…
+    </div>
+  ) }
+);
+
 type Bbox = { minLat: number; minLon: number; maxLat: number; maxLon: number };
 type ZoneSummary = {
   id: string;
@@ -41,6 +50,24 @@ function fmtDate(iso: string) {
 
 const mapsLink = buildMapsLink;
 
+// Map/list preference persisted per screen (hydration-safe localStorage read).
+function usePersistedView(key: string): ['map' | 'list', (v: 'map' | 'list') => void] {
+  const [view, setView] = useState<'map' | 'list'>('map');
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem(key);
+    if (saved === 'list' || saved === 'map') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setView(saved);
+    }
+  }, [key]);
+  const change = useCallback((v: 'map' | 'list') => {
+    setView(v);
+    if (typeof window !== 'undefined') window.localStorage.setItem(key, v);
+  }, [key]);
+  return [view, change];
+}
+
 export function AmbassadeurSalonsTracker({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
   const [zones, setZones] = useState<ZoneSummary[]>([]);
@@ -51,21 +78,8 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
   const [zoneBbox, setZoneBbox] = useState<Bbox | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeVisitFor, setActiveVisitFor] = useState<Salon | null>(null);
-  const [view, setView] = useState<'map' | 'list'>('map');
-
-  // Persisted view choice (hydration-safe localStorage read).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const saved = window.localStorage.getItem('tiplink:salons-view');
-    if (saved === 'list' || saved === 'map') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setView(saved);
-    }
-  }, []);
-  const onChangeView = useCallback((v: 'map' | 'list') => {
-    setView(v);
-    if (typeof window !== 'undefined') window.localStorage.setItem('tiplink:salons-view', v);
-  }, []);
+  const [view, onChangeView] = usePersistedView('tiplink:salons-view');
+  const [zonesView, onChangeZonesView] = usePersistedView('tiplink:zones-view');
 
   const refreshZones = useCallback(async () => {
     try {
@@ -129,12 +143,15 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
 
   // ── Zone overview ───────────────────────────────────────────────────────────
   if (!selectedZone) {
+    const bboxZones = zones.filter((z): z is ZoneSummary & { bbox: Bbox } => z.bbox != null);
+    const hiddenCount = zones.length - bboxZones.length;
+
     return (
       <SectionShell title="Zones à démarcher">
-        <div style={{ padding: '18px 16px' }}>
-          <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 14, lineHeight: 1.5 }}>
-            Choisis une <strong>zone</strong>{zoneCity ? ` à ${zoneCity}` : ''} pour voir ses salons sur la carte.
-            Le compteur indique les salons qu&apos;il reste à démarcher.
+        <div style={{ padding: '14px 16px 0' }}>
+          <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.5 }}>
+            Choisis une <strong>zone</strong>{zoneCity ? ` à ${zoneCity}` : ''} pour voir ses salons.
+            La pastille indique le nombre de salons qu&apos;il reste à démarcher.
           </div>
           {actionError && (
             <div style={{
@@ -143,18 +160,45 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
               fontSize: 12, marginBottom: 10,
             }}>{actionError}</div>
           )}
-          {zones.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: 16 }}>
-              Aucune zone disponible pour le moment. Reviens plus tard.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {zones.map((z) => (
-                <ZoneCard key={z.id} zone={z} onOpen={() => openZone(z)} />
-              ))}
-            </div>
-          )}
         </div>
+
+        {zones.length === 0 ? (
+          <div style={{ padding: '4px 16px 20px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>
+            Aucune zone disponible pour le moment. Reviens plus tard.
+          </div>
+        ) : (
+          <>
+            <ViewToggle view={zonesView} onChange={onChangeZonesView} />
+
+            {zonesView === 'map' && bboxZones.length > 0 ? (
+              <div style={{ padding: 12 }}>
+                <ZonesMap zones={bboxZones} onSelect={(z) => { void openZone(z); }} />
+                {hiddenCount > 0 && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-3)', textAlign: 'center' }}>
+                    {hiddenCount} zone{hiddenCount > 1 ? 's' : ''} sans localisation — en vue Liste.
+                  </div>
+                )}
+              </div>
+            ) : zonesView === 'map' ? (
+              <div style={{ padding: '4px 16px 16px' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: '10px 0 14px' }}>
+                  Aucune zone géolocalisée — voici la liste.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {zones.map((z) => (
+                    <ZoneCard key={z.id} zone={z} onOpen={() => openZone(z)} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '12px 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {zones.map((z) => (
+                  <ZoneCard key={z.id} zone={z} onOpen={() => openZone(z)} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </SectionShell>
     );
   }
@@ -214,28 +258,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
         </div>
       ) : (
         <>
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', gap: 4 }}>
-            <button
-              onClick={() => onChangeView('map')}
-              style={{
-                padding: '6px 14px', borderRadius: 99,
-                background: view === 'map' ? 'var(--accent-muted)' : 'transparent',
-                color: view === 'map' ? 'var(--accent)' : 'var(--text-3)',
-                border: `1px solid ${view === 'map' ? 'var(--accent-border)' : 'var(--border)'}`,
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}
-            >🗺️ Carte</button>
-            <button
-              onClick={() => onChangeView('list')}
-              style={{
-                padding: '6px 14px', borderRadius: 99,
-                background: view === 'list' ? 'var(--accent-muted)' : 'transparent',
-                color: view === 'list' ? 'var(--accent)' : 'var(--text-3)',
-                border: `1px solid ${view === 'list' ? 'var(--accent-border)' : 'var(--border)'}`,
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}
-            >📋 Liste</button>
-          </div>
+          <ViewToggle view={view} onChange={onChangeView} />
 
           {view === 'map' ? (
             <div style={{ padding: 12 }}>
@@ -283,6 +306,28 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
         />
       )}
     </SectionShell>
+  );
+}
+
+function ViewToggle({ view, onChange }: { view: 'map' | 'list'; onChange: (v: 'map' | 'list') => void }) {
+  return (
+    <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', gap: 4 }}>
+      {(['map', 'list'] as const).map((v) => (
+        <button
+          key={v}
+          onClick={() => onChange(v)}
+          style={{
+            padding: '6px 14px', borderRadius: 99,
+            background: view === v ? 'var(--accent-muted)' : 'transparent',
+            color: view === v ? 'var(--accent)' : 'var(--text-3)',
+            border: `1px solid ${view === v ? 'var(--accent-border)' : 'var(--border)'}`,
+            fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          {v === 'map' ? '🗺️ Carte' : '📋 Liste'}
+        </button>
+      ))}
+    </div>
   );
 }
 
