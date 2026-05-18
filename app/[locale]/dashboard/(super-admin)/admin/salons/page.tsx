@@ -200,7 +200,7 @@ export default async function AdminSalonsPage({
     <div>
       <div style={{ marginBottom: 22 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          Salons & zones
+          Établissements & zones
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
           Import OSM, attribution des zones, suivi des visites par ambassadeur.

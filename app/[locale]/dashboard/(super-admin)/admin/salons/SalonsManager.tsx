@@ -80,7 +80,7 @@ export function SalonsManager({
   const [pending, startTransition] = useTransition();
   // Live progress of the "re-import everything" run (null when idle).
   const [reimport, setReimport] = useState<
-    { done: number; total: number; imported: number; failed: number } | null
+    { done: number; total: number; imported: number; current: string; failed: number } | null
   >(null);
 
   const claimByZone = new Map(activeClaims.map((c) => [c.zoneId, c]));
@@ -119,7 +119,7 @@ export function SalonsManager({
   const runImportAllEmptyZones = () => {
     if (emptyZones.length === 0) return;
     if (!confirm(
-      `Importer les salons des ${emptyZones.length} zones encore vides ? Cela peut prendre ~${Math.ceil(emptyZones.length * 1.5 / 60)} min.`
+      `Importer les établissements des ${emptyZones.length} zones encore vides ? Cela peut prendre ~${Math.ceil(emptyZones.length * 1.5 / 60)} min.`
     )) return;
 
     setFeedback({ type: 'ok', msg: `Import en cours sur ${emptyZones.length} zones…` });
@@ -139,7 +139,7 @@ export function SalonsManager({
       }
       setFeedback({
         type: failed === 0 ? 'ok' : 'err',
-        msg: `${emptyZones.length - failed}/${emptyZones.length} zones traitées · ${totalInserted} salons importés, ${totalSkipped} ignorés${failed ? ` · ${failed} échec(s)` : ''}.`,
+        msg: `${emptyZones.length - failed}/${emptyZones.length} zones traitées · ${totalInserted} établissements importés, ${totalSkipped} ignorés${failed ? ` · ${failed} échec(s)` : ''}.`,
       });
     });
   };
@@ -150,28 +150,48 @@ export function SalonsManager({
     if (activeZones.length === 0 || reimport) return;
     if (!confirm(
       `Réimporter les établissements des ${activeZones.length} zones actives depuis OpenStreetMap ? ` +
-      `Cela peut prendre ~${Math.ceil((activeZones.length * 2) / 60)} min — garde cet onglet ouvert.`
+      `Les zones rate-limitées sont réessayées automatiquement — ça peut être long, garde cet onglet ouvert.`
     )) return;
 
+    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
     setFeedback(null);
-    setReimport({ done: 0, total: activeZones.length, imported: 0, failed: 0 });
+
     let imported = 0;
-    let failed = 0;
+    const failedZones: string[] = [];
+
     for (let i = 0; i < activeZones.length; i++) {
-      try {
-        const r = await importSalonsForZone(activeZones[i].id);
-        if (r.ok) imported += r.inserted;
-        else failed += 1;
-      } catch {
-        failed += 1;
+      const z = activeZones[i];
+      const label = `${z.city} · ${z.name}`;
+      setReimport({ done: i, total: activeZones.length, imported, current: label, failed: failedZones.length });
+
+      // Retry the zone until it succeeds — an OSM rate-limit is transient and
+      // skipping would leave a silent gap. Only a structural error (zone gone
+      // / no bbox) stops the retries; otherwise we keep going, with backoff.
+      for (let attempt = 1; ; attempt++) {
+        try {
+          const r = await importSalonsForZone(z.id);
+          if (r.ok) { imported += r.inserted; break; }
+          if (/introuvable|bbox/i.test(r.error)) { failedZones.push(label); break; }
+        } catch {
+          // network error — fall through and retry
+        }
+        if (attempt >= 12) { failedZones.push(label); break; }
+        setReimport({
+          done: i, total: activeZones.length, imported,
+          current: `${label} — nouvel essai (${attempt})…`, failed: failedZones.length,
+        });
+        await sleep(Math.min(3000 * attempt, 30000));
       }
-      setReimport({ done: i + 1, total: activeZones.length, imported, failed });
-      if (i + 1 < activeZones.length) await new Promise((res) => setTimeout(res, 600));
+
+      if (i + 1 < activeZones.length) await sleep(500);
     }
+
     setReimport(null);
     setFeedback({
-      type: failed === 0 ? 'ok' : 'err',
-      msg: `Ré-import terminé : ${imported} nouvel(s) établissement(s) importé(s) sur ${activeZones.length} zones${failed ? ` · ${failed} zone(s) en échec` : ''}.`,
+      type: failedZones.length === 0 ? 'ok' : 'err',
+      msg: failedZones.length === 0
+        ? `Ré-import terminé : ${imported} nouvel(s) établissement(s) importé(s) sur ${activeZones.length} zones.`
+        : `Ré-import terminé : ${imported} importé(s). ${failedZones.length} zone(s) en échec : ${failedZones.join(', ')}.`,
     });
   };
 
@@ -180,7 +200,7 @@ export function SalonsManager({
     // Nominatim throttles to 1 req/s, so the cost in seconds ≈ total missing.
     const seconds = totalMissingAddresses;
     if (!confirm(
-      `Enrichir les adresses des ${totalMissingAddresses} salons manquants via Nominatim ? ` +
+      `Enrichir les adresses des ${totalMissingAddresses} établissements manquants via Nominatim ? ` +
       `Cela peut prendre ~${Math.ceil(seconds / 60)} min (limite 1 req/s).`
     )) return;
 
@@ -212,7 +232,7 @@ export function SalonsManager({
     startTransition(async () => {
       const res = await importSalonsForZone(zoneId);
       if (res.ok) {
-        setFeedback({ type: 'ok', msg: `${res.inserted} salon(s) importé(s), ${res.skipped} ignoré(s).` });
+        setFeedback({ type: 'ok', msg: `${res.inserted} établissement(s) importé(s), ${res.skipped} ignoré(s).` });
       } else {
         setFeedback({ type: 'err', msg: res.error });
       }
@@ -249,9 +269,9 @@ export function SalonsManager({
       const res = await enrichSalonsViaGoogleForZone(zoneId, { force });
       if (res.ok) {
         if (res.total === 0) {
-          setFeedback({ type: 'ok', msg: 'Aucun salon à enrichir.' });
+          setFeedback({ type: 'ok', msg: 'Aucun établissement à enrichir.' });
         } else {
-          const base = `${res.matched}/${res.total} salons enrichis. ${res.closed} fermé(s) définitivement → désactivés. ${res.missing} introuvable(s) sur Google.`;
+          const base = `${res.matched}/${res.total} établissements enrichis. ${res.closed} fermé(s) définitivement → désactivés. ${res.missing} introuvable(s) sur Google.`;
           const suffix = res.apiError ? ` ⚠ Erreur API : ${res.apiError}` : '';
           setFeedback({
             type: res.apiError ? 'err' : 'ok',
@@ -271,7 +291,7 @@ export function SalonsManager({
     const zonesForCity = zones.filter((z) => z.city === city && z.isActive);
     if (zonesForCity.length === 0) return;
     const labels: Record<Bulk, string> = {
-      salons:    `Réimporter les salons des ${zonesForCity.length} zones de ${city} ?`,
+      salons:    `Réimporter les établissements des ${zonesForCity.length} zones de ${city} ?`,
       google:    `Ré-enrichir Google sur les ${zonesForCity.length} zones de ${city} ? (consomme du quota API)`,
       addresses: `Ré-enrichir les adresses des ${zonesForCity.length} zones de ${city} via Nominatim ?`,
     };
@@ -303,7 +323,7 @@ export function SalonsManager({
       }
 
       const summary =
-        kind === 'salons'   ? `${okCount}/${zonesForCity.length} zones · ${totals.inserted} salons importés, ${totals.skipped} ignorés`
+        kind === 'salons'   ? `${okCount}/${zonesForCity.length} zones · ${totals.inserted} établissements importés, ${totals.skipped} ignorés`
       : kind === 'google'   ? `${okCount}/${zonesForCity.length} zones · ${totals.matched} matchés, ${totals.closed} fermés, ${totals.missing} introuvables`
       :                       `${okCount}/${zonesForCity.length} zones · ${totals.enriched} adresses enrichies`;
 
@@ -373,13 +393,22 @@ export function SalonsManager({
               <div>
                 <div style={{
                   display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6,
-                  fontSize: 12, color: 'var(--text-2)', marginBottom: 6,
+                  fontSize: 12, color: 'var(--text-2)', marginBottom: 4,
                 }}>
-                  <span><strong>Ré-import en cours…</strong> Zone {reimport.done} / {reimport.total}</span>
+                  <span>
+                    <strong>Ré-import en cours…</strong>{' '}
+                    Zone {Math.min(reimport.done + 1, reimport.total)} / {reimport.total}
+                  </span>
                   <span>
                     <strong style={{ color: 'var(--accent)' }}>{reimport.imported}</strong>{' '}
                     établissement{reimport.imported !== 1 ? 's' : ''} importé{reimport.imported !== 1 ? 's' : ''}
                   </span>
+                </div>
+                <div style={{
+                  fontSize: 11, color: 'var(--text-3)', marginBottom: 6,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  📍 {reimport.current}
                 </div>
                 <div style={{ height: 8, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
                   <div style={{
@@ -391,7 +420,7 @@ export function SalonsManager({
                 </div>
                 {reimport.failed > 0 && (
                   <div style={{ fontSize: 11, color: 'var(--error)', marginTop: 4 }}>
-                    {reimport.failed} zone(s) en échec jusqu&apos;ici (OSM nous rate-limit) — à relancer plus tard.
+                    {reimport.failed} zone(s) définitivement en échec — la liste s&apos;affichera à la fin.
                   </div>
                 )}
               </div>
@@ -426,7 +455,7 @@ export function SalonsManager({
           }}>
             <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
               <strong style={{ color: 'var(--accent)' }}>{emptyZones.length}</strong> zone
-              {emptyZones.length > 1 ? 's' : ''} sans aucun salon importé pour l&apos;instant.
+              {emptyZones.length > 1 ? 's' : ''} sans aucun établissement importé pour l&apos;instant.
             </div>
             <button
               onClick={runImportAllEmptyZones}
@@ -437,7 +466,7 @@ export function SalonsManager({
                 fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
               }}
             >
-              ⚡ Importer les salons des zones vides ({emptyZones.length})
+              ⚡ Importer les établissements des zones vides ({emptyZones.length})
             </button>
           </div>
         )}
@@ -449,7 +478,7 @@ export function SalonsManager({
             display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
           }}>
             <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
-              <strong style={{ color: 'var(--warning)' }}>{totalMissingAddresses}</strong> salon
+              <strong style={{ color: 'var(--warning)' }}>{totalMissingAddresses}</strong> établissement
               {totalMissingAddresses > 1 ? 's' : ''} sans adresse,
               répartis sur {zonesWithMissingAddresses.length} zone
               {zonesWithMissingAddresses.length > 1 ? 's' : ''}.
@@ -487,7 +516,7 @@ export function SalonsManager({
           ['overview', `Vue par ville (${cityStats.length})`],
           ['map', `🗺️ Carte (${mapSalons.length})`],
           ['zones', `Zones (${zones.length})`],
-          ['salons', `Salons (${salons.length})`],
+          ['salons', `Établissements (${salons.length})`],
           ['visits', `Visites (${visits.length})`],
         ] as const).map(([key, label]) => (
           <button
@@ -570,7 +599,7 @@ function CityOverview({
               {c.city}
             </div>
             <Row label="Zones" value={c.zonesTotal} />
-            <Row label="Salons" value={c.salonsTotal} />
+            <Row label="Établissements" value={c.salonsTotal} />
             <Row label="Visités" value={`${c.salonsVisited} (${coverage}%)`} />
             <Row label="Chauds ⭐3" value={c.salonsHot} highlight />
             <Row label="Visites total" value={c.visitsTotal} />
@@ -590,18 +619,18 @@ function CityOverview({
                   onClick={() => onBulk(c.city, 'salons')}
                   disabled={pending}
                   style={cityBulkPrimaryStyle}
-                >🔄 {hasSalons ? 'Ré-importer' : 'Importer'} les salons OSM</button>
+                >🔄 {hasSalons ? 'Ré-importer' : 'Importer'} les établissements OSM</button>
                 <button
                   onClick={() => onBulk(c.city, 'google')}
                   disabled={pending || !hasSalons}
                   style={cityBulkGhostStyle(!hasSalons)}
-                  title={!hasSalons ? 'Importe d\'abord les salons' : ''}
+                  title={!hasSalons ? 'Importe d\'abord les établissements' : ''}
                 >⚙ Enrichir Google (horaires, fermés, note)</button>
                 <button
                   onClick={() => onBulk(c.city, 'addresses')}
                   disabled={pending || !hasSalons}
                   style={cityBulkGhostStyle(!hasSalons)}
-                  title={!hasSalons ? 'Importe d\'abord les salons' : ''}
+                  title={!hasSalons ? 'Importe d\'abord les établissements' : ''}
                 >📍 Enrichir les adresses (Nominatim)</button>
               </div>
             )}
@@ -763,13 +792,13 @@ function ZonesTable({
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {count > 0 ? 'Réimporter salons' : 'Importer salons'}
+                  {count > 0 ? 'Réimporter établissements' : 'Importer établissements'}
                 </button>
                 {count > 0 && (
                   <button
                     onClick={() => onEnrichAddresses(z.id, missing === 0)}
                     disabled={pending}
-                    title={missing > 0 ? `${missing} salon(s) sans adresse` : 'Toutes les adresses sont remplies — relance pour rafraîchir'}
+                    title={missing > 0 ? `${missing} établissement(s) sans adresse` : 'Toutes les adresses sont remplies — relance pour rafraîchir'}
                     style={{
                       padding: '8px 12px',
                       background: missing > 0 ? 'var(--warning-bg)' : 'var(--surface-2)',
@@ -788,8 +817,8 @@ function ZonesTable({
                     onClick={() => onEnrichGoogle(z.id, unenrichedGoogle === 0)}
                     disabled={pending}
                     title={unenrichedGoogle > 0
-                      ? `${unenrichedGoogle} salon(s) à enrichir via Google`
-                      : 'Tous les salons sont déjà enrichis — relance pour rafraîchir horaires & note'}
+                      ? `${unenrichedGoogle} établissement(s) à enrichir via Google`
+                      : 'Tous les établissements sont déjà enrichis — relance pour rafraîchir horaires & note'}
                     style={{
                       padding: '8px 12px',
                       background: 'var(--surface-2)', color: 'var(--text-2)',
@@ -846,7 +875,7 @@ function SalonsTable({
   if (salons.length === 0 && !creating) {
     return (
       <Empty>
-        Aucun salon. Importe une zone depuis OSM ou{' '}
+        Aucun établissement. Importe une zone depuis OSM ou{' '}
         <button onClick={() => setCreating(true)} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>ajoute-en un manuellement</button>.
       </Empty>
     );
@@ -859,7 +888,7 @@ function SalonsTable({
     }}>
       <div style={{ padding: 10, borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {!creating ? (
-          <button onClick={() => setCreating(true)} style={miniBtnStyle}>+ Salon manuel</button>
+          <button onClick={() => setCreating(true)} style={miniBtnStyle}>+ Établissement manuel</button>
         ) : (
           <>
             <select value={form.zoneId} onChange={(e) => setForm({ ...form, zoneId: e.target.value })} style={inputStyle}>
@@ -913,7 +942,7 @@ function VisitsTable({ visits }: { visits: Visit[] }) {
       <div style={{ maxHeight: 600, overflowY: 'auto', overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-2)' }}>
-            <tr><Th>Date</Th><Th>Ville</Th><Th>Salon</Th><Th>Ambassadeur</Th><Th>GPS</Th><Th>Flyer</Th><Th>Convaincu</Th><Th>Note</Th><Th>Relance</Th><Th>Notes</Th></tr>
+            <tr><Th>Date</Th><Th>Ville</Th><Th>Établissement</Th><Th>Ambassadeur</Th><Th>GPS</Th><Th>Flyer</Th><Th>Convaincu</Th><Th>Note</Th><Th>Relance</Th><Th>Notes</Th></tr>
           </thead>
           <tbody>
             {visits.map((v) => (
@@ -956,13 +985,13 @@ function VisitVerifBadge({ verified, distanceM }: { verified: boolean; distanceM
     ? {
         bg: 'var(--success-bg)', fg: 'var(--success)', bd: 'var(--success)',
         label: distanceM != null ? `📍 ${distanceM} m` : '📍 Vérifié',
-        title: distanceM != null ? `Visite à ${distanceM} m du salon` : 'Visite vérifiée par GPS',
+        title: distanceM != null ? `Visite à ${distanceM} m de l’établissement` : 'Visite vérifiée par GPS',
       }
     : distanceM != null
       ? {
           bg: 'var(--warning-bg)', fg: 'var(--warning)', bd: 'var(--warning)',
           label: `⚠ ${distanceM} m`,
-          title: `Visite enregistrée à ${distanceM} m du salon — hors du rayon de vérification`,
+          title: `Visite enregistrée à ${distanceM} m de l’établissement — hors du rayon de vérification`,
         }
       : {
           bg: 'var(--surface-2)', fg: 'var(--text-3)', bd: 'var(--border)',

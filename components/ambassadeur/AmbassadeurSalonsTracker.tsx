@@ -150,8 +150,8 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
       <SectionShell title="Zones à démarcher">
         <div style={{ padding: '14px 16px 0' }}>
           <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.5 }}>
-            Choisis une <strong>zone</strong> pour voir ses salons{zoneCity ? <> à <strong>{zoneCity}</strong></> : null}.
-            La pastille indique le nombre de salons à démarcher.
+            Choisis une <strong>zone</strong> pour voir ses établissements{zoneCity ? <> à <strong>{zoneCity}</strong></> : null}.
+            La pastille indique le nombre d’établissements à démarcher.
           </div>
           {actionError && (
             <div style={{
@@ -210,7 +210,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
 
   return (
     <SectionShell
-      title="Salons à démarcher"
+      title="Établissements à démarcher"
       right={
         <button
           onClick={backToZones}
@@ -235,7 +235,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 11, color: 'var(--text-3)' }}>
-          <span>📍 {salons.length} salons</span>
+          <span>📍 {salons.length} établissements</span>
           <span>✓ {visitedByMe.length} faits par toi</span>
           <span>🚫 {visitedByOthers.length} déjà faits</span>
         </div>
@@ -254,7 +254,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
         </div>
       ) : salons.length === 0 ? (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)', fontSize: 12 }}>
-          Aucun salon dans cette zone pour le moment. Préviens l&apos;admin.
+          Aucun établissement dans cette zone pour le moment. Préviens l&apos;admin.
         </div>
       ) : (
         <>
@@ -358,9 +358,9 @@ function ZoneCard({ zone, onOpen }: { zone: ZoneSummary; onOpen: () => void }) {
         </span>
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 6, fontSize: 11, color: 'var(--text-3)' }}>
-        <span>📍 {zone.salonCount} salon{zone.salonCount !== 1 ? 's' : ''}</span>
+        <span>📍 {zone.salonCount} établissement{zone.salonCount !== 1 ? 's' : ''}</span>
         {zone.salonCount === 0 ? (
-          <span>Aucun salon</span>
+          <span>Aucun établissement</span>
         ) : allDone ? (
           <span style={{ color: 'var(--success)', fontWeight: 600 }}>✓ Tout démarché</span>
         ) : (

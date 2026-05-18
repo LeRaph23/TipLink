@@ -638,7 +638,7 @@ function AdminMap({
         </MapContainer>
       </div>
       <div className="salon-map-counter">
-        {f.filtered.length} salon{f.filtered.length > 1 ? 's' : ''} affichés / {salons.length}
+        {f.filtered.length} établissement{f.filtered.length > 1 ? 's' : ''} affiché{f.filtered.length > 1 ? 's' : ''} / {salons.length}
         {f.state.showBboxes && (zones ?? []).length > 0 && ` · ${(zones ?? []).filter((z) => z.claimedByAmbassadorId).length} zone(s) réservée(s)`}
       </div>
     </div>
