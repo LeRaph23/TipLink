@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
@@ -5,6 +6,21 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS, type PackId } from '@/lib/env';
 import { htSuffix } from '@/lib/format-price';
 import { createClient } from '@/lib/supabase/server';
+import { pageAlternates } from '@/lib/seo';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'pricing' });
+  return {
+    title: t('title'),
+    description: t('subtitle'),
+    alternates: pageAlternates(locale, '/pricing'),
+  };
+}
 
 function Check() {
   return (

@@ -1,10 +1,14 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { LegalPage } from '@/components/legal/LegalPage';
+import { pageAlternates } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'legal.terms' });
-  return { title: `${t('title')} · Digitip` };
+  return {
+    title: `${t('title')} · Digitip`,
+    alternates: pageAlternates(locale, '/terms'),
+  };
 }
 
 export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
