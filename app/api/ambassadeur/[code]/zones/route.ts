@@ -15,9 +15,8 @@ async function authenticateAmbassador(req: NextRequest, code: string) {
 }
 
 // GET /api/ambassadeur/[code]/zones
-// Returns every active zone of the ambassador's city, each with its salon
-// counts. Zones are a browsing aid only — there is no exclusive reservation,
-// so any ambassador can open any zone.
+// Returns every active zone that has establishments, each with its counts.
+// Zones are a browsing aid only — no exclusive reservation.
 //   { city, zones: [{ id, city, name, salonCount, todoCount, bbox }] }
 export async function GET(
   req: NextRequest,
@@ -41,62 +40,27 @@ export async function GET(
     return NextResponse.json({ error: 'Compte inactif' }, { status: 403 });
   }
 
-  // Zones: the ambassador's city if set, else every city with zones.
-  const cityFilter = amb.city?.trim() || null;
-
-  let zonesQuery = supabase
-    .from('salon_zones')
-    .select('id, city, name, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
-    .eq('is_active', true)
-    .order('city')
-    .order('name');
-  if (cityFilter) zonesQuery = zonesQuery.eq('city', cityFilter);
-
-  const { data: allZones } = await zonesQuery;
-  const zoneIds = (allZones ?? []).map((z) => z.id);
-
-  // Per-zone counts: total active salons, and how many are still to canvass
-  // (no visit logged by anyone — a salon visited by another ambassador counts
-  // as done since zones are shared).
-  const { data: salons } = zoneIds.length
-    ? await supabase
-        .from('salons')
-        .select('id, zone_id')
-        .in('zone_id', zoneIds)
-        .eq('is_active', true)
-        .range(0, 99999)
-    : { data: [] as Array<{ id: string; zone_id: string | null }> };
-
-  const salonIds = (salons ?? []).map((s) => s.id);
-  const { data: visits } = salonIds.length
-    ? await supabase
-        .from('salon_visits')
-        .select('salon_id')
-        .in('salon_id', salonIds)
-        .range(0, 199999)
-    : { data: [] as Array<{ salon_id: string }> };
-
-  const visitedSalonIds = new Set((visits ?? []).map((v) => v.salon_id));
-
-  const salonCountByZone = new Map<string, number>();
-  const todoCountByZone = new Map<string, number>();
-  for (const s of salons ?? []) {
-    if (!s.zone_id) continue;
-    salonCountByZone.set(s.zone_id, (salonCountByZone.get(s.zone_id) ?? 0) + 1);
-    if (!visitedSalonIds.has(s.id)) {
-      todoCountByZone.set(s.zone_id, (todoCountByZone.get(s.zone_id) ?? 0) + 1);
-    }
+  // Zone metadata + per-zone counts are computed in one SQL pass — the function
+  // returns only zones that actually have establishments. Counting client-side
+  // would mean reading thousands of rows through PostgREST (row-capped) and an
+  // in(...) filter on every id, which silently fails at scale.
+  const { data: rows, error } = await supabase.rpc('ambassador_zone_counts');
+  if (error) {
+    return NextResponse.json({ error: 'Erreur de chargement des zones' }, { status: 500 });
   }
 
-  // Only zones that actually have salons are returned — a zone with no salon
-  // is nothing to canvass and would just clutter the picker.
-  const zones = (allZones ?? [])
+  // When the ambassador has a city set, scope the picker to it; otherwise show
+  // every zone with establishments.
+  const cityFilter = amb.city?.trim() || null;
+
+  const zones = (rows ?? [])
+    .filter((z) => !cityFilter || z.city === cityFilter)
     .map((z) => ({
-      id: z.id,
+      id: z.zone_id,
       city: z.city,
       name: z.name,
-      salonCount: salonCountByZone.get(z.id) ?? 0,
-      todoCount: todoCountByZone.get(z.id) ?? 0,
+      salonCount: Number(z.salon_count),
+      todoCount: Number(z.todo_count),
       bbox:
         z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
           ? {
@@ -107,7 +71,7 @@ export async function GET(
             }
           : null,
     }))
-    .filter((z) => z.salonCount > 0);
+    .sort((a, b) => a.city.localeCompare(b.city, 'fr') || a.name.localeCompare(b.name, 'fr'));
 
   return NextResponse.json({ city: amb.city, zones });
 }
