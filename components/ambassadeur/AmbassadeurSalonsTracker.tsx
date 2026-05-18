@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { isOpenNow, mapsLink as buildMapsLink } from '@/lib/salon-hours';
-import { CATEGORY_EMOJI, type AmbassadorSalon } from '@/components/salons/SalonsMap';
+import { CategoryIcon, type AmbassadorSalon } from '@/components/salons/SalonsMap';
 
 const SalonsMap = dynamic(
   () => import('@/components/salons/SalonsMap').then((m) => m.SalonsMap),
@@ -434,8 +434,9 @@ function SalonRow({
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-              {CATEGORY_EMOJI[salon.category] ?? ''} {salon.name}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <CategoryIcon category={salon.category} size={14} color="var(--text-3)" strokeWidth={2.2} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{salon.name}</span>
             </span>
             {salon.converted && (
               <span style={{

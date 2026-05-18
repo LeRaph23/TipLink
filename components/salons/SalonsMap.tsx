@@ -121,12 +121,41 @@ function makeIcon(className: string, badge?: string): L.DivIcon {
 }
 
 // Establishment categories — icon says *what*, colour says *where we're at*.
-export const CATEGORY_EMOJI: Record<string, string> = {
-  coiffure: '✂️', esthetique: '💅', restaurant: '🍽️', cafe: '☕', bar: '🍸',
-};
 export const CATEGORY_LABEL: Record<string, string> = {
   coiffure: 'Coiffure', esthetique: 'Esthétique', restaurant: 'Restaurant', cafe: 'Café', bar: 'Bar',
 };
+
+// Line-style category glyphs (Lucide geometry) — clean monochrome icons that
+// read well on the coloured marker discs, unlike platform emoji. Shared by the
+// Leaflet markers (as a string) and the <CategoryIcon> React component.
+const CATEGORY_ICON_INNER: Record<string, string> = {
+  coiffure: '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
+  esthetique: '<path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>',
+  restaurant: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  cafe: '<path d="M10 2v2"/><path d="M14 2v2"/><path d="M6 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>',
+  bar: '<path d="M8 22h8"/><path d="M12 11v11"/><path d="m19 3-7 8-7-8Z"/>',
+};
+const FALLBACK_ICON = '<circle cx="12" cy="12" r="9"/>';
+
+/** Category glyph as a React element — used in legends, popups and lists. */
+export function CategoryIcon({
+  category, size = 16, color = 'currentColor', strokeWidth = 2,
+}: { category: string; size?: number; color?: string; strokeWidth?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ flexShrink: 0 }}
+      dangerouslySetInnerHTML={{ __html: CATEGORY_ICON_INNER[category] ?? FALLBACK_ICON }}
+    />
+  );
+}
 
 // Status colour: converted (client) > closed > visited > to-canvass.
 function salonStatusColor(s: AmbassadorSalon): string {
@@ -138,10 +167,11 @@ function salonStatusColor(s: AmbassadorSalon): string {
 
 function ambassadorIcon(s: AmbassadorSalon): L.DivIcon {
   const color = salonStatusColor(s);
-  const emoji = CATEGORY_EMOJI[s.category] ?? '📍';
+  const inner = CATEGORY_ICON_INNER[s.category] ?? FALLBACK_ICON;
+  const svg = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
   return L.divIcon({
     className: 'salon-marker-wrapper',
-    html: `<div class="salon-marker-cat" style="background:${color}">${emoji}</div>`,
+    html: `<div class="salon-marker-cat" style="background:${color}">${svg}</div>`,
     iconSize: [30, 30],
     iconAnchor: [15, 15],
     popupAnchor: [0, -15],
@@ -330,8 +360,9 @@ function AmbassadorPopup({ salon, onLogVisit }: { salon: AmbassadorSalon; onLogV
     <div className="salon-popup">
       <div className="salon-popup__title">{salon.name}</div>
       <div className="salon-popup__row">
-        <span className="salon-popup__pill rate">
-          {CATEGORY_EMOJI[salon.category] ?? '📍'} {CATEGORY_LABEL[salon.category] ?? 'Établissement'}
+        <span className="salon-popup__pill rate" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <CategoryIcon category={salon.category} size={11} strokeWidth={2.4} />
+          {CATEGORY_LABEL[salon.category] ?? 'Établissement'}
         </span>
         {salon.converted && (
           <span
@@ -499,7 +530,14 @@ function AmbassadorMap({
         {filtered.length} établissement{filtered.length > 1 ? 's' : ''} affiché{filtered.length > 1 ? 's' : ''} / {salons.length}
       </div>
       <div style={{ margin: '8px 2px 0', fontSize: 11, color: 'var(--text-3)', lineHeight: 1.7 }}>
-        <div>✂️ Coiffure · 💅 Esthétique · 🍽️ Resto · ☕ Café · 🍸 Bar</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+          {(['coiffure', 'esthetique', 'restaurant', 'cafe', 'bar'] as const).map((c) => (
+            <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <CategoryIcon category={c} size={13} color="var(--text-2)" strokeWidth={2.2} />
+              {CATEGORY_LABEL[c]}
+            </span>
+          ))}
+        </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', marginTop: 2 }}>
           {([['#16a34a', 'À démarcher'], ['#f59e0b', 'En attente'], ['#2563eb', 'Client'], ['#94a3b8', 'Fermé']] as const).map(
             ([c, label]) => (
