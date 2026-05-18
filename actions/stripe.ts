@@ -240,10 +240,10 @@ export async function getStaffStripeBalance(): Promise<
   }
 }
 
-// Hold tips for 3 days before staff can withdraw. Covers the window in which
-// most disputes/chargebacks arrive, so funds aren't already gone when Stripe
-// pulls them back from the platform.
-const PAYOUT_HOLD_DAYS = 3;
+// Hold tips for 14 days before staff can withdraw. Covers the bulk of the
+// card-dispute / early-fraud-warning window, so funds aren't already gone
+// when Stripe pulls them back from the platform on a chargeback.
+const PAYOUT_HOLD_DAYS = 14;
 
 export async function getStaffPayoutAvailability(): Promise<
   | { available: number; pending: number; heldUntil: string | null; frozen: boolean }
