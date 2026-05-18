@@ -13,6 +13,8 @@ import { isOpenNow, mapsLink, type OpeningHours } from '@/lib/salon-hours';
 export type AmbassadorSalon = {
   id: string;
   name: string;
+  category: string;
+  converted: boolean;
   address: string | null;
   postal_code: string | null;
   phone: string | null;
@@ -118,13 +120,32 @@ function makeIcon(className: string, badge?: string): L.DivIcon {
   });
 }
 
+// Establishment categories — icon says *what*, colour says *where we're at*.
+export const CATEGORY_EMOJI: Record<string, string> = {
+  coiffure: '✂️', esthetique: '💅', restaurant: '🍽️', cafe: '☕', bar: '🍸',
+};
+export const CATEGORY_LABEL: Record<string, string> = {
+  coiffure: 'Coiffure', esthetique: 'Esthétique', restaurant: 'Restaurant', cafe: 'Café', bar: 'Bar',
+};
+
+// Status colour: converted (client) > closed > visited > to-canvass.
+function salonStatusColor(s: AmbassadorSalon): string {
+  if (s.converted) return '#2563eb';                               // bleu — client
+  if (s.business_status === 'CLOSED_PERMANENTLY') return '#94a3b8'; // gris — fermé
+  if (s.visit) return '#f59e0b';                                   // ambre — démarché, en attente
+  return '#16a34a';                                                // vert — à démarcher
+}
+
 function ambassadorIcon(s: AmbassadorSalon): L.DivIcon {
-  if (s.business_status === 'CLOSED_PERMANENTLY') return makeIcon('closed', '✕');
-  if (s.visit?.bestRating === 3) return makeIcon('hot', '★');
-  if (s.visit?.visitedByMe) return makeIcon('mine');
-  if (s.visit) return makeIcon('others');
-  const goldStar = (s.google_rating ?? 0) >= 4.3 ? '★' : undefined;
-  return makeIcon('todo', goldStar);
+  const color = salonStatusColor(s);
+  const emoji = CATEGORY_EMOJI[s.category] ?? '📍';
+  return L.divIcon({
+    className: 'salon-marker-wrapper',
+    html: `<div class="salon-marker-cat" style="background:${color}">${emoji}</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
+  });
 }
 
 function adminIcon(s: AdminSalon): L.DivIcon {
@@ -309,6 +330,17 @@ function AmbassadorPopup({ salon, onLogVisit }: { salon: AmbassadorSalon; onLogV
     <div className="salon-popup">
       <div className="salon-popup__title">{salon.name}</div>
       <div className="salon-popup__row">
+        <span className="salon-popup__pill rate">
+          {CATEGORY_EMOJI[salon.category] ?? '📍'} {CATEGORY_LABEL[salon.category] ?? 'Établissement'}
+        </span>
+        {salon.converted && (
+          <span
+            className="salon-popup__pill"
+            style={{ background: 'rgba(37,99,235,0.12)', color: '#2563eb', border: '1px solid #2563eb' }}
+          >
+            🔵 Client
+          </span>
+        )}
         {open && (
           <span className={`salon-popup__pill ${open.open ? 'open' : 'shut'}`}>
             {open.open ? '● Ouvert' : '○ Fermé'}{open.nextChange ? ` · ${open.nextChange}` : ''}
@@ -464,7 +496,20 @@ function AmbassadorMap({
         </MapContainer>
       </div>
       <div className="salon-map-counter">
-        {filtered.length} salon{filtered.length > 1 ? 's' : ''} affichés / {salons.length}
+        {filtered.length} établissement{filtered.length > 1 ? 's' : ''} affiché{filtered.length > 1 ? 's' : ''} / {salons.length}
+      </div>
+      <div style={{ margin: '8px 2px 0', fontSize: 11, color: 'var(--text-3)', lineHeight: 1.7 }}>
+        <div>✂️ Coiffure · 💅 Esthétique · 🍽️ Resto · ☕ Café · 🍸 Bar</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', marginTop: 2 }}>
+          {([['#16a34a', 'À démarcher'], ['#f59e0b', 'En attente'], ['#2563eb', 'Client'], ['#94a3b8', 'Fermé']] as const).map(
+            ([c, label]) => (
+              <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: c, display: 'inline-block' }} />
+                {label}
+              </span>
+            )
+          )}
+        </div>
       </div>
     </div>
   );

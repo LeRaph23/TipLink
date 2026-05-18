@@ -32,9 +32,12 @@ export type OsmZone = {
   bbox: { minLat: number; minLon: number; maxLat: number; maxLon: number };
 };
 
+export type SalonCategory = 'coiffure' | 'esthetique' | 'restaurant' | 'cafe' | 'bar';
+
 export type OsmSalon = {
   osm_id: number;
   osm_type: 'node' | 'way' | 'relation';
+  category: SalonCategory;
   name: string;
   lat: number;
   lon: number;
@@ -43,6 +46,16 @@ export type OsmSalon = {
   phone: string | null;
   website: string | null;
 };
+
+/** Maps an OSM element's tags to one of our establishment categories. */
+function osmCategory(t: Record<string, string>): SalonCategory | null {
+  if (t.shop === 'hairdresser') return 'coiffure';
+  if (t.shop === 'beauty') return 'esthetique';
+  if (t.amenity === 'restaurant') return 'restaurant';
+  if (t.amenity === 'cafe') return 'cafe';
+  if (t.amenity === 'bar') return 'bar';
+  return null;
+}
 
 type OverpassElement = {
   type: 'node' | 'way' | 'relation';
@@ -285,8 +298,8 @@ export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
 }
 
 /**
- * Fetch hair salons / beauty salons in the given bounding box.
- * Returns nodes + way centers; deduplicated by osm_type+osm_id.
+ * Fetch establishments (hair, beauty, restaurants, cafes, bars) in the given
+ * bounding box. Returns nodes + way centers; deduplicated by osm_type+osm_id.
  */
 export async function fetchSalonsInBbox(bbox: {
   minLat: number;
@@ -302,6 +315,8 @@ export async function fetchSalonsInBbox(bbox: {
     (
       node["shop"~"^(hairdresser|beauty)$"](${bboxStr});
       way["shop"~"^(hairdresser|beauty)$"](${bboxStr});
+      node["amenity"~"^(restaurant|cafe|bar)$"](${bboxStr});
+      way["amenity"~"^(restaurant|cafe|bar)$"](${bboxStr});
     );
     out center tags;
   `;
@@ -315,6 +330,9 @@ export async function fetchSalonsInBbox(bbox: {
     const name = t.name;
     if (!name) continue;
 
+    const category = osmCategory(t);
+    if (!category) continue;
+
     const lat = e.type === 'node' ? e.lat : e.center?.lat;
     const lon = e.type === 'node' ? e.lon : e.center?.lon;
     if (lat == null || lon == null) continue;
@@ -322,6 +340,7 @@ export async function fetchSalonsInBbox(bbox: {
     out.push({
       osm_id: e.id,
       osm_type: e.type,
+      category,
       name,
       lat,
       lon,

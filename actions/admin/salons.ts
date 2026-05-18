@@ -120,6 +120,7 @@ export async function importSalonsForZone(
         {
           zone_id: zone.id,
           city: zone.city,
+          category: s.category,
           name: s.name,
           address: s.address,
           postal_code: s.postal_code,
