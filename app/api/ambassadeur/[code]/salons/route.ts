@@ -88,11 +88,12 @@ export async function GET(
 
   for (const v of visits ?? []) {
     const existing = visitsBySalon[v.salon_id];
+    const convinced = v.convinced as 'no' | 'maybe' | 'yes';
     if (!existing) {
       visitsBySalon[v.salon_id] = {
         lastVisitAt: v.visited_at,
         bestRating: v.likelihood_rating,
-        bestConvinced: v.convinced,
+        bestConvinced: convinced,
         flyerLeft: v.flyer_left,
         visitedByMe: v.ambassador_id === ambassadorId,
         myLatestNotes: v.ambassador_id === ambassadorId ? v.notes : null,
@@ -102,7 +103,7 @@ export async function GET(
         existing.lastVisitAt = v.visited_at;
       }
       if (v.likelihood_rating > existing.bestRating) existing.bestRating = v.likelihood_rating;
-      if (rank[v.convinced] > rank[existing.bestConvinced]) existing.bestConvinced = v.convinced;
+      if (rank[convinced] > rank[existing.bestConvinced]) existing.bestConvinced = convinced;
       if (v.flyer_left) existing.flyerLeft = true;
       if (v.ambassador_id === ambassadorId) {
         existing.visitedByMe = true;

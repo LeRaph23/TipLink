@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
+import { BASE_URL, pageAlternates } from '@/lib/seo';
 import '../globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -26,8 +27,6 @@ const poppins = Poppins({
   weight: ['700', '800', '900'],
   display: 'swap',
 });
-
-const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://digitip.app').replace(/\/$/, '');
 
 export const viewport: Viewport = {
   themeColor: '#E57A97',
@@ -104,15 +103,10 @@ export async function generateMetadata({
       telephone: false,
     },
     category: 'business',
-    alternates: {
-      canonical: `${BASE_URL}/${locale}`,
-      languages: {
-        ...Object.fromEntries(
-          routing.locales.map((l) => [l, `${BASE_URL}/${l}`])
-        ),
-        'x-default': `${BASE_URL}/${routing.defaultLocale}`,
-      },
-    },
+    // Homepage-only canonical. Each sub-page MUST override `alternates` in its
+    // own generateMetadata (via pageAlternates) — otherwise it inherits this
+    // value and wrongly declares the homepage as its canonical URL.
+    alternates: pageAlternates(locale, ''),
     openGraph: {
       title,
       description,

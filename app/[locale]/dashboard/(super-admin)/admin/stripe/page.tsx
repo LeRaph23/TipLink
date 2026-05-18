@@ -18,7 +18,7 @@ export default async function AdminStripePage({ params }: { params: Promise<{ lo
   const [{ data: groups }, { data: establishments }, { data: staff }] = await Promise.all([
     supabase
       .from('groups')
-      .select('id, name, stripe_customer_id, subscription_id')
+      .select('id, name, stripe_customer_id')
       .is('deleted_at', null)
       .order('name'),
     supabase
@@ -47,7 +47,7 @@ export default async function AdminStripePage({ params }: { params: Promise<{ lo
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {[t('colName'), t('colCustomer'), t('colSubscription')].map((h) => (
+              {[t('colName'), t('colCustomer')].map((h) => (
                 <th key={h} style={th}>{h}</th>
               ))}
             </tr>
@@ -63,7 +63,6 @@ export default async function AdminStripePage({ params }: { params: Promise<{ lo
                     </a>
                   ) : '—'}
                 </td>
-                <td style={td}>{g.subscription_id ? <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{g.subscription_id}</span> : '—'}</td>
               </tr>
             ))}
           </tbody>

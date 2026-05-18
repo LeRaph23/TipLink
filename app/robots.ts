@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
-
-const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://digitip.app').replace(/\/$/, '');
+import { BASE_URL } from '@/lib/seo';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -22,6 +21,9 @@ export default function robots(): MetadataRoute.Robots {
           '/*/pay/',
           '/*/join/',
           '/*/ambassadeur/',
+          // Recruitment funnel: /rejoindre redirects, /rejoindre-ambassadeur
+          // is gated by a secret token — neither should be crawled.
+          '/*/rejoindre',
           '/*/forgot-password',
           '/*/reset-password',
           '/s/',

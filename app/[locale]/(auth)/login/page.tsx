@@ -1,8 +1,24 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { pageAlternates } from '@/lib/seo';
 import { LoginForm } from './LoginForm';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'auth' });
+  return {
+    title: t('loginTitle'),
+    description: t('loginSubtitle'),
+    alternates: pageAlternates(locale, '/login'),
+  };
+}
 
 export default async function LoginPage({
   params,

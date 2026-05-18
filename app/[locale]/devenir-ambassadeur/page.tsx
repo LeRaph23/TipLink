@@ -1,20 +1,31 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { pageAlternates } from '@/lib/seo';
 import { RecruitmentLandingForm } from './RecruitmentLandingForm';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Devenir ambassadeur Digitip · 25-35€ par vente',
-  description: 'Rejoins le programme ambassadeur Digitip : tu places des SmartTags NFC chez des restos et tu touches 25-35€ par vente. Pas de stock, pas d\'avance. SIRET requis.',
-  openGraph: {
-    title: 'Deviens ambassadeur Digitip',
-    description: '25-35€ par vente. Pas de stock. SIRET requis.',
-    locale: 'fr_FR',
-    type: 'website',
-  },
-};
+// FR-only page: /en/devenir-ambassadeur returns 404 (notFound() below), so the
+// canonical/hreflang alternates only advertise the French version.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: 'Devenir ambassadeur Digitip · 25-35€ par vente',
+    description: "Rejoins le programme ambassadeur Digitip : tu places des SmartTags NFC chez des restos et tu touches 25-35€ par vente. Pas de stock, pas d'avance. SIRET requis.",
+    alternates: pageAlternates(locale, '/devenir-ambassadeur', ['fr']),
+    openGraph: {
+      title: 'Deviens ambassadeur Digitip',
+      description: '25-35€ par vente. Pas de stock. SIRET requis.',
+      locale: 'fr_FR',
+      type: 'website',
+    },
+  };
+}
 
 const PERKS = [
   { icon: '💰', label: '25-35€ par vente', sub: 'Solo 25€ · Duo 35€' },

@@ -69,11 +69,11 @@ export default async function AdminTransactionsPage({
       : null;
 
   const { data: summaryRows, error: summaryError } = await supabase.rpc('admin_transactions_summary', {
-    p_status: sp.status && sp.status.length ? sp.status : null,
-    p_group_id: sp.group && sp.group.length ? sp.group : null,
-    p_establishment_id: sp.establishment && sp.establishment.length ? sp.establishment : null,
-    p_from: sp.from && sp.from.length ? `${sp.from}T00:00:00.000Z` : null,
-    p_to: pTo,
+    p_status: sp.status && sp.status.length ? sp.status : undefined,
+    p_group_id: sp.group && sp.group.length ? sp.group : undefined,
+    p_establishment_id: sp.establishment && sp.establishment.length ? sp.establishment : undefined,
+    p_from: sp.from && sp.from.length ? `${sp.from}T00:00:00.000Z` : undefined,
+    p_to: pTo ?? undefined,
   });
 
   let rows: TxRow[] = [];
