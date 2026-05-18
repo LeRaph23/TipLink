@@ -6,6 +6,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS, type PackId } from '@/lib/env';
 import { htSuffix } from '@/lib/format-price';
 import { createClient } from '@/lib/supabase/server';
+import { getAllPackPricing } from '@/lib/stripe/pricing';
 import { pageAlternates } from '@/lib/seo';
 
 export async function generateMetadata({
@@ -43,6 +44,9 @@ export default async function PricingPage({
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Pricing comes from Stripe (single source of truth).
+  const pricing = await getAllPackPricing();
 
   const isFr = locale === 'fr';
   const formatPrice = (cents: number) =>
@@ -160,7 +164,7 @@ export default async function PricingPage({
                   <div style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
                       <span style={{ fontSize: 42, fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>
-                        {formatPrice(def.hardwareAmount)}
+                        {formatPrice(pricing[id].unitAmount)}
                       </span>
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#a0a0b8' }}>{htSuffix(locale)}</span>
                     </div>

@@ -1,10 +1,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { PACKS } from '@/lib/env';
+import { PACKS, type PackId } from '@/lib/env';
 import type { OrderState, Step } from '@/lib/order-validation';
 import { formatPrice } from './OrderSummary';
 import { htSuffix } from '@/lib/format-price';
+import type { PackPricing } from '@/lib/stripe/pricing';
 
 function Row({
   label,
@@ -53,12 +54,14 @@ function Row({
 export function StepReview({
   state,
   locale,
+  pricing,
   onEdit,
   promoCode,
   onPromoChange,
 }: {
   state: OrderState;
   locale: string;
+  pricing: Record<PackId, PackPricing>;
   onEdit: (s: Step) => void;
   promoCode?: string;
   onPromoChange?: (code: string) => void;
@@ -116,7 +119,7 @@ export function StepReview({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: 'var(--text-2)' }}>
             <span>{t('hardware')}</span>
-            <span style={{ color: 'var(--text)', fontWeight: 600 }}>{formatPrice(def.hardwareAmount, locale)} {htSuffix(locale)}</span>
+            <span style={{ color: 'var(--text)', fontWeight: 600 }}>{formatPrice(pricing[state.pack].unitAmount, locale)} {htSuffix(locale)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: 'var(--text-2)' }}>
             <span>{t('commission')}</span>

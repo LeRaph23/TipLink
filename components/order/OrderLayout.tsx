@@ -7,12 +7,14 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ProgressBar } from './ProgressBar';
 import { OrderSummary } from './OrderSummary';
 import type { PackId } from '@/lib/env';
+import type { PackPricing } from '@/lib/stripe/pricing';
 import { STEPS, type Step } from '@/lib/order-validation';
 
 
 export function OrderLayout({
   pack,
   locale,
+  pricing,
   step,
   reachable,
   steps = STEPS,
@@ -26,6 +28,7 @@ export function OrderLayout({
 }: {
   pack: PackId;
   locale: string;
+  pricing: Record<PackId, PackPricing>;
   step: Step;
   reachable: Step;
   steps?: readonly Step[];
@@ -150,7 +153,7 @@ export function OrderLayout({
             <aside className="order-summary-col" style={{
               position: 'sticky', top: 110,
             }}>
-              <OrderSummary pack={pack} locale={locale} />
+              <OrderSummary pack={pack} locale={locale} pricing={pricing} />
             </aside>
           )}
         </div>
