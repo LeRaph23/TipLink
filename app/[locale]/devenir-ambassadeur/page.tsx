@@ -16,11 +16,11 @@ export async function generateMetadata({
   const { locale } = await params;
   return {
     title: 'Devenir ambassadeur Digitip · 25-35€ par vente',
-    description: "Rejoins le programme ambassadeur Digitip : tu places des SmartTags NFC chez des restos et tu touches 25-35€ par vente. Pas de stock, pas d'avance. SIRET requis.",
+    description: "Rejoins le programme ambassadeur Digitip : tu places des SmartTags NFC chez des restos et tu touches 25-35€ par vente. Pas de stock, pas d'avance, pas besoin de SIRET pour postuler.",
     alternates: pageAlternates(locale, '/devenir-ambassadeur', ['fr']),
     openGraph: {
       title: 'Deviens ambassadeur Digitip',
-      description: '25-35€ par vente. Pas de stock. SIRET requis.',
+      description: '25-35€ par vente. Pas de stock. Démarre sans SIRET.',
       locale: 'fr_FR',
       type: 'website',
     },
@@ -37,7 +37,7 @@ const PERKS = [
 const FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'Faut-il avoir un SIRET ?',
-    a: 'Oui, obligatoire. Si tu n\'en as pas, crée-le gratuitement en 10 min sur autoentrepreneur.urssaf.fr (statut auto-entrepreneur / micro-entreprise). C\'est instantané.',
+    a: 'Pas pour postuler ni pour commencer. Le SIRET te sera demandé uniquement au moment de toucher tes commissions. Tu peux le créer gratuitement en 10 min sur autoentrepreneur.urssaf.fr (statut auto-entrepreneur / micro-entreprise). C\'est instantané.',
   },
   {
     q: 'Comment je suis payé ?',
