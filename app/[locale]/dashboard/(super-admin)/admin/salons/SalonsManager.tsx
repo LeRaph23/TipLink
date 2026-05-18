@@ -78,6 +78,10 @@ export function SalonsManager({
   const [importCity, setImportCity] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  // Live progress of the "re-import everything" run (null when idle).
+  const [reimport, setReimport] = useState<
+    { done: number; total: number; imported: number; failed: number } | null
+  >(null);
 
   const claimByZone = new Map(activeClaims.map((c) => [c.zoneId, c]));
 
@@ -100,6 +104,7 @@ export function SalonsManager({
     return acc;
   }, {});
   const emptyZones = zones.filter((z) => z.isActive && (salonsCountByZone[z.id] ?? 0) === 0);
+  const activeZones = zones.filter((z) => z.isActive);
 
   // Zones that still have at least one salon missing an address.
   const missingAddressCountByZone = salons.reduce<Record<string, number>>((acc, s) => {
@@ -136,6 +141,37 @@ export function SalonsManager({
         type: failed === 0 ? 'ok' : 'err',
         msg: `${emptyZones.length - failed}/${emptyZones.length} zones traitées · ${totalInserted} salons importés, ${totalSkipped} ignorés${failed ? ` · ${failed} échec(s)` : ''}.`,
       });
+    });
+  };
+
+  // Re-import every active zone, one at a time, with a live progress bar.
+  // Driven from the client so each zone is its own short server call.
+  const runReimportAll = async () => {
+    if (activeZones.length === 0 || reimport) return;
+    if (!confirm(
+      `Réimporter les établissements des ${activeZones.length} zones actives depuis OpenStreetMap ? ` +
+      `Cela peut prendre ~${Math.ceil((activeZones.length * 2) / 60)} min — garde cet onglet ouvert.`
+    )) return;
+
+    setFeedback(null);
+    setReimport({ done: 0, total: activeZones.length, imported: 0, failed: 0 });
+    let imported = 0;
+    let failed = 0;
+    for (let i = 0; i < activeZones.length; i++) {
+      try {
+        const r = await importSalonsForZone(activeZones[i].id);
+        if (r.ok) imported += r.inserted;
+        else failed += 1;
+      } catch {
+        failed += 1;
+      }
+      setReimport({ done: i + 1, total: activeZones.length, imported, failed });
+      if (i + 1 < activeZones.length) await new Promise((res) => setTimeout(res, 600));
+    }
+    setReimport(null);
+    setFeedback({
+      type: failed === 0 ? 'ok' : 'err',
+      msg: `Ré-import terminé : ${imported} nouvel(s) établissement(s) importé(s) sur ${activeZones.length} zones${failed ? ` · ${failed} zone(s) en échec` : ''}.`,
     });
   };
 
@@ -327,6 +363,60 @@ export function SalonsManager({
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
           Ville → arrondissements ou commune entière selon la taille. Département → toutes ses communes.
         </div>
+
+        {zones.length > 0 && (
+          <div style={{
+            marginTop: 12, paddingTop: 12,
+            borderTop: '1px dashed var(--border-subtle)',
+          }}>
+            {reimport ? (
+              <div>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6,
+                  fontSize: 12, color: 'var(--text-2)', marginBottom: 6,
+                }}>
+                  <span><strong>Ré-import en cours…</strong> Zone {reimport.done} / {reimport.total}</span>
+                  <span>
+                    <strong style={{ color: 'var(--accent)' }}>{reimport.imported}</strong>{' '}
+                    établissement{reimport.imported !== 1 ? 's' : ''} importé{reimport.imported !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div style={{ height: 8, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${Math.round((reimport.done / reimport.total) * 100)}%`,
+                    background: 'var(--accent)', borderRadius: 99,
+                    transition: 'width 0.3s ease',
+                  }} />
+                </div>
+                {reimport.failed > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--error)', marginTop: 4 }}>
+                    {reimport.failed} zone(s) en échec jusqu&apos;ici (OSM nous rate-limit) — à relancer plus tard.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
+                  Réimporte les établissements (coiffure, esthétique, restaurants, cafés, bars) des{' '}
+                  <strong>{activeZones.length}</strong> zone{activeZones.length > 1 ? 's' : ''} active
+                  {activeZones.length > 1 ? 's' : ''} depuis OpenStreetMap.
+                </div>
+                <button
+                  onClick={runReimportAll}
+                  disabled={pending || activeZones.length === 0}
+                  style={{
+                    padding: '8px 14px', background: 'var(--accent)', color: '#fff',
+                    border: 'none', borderRadius: 'var(--radius-sm)',
+                    fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                  }}
+                >
+                  🔄 Tout réimporter ({activeZones.length})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {emptyZones.length > 0 && (
           <div style={{

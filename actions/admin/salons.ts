@@ -116,7 +116,7 @@ export async function importSalonsForZone(
     let skipped = 0;
 
     for (const s of salons) {
-      const { error } = await service.from('salons').upsert(
+      const { data: ins, error } = await service.from('salons').upsert(
         {
           zone_id: zone.id,
           city: zone.city,
@@ -133,9 +133,22 @@ export async function importSalonsForZone(
           is_active: true,
         },
         { onConflict: 'osm_type,osm_id', ignoreDuplicates: true }
-      );
-      if (error) skipped += 1;
-      else inserted += 1;
+      ).select('id');
+      if (error) {
+        skipped += 1;
+        continue;
+      }
+      if (ins && ins.length > 0) {
+        inserted += 1;
+      } else {
+        // Already imported — refresh the OSM-derived category on the existing
+        // row (cheap and safe; Google-enriched fields are left untouched).
+        await service.from('salons')
+          .update({ category: s.category })
+          .eq('osm_type', s.osm_type)
+          .eq('osm_id', s.osm_id);
+        skipped += 1;
+      }
     }
 
     await logAdminAction('salons.import_salons', {
