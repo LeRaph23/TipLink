@@ -547,9 +547,9 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           </div>
         </div>
 
-        {/* Paiement note */}
+        {/* Total ventes */}
         <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginBottom: 20 }}>
-          Paiement chaque vendredi · {stats.allTimeSalesCount} vente{stats.allTimeSalesCount !== 1 ? 's' : ''} au total
+          {stats.allTimeSalesCount} vente{stats.allTimeSalesCount !== 1 ? 's' : ''} au total
         </div>
 
         {/* Paliers de la semaine */}
