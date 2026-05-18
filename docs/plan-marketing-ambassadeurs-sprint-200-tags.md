@@ -344,3 +344,96 @@ Tiens un tableau simple (Sheet partagé) mis à jour **chaque jour** :
 **Atterrissage probable :** 90-150 tags si tu exécutes bien. **200 est atteignable** si le
 recrutement éclair prend ET que tu vends en direct à fond. Vise 200, mais pilote sur la
 trajectoire J7 — c'est elle qui te dira tôt si tu dois accélérer.
+
+---
+
+## 12. Canaux plus rapides que les ambassadeurs
+
+### Pourquoi les ambassadeurs sont lents
+
+Ce n'est **pas la vente** qui est lente, c'est de **fabriquer une force de vente depuis
+zéro** : recruter → onboarder → former → activer → et 40-60 % disparaissent en route. Les
+canaux ci-dessous sautent cette étape lente. Classés pour une fenêtre stricte de 14 jours.
+
+### Classement par vitesse de la 1ʳᵉ vente
+
+**1. Vente directe fondateur — démarre aujourd'hui, zéro setup.**
+Tu connais le produit mieux que personne. À pied dans une zone dense : 20-25 salons/jour,
+~15-25 % de closing → 4-6 ventes/jour. Sur 12 jours utiles : **50-70 ventes**. Canal le
+plus fiable et le plus rapide. Ta liste = la carte des salons du dashboard.
+
+**2. Téléprospection — J1-J2.**
+Plus rapide que marcher : 40-80 appels/jour. Aucun warmup nécessaire (contrairement à
+l'email). Deux usages : (a) vendre puis envoyer un lien de paiement, (b) appeler juste
+pour caler une démo de 5 min. Tu peux briefer 1-2 **closers freelance en 1 jour** (script
++ lien de paiement, 1 h de brief) — bien plus rapide qu'un ambassadeur : ni terrain, ni
+carte, ni formation longue. Listes : Google Maps / Pages Jaunes des coiffeurs et instituts.
+
+**3. DM Instagram aux salons — aujourd'hui, gratuit.**
+Les patrons de salon vivent sur Instagram (ils y postent leurs réalisations). Le DM direct
+est un vrai canal de vente. 50-100 DM/jour par personne, message court + lien. Rendement
+modeste mais cumulatif, et ça démarre tout de suite.
+
+**4. Clients existants : parrainage + upsell — rapide et chaud.**
+Si Digitip a déjà des salons clients : chacun connaît d'autres patrons. Demande 2-3
+recommandations par client. Et upsell **Solo → Duo** pour les salons à plusieurs employés.
+Conversion élevée, immédiat.
+
+**5. Deals chaînes / franchises / revendeurs — le levier.**
+Au lieu de vendre salon par salon, vise ceux qui ont **déjà** plein de salons :
+- Franchises et groupes de coiffure / barbier / beauté → un oui du siège = 10-40 tags d'un coup.
+- Logiciels de réservation / caisse pour salons (Planity, Treatwell, Kiute…) → bundle.
+- Grossistes coiffure / esthétique : ils ont des commerciaux et des relations salons.
+- Experts-comptables spécialisés salons.
+Forte variance (0-2 deals en 2 semaines), mais un seul gros deal change la trajectoire.
+À lancer dès J1, en parallèle du reste.
+
+**6. Pub Meta / Instagram → checkout — live en 1 jour, à tester.**
+Ciblage : intérêts « coiffure / esthétique / propriétaire de salon » + géo. Format : vente
+directe vers le checkout, ou lead ad « je veux le tag » → tu rappelles. Le ciblage B2B
+local sur Meta est imprécis : traite ça comme un **test à budget limité** (200-500 €),
+garde le canal seulement si le coût par vente est bon.
+
+**7. Cold email B2B — utile, mais pas si rapide qu'on le croit.**
+Légal en B2B (adresse pro, offre liée au métier, lien de désinscription). MAIS un domaine
+neuf qui envoie 3 000 emails dès J1 part en spam — le **warmup prend 1-2 semaines**. Sur un
+sprint de 14 jours, l'email rapporte surtout en semaine 2+. Si tu y vas : domaine
+secondaire, outil dédié (Instantly / Lemlist), envoi throttlé. **Ne crame pas la réputation
+de ton domaine principal.**
+
+### Le multiplicateur — le lien de paiement
+
+Tous ces canaux **fuient** si le salon doit remplir un long formulaire de commande. Crée
+**2 liens de paiement Stripe** (un Solo, un Duo) depuis le dashboard Stripe — aucun code.
+Le closer dit « je vous envoie le lien », le patron paie en 30 s par SMS/WhatsApp. Ça
+augmente le taux de closing de **chaque** canal ci-dessus.
+
+### Portefeuille recommandé (14 jours)
+
+| Canal | Mise en place | Rendement réaliste |
+|---|---|---|
+| Vente directe fondateur | aujourd'hui | 50-70 tags |
+| Téléprospection (toi + 1-2 closers) | J1-J2 | 30-60 tags |
+| Clients existants (parrainage + upsell) | aujourd'hui | 10-25 tags |
+| DM Instagram | aujourd'hui | 10-25 tags |
+| Deals chaînes / revendeurs | J1+ | 0-50 tags (variance) |
+| Pub Meta (test) | J1-J2 | 10-30 tags |
+| Cold email | J2-J3 | 5-30 tags (surtout S2) |
+
+**Aucun canal seul ne fait 200.** Total réaliste du portefeuille : **~120-170 tags** ;
+bon scénario : 200+. Les ambassadeurs deviennent un canal **secondaire**, pas le moteur.
+
+### Force de vente sans la lenteur du recrutement
+
+Si tu veux garder l'effet « plein de gens qui vendent » sans le funnel lent : n'ouvre pas
+un programme marketing — **embauche directement 1-3 closers** (commission) que tu connais
+ou trouves via ton réseau, briefés en 1 h avec un script et un lien de paiement. Tu sautes
+toute la partie lente.
+
+### Garde-fous
+
+- Cold email B2B : ok avec désinscription et identité claire.
+- Cold SMS : plus risqué côté CNIL même en B2B — privilégie l'appel ou WhatsApp, ou une
+  base avec une vraie base légale.
+- Réputation domaine : throttle, domaine secondaire pour l'outbound de masse.
+- Données de contact pro : RGPD B2B — information et opt-out.
