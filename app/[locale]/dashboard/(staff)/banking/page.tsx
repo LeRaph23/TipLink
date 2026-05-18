@@ -1,7 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getStaffStripeBalance } from '@/actions/stripe';
+import { getStaffPayoutAvailability } from '@/actions/stripe';
 import { getAccountVerificationStatus } from '@/lib/stripe/identity';
 import { BankingSetupForm } from './BankingSetupForm';
 import { PayoutSection } from './PayoutSection';
@@ -30,7 +30,7 @@ export default async function BankingPage({
   const mode = hasStripeAccount ? 'update' : 'setup';
   const fullName = staffProfile?.full_name ?? user.email?.split('@')[0] ?? 'Utilisateur';
 
-  const balance = hasStripeAccount ? await getStaffStripeBalance() : null;
+  const balance = hasStripeAccount ? await getStaffPayoutAvailability() : null;
 
   let verification = null;
   if (hasStripeAccount && staffProfile?.stripe_account_id) {
@@ -55,7 +55,11 @@ export default async function BankingPage({
       </div>
 
       {balance && !('error' in balance) && (
-        <PayoutSection available={balance.available} pending={balance.pending} />
+        <PayoutSection
+          available={balance.available}
+          pending={balance.pending}
+          dormant={balance.dormant}
+        />
       )}
 
       {!staffProfile ? (

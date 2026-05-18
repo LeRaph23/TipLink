@@ -4,21 +4,24 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { requestPayout } from '@/actions/stripe';
 
-const MIN_PAYOUT_CENTS = 3_000;
+const MIN_PAYOUT_CENTS = 5_000;
 
 interface Props {
   available: number;
   pending: number;
+  // True when the staff member has stopped receiving tips: they may then
+  // withdraw a residual balance below the usual minimum.
+  dormant: boolean;
 }
 
-export function PayoutSection({ available, pending }: Props) {
+export function PayoutSection({ available, pending, dormant }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<number | null>(null);
 
   const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
-  const canPayout = available >= MIN_PAYOUT_CENTS;
+  const canPayout = available > 0 && (available >= MIN_PAYOUT_CENTS || dormant);
 
   function handlePayout() {
     setError(null);
@@ -99,9 +102,9 @@ export function PayoutSection({ available, pending }: Props) {
         {isPending ? 'Virement en cours…' : 'Virer sur mon IBAN →'}
       </button>
 
-      {!canPayout && (
+      {!canPayout && available > 0 && (
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 10, textAlign: 'center' }}>
-          Minimum requis : 30 € — il vous manque {fmt.format((MIN_PAYOUT_CENTS - available) / 100)}.
+          Minimum requis : {fmt.format(MIN_PAYOUT_CENTS / 100)} — il vous manque {fmt.format((MIN_PAYOUT_CENTS - available) / 100)}.
         </div>
       )}
     </div>

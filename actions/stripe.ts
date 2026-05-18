@@ -206,47 +206,24 @@ export async function updateBankAccountIBAN(
   return { ok: true };
 }
 
-const MIN_PAYOUT_CENTS = 3_000; // 30 €
-
-export async function getStaffStripeBalance(): Promise<
-  { available: number; pending: number } | { error: string }
-> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from('staff_profiles')
-    .select('stripe_account_id')
-    .eq('user_id', user.id)
-    .is('deleted_at', null)
-    .maybeSingle();
-
-  if (!profile?.stripe_account_id) return { error: 'Aucun compte Stripe trouvé' };
-
-  try {
-    const balance = await stripe.balance.retrieve(
-      {},
-      { stripeAccount: profile.stripe_account_id }
-    );
-    const available = balance.available.find((b) => b.currency === 'eur')?.amount ?? 0;
-    const pending   = balance.pending.find((b) => b.currency === 'eur')?.amount ?? 0;
-    return { available, pending };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Erreur Stripe';
-    console.error('getStaffStripeBalance:', err);
-    return { error: msg };
-  }
-}
+// 50 € — high enough that the tip commission already collected on that much
+// volume comfortably exceeds Stripe's per-account Connect fee, so a staff
+// payout is never processed at a platform loss. A dormant staff member (no
+// tip for 60+ days) is exempt: see DORMANT_DAYS in getStaffPayoutAvailability.
+const MIN_PAYOUT_CENTS = 5_000;
 
 // Hold tips for 14 days before staff can withdraw. Covers the bulk of the
 // card-dispute / early-fraud-warning window, so funds aren't already gone
 // when Stripe pulls them back from the platform on a chargeback.
 const PAYOUT_HOLD_DAYS = 14;
 
+// A staff member with no tip for this many days has stopped earning. They are
+// then allowed to withdraw a residual balance below MIN_PAYOUT_CENTS — their
+// tips belong to them and must never be trapped by the payout threshold.
+const DORMANT_DAYS = 60;
+
 export async function getStaffPayoutAvailability(): Promise<
-  | { available: number; pending: number; heldUntil: string | null; frozen: boolean }
+  | { available: number; pending: number; heldUntil: string | null; frozen: boolean; dormant: boolean }
   | { error: string }
 > {
   const supabase = await createClient();
@@ -330,11 +307,26 @@ export async function getStaffPayoutAvailability(): Promise<
     console.error('getStaffPayoutAvailability balance lookup failed', err);
   }
 
+  // Dormant check: when did this staff member last receive a tip?
+  const { data: lastTip } = await service
+    .from('transactions')
+    .select('succeeded_at')
+    .eq('staff_id', profile.id)
+    .eq('status', 'succeeded')
+    .order('succeeded_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const lastTipAt = (lastTip as { succeeded_at: string | null } | null)?.succeeded_at ?? null;
+  const dormant = lastTipAt
+    ? new Date(lastTipAt).getTime() < Date.now() - DORMANT_DAYS * 86_400_000
+    : false;
+
   return {
     available: Math.min(ourAvailable, stripeAvailable),
     pending: pendingCents,
     heldUntil,
     frozen: (profile as { payouts_frozen?: boolean }).payouts_frozen === true,
+    dormant,
   };
 }
 
@@ -361,12 +353,19 @@ export async function requestPayout(): Promise<{ ok: true; amount: number } | { 
   const availability = await getStaffPayoutAvailability();
   if ('error' in availability) return { error: availability.error };
 
-  if (availability.available < MIN_PAYOUT_CENTS) {
+  if (availability.available <= 0) {
+    return { error: 'Aucun solde disponible au retrait pour le moment.' };
+  }
+
+  // Below the minimum is allowed only for a dormant staff member emptying a
+  // residual balance. Otherwise the threshold batches payouts so the tip
+  // commission stays comfortably ahead of Stripe's per-account Connect fee.
+  if (availability.available < MIN_PAYOUT_CENTS && !availability.dormant) {
     const heldNote = availability.pending > 0
       ? ` ${(availability.pending / 100).toFixed(2)} € sont en attente de libération (délai de ${PAYOUT_HOLD_DAYS} jours après réception).`
       : '';
     return {
-      error: `Solde disponible insuffisant (${(availability.available / 100).toFixed(2)} €). Le minimum pour un virement est de 30 €.${heldNote}`,
+      error: `Solde disponible insuffisant (${(availability.available / 100).toFixed(2)} €). Le minimum pour un virement est de ${MIN_PAYOUT_CENTS / 100} €.${heldNote}`,
     };
   }
 
