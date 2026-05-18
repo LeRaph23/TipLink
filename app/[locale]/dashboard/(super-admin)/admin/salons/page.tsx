@@ -64,9 +64,10 @@ export default async function AdminSalonsPage({
       id: string; salon_id: string; ambassador_id: string; visited_at: string;
       flyer_left: boolean; convinced: string; likelihood_rating: number;
       notes: string | null; follow_up_at: string | null;
+      location_verified: boolean; distance_m: number | null;
     }>(
       (a, b) => service.from('salon_visits')
-        .select('id, salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at')
+        .select('id, salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, follow_up_at, location_verified, distance_m')
         .order('id')
         .range(a, b)
     ),
@@ -134,6 +135,7 @@ export default async function AdminSalonsPage({
     id: string; ambassadorId: string; ambassadorName: string;
     visitedAt: string; likelihoodRating: number;
     convinced: 'yes' | 'maybe' | 'no'; notes: string | null;
+    locationVerified: boolean; distanceM: number | null;
   }>>();
   for (const v of visits ?? []) {
     const arr = visitsBySalon.get(v.salon_id) ?? [];
@@ -145,6 +147,8 @@ export default async function AdminSalonsPage({
       likelihoodRating: v.likelihood_rating,
       convinced: v.convinced as 'yes' | 'maybe' | 'no',
       notes: v.notes,
+      locationVerified: v.location_verified,
+      distanceM: v.distance_m == null ? null : Number(v.distance_m),
     });
     visitsBySalon.set(v.salon_id, arr);
   }
@@ -243,6 +247,8 @@ export default async function AdminSalonsPage({
           likelihoodRating: v.likelihood_rating,
           notes: v.notes,
           followUpAt: v.follow_up_at,
+          locationVerified: v.location_verified,
+          distanceM: v.distance_m == null ? null : Number(v.distance_m),
         }))}
         mapSalons={mapSalons}
         mapZones={mapZones}

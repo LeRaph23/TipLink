@@ -54,6 +54,8 @@ export type AdminSalon = {
     likelihoodRating: number;
     convinced: 'yes' | 'maybe' | 'no';
     notes: string | null;
+    locationVerified: boolean;
+    distanceM: number | null;
   }>;
 };
 
@@ -369,6 +371,22 @@ function AdminPopup({ salon }: { salon: AdminSalon }) {
           dernière {fmtDate(salon.visits[0].visitedAt)} par {salon.visits[0].ambassadorName}
           <div style={{ marginTop: 4, color: 'var(--text-3)', fontSize: 10 }}>
             Meilleure note : ⭐ {salon.visits.reduce((m, v) => Math.max(m, v.likelihoodRating), 0)}/3
+          </div>
+          <div style={{ marginTop: 4 }}>
+            {salon.visits[0].locationVerified ? (
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--success)' }}>
+                📍 Dernière visite vérifiée
+                {salon.visits[0].distanceM != null ? ` (${salon.visits[0].distanceM} m)` : ''}
+              </span>
+            ) : salon.visits[0].distanceM != null ? (
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--warning)' }}>
+                ⚠ Dernière visite à {salon.visits[0].distanceM} m — non vérifiée
+              </span>
+            ) : (
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>
+                — Dernière visite sans GPS
+              </span>
+            )}
           </div>
         </div>
       ) : (

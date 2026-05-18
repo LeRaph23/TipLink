@@ -14,10 +14,20 @@ const SalonsMap = dynamic(
   ) }
 );
 
-type Zone = { id: string; city: string; name: string };
-type CurrentClaim = { zoneId: string; zoneName: string; city: string; claimedAt: string };
+type Bbox = { minLat: number; minLon: number; maxLat: number; maxLon: number };
+type ZoneSummary = {
+  id: string;
+  city: string;
+  name: string;
+  salonCount: number;
+  todoCount: number;
+  bbox: Bbox | null;
+};
 
 type Salon = AmbassadorSalon & { website: string | null };
+
+type GeoFix = { lat: number; lon: number; accuracy: number };
+type GeoStatus = 'locating' | 'ok' | 'denied' | 'unavailable';
 
 const RATING_LABEL: Record<number, string> = {
   1: 'Peu probable',
@@ -33,13 +43,13 @@ const mapsLink = buildMapsLink;
 
 export function AmbassadeurSalonsTracker({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
-  const [currentClaim, setCurrentClaim] = useState<CurrentClaim | null>(null);
-  const [availableZones, setAvailableZones] = useState<Zone[]>([]);
-  const [salons, setSalons] = useState<Salon[]>([]);
-  const [zoneBbox, setZoneBbox] = useState<{ minLat: number; minLon: number; maxLat: number; maxLon: number } | null>(null);
+  const [zones, setZones] = useState<ZoneSummary[]>([]);
   const [zoneCity, setZoneCity] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<ZoneSummary | null>(null);
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [salonsLoading, setSalonsLoading] = useState(false);
+  const [zoneBbox, setZoneBbox] = useState<Bbox | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [activeVisitFor, setActiveVisitFor] = useState<Salon | null>(null);
   const [view, setView] = useState<'map' | 'list'>('map');
 
@@ -57,68 +67,59 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
     if (typeof window !== 'undefined') window.localStorage.setItem('tiplink:salons-view', v);
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refreshZones = useCallback(async () => {
     try {
-      const zRes = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/zones`);
-      const zData = await zRes.json();
-      if (!zRes.ok) {
-        setActionError(zData.error ?? 'Erreur');
-        setLoading(false);
+      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/zones`);
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error ?? 'Erreur');
         return;
       }
-      setCurrentClaim(zData.currentClaim);
-      setAvailableZones(zData.availableZones ?? []);
-      setZoneCity(zData.city ?? null);
-
-      if (zData.currentClaim) {
-        const sRes = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons`);
-        const sData = await sRes.json();
-        if (sRes.ok) {
-          setSalons(sData.salons ?? []);
-          setZoneBbox(sData.zone?.bbox ?? null);
-        }
-      } else {
-        setSalons([]);
-        setZoneBbox(null);
-      }
+      setActionError(null);
+      setZones(data.zones ?? []);
+      setZoneCity(data.city ?? null);
     } finally {
       setLoading(false);
     }
   }, [code]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { void refreshZones(); }, [refreshZones]);
 
-  const triggerRefresh = useCallback(async () => {
-    setLoading(true);
-    await refresh();
-  }, [refresh]);
-
-  const claimZone = async (zoneId: string) => {
-    setBusy(true); setActionError(null);
+  const loadSalons = useCallback(async (zoneId: string) => {
+    setSalonsLoading(true);
+    setActionError(null);
     try {
-      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/zones/claim`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zoneId }),
-      });
+      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons?zoneId=${encodeURIComponent(zoneId)}`);
       const data = await res.json();
-      if (!res.ok) setActionError(data.error ?? 'Erreur');
-      await triggerRefresh();
-    } finally { setBusy(false); }
-  };
+      if (res.ok) {
+        setSalons(data.salons ?? []);
+        setZoneBbox(data.zone?.bbox ?? null);
+      } else {
+        setActionError(data.error ?? 'Erreur');
+      }
+    } finally {
+      setSalonsLoading(false);
+    }
+  }, [code]);
 
-  const releaseZone = async () => {
-    if (!confirm('Libérer cette zone ? Un autre ambassadeur pourra la prendre.')) return;
-    setBusy(true); setActionError(null);
-    try {
-      await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/zones/release`, { method: 'POST' });
-      await triggerRefresh();
-    } finally { setBusy(false); }
-  };
+  const openZone = useCallback(async (zone: ZoneSummary) => {
+    setSelectedZone(zone);
+    setSalons([]);
+    setZoneBbox(null);
+    await loadSalons(zone.id);
+  }, [loadSalons]);
+
+  const backToZones = useCallback(async () => {
+    setSelectedZone(null);
+    setSalons([]);
+    setZoneBbox(null);
+    setLoading(true);
+    await refreshZones();
+  }, [refreshZones]);
 
   if (loading) {
     return (
-      <SectionShell title="Salons à démarcher">
+      <SectionShell title="Zones à démarcher">
         <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
           Chargement…
         </div>
@@ -126,13 +127,14 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
     );
   }
 
-  if (!currentClaim) {
+  // ── Zone overview ───────────────────────────────────────────────────────────
+  if (!selectedZone) {
     return (
-      <SectionShell title="Salons à démarcher">
+      <SectionShell title="Zones à démarcher">
         <div style={{ padding: '18px 16px' }}>
           <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 14, lineHeight: 1.5 }}>
-            Choisis une <strong>zone</strong> {zoneCity ? `à ${zoneCity}` : ''} pour voir les salons à démarcher.
-            Tant que tu la gardes, aucun autre ambassadeur ne peut y aller — pas de doublons sur le terrain.
+            Choisis une <strong>zone</strong>{zoneCity ? ` à ${zoneCity}` : ''} pour voir ses salons sur la carte.
+            Le compteur indique les salons qu&apos;il reste à démarcher.
           </div>
           {actionError && (
             <div style={{
@@ -141,31 +143,14 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
               fontSize: 12, marginBottom: 10,
             }}>{actionError}</div>
           )}
-          {availableZones.length === 0 ? (
+          {zones.length === 0 ? (
             <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: 16 }}>
               Aucune zone disponible pour le moment. Reviens plus tard.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {availableZones.map((z) => (
-                <button
-                  key={z.id}
-                  disabled={busy}
-                  onClick={() => claimZone(z.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 14px', background: 'var(--surface-2)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                    fontSize: 13, color: 'var(--text)', textAlign: 'left',
-                  }}
-                >
-                  <span>
-                    <strong>{z.name}</strong>
-                    <span style={{ color: 'var(--text-3)', marginLeft: 6, fontSize: 11 }}>· {z.city}</span>
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Choisir →</span>
-                </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {zones.map((z) => (
+                <ZoneCard key={z.id} zone={z} onOpen={() => openZone(z)} />
               ))}
             </div>
           )}
@@ -174,6 +159,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
     );
   }
 
+  // ── Salons of the selected zone ─────────────────────────────────────────────
   const notVisited = salons.filter((s) => !s.visit);
   const visitedByOthers = salons.filter((s) => s.visit && !s.visit.visitedByMe);
   const visitedByMe = salons.filter((s) => s.visit?.visitedByMe);
@@ -183,26 +169,25 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
       title="Salons à démarcher"
       right={
         <button
-          onClick={releaseZone}
-          disabled={busy}
+          onClick={backToZones}
           style={{
             fontSize: 11, padding: '4px 10px',
             background: 'transparent', color: 'var(--text-3)',
             border: '1px solid var(--border)', borderRadius: 99, cursor: 'pointer',
           }}
         >
-          Libérer
+          ← Zones
         </button>
       }
     >
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
         <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-          Zone réservée
+          Zone
         </div>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)', marginTop: 2 }}>
-          {currentClaim.zoneName}
+          {selectedZone.name}
           <span style={{ color: 'var(--text-3)', fontSize: 12, marginLeft: 6, fontWeight: 500 }}>
-            · {currentClaim.city}
+            · {selectedZone.city}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 11, color: 'var(--text-3)' }}>
@@ -219,64 +204,70 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
         }}>{actionError}</div>
       )}
 
-      {salons.length > 0 && (
-        <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', gap: 4 }}>
-          <button
-            onClick={() => onChangeView('map')}
-            style={{
-              padding: '6px 14px', borderRadius: 99,
-              background: view === 'map' ? 'var(--accent-muted)' : 'transparent',
-              color: view === 'map' ? 'var(--accent)' : 'var(--text-3)',
-              border: `1px solid ${view === 'map' ? 'var(--accent-border)' : 'var(--border)'}`,
-              fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            }}
-          >🗺️ Carte</button>
-          <button
-            onClick={() => onChangeView('list')}
-            style={{
-              padding: '6px 14px', borderRadius: 99,
-              background: view === 'list' ? 'var(--accent-muted)' : 'transparent',
-              color: view === 'list' ? 'var(--accent)' : 'var(--text-3)',
-              border: `1px solid ${view === 'list' ? 'var(--accent-border)' : 'var(--border)'}`,
-              fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            }}
-          >📋 Liste</button>
+      {salonsLoading ? (
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+          Chargement…
         </div>
-      )}
-
-      {salons.length === 0 ? (
+      ) : salons.length === 0 ? (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)', fontSize: 12 }}>
           Aucun salon dans cette zone pour le moment. Préviens l&apos;admin.
         </div>
-      ) : view === 'map' ? (
-        <div style={{ padding: 12 }}>
-          <SalonsMap
-            variant="ambassador"
-            salons={salons}
-            initialBbox={zoneBbox}
-            onLogVisit={(s) => setActiveVisitFor(s as Salon)}
-          />
-        </div>
       ) : (
         <>
-          {notVisited.length > 0 && (
-            <SubHeading>À faire ({notVisited.length})</SubHeading>
-          )}
-          {notVisited.map((s) => (
-            <SalonRow key={s.id} salon={s} onLogVisit={() => setActiveVisitFor(s)} />
-          ))}
+          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', gap: 4 }}>
+            <button
+              onClick={() => onChangeView('map')}
+              style={{
+                padding: '6px 14px', borderRadius: 99,
+                background: view === 'map' ? 'var(--accent-muted)' : 'transparent',
+                color: view === 'map' ? 'var(--accent)' : 'var(--text-3)',
+                border: `1px solid ${view === 'map' ? 'var(--accent-border)' : 'var(--border)'}`,
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}
+            >🗺️ Carte</button>
+            <button
+              onClick={() => onChangeView('list')}
+              style={{
+                padding: '6px 14px', borderRadius: 99,
+                background: view === 'list' ? 'var(--accent-muted)' : 'transparent',
+                color: view === 'list' ? 'var(--accent)' : 'var(--text-3)',
+                border: `1px solid ${view === 'list' ? 'var(--accent-border)' : 'var(--border)'}`,
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}
+            >📋 Liste</button>
+          </div>
 
-          {visitedByMe.length > 0 && <SubHeading>Tes visites ({visitedByMe.length})</SubHeading>}
-          {visitedByMe.map((s) => (
-            <SalonRow key={s.id} salon={s} onLogVisit={() => setActiveVisitFor(s)} />
-          ))}
+          {view === 'map' ? (
+            <div style={{ padding: 12 }}>
+              <SalonsMap
+                variant="ambassador"
+                salons={salons}
+                initialBbox={zoneBbox}
+                onLogVisit={(s) => setActiveVisitFor(s as Salon)}
+              />
+            </div>
+          ) : (
+            <>
+              {notVisited.length > 0 && (
+                <SubHeading>À faire ({notVisited.length})</SubHeading>
+              )}
+              {notVisited.map((s) => (
+                <SalonRow key={s.id} salon={s} onLogVisit={() => setActiveVisitFor(s)} />
+              ))}
 
-          {visitedByOthers.length > 0 && (
-            <SubHeading>Déjà visités par un autre ambassadeur ({visitedByOthers.length})</SubHeading>
+              {visitedByMe.length > 0 && <SubHeading>Tes visites ({visitedByMe.length})</SubHeading>}
+              {visitedByMe.map((s) => (
+                <SalonRow key={s.id} salon={s} onLogVisit={() => setActiveVisitFor(s)} />
+              ))}
+
+              {visitedByOthers.length > 0 && (
+                <SubHeading>Déjà visités par un autre ambassadeur ({visitedByOthers.length})</SubHeading>
+              )}
+              {visitedByOthers.map((s) => (
+                <SalonRow key={s.id} salon={s} onLogVisit={null} dimmed />
+              ))}
+            </>
           )}
-          {visitedByOthers.map((s) => (
-            <SalonRow key={s.id} salon={s} onLogVisit={null} dimmed />
-          ))}
         </>
       )}
 
@@ -285,10 +276,62 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
           code={code}
           salon={activeVisitFor}
           onClose={() => setActiveVisitFor(null)}
-          onSaved={async () => { setActiveVisitFor(null); await triggerRefresh(); }}
+          onSaved={async () => {
+            setActiveVisitFor(null);
+            await loadSalons(selectedZone.id);
+          }}
         />
       )}
     </SectionShell>
+  );
+}
+
+function ZoneCard({ zone, onOpen }: { zone: ZoneSummary; onOpen: () => void }) {
+  const done = Math.max(0, zone.salonCount - zone.todoCount);
+  const pct = zone.salonCount > 0 ? (done / zone.salonCount) * 100 : 0;
+  const allDone = zone.salonCount > 0 && zone.todoCount === 0;
+
+  return (
+    <button
+      onClick={onOpen}
+      style={{
+        display: 'block', width: '100%', textAlign: 'left',
+        padding: '12px 14px', background: 'var(--surface-2)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+          {zone.name}
+          <span style={{ color: 'var(--text-3)', fontWeight: 500, fontSize: 11, marginLeft: 6 }}>
+            · {zone.city}
+          </span>
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          Voir →
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 6, fontSize: 11, color: 'var(--text-3)' }}>
+        <span>📍 {zone.salonCount} salon{zone.salonCount !== 1 ? 's' : ''}</span>
+        {zone.salonCount === 0 ? (
+          <span>Aucun salon</span>
+        ) : allDone ? (
+          <span style={{ color: 'var(--success)', fontWeight: 600 }}>✓ Tout démarché</span>
+        ) : (
+          <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
+            {zone.todoCount} à démarcher
+          </span>
+        )}
+      </div>
+      <div style={{ marginTop: 8, height: 6, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', width: `${pct}%`,
+          background: allDone ? 'var(--success)' : 'var(--accent)',
+          borderRadius: 99,
+        }} />
+      </div>
+    </button>
   );
 }
 
@@ -468,6 +511,26 @@ function VisitModal({
   const [followUpAt, setFollowUpAt] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [geo, setGeo] = useState<GeoFix | null>(null);
+  const [geoStatus, setGeoStatus] = useState<GeoStatus>('locating');
+
+  // GPS check-in: capture the device position as soon as the modal opens, so a
+  // fix is ready by the time the ambassador submits.
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGeoStatus('unavailable');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeo({ lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy });
+        setGeoStatus('ok');
+      },
+      () => setGeoStatus('denied'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  }, []);
 
   const save = async () => {
     setSaving(true); setError(null);
@@ -480,6 +543,7 @@ function VisitModal({
           likelihoodRating: rating,
           notes: notes.trim() || undefined,
           followUpAt: followUpAt || undefined,
+          gps: geo ?? undefined,
         }),
       });
       const data = await res.json();
@@ -490,6 +554,13 @@ function VisitModal({
       onSaved();
     } finally { setSaving(false); }
   };
+
+  const geoStyle =
+    geoStatus === 'ok'
+      ? { bg: 'var(--success-bg)', fg: 'var(--success)', bd: 'var(--success)', icon: '📍' }
+    : geoStatus === 'locating'
+      ? { bg: 'var(--surface-2)', fg: 'var(--text-3)', bd: 'var(--border)', icon: '⏳' }
+      : { bg: 'var(--warning-bg)', fg: 'var(--warning)', bd: 'var(--warning)', icon: '⚠️' };
 
   return (
     <div
@@ -512,8 +583,27 @@ function VisitModal({
         <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', marginBottom: 2 }}>
           {salon.name}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 14 }}>
           {salon.address ?? 'Enregistrer ta visite'}
+        </div>
+
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px', borderRadius: 'var(--radius-sm)', marginBottom: 16,
+          fontSize: 11.5, fontWeight: 500, lineHeight: 1.4,
+          background: geoStyle.bg, color: geoStyle.fg,
+          border: `1px solid ${geoStyle.bd}`,
+        }}>
+          <span style={{ fontSize: 14 }}>{geoStyle.icon}</span>
+          <span>
+            {geoStatus === 'locating' && 'Localisation en cours… reste sur place.'}
+            {geoStatus === 'ok' && geo &&
+              `Position détectée (±${Math.round(geo.accuracy)} m) — ta visite sera vérifiée.`}
+            {geoStatus === 'denied' &&
+              'Localisation refusée — la visite sera enregistrée mais marquée non vérifiée.'}
+            {geoStatus === 'unavailable' &&
+              'Localisation indisponible sur cet appareil — visite marquée non vérifiée.'}
+          </span>
         </div>
 
         <Field label="Tu as laissé un flyer ?">

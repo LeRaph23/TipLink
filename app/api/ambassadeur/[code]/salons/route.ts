@@ -14,11 +14,11 @@ async function authenticate(req: NextRequest, code: string) {
   return ambassadorId;
 }
 
-// GET /api/ambassadeur/[code]/salons
-// Returns the salons of the ambassador's currently claimed zone, with visit status.
-//   - notVisited: salons with no visit yet
-//   - visited: salons visited (by anyone), with first/last visit info + best rating
-//   - myVisited: salons that *this ambassador* has visited (shown for follow-up)
+// GET /api/ambassadeur/[code]/salons?zoneId=<uuid>
+// Returns the salons of the requested zone, with visit status. Zones are
+// shared (no reservation), so any active zone may be requested.
+//   - visit: latest visit info + best rating (by anyone), or null
+//   - visit.visitedByMe: whether *this ambassador* logged one of the visits
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -29,31 +29,28 @@ export async function GET(
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
-  const supabase = createServiceClient();
-
-  const { data: claim } = await supabase
-    .from('ambassador_zone_claims')
-    .select('zone_id, salon_zones(id, name, city, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon)')
-    .eq('ambassador_id', ambassadorId)
-    .is('released_at', null)
-    .maybeSingle();
-
-  if (!claim) {
+  const zoneId = req.nextUrl.searchParams.get('zoneId');
+  if (!zoneId) {
     return NextResponse.json({ zone: null, salons: [] });
   }
 
-  type ZoneRow = {
-    id: string; name: string; city: string;
-    bbox_min_lat: number | null; bbox_min_lon: number | null;
-    bbox_max_lat: number | null; bbox_max_lon: number | null;
-  };
-  const zone = claim.salon_zones as ZoneRow | ZoneRow[] | null;
-  const z = Array.isArray(zone) ? zone[0] : zone;
+  const supabase = createServiceClient();
+
+  const { data: z } = await supabase
+    .from('salon_zones')
+    .select('id, name, city, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
+    .eq('id', zoneId)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!z) {
+    return NextResponse.json({ zone: null, salons: [] });
+  }
 
   const { data: salons } = await supabase
     .from('salons')
     .select('id, name, address, postal_code, phone, website, lat, lon, opening_hours, business_status, google_rating')
-    .eq('zone_id', claim.zone_id)
+    .eq('zone_id', zoneId)
     .eq('is_active', true)
     .order('name')
     .range(0, 9999);
