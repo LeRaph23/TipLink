@@ -88,22 +88,26 @@ export async function GET(
     }
   }
 
-  const zones = (allZones ?? []).map((z) => ({
-    id: z.id,
-    city: z.city,
-    name: z.name,
-    salonCount: salonCountByZone.get(z.id) ?? 0,
-    todoCount: todoCountByZone.get(z.id) ?? 0,
-    bbox:
-      z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
-        ? {
-            minLat: Number(z.bbox_min_lat),
-            minLon: Number(z.bbox_min_lon),
-            maxLat: Number(z.bbox_max_lat),
-            maxLon: Number(z.bbox_max_lon),
-          }
-        : null,
-  }));
+  // Only zones that actually have salons are returned — a zone with no salon
+  // is nothing to canvass and would just clutter the picker.
+  const zones = (allZones ?? [])
+    .map((z) => ({
+      id: z.id,
+      city: z.city,
+      name: z.name,
+      salonCount: salonCountByZone.get(z.id) ?? 0,
+      todoCount: todoCountByZone.get(z.id) ?? 0,
+      bbox:
+        z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
+          ? {
+              minLat: Number(z.bbox_min_lat),
+              minLon: Number(z.bbox_min_lon),
+              maxLat: Number(z.bbox_max_lat),
+              maxLon: Number(z.bbox_max_lon),
+            }
+          : null,
+    }))
+    .filter((z) => z.salonCount > 0);
 
   return NextResponse.json({ city: amb.city, zones });
 }
