@@ -50,6 +50,8 @@ type Visit = {
   likelihoodRating: number;
   notes: string | null;
   followUpAt: string | null;
+  locationVerified: boolean;
+  distanceM: number | null;
 };
 
 const RATING_LABEL: Record<number, string> = { 1: 'Faible', 2: 'Moyen', 3: 'Fort' };
@@ -821,7 +823,7 @@ function VisitsTable({ visits }: { visits: Visit[] }) {
       <div style={{ maxHeight: 600, overflowY: 'auto', overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-2)' }}>
-            <tr><Th>Date</Th><Th>Ville</Th><Th>Salon</Th><Th>Ambassadeur</Th><Th>Flyer</Th><Th>Convaincu</Th><Th>Note</Th><Th>Relance</Th><Th>Notes</Th></tr>
+            <tr><Th>Date</Th><Th>Ville</Th><Th>Salon</Th><Th>Ambassadeur</Th><Th>GPS</Th><Th>Flyer</Th><Th>Convaincu</Th><Th>Note</Th><Th>Relance</Th><Th>Notes</Th></tr>
           </thead>
           <tbody>
             {visits.map((v) => (
@@ -830,6 +832,7 @@ function VisitsTable({ visits }: { visits: Visit[] }) {
                 <Td>{v.salonCity}</Td>
                 <Td><strong>{v.salonName}</strong></Td>
                 <Td>{v.ambassadorName}</Td>
+                <Td><VisitVerifBadge verified={v.locationVerified} distanceM={v.distanceM} /></Td>
                 <Td>{v.flyerLeft ? '🪧' : '—'}</Td>
                 <Td>{v.convinced === 'yes' ? '✓ oui' : v.convinced === 'maybe' ? '~ peut-être' : 'non'}</Td>
                 <Td>
@@ -853,6 +856,40 @@ function VisitsTable({ visits }: { visits: Visit[] }) {
         </table>
       </div>
     </div>
+  );
+}
+
+// GPS check-in result for a visit: verified (within range), out-of-range
+// (logged with a position but too far), or no position captured at all.
+function VisitVerifBadge({ verified, distanceM }: { verified: boolean; distanceM: number | null }) {
+  const style = verified
+    ? {
+        bg: 'var(--success-bg)', fg: 'var(--success)', bd: 'var(--success)',
+        label: distanceM != null ? `📍 ${distanceM} m` : '📍 Vérifié',
+        title: distanceM != null ? `Visite à ${distanceM} m du salon` : 'Visite vérifiée par GPS',
+      }
+    : distanceM != null
+      ? {
+          bg: 'var(--warning-bg)', fg: 'var(--warning)', bd: 'var(--warning)',
+          label: `⚠ ${distanceM} m`,
+          title: `Visite enregistrée à ${distanceM} m du salon — hors du rayon de vérification`,
+        }
+      : {
+          bg: 'var(--surface-2)', fg: 'var(--text-3)', bd: 'var(--border)',
+          label: '— sans GPS',
+          title: 'Aucune position GPS capturée pour cette visite',
+        };
+  return (
+    <span
+      title={style.title}
+      style={{
+        fontSize: 11, padding: '2px 7px', borderRadius: 99, fontWeight: 700,
+        background: style.bg, color: style.fg, border: `1px solid ${style.bd}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {style.label}
+    </span>
   );
 }
 

@@ -4,6 +4,23 @@ import { verifyCookieValue } from '../auth/route';
 
 export const runtime = 'nodejs';
 
+// A visit is GPS-verified when the device location captured at log time is
+// within this radius of the salon. Salon coordinates come from OSM and the
+// phone fix has its own error margin, so the radius is generous.
+const VISIT_GPS_RADIUS_M = 150;
+
+/** Great-circle distance between two lat/lon points, in metres. */
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 async function authenticate(req: NextRequest, code: string) {
   const cookieValue = req.cookies.get('amb_session')?.value;
   if (!cookieValue) return null;
@@ -82,6 +99,13 @@ export async function POST(
     ? body.followUpAt
     : null;
 
+  // GPS check-in captured by the browser at log time (optional — the
+  // ambassador may have denied location or be somewhere with no fix).
+  const gps = body.gps && typeof body.gps === 'object' ? body.gps : null;
+  const gpsLat = gps && Number.isFinite(Number(gps.lat)) ? Number(gps.lat) : null;
+  const gpsLon = gps && Number.isFinite(Number(gps.lon)) ? Number(gps.lon) : null;
+  const gpsAccuracy = gps && Number.isFinite(Number(gps.accuracy)) ? Number(gps.accuracy) : null;
+
   if (!salonId) return NextResponse.json({ error: 'salonId requis' }, { status: 400 });
   if (!Number.isInteger(rating) || rating < 1 || rating > 3) {
     return NextResponse.json({ error: 'Note 1-3 requise' }, { status: 400 });
@@ -92,27 +116,20 @@ export async function POST(
   // Sanity: salon must exist & be active
   const { data: salon } = await supabase
     .from('salons')
-    .select('id, zone_id')
+    .select('id, lat, lon')
     .eq('id', salonId)
     .eq('is_active', true)
     .maybeSingle();
   if (!salon) return NextResponse.json({ error: 'Salon introuvable' }, { status: 404 });
 
-  // Optional: enforce that the ambassador has the salon's zone claimed
-  if (salon.zone_id) {
-    const { data: claim } = await supabase
-      .from('ambassador_zone_claims')
-      .select('zone_id')
-      .eq('ambassador_id', ambassadorId)
-      .eq('zone_id', salon.zone_id)
-      .is('released_at', null)
-      .maybeSingle();
-    if (!claim) {
-      return NextResponse.json(
-        { error: 'Tu n\'as pas réservé la zone de ce salon.' },
-        { status: 403 }
-      );
-    }
+  // GPS verification: compute the distance from the captured position to the
+  // salon. Verified only when a fix exists, the salon has coordinates, and the
+  // distance is within the radius. Everything else is left for admin review.
+  let distanceM: number | null = null;
+  let locationVerified = false;
+  if (gpsLat != null && gpsLon != null && salon.lat != null && salon.lon != null) {
+    distanceM = Math.round(haversineMeters(gpsLat, gpsLon, Number(salon.lat), Number(salon.lon)));
+    locationVerified = distanceM <= VISIT_GPS_RADIUS_M;
   }
 
   const { data, error } = await supabase
@@ -125,6 +142,11 @@ export async function POST(
       likelihood_rating: rating,
       notes,
       follow_up_at: followUpAt,
+      gps_lat: gpsLat,
+      gps_lon: gpsLon,
+      gps_accuracy_m: gpsAccuracy,
+      distance_m: distanceM,
+      location_verified: locationVerified,
     })
     .select('id')
     .single();

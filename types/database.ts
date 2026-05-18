@@ -1385,6 +1385,11 @@ export type Database = {
           likelihood_rating: number;
           notes: string | null;
           follow_up_at: string | null;
+          gps_lat: number | null;
+          gps_lon: number | null;
+          gps_accuracy_m: number | null;
+          distance_m: number | null;
+          location_verified: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1398,6 +1403,11 @@ export type Database = {
           likelihood_rating: number;
           notes?: string | null;
           follow_up_at?: string | null;
+          gps_lat?: number | null;
+          gps_lon?: number | null;
+          gps_accuracy_m?: number | null;
+          distance_m?: number | null;
+          location_verified?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1411,6 +1421,11 @@ export type Database = {
           likelihood_rating?: number;
           notes?: string | null;
           follow_up_at?: string | null;
+          gps_lat?: number | null;
+          gps_lon?: number | null;
+          gps_accuracy_m?: number | null;
+          distance_m?: number | null;
+          location_verified?: boolean;
           created_at?: string;
           updated_at?: string;
         };

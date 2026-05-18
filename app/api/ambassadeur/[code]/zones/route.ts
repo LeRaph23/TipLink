@@ -15,9 +15,10 @@ async function authenticateAmbassador(req: NextRequest, code: string) {
 }
 
 // GET /api/ambassadeur/[code]/zones
-// Returns: { city, currentClaim, availableZones }
-//   - currentClaim: { zoneId, zoneName, claimedAt } or null
-//   - availableZones: zones in the ambassador's city, excluding claimed ones
+// Returns every active zone of the ambassador's city, each with its salon
+// counts. Zones are a browsing aid only — there is no exclusive reservation,
+// so any ambassador can open any zone.
+//   { city, zones: [{ id, city, name, salonCount, todoCount, bbox }] }
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -40,52 +41,69 @@ export async function GET(
     return NextResponse.json({ error: 'Compte inactif' }, { status: 403 });
   }
 
-  // Current active claim
-  const { data: claim } = await supabase
-    .from('ambassador_zone_claims')
-    .select('id, zone_id, claimed_at, salon_zones(id, name, city)')
-    .eq('ambassador_id', ambassadorId)
-    .is('released_at', null)
-    .maybeSingle();
-
-  const currentZone = claim?.salon_zones as
-    | { id: string; name: string; city: string }
-    | { id: string; name: string; city: string }[]
-    | null;
-  const cz = Array.isArray(currentZone) ? currentZone[0] : currentZone;
-
-  const currentClaim = claim && cz
-    ? { zoneId: claim.zone_id, zoneName: cz.name, city: cz.city, claimedAt: claim.claimed_at }
-    : null;
-
-  // Cities available: ambassador's city if set, else all cities with zones
+  // Zones: the ambassador's city if set, else every city with zones.
   const cityFilter = amb.city?.trim() || null;
 
   let zonesQuery = supabase
     .from('salon_zones')
-    .select('id, city, name')
+    .select('id, city, name, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
     .eq('is_active', true)
     .order('city')
     .order('name');
   if (cityFilter) zonesQuery = zonesQuery.eq('city', cityFilter);
 
   const { data: allZones } = await zonesQuery;
+  const zoneIds = (allZones ?? []).map((z) => z.id);
 
-  // Active claims (to filter out already-claimed zones, except mine)
-  const { data: activeClaims } = await supabase
-    .from('ambassador_zone_claims')
-    .select('zone_id')
-    .is('released_at', null);
+  // Per-zone counts: total active salons, and how many are still to canvass
+  // (no visit logged by anyone — a salon visited by another ambassador counts
+  // as done since zones are shared).
+  const { data: salons } = zoneIds.length
+    ? await supabase
+        .from('salons')
+        .select('id, zone_id')
+        .in('zone_id', zoneIds)
+        .eq('is_active', true)
+        .range(0, 99999)
+    : { data: [] as Array<{ id: string; zone_id: string | null }> };
 
-  const claimedZoneIds = new Set((activeClaims ?? []).map((c) => c.zone_id));
+  const salonIds = (salons ?? []).map((s) => s.id);
+  const { data: visits } = salonIds.length
+    ? await supabase
+        .from('salon_visits')
+        .select('salon_id')
+        .in('salon_id', salonIds)
+        .range(0, 199999)
+    : { data: [] as Array<{ salon_id: string }> };
 
-  const availableZones = (allZones ?? [])
-    .filter((z) => !claimedZoneIds.has(z.id) || z.id === currentClaim?.zoneId)
-    .map((z) => ({ id: z.id, city: z.city, name: z.name }));
+  const visitedSalonIds = new Set((visits ?? []).map((v) => v.salon_id));
 
-  return NextResponse.json({
-    city: amb.city,
-    currentClaim,
-    availableZones,
-  });
+  const salonCountByZone = new Map<string, number>();
+  const todoCountByZone = new Map<string, number>();
+  for (const s of salons ?? []) {
+    if (!s.zone_id) continue;
+    salonCountByZone.set(s.zone_id, (salonCountByZone.get(s.zone_id) ?? 0) + 1);
+    if (!visitedSalonIds.has(s.id)) {
+      todoCountByZone.set(s.zone_id, (todoCountByZone.get(s.zone_id) ?? 0) + 1);
+    }
+  }
+
+  const zones = (allZones ?? []).map((z) => ({
+    id: z.id,
+    city: z.city,
+    name: z.name,
+    salonCount: salonCountByZone.get(z.id) ?? 0,
+    todoCount: todoCountByZone.get(z.id) ?? 0,
+    bbox:
+      z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
+        ? {
+            minLat: Number(z.bbox_min_lat),
+            minLon: Number(z.bbox_min_lon),
+            maxLat: Number(z.bbox_max_lat),
+            maxLon: Number(z.bbox_max_lon),
+          }
+        : null,
+  }));
+
+  return NextResponse.json({ city: amb.city, zones });
 }
