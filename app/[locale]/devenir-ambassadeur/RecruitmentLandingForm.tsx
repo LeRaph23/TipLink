@@ -166,7 +166,7 @@ export function RecruitmentLandingForm() {
           onChange={e => setNotes(e.target.value)}
           rows={3}
           style={{ ...inp, resize: 'vertical', fontFamily: 'var(--font)' }}
-          placeholder="Études, expérience, motivation…"
+          placeholder="Parcours, expérience, motivation…"
         />
       </div>
 

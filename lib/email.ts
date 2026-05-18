@@ -1067,7 +1067,7 @@ export async function sendColdEmailStep(opts: {
     2: {
       subject: `${firstName ? firstName + ', ' : ''}exemple concret — un amba a fait 12 ventes en 3 sem`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Petit suivi sur mon mail précédent. Concrètement : un de nos ambassadeurs Lyon (BTS NDRC en alternance) vient de faire <strong class="text-strong" style="color:#0f0f12">12 ventes en 3 semaines</strong>, soit ~360€ en plus de sa formation. Il bosse ~5h/semaine.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Petit suivi sur mon mail précédent. Concrètement : un de nos ambassadeurs à Lyon vient de faire <strong class="text-strong" style="color:#0f0f12">12 ventes en 3 semaines</strong>, soit ~360€ de commissions. Il bosse ~5h/semaine.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si tu veux essayer, le SIRET que tu as déjà suffit :</p>
         <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Postuler en 2 min →</a></p>`,
     },

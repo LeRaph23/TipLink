@@ -364,7 +364,7 @@ export default async function AdminAmbassadeursPage({
             Ambassadeurs
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-            Gérez les étudiants apporteurs d&apos;affaires et leurs commissions.
+            Gérez les apporteurs d&apos;affaires et leurs commissions.
           </p>
         </div>
         <a

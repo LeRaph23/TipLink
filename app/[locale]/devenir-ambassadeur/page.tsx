@@ -45,7 +45,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Combien de temps ça prend ?',
-    a: 'C\'est toi qui décides. Nos meilleurs ambassadeurs (BTS NDRC en alternance) bossent ~5h/semaine et font 8-12 ventes. Soit ~250-400€/semaine en plus.',
+    a: 'C\'est toi qui décides. Nos meilleurs ambassadeurs bossent ~5h/semaine et font 8-12 ventes, soit ~250-400€/semaine.',
   },
   {
     q: 'Quel est le produit que je vends ?',
