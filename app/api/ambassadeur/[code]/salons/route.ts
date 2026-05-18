@@ -14,9 +14,9 @@ async function authenticate(req: NextRequest, code: string) {
   return ambassadorId;
 }
 
-// GET /api/ambassadeur/[code]/salons?zoneId=<uuid>
-// Returns the salons of the requested zone, with visit status. Zones are
-// shared (no reservation), so any active zone may be requested.
+// GET /api/ambassadeur/[code]/salons
+// Returns every active salon in the ambassador's city, with visit status.
+// (Zones were removed — ambassadors canvass salons directly.)
 //   - visit: latest visit info + best rating (by anyone), or null
 //   - visit.visitedByMe: whether *this ambassador* logged one of the visits
 export async function GET(
@@ -29,31 +29,30 @@ export async function GET(
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
-  const zoneId = req.nextUrl.searchParams.get('zoneId');
-  if (!zoneId) {
-    return NextResponse.json({ zone: null, salons: [] });
-  }
-
   const supabase = createServiceClient();
 
-  const { data: z } = await supabase
-    .from('salon_zones')
-    .select('id, name, city, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
-    .eq('id', zoneId)
-    .eq('is_active', true)
-    .maybeSingle();
+  const { data: amb } = await supabase
+    .from('ambassadors')
+    .select('id, city, is_active')
+    .eq('id', ambassadorId)
+    .single();
 
-  if (!z) {
-    return NextResponse.json({ zone: null, salons: [] });
+  if (!amb?.is_active) {
+    return NextResponse.json({ error: 'Compte inactif' }, { status: 403 });
   }
 
-  const { data: salons } = await supabase
+  // Salons: the ambassador's city if set, else every active salon.
+  const cityFilter = amb.city?.trim() || null;
+
+  let salonsQuery = supabase
     .from('salons')
     .select('id, name, category, converted_at, address, postal_code, phone, website, lat, lon, opening_hours, business_status, google_rating')
-    .eq('zone_id', zoneId)
     .eq('is_active', true)
     .order('name')
     .range(0, 9999);
+  if (cityFilter) salonsQuery = salonsQuery.eq('city', cityFilter);
+
+  const { data: salons } = await salonsQuery;
 
   const salonIds = (salons ?? []).map((s) => s.id);
 
@@ -141,22 +140,5 @@ export async function GET(
     };
   });
 
-  return NextResponse.json({
-    zone: z
-      ? {
-          id: z.id,
-          name: z.name,
-          city: z.city,
-          bbox: z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
-            ? {
-                minLat: Number(z.bbox_min_lat),
-                minLon: Number(z.bbox_min_lon),
-                maxLat: Number(z.bbox_max_lat),
-                maxLon: Number(z.bbox_max_lon),
-              }
-            : null,
-        }
-      : null,
-    salons: enriched,
-  });
+  return NextResponse.json({ city: amb.city, salons: enriched });
 }
