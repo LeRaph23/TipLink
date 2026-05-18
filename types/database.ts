@@ -1352,7 +1352,9 @@ export type Database = {
         Row: {
           address: string | null
           business_status: string | null
+          category: string
           city: string
+          converted_at: string | null
           created_at: string
           google_enriched_at: string | null
           google_place_id: string | null
@@ -1375,7 +1377,9 @@ export type Database = {
         Insert: {
           address?: string | null
           business_status?: string | null
+          category?: string
           city: string
+          converted_at?: string | null
           created_at?: string
           google_enriched_at?: string | null
           google_place_id?: string | null
@@ -1398,7 +1402,9 @@ export type Database = {
         Update: {
           address?: string | null
           business_status?: string | null
+          category?: string
           city?: string
+          converted_at?: string | null
           created_at?: string
           google_enriched_at?: string | null
           google_place_id?: string | null

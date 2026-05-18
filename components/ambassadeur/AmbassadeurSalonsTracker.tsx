@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { isOpenNow, mapsLink as buildMapsLink } from '@/lib/salon-hours';
-import type { AmbassadorSalon } from '@/components/salons/SalonsMap';
+import { CATEGORY_EMOJI, type AmbassadorSalon } from '@/components/salons/SalonsMap';
 
 const SalonsMap = dynamic(
   () => import('@/components/salons/SalonsMap').then((m) => m.SalonsMap),
@@ -434,7 +434,18 @@ function SalonRow({
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{salon.name}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+              {CATEGORY_EMOJI[salon.category] ?? ''} {salon.name}
+            </span>
+            {salon.converted && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
+                background: 'rgba(37,99,235,0.12)', color: '#2563eb',
+                border: '1px solid #2563eb', whiteSpace: 'nowrap',
+              }}>
+                🔵 Client
+              </span>
+            )}
             {openState && (
               <span style={{
                 fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
@@ -554,6 +565,7 @@ function VisitModal({
   const [rating, setRating] = useState<number>(2);
   const [notes, setNotes] = useState('');
   const [followUpAt, setFollowUpAt] = useState('');
+  const [isClient, setIsClient] = useState(salon.converted);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [geo, setGeo] = useState<GeoFix | null>(null);
@@ -589,6 +601,7 @@ function VisitModal({
           notes: notes.trim() || undefined,
           followUpAt: followUpAt || undefined,
           gps: geo ?? undefined,
+          converted: isClient,
         }),
       });
       const data = await res.json();
@@ -673,6 +686,13 @@ function VisitModal({
                 {'⭐'.repeat(r)} <span style={{ marginLeft: 4, fontSize: 11, opacity: 0.8 }}>{RATING_LABEL[r]}</span>
               </Toggle>
             ))}
+          </div>
+        </Field>
+
+        <Field label="Devenu client ? (l'établissement a commandé)">
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Toggle active={!isClient} onClick={() => setIsClient(false)}>Non</Toggle>
+            <Toggle active={isClient} onClick={() => setIsClient(true)}>Oui 🔵</Toggle>
           </div>
         </Field>
 

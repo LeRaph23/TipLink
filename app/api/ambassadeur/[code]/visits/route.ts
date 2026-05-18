@@ -106,6 +106,10 @@ export async function POST(
   const gpsLon = gps && Number.isFinite(Number(gps.lon)) ? Number(gps.lon) : null;
   const gpsAccuracy = gps && Number.isFinite(Number(gps.accuracy)) ? Number(gps.accuracy) : null;
 
+  // Optional: flag this establishment as a client (converted) or clear the
+  // flag. When absent, the conversion state is left untouched.
+  const markConverted = typeof body.converted === 'boolean' ? body.converted : null;
+
   if (!salonId) return NextResponse.json({ error: 'salonId requis' }, { status: 400 });
   if (!Number.isInteger(rating) || rating < 1 || rating > 3) {
     return NextResponse.json({ error: 'Note 1-3 requise' }, { status: 400 });
@@ -116,7 +120,7 @@ export async function POST(
   // Sanity: salon must exist & be active
   const { data: salon } = await supabase
     .from('salons')
-    .select('id, lat, lon')
+    .select('id, lat, lon, converted_at')
     .eq('id', salonId)
     .eq('is_active', true)
     .maybeSingle();
@@ -159,6 +163,17 @@ export async function POST(
       );
     }
     return NextResponse.json({ error: error?.message ?? 'Erreur DB' }, { status: 500 });
+  }
+
+  // Apply the conversion flag only when it actually changes.
+  if (markConverted !== null) {
+    const alreadyConverted = salon.converted_at != null;
+    if (markConverted !== alreadyConverted) {
+      await supabase
+        .from('salons')
+        .update({ converted_at: markConverted ? new Date().toISOString() : null })
+        .eq('id', salonId);
+    }
   }
 
   return NextResponse.json({ ok: true, id: data.id });
