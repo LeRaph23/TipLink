@@ -36,18 +36,18 @@ export default async function RecruitmentPage({
           padding: '32px 28px',
         }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', margin: '0 0 8px' }}>
-            Deviens ambassadeur DigiTip
+            Devenez ambassadeur DigiTip
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.55, margin: '0 0 20px' }}>
-            Tu touches <strong>25 €</strong> par vente Solo et <strong>35 €</strong> par vente Duo,
-            plus jusqu&apos;à <strong>100 €</strong> de bonus hebdo et <strong>200 €</strong> pour le #1 du mois.
+            Vous touchez <strong>25 €</strong> par vente Solo et <strong>35 €</strong> par vente Duo,
+            plus jusqu&apos;à <strong>100 €</strong> de bonus hebdomadaire et <strong>200 €</strong> pour le n°1 du mois.
           </p>
 
           <RecruitmentForm token={token} />
         </div>
 
         <p style={{ marginTop: 24, fontSize: 11.5, color: 'var(--text-3)', textAlign: 'center' }}>
-          Ton dossier sera examiné sous 48h. Pas de spam, pas de partage de tes données.
+          Votre dossier sera examiné sous 48h. Pas de spam, pas de partage de vos données.
         </p>
       </div>
     </div>
