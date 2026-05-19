@@ -2,6 +2,9 @@
 
 .salon-map-wrap {
   position: relative;
+  /* Own stacking context: contains Leaflet's internal z-indexes (its panes and
+     controls climb to ~1000) so the map can't paint over app modals. */
+  isolation: isolate;
   width: 100%;
   height: 60vh;
   min-height: 360px;
