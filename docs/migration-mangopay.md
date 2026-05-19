@@ -17,7 +17,9 @@
 - ✅ **Phase 2 — Migration BDD** : `supabase/migrations/00053_mangopay_migration.sql`
   + `types/database.ts` mis à jour à la main (Supabase local indisponible ici —
   régénérer via `npm run db:types` après application).
-- ⏳ **Phases 3 à 9** — non implémentées. Voir « Décisions ouvertes » ci-dessous.
+- ✅ **Phase 3 — Routes API de paiement** : routes Checkout SDK écrites + migration
+  d'appoint `00054_payin_contexts.sql`. Voir « Détail Phase 3 » ci-dessous.
+- ⏳ **Phases 4 à 9** — non implémentées.
 
 > **Correctifs vs plan** découverts pendant l'implémentation :
 > - SDK Node : `mangopay4-nodejs-sdk` v1.68 confirmé.
@@ -27,29 +29,57 @@
 > - `Recipients.create(data, userId)` existe dans le SDK v4 ; `RecipientScope: 'PAYOUT'`
 >   renvoie bien `PendingUserAction.RedirectUrl` (SCA). `Users.enroll(userId)` enrôle
 >   un OWNER en SCA.
+> - **Un PayIn Mangopay ne porte aucune métadonnée riche** (juste un `Tag` de 255 car.)
+>   et un Hook ne livre qu'un `RessourceId`. Les pourboires ont leur ligne
+>   `transactions` ; les achats de pack n'avaient rien → nouvelle table
+>   **`payin_contexts`** (migration `00054`) qui stocke le contexte de dispatch d'un
+>   PayIn de pack avant sa création.
+> - **L'utilisateur `PAYER` jetable est créé dans `create-card-registration`** (pas
+>   dans `create-payin`) : une `CardRegistration` exige déjà un `UserId`. Son id est
+>   relayé via le champ `UserId` de la `CardRegistration` jusqu'à `create-payin`.
+> - **L'express pack ne collecte plus l'adresse via Stripe** : il faut un formulaire
+>   adresse + e-mail in-app (Phase 7), le backend `create-pack-intent` reçoit
+>   désormais `shipping` + `customerEmail`.
 
-### Décisions ouvertes (à trancher avant les phases 3-9)
+### Décisions tranchées (avant phases 3-9)
 
-Le modèle wallet change la mécanique de certains flux ; ces points ne sont **pas**
-de simples traductions ligne à ligne et méritent une validation :
+1. **Pourboires de groupe** → **ledger pur** : un pourboire de groupe = un seul
+   PayIn vers le wallet central ; la répartition est un pur ledger
+   (`group_tip_transfers`), sans `Transfer` Mangopay par pourboire.
+   ⇒ `cron/group-transfers-reconcile` **supprimé** (plus rien à réconcilier).
+2. **Collecte avant onboarding** → **autorisée** : on encaisse un pourboire pour
+   tout staff actif même sans compte Mangopay / KYC ; le ledger le crédite, il
+   onboarde plus tard pour retirer. Les routes de paiement ne vérifient plus
+   l'`onboarding_status`.
+3. **SCA à l'onboarding** *(ouvert — Phase 5)* : enregistrer le Recipient IBAN
+   renvoie une URL de redirection SCA hébergée → l'UX de `BankingSetupForm` doit
+   gérer un aller-retour navigateur. À cadrer en Phase 5.
+4. **Tippeurs invités** → **`Natural User` `PAYER` jetable par paiement** : pas de
+   table de réutilisation par e-mail.
 
-1. **Pourboires de groupe** : en modèle wallet, un pourboire de groupe = **un seul
-   PayIn** vers le wallet central ; la répartition entre staff devient un **pur
-   ledger** (`group_tip_transfers` comme lignes comptables, sans `Transfer`
-   Mangopay par pourboire). Conséquence : `cron/group-transfers-reconcile`
-   devient quasi inutile. → Confirmer : ledger pur (recommandé) vs Transfer par pourboire.
-2. **Collecte d'un pourboire avant onboarding** : l'argent allant au wallet
-   central, on **peut** encaisser un pourboire pour un staff actif même sans
-   KYC/IBAN (le ledger le crédite ; il onboarde plus tard pour retirer).
-   L'ancien code bloquait tant que Stripe Connect n'était pas « complete ». →
-   Confirmer : autoriser la collecte avant onboarding (recommandé, c'est l'intérêt
-   du modèle wallet).
-3. **SCA à l'onboarding** : enregistrer le Recipient IBAN renvoie une URL de
-   redirection SCA hébergée → l'UX de `BankingSetupForm` doit gérer un aller-retour
-   navigateur. À cadrer.
-4. **Tippeurs invités** : un PayIn exige un `AuthorId`. Sans table de réutilisation
-   par e-mail, chaque pourboire crée un *Natural User* `PAYER` jetable
-   (acceptable). → Confirmer ou prévoir une table de correspondance e-mail→userId.
+### Détail Phase 3 — routes API
+
+- **`app/api/mangopay/create-card-registration/`** (nouveau) — callback
+  `onCreateCardRegistration` : crée le `PAYER` jetable + la `CardRegistration`,
+  renvoyée verbatim au SDK.
+- **`app/api/mangopay/create-payin/`** (remplace `stripe/create-intent`) — callback
+  `onCreatePayment` du pourboire solo : ligne `transactions`, Direct Card PayIn
+  vers le wallet central, clé d'idempotence (en-tête Mangopay + colonne DB).
+- **`app/api/mangopay/create-group-payin/`** (remplace `stripe/create-group-intent`)
+  — pourboire de groupe : un seul PayIn ; le split ledger est fait par le webhook.
+- **`app/api/billing/pack-tax/`** — recalcul TVA **pur** (plus de PayInIntent à
+  mettre à jour) ; sert l'affichage, n'est jamais la source du montant débité.
+- **`app/api/billing/create-pack-intent/`** — callback `onCreatePayment` de
+  l'express pack : écrit `payin_contexts` (source `pack-express`) puis le PayIn.
+- **`app/api/billing/checkout/`** — callback `onCreatePayment` du wizard `/order` :
+  trouve/crée le groupe de facturation, écrit `payin_contexts` (`pack-order`),
+  puis le PayIn. Plus de customer Stripe.
+- **Supprimés** : `app/api/stripe/*`, `app/api/billing/attach-pi-email/`
+  (e-mail du reçu désormais dans `transactions.metadata`),
+  `app/api/cron/group-transfers-reconcile/` (+ son entrée `vercel.json`).
+- **`lib/billing/promo.ts`** (nouveau) — résolution partagée d'un code promo.
+- `lib/mangopay/payins.ts` accepte une clé d'idempotence ;
+  `lib/mangopay/idempotency.ts` : champ `staffId` → `scope` (générique).
 
 ## Contexte
 

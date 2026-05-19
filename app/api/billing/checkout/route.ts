@@ -1,41 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe/client';
+import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PACKS, type PackId } from '@/lib/env';
-import { getPackPricing } from '@/lib/stripe/pricing';
-import { computePackTax } from '@/lib/stripe/tax';
+import { getPackPricing } from '@/lib/mangopay/pricing';
+import { computePackTax } from '@/lib/mangopay/vat';
+import { resolvePromoCode, discountFor } from '@/lib/billing/promo';
+import { generateIdempotencyKey } from '@/lib/mangopay/idempotency';
+import { createDirectCardPayIn, getPayIn } from '@/lib/mangopay/payins';
+import { platformIds } from '@/lib/mangopay/client';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import type { Json } from '@/types/database';
 
 export const runtime = 'nodejs';
 
-type Address = {
-  line1: string;
-  line2?: string | null;
-  city: string;
-  postal_code: string;
-  country: string;
-};
+// Serves the Checkout SDK's `onCreatePayment` callback for an authenticated
+// SmartTag pack order from the /order wizard. The buyer's billing group is
+// found or created from the submitted business details, then the pack PayIn
+// credits the central wallet. The webhook turns the stored context into a
+// smarttag_order once the PayIn succeeds.
 
-type Body = {
-  pack: PackId;
-  locale?: string;
-  promoCode?: string | null;
-  business?: {
-    legal_name: string;
-    vat_number?: string | null;
-    shipping: Address;
-    billing_same_as_shipping?: boolean;
-    billing?: Address;
-  };
-};
+const AddressSchema = z.object({
+  line1: z.string().trim().min(1).max(200),
+  line2: z.string().trim().max(200).nullish(),
+  city: z.string().trim().min(1).max(120),
+  postal_code: z.string().trim().min(1).max(20),
+  country: z.string().regex(/^[A-Za-z]{2}$/),
+});
 
-function isValidPack(p: unknown): p is PackId {
-  return p === 'solo' || p === 'duo';
-}
+const BusinessSchema = z.object({
+  legal_name: z.string().trim().min(1).max(200),
+  vat_number: z.string().trim().max(20).nullish(),
+  shipping: AddressSchema,
+  billing_same_as_shipping: z.boolean().optional(),
+  billing: AddressSchema.optional(),
+});
+
+const BodySchema = z.object({
+  pack: z.enum(['solo', 'duo']),
+  locale: z.string().max(8).optional(),
+  promoCode: z.string().max(64).optional(),
+  nonce: z.string().min(8).max(128),
+  cardId: z.string().min(1).max(64),
+  mangopayUserId: z.string().min(1).max(64),
+  business: BusinessSchema.optional(),
+});
 
 export async function POST(request: NextRequest) {
-  // Rate limit: 5 checkouts / 60s / IP
   const ip = getClientIp(request.headers);
   const rl = await rateLimit(`billing-checkout:${ip}`, { limit: 5, windowMs: 60_000 });
   if (!rl.ok) {
@@ -45,16 +56,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: Body;
+  let json: unknown;
   try {
-    body = await request.json();
+    json = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (!isValidPack(body.pack)) {
-    return NextResponse.json({ error: 'Invalid pack' }, { status: 400 });
+  const parsed = BodySchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
   }
+  const { pack, promoCode, nonce, cardId, mangopayUserId, business: biz } = parsed.data;
+  const locale = parsed.data.locale === 'fr' ? 'fr' : 'en';
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -64,8 +78,8 @@ export async function POST(request: NextRequest) {
 
   const service = createServiceClient();
 
-  // Find or create the billing group for this user.
-  // A user's first paid checkout creates a group they own (group_admin).
+  // Find or create the billing group. A user's first paid checkout creates a
+  // group they own (group_admin).
   const { data: existingRoles } = await service
     .from('user_roles')
     .select('group_id')
@@ -75,24 +89,25 @@ export async function POST(request: NextRequest) {
 
   let groupId: string | null = existingRoles?.[0]?.group_id ?? null;
 
-  const biz = body.business;
+  const billingAddr = biz
+    ? (biz.billing_same_as_shipping ? biz.shipping : (biz.billing ?? biz.shipping))
+    : null;
 
   if (!groupId) {
-    if (!biz || !biz.legal_name || !biz.shipping) {
+    if (!biz) {
       return NextResponse.json(
         { error: 'Business details required for first order' },
         { status: 400 }
       );
     }
-
     const { data: newGroup, error: groupError } = await service
       .from('groups')
       .insert({
         name: biz.legal_name,
         legal_name: biz.legal_name,
         vat_number: biz.vat_number ?? null,
-        shipping_address: biz.shipping,
-        billing_address: biz.billing_same_as_shipping ? biz.shipping : (biz.billing ?? biz.shipping),
+        shipping_address: biz.shipping as unknown as Json,
+        billing_address: billingAddr as unknown as Json,
         settings: { tip_thresholds: [1, 2, 5, 10] },
       })
       .select('id')
@@ -104,7 +119,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
     groupId = newGroup.id;
 
     const { error: roleError } = await service.from('user_roles').insert({
@@ -113,28 +127,23 @@ export async function POST(request: NextRequest) {
       group_id: groupId,
     });
     if (roleError) {
-      return NextResponse.json(
-        { error: `Failed to assign role: ${roleError.message}` },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: `Failed to assign role: ${roleError.message}` }, { status: 500 });
     }
   } else if (biz) {
-    // Update group with latest business details (address may change)
     await service
       .from('groups')
       .update({
         legal_name: biz.legal_name,
         vat_number: biz.vat_number ?? null,
-        shipping_address: biz.shipping,
-        billing_address: biz.billing_same_as_shipping ? biz.shipping : (biz.billing ?? biz.shipping),
+        shipping_address: biz.shipping as unknown as Json,
+        billing_address: billingAddr as unknown as Json,
       })
       .eq('id', groupId);
   }
 
-  // Load fresh group state
   const { data: group } = await service
     .from('groups')
-    .select('id, legal_name, vat_number, stripe_customer_id, shipping_address')
+    .select('id, legal_name, vat_number, shipping_address')
     .eq('id', groupId)
     .single();
 
@@ -142,125 +151,114 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Group not found' }, { status: 500 });
   }
 
-  // Create Stripe customer if not yet
-  let stripeCustomerId = group.stripe_customer_id;
-  if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      name: group.legal_name ?? undefined,
-      metadata: { group_id: group.id },
-      ...(group.vat_number
-        ? {
-            tax_id_data: [{ type: 'eu_vat', value: group.vat_number }],
-          }
-        : {}),
-    });
-    stripeCustomerId = customer.id;
-    await service
-      .from('groups')
-      .update({ stripe_customer_id: stripeCustomerId })
-      .eq('id', group.id);
-  }
-
-  const pack = PACKS[body.pack];
-  const locale = body.locale === 'fr' ? 'fr' : 'en';
-  const pricing = await getPackPricing(body.pack);
-  const baseAmount = pricing.unitAmount;
-
-  if (!biz?.shipping?.country) {
+  // Shipping country drives VAT; fall back to the group's stored address for a
+  // repeat order that doesn't re-send business details.
+  const storedShipping = (group.shipping_address ?? null) as { country?: string } | null;
+  const shippingCountry = biz?.shipping.country ?? storedShipping?.country ?? null;
+  if (!shippingCountry) {
     return NextResponse.json({ error: 'Shipping address required' }, { status: 400 });
   }
 
-  // Resolve promo code to a percentage discount.
-  let promoCodeStr: string | null = null;
-  let promoCodeId: string | null = null;
-  let discountAmount = 0;
-  if (body.promoCode) {
-    const code = body.promoCode.toUpperCase().trim();
-    const { data: promoRow } = await service
-      .from('promo_codes')
-      .select('id, percentage_off, is_active, expires_at, max_redemptions, times_redeemed')
-      .eq('code', code)
-      .maybeSingle();
-    if (promoRow?.is_active) {
-      const expired = promoRow.expires_at ? new Date(promoRow.expires_at) < new Date() : false;
-      const exhausted = promoRow.max_redemptions !== null && promoRow.times_redeemed >= promoRow.max_redemptions;
-      if (!expired && !exhausted) {
-        promoCodeStr = code;
-        promoCodeId = promoRow.id;
-        discountAmount = Math.floor((baseAmount * promoRow.percentage_off) / 100);
-      }
-    }
-  }
+  const pricing = await getPackPricing(pack as PackId);
+  const baseAmount = pricing.unitAmount;
 
+  const promo = await resolvePromoCode(service, promoCode);
+  const discountAmount = promo ? discountFor(baseAmount, promo.percentageOff) : 0;
   const htAmount = Math.max(0, baseAmount - discountAmount);
-
-  // VAT — pack prices are stored excl. VAT; Stripe Tax resolves the rate from
-  // the shipping country (and applies reverse-charge for valid EU VAT ids).
-  const tax = await computePackTax({
+  const tax = computePackTax({
     htAmount,
-    currency: pricing.currency,
-    country: biz.shipping.country,
+    country: shippingCountry,
     vatNumber: group.vat_number,
   });
 
-  // Persist the billing address on the Stripe customer so the invoice's
-  // automatic_tax can compute VAT.
-  const billingAddr = biz.billing_same_as_shipping ? biz.shipping : (biz.billing ?? biz.shipping);
-  try {
-    await stripe.customers.update(stripeCustomerId, {
-      address: {
-        line1: billingAddr.line1,
-        line2: billingAddr.line2 ?? undefined,
-        city: billingAddr.city,
-        postal_code: billingAddr.postal_code,
-        country: billingAddr.country,
-      },
-    });
-  } catch { /* non-blocking */ }
-
-  // One-shot hardware purchase, paid in-page via Stripe Elements. Ongoing
-  // revenue comes from per-tip commission (groups.platform_fee_bps).
-  const intent = await stripe.paymentIntents.create({
+  const idempotencyKey = generateIdempotencyKey({
+    scope: `pack-order:${groupId}`,
     amount: tax.totalAmount,
-    currency: pricing.currency,
-    customer: stripeCustomerId,
-    automatic_payment_methods: { enabled: true },
-    description: pricing.productName,
-    shipping: {
-      name: group.legal_name ?? biz.legal_name,
-      address: {
-        line1: biz.shipping.line1,
-        line2: biz.shipping.line2 ?? undefined,
-        city: biz.shipping.city,
-        postal_code: biz.shipping.postal_code,
-        country: biz.shipping.country,
-      },
-    },
-    metadata: {
+    nonce,
+  });
+
+  const context = {
+    pack,
+    quantity: PACKS[pack as PackId].quantity,
+    group_id: group.id,
+    user_id: user.id,
+    legal_name: group.legal_name,
+    locale,
+    base_amount: baseAmount,
+    discount_amount: discountAmount,
+    ht_amount: tax.htAmount,
+    tax_amount: tax.taxAmount,
+    total_amount: tax.totalAmount,
+    tax_country: tax.country,
+    tax_rate_percent: tax.taxRatePercent,
+    promo_code: promo?.code ?? null,
+    promo_code_id: promo?.promoCodeId ?? null,
+    customer_email: user.email ?? null,
+    shipping: biz?.shipping ?? storedShipping,
+  };
+
+  const { data: ctx, error: ctxError } = await service
+    .from('payin_contexts')
+    .insert({
+      idempotency_key: idempotencyKey,
       source: 'pack-order',
-      group_id: group.id,
-      pack: body.pack,
-      quantity: String(pack.quantity),
-      user_id: user.id,
-      locale,
-      base_amount: String(baseAmount),
-      discount_amount: String(discountAmount),
-      ht_amount: String(htAmount),
-      tax_amount: String(tax.taxAmount),
-      tax_country: tax.country,
-      ...(promoCodeStr ? { promo_code: promoCodeStr } : {}),
-      ...(promoCodeId ? { promo_code_id: promoCodeId } : {}),
-    },
-  });
+      status: 'pending',
+      context: context as Json,
+    })
+    .select('id, mangopay_payin_id')
+    .single();
 
-  return NextResponse.json({
-    clientSecret: intent.client_secret,
-    amount: tax.totalAmount,
-    htAmount,
-    taxAmount: tax.taxAmount,
-    taxRatePercent: tax.taxRatePercent,
-    discountAmount,
-    promoCode: promoCodeStr,
-  });
+  let contextId: string;
+
+  if (ctxError) {
+    if (ctxError.code !== '23505') {
+      return NextResponse.json({ error: 'Failed to record payment context' }, { status: 500 });
+    }
+    const { data: existing } = await service
+      .from('payin_contexts')
+      .select('id, mangopay_payin_id')
+      .eq('idempotency_key', idempotencyKey)
+      .single();
+    if (!existing) {
+      return NextResponse.json({ error: 'Payment context lookup failed' }, { status: 500 });
+    }
+    if (existing.mangopay_payin_id) {
+      try {
+        const payIn = await getPayIn(existing.mangopay_payin_id);
+        return NextResponse.json(payIn);
+      } catch {
+        return NextResponse.json({ error: 'Failed to load existing payment' }, { status: 502 });
+      }
+    }
+    contextId = existing.id;
+  } else {
+    contextId = ctx!.id;
+  }
+
+  const { walletId } = platformIds();
+
+  let payIn;
+  try {
+    payIn = await createDirectCardPayIn({
+      authorId: mangopayUserId,
+      creditedWalletId: walletId,
+      cardId,
+      debitedFunds: tax.totalAmount,
+      idempotencyKey,
+      statementDescriptor: 'TipLink',
+      ...(ip !== 'unknown' ? { ipAddress: ip } : {}),
+      tag: `pack-order:${contextId}`,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Mangopay error';
+    console.error('[billing/checkout]', message);
+    return NextResponse.json({ error: 'Failed to create payment' }, { status: 502 });
+  }
+
+  await service
+    .from('payin_contexts')
+    .update({ mangopay_payin_id: payIn.Id })
+    .eq('id', contextId);
+
+  return NextResponse.json(payIn);
 }

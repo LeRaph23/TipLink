@@ -1663,6 +1663,39 @@ export type Database = {
           },
         ]
       }
+      payin_contexts: {
+        Row: {
+          context: Json
+          created_at: string
+          id: string
+          idempotency_key: string
+          mangopay_payin_id: string | null
+          processed_at: string | null
+          source: string
+          status: string
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          mangopay_payin_id?: string | null
+          processed_at?: string | null
+          source: string
+          status?: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          mangopay_payin_id?: string | null
+          processed_at?: string | null
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number

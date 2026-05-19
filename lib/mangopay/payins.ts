@@ -16,6 +16,9 @@ export type DirectCardPayInInput = {
   ipAddress?: string;
   browserInfo?: Mangopay.base.BrowserInfoData;
   tag?: string;
+  // Sent as the Mangopay Idempotency-Key header so a retried request returns
+  // the original PayIn instead of charging the card twice.
+  idempotencyKey?: string;
 };
 
 // Direct Card PayIn crediting the central collection wallet.
@@ -39,6 +42,11 @@ export async function createDirectCardPayIn(
     ...(input.browserInfo ? { BrowserInfo: input.browserInfo } : {}),
     ...(input.tag ? { Tag: input.tag } : {}),
   };
+  if (input.idempotencyKey) {
+    return mangopay().PayIns.create(payload, {
+      headers: { 'Idempotency-Key': input.idempotencyKey },
+    });
+  }
   return mangopay().PayIns.create(payload);
 }
 

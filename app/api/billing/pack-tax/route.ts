@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe/client';
-import { computePackTax } from '@/lib/stripe/tax';
+import { z } from 'zod';
+import { type PackId } from '@/lib/env';
+import { getPackPricing } from '@/lib/mangopay/pricing';
+import { computePackTax } from '@/lib/mangopay/vat';
+import { resolvePromoCode, discountFor } from '@/lib/billing/promo';
+import { createServiceClient } from '@/lib/supabase/service';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 
-// Recomputes VAT for the embedded /checkout flow whenever the customer's
-// shipping country changes, and updates the PaymentIntent amount so the
-// actual charge is HT + VAT. Pack prices are stored excl. VAT.
-//
-// Auth mirrors attach-pi-email: the clientSecret proves the caller owns the
-// PaymentIntent. The endpoint refuses anything that is not one of our own
-// pack-express PIs, and is rate-limited per IP.
+// Recomputes the pack price breakdown for the checkout UI whenever the buyer
+// changes pack, country, VAT id or promo code. Pure computation — there is no
+// Mangopay PayIn until the card is submitted, so this only quotes a price.
+// The pack PayIn routes recompute the same figures server-side at charge time;
+// this endpoint is never the source of truth for the amount charged.
+
+const BodySchema = z.object({
+  pack: z.enum(['solo', 'duo']),
+  country: z.string().regex(/^[A-Za-z]{2}$/),
+  vatNumber: z.string().max(20).optional(),
+  promoCode: z.string().max(64).optional(),
+});
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -23,73 +32,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { clientSecret?: unknown; country?: unknown; postalCode?: unknown; vatNumber?: unknown };
+  let json: unknown;
   try {
-    body = await request.json();
+    json = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (typeof body.clientSecret !== 'string' || !body.clientSecret.startsWith('pi_')) {
-    return NextResponse.json({ error: 'Invalid clientSecret' }, { status: 400 });
+  const parsed = BodySchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
   }
-  if (typeof body.country !== 'string' || !/^[A-Za-z]{2}$/.test(body.country)) {
-    return NextResponse.json({ error: 'Invalid country' }, { status: 400 });
-  }
-  const postalCode = typeof body.postalCode === 'string' ? body.postalCode.slice(0, 16) : null;
-  const vatNumber = typeof body.vatNumber === 'string' ? body.vatNumber.slice(0, 20) : null;
+  const { pack, country, vatNumber, promoCode } = parsed.data;
 
-  const piId = body.clientSecret.split('_secret_')[0];
-  if (!piId.startsWith('pi_')) {
-    return NextResponse.json({ error: 'Invalid clientSecret' }, { status: 400 });
-  }
+  const pricing = await getPackPricing(pack as PackId);
+  const baseAmount = pricing.unitAmount;
 
-  try {
-    const intent = await stripe.paymentIntents.retrieve(piId);
-    if (intent.client_secret !== body.clientSecret) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (intent.metadata?.source !== 'pack-express') {
-      return NextResponse.json({ error: 'Unsupported PI' }, { status: 400 });
-    }
-    if (intent.status === 'succeeded' || intent.status === 'processing') {
-      return NextResponse.json({ error: 'Payment already in progress' }, { status: 409 });
-    }
+  const supabase = createServiceClient();
+  const promo = await resolvePromoCode(supabase, promoCode);
+  const discountAmount = promo ? discountFor(baseAmount, promo.percentageOff) : 0;
 
-    // HT after promo discount — the canonical figures live in PI metadata,
-    // written server-side by /api/billing/create-pack-intent.
-    const baseAmount = parseInt(intent.metadata.base_amount ?? '0', 10);
-    const discountAmount = parseInt(intent.metadata.discount_amount ?? '0', 10);
-    const htAmount = Math.max(0, baseAmount - discountAmount);
+  const htAmount = Math.max(0, baseAmount - discountAmount);
+  const tax = computePackTax({ htAmount, country, vatNumber });
 
-    const tax = await computePackTax({
-      htAmount,
-      currency: intent.currency,
-      country: body.country,
-      postalCode,
-      vatNumber,
-    });
-
-    await stripe.paymentIntents.update(piId, {
-      amount: tax.totalAmount,
-      metadata: {
-        ...intent.metadata,
-        ht_amount: String(tax.htAmount),
-        tax_amount: String(tax.taxAmount),
-        tax_country: tax.country,
-        ...(vatNumber ? { vat_number: vatNumber } : {}),
-      },
-    });
-
-    return NextResponse.json({
-      htAmount: tax.htAmount,
-      taxAmount: tax.taxAmount,
-      totalAmount: tax.totalAmount,
-      taxRatePercent: tax.taxRatePercent,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Stripe error';
-    console.error('[pack-tax]', message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return NextResponse.json({
+    baseAmount,
+    discountAmount,
+    htAmount: tax.htAmount,
+    taxAmount: tax.taxAmount,
+    totalAmount: tax.totalAmount,
+    taxRatePercent: tax.taxRatePercent,
+    promoCode: promo?.code ?? null,
+  });
 }

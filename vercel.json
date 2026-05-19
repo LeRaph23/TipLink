@@ -5,10 +5,6 @@
       "schedule": "0 10 * * *"
     },
     {
-      "path": "/api/cron/group-transfers-reconcile",
-      "schedule": "0 4 * * *"
-    },
-    {
       "path": "/api/cron/lifecycle-emails",
       "schedule": "0 9 * * *"
     }
