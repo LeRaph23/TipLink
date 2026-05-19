@@ -232,13 +232,11 @@ function Chip({
 // ─── Ambassador variant filter state ─────────────────────────────────────────
 
 type AmbStatus = 'all' | 'todo' | 'mine' | 'others';
-type RatingMin = 0 | 3 | 4;
 
 function useAmbassadorFilters(all: AmbassadorSalon[]) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<AmbStatus>('all');
   const [openNow, setOpenNow] = useState(false);
-  const [minRating, setMinRating] = useState<RatingMin>(0);
   const [showClosed, setShowClosed] = useState(false);
 
   const filtered = useMemo(() => {
@@ -247,7 +245,6 @@ function useAmbassadorFilters(all: AmbassadorSalon[]) {
       if (s.lat == null || s.lon == null) return false;
       if (!showClosed && s.business_status === 'CLOSED_PERMANENTLY') return false;
       if (q && !s.name.toLowerCase().includes(q) && !(s.address ?? '').toLowerCase().includes(q)) return false;
-      if (minRating && (s.google_rating ?? 0) < minRating) return false;
       if (openNow) {
         const o = isOpenNow(s.opening_hours);
         if (!o?.open) return false;
@@ -259,9 +256,9 @@ function useAmbassadorFilters(all: AmbassadorSalon[]) {
         default:       return true;
       }
     });
-  }, [all, search, status, openNow, minRating, showClosed]);
+  }, [all, search, status, openNow, showClosed]);
 
-  return { filtered, state: { search, status, openNow, minRating, showClosed }, setters: { setSearch, setStatus, setOpenNow, setMinRating, setShowClosed } };
+  return { filtered, state: { search, status, openNow, showClosed }, setters: { setSearch, setStatus, setOpenNow, setShowClosed } };
 }
 
 // ─── Admin variant filter state ──────────────────────────────────────────────
@@ -275,7 +272,6 @@ function useAdminFilters(all: AdminSalon[]) {
   const [ambassadorId, setAmbassadorId] = useState<string>('all');
   const [status, setStatus] = useState<AdminStatus>('all');
   const [openNow, setOpenNow] = useState(false);
-  const [minRating, setMinRating] = useState<RatingMin>(0);
   const [showClosed, setShowClosed] = useState(false);
   const [showBboxes, setShowBboxes] = useState(false);
 
@@ -305,7 +301,6 @@ function useAdminFilters(all: AdminSalon[]) {
       if (zoneId !== 'all' && s.zoneId !== zoneId) return false;
       if (ambassadorId !== 'all' && !s.visits.some((v) => v.ambassadorId === ambassadorId)) return false;
       if (q && !s.name.toLowerCase().includes(q) && !(s.address ?? '').toLowerCase().includes(q)) return false;
-      if (minRating && (s.google_rating ?? 0) < minRating) return false;
       if (openNow) {
         const o = isOpenNow(s.opening_hours);
         if (!o?.open) return false;
@@ -319,13 +314,13 @@ function useAdminFilters(all: AdminSalon[]) {
         default:      return true;
       }
     });
-  }, [all, search, city, zoneId, ambassadorId, status, openNow, minRating, showClosed]);
+  }, [all, search, city, zoneId, ambassadorId, status, openNow, showClosed]);
 
   return {
     filtered,
     cities, zones, ambassadors,
-    state: { search, city, zoneId, ambassadorId, status, openNow, minRating, showClosed, showBboxes },
-    setters: { setSearch, setCity, setZoneId, setAmbassadorId, setStatus, setOpenNow, setMinRating, setShowClosed, setShowBboxes },
+    state: { search, city, zoneId, ambassadorId, status, openNow, showClosed, showBboxes },
+    setters: { setSearch, setCity, setZoneId, setAmbassadorId, setStatus, setOpenNow, setShowClosed, setShowBboxes },
   };
 }
 
@@ -358,9 +353,6 @@ function AmbassadorPopup({ salon, onLogVisit }: { salon: AmbassadorSalon; onLogV
           <span className={`salon-popup__pill ${open.open ? 'open' : 'shut'}`}>
             {open.open ? '● Ouvert' : '○ Fermé'}{open.nextChange ? ` · ${open.nextChange}` : ''}
           </span>
-        )}
-        {salon.google_rating != null && (
-          <span className="salon-popup__pill rate">⭐ {salon.google_rating.toFixed(1)}</span>
         )}
       </div>
       {salon.address && (
@@ -400,9 +392,6 @@ function AdminPopup({ salon }: { salon: AdminSalon }) {
           <span className={`salon-popup__pill ${open.open ? 'open' : 'shut'}`}>
             {open.open ? '● Ouvert' : '○ Fermé'}
           </span>
-        )}
-        {salon.google_rating != null && (
-          <span className="salon-popup__pill rate">⭐ {salon.google_rating.toFixed(1)}</span>
         )}
       </div>
       {salon.address && (
@@ -481,8 +470,6 @@ function AmbassadorMap({
         <Chip active={state.status === 'mine'}   onClick={() => setters.setStatus('mine')}>Mes visites</Chip>
         <Chip active={state.status === 'others'} onClick={() => setters.setStatus('others')}>Faits</Chip>
         <Chip active={state.openNow}             onClick={() => setters.setOpenNow(!state.openNow)}>Ouvert</Chip>
-        <Chip active={state.minRating === 4}     onClick={() => setters.setMinRating(state.minRating === 4 ? 0 : 4)}>4★+</Chip>
-        <Chip active={state.minRating === 3}     onClick={() => setters.setMinRating(state.minRating === 3 ? 0 : 3)}>3★+</Chip>
         <Chip active={state.showClosed}          onClick={() => setters.setShowClosed(!state.showClosed)}>Fermés</Chip>
       </div>
 
@@ -579,7 +566,6 @@ function AdminMap({
         <Chip active={f.state.status === 'r2'}    onClick={() => f.setters.setStatus('r2')}>2★</Chip>
         <Chip active={f.state.status === 'r1'}    onClick={() => f.setters.setStatus('r1')}>1★</Chip>
         <Chip active={f.state.openNow}            onClick={() => f.setters.setOpenNow(!f.state.openNow)}>Ouvert</Chip>
-        <Chip active={f.state.minRating === 4}    onClick={() => f.setters.setMinRating(f.state.minRating === 4 ? 0 : 4)}>4★+</Chip>
         <Chip active={f.state.showClosed}         onClick={() => f.setters.setShowClosed(!f.state.showClosed)}>Fermés</Chip>
         <Chip active={f.state.showBboxes}         onClick={() => f.setters.setShowBboxes(!f.state.showBboxes)}>Bbox zones</Chip>
       </div>
