@@ -3,6 +3,54 @@
 > Plan de migration. Fichier modifiable et partagé entre conversations.
 > Révisé contre la doc Mangopay en ligne (`docs.mangopay.com`, mai 2026).
 
+## État d'avancement de l'implémentation
+
+> Suivi de l'implémentation réelle sur la branche `claude/improve-mangopay-migration-plan-n9AUo`.
+
+- ✅ **Phase 0 — Dépendances & env** : `stripe`/`@stripe/*` retirés ;
+  `mangopay4-nodejs-sdk`, `@mangopay/checkout-sdk`, `pdf-lib` ajoutés ;
+  variables `MANGOPAY_*` en place (`lib/env.ts`, `.env.example`, `check-env.ts`,
+  `setup-env.ts`).
+- ✅ **Phase 1 — `lib/mangopay/`** : 15 fichiers (client, users, wallets, cards,
+  payins, transfers, payouts, recipients, kyc, refunds, hooks, pricing, vat,
+  invoice-pdf, idempotency). Type-clean (`tsc`).
+- ✅ **Phase 2 — Migration BDD** : `supabase/migrations/00053_mangopay_migration.sql`
+  + `types/database.ts` mis à jour à la main (Supabase local indisponible ici —
+  régénérer via `npm run db:types` après application).
+- ⏳ **Phases 3 à 9** — non implémentées. Voir « Décisions ouvertes » ci-dessous.
+
+> **Correctifs vs plan** découverts pendant l'implémentation :
+> - SDK Node : `mangopay4-nodejs-sdk` v1.68 confirmé.
+> - **Le package React `@mangopay/checkout-sdk-react` ne supporte que React 16–18** ;
+>   le projet est en React 19 → on utilise le SDK **vanilla `@mangopay/checkout-sdk`**
+>   avec un wrapper React maison (à écrire en Phase 7).
+> - `Recipients.create(data, userId)` existe dans le SDK v4 ; `RecipientScope: 'PAYOUT'`
+>   renvoie bien `PendingUserAction.RedirectUrl` (SCA). `Users.enroll(userId)` enrôle
+>   un OWNER en SCA.
+
+### Décisions ouvertes (à trancher avant les phases 3-9)
+
+Le modèle wallet change la mécanique de certains flux ; ces points ne sont **pas**
+de simples traductions ligne à ligne et méritent une validation :
+
+1. **Pourboires de groupe** : en modèle wallet, un pourboire de groupe = **un seul
+   PayIn** vers le wallet central ; la répartition entre staff devient un **pur
+   ledger** (`group_tip_transfers` comme lignes comptables, sans `Transfer`
+   Mangopay par pourboire). Conséquence : `cron/group-transfers-reconcile`
+   devient quasi inutile. → Confirmer : ledger pur (recommandé) vs Transfer par pourboire.
+2. **Collecte d'un pourboire avant onboarding** : l'argent allant au wallet
+   central, on **peut** encaisser un pourboire pour un staff actif même sans
+   KYC/IBAN (le ledger le crédite ; il onboarde plus tard pour retirer).
+   L'ancien code bloquait tant que Stripe Connect n'était pas « complete ». →
+   Confirmer : autoriser la collecte avant onboarding (recommandé, c'est l'intérêt
+   du modèle wallet).
+3. **SCA à l'onboarding** : enregistrer le Recipient IBAN renvoie une URL de
+   redirection SCA hébergée → l'UX de `BankingSetupForm` doit gérer un aller-retour
+   navigateur. À cadrer.
+4. **Tippeurs invités** : un PayIn exige un `AuthorId`. Sans table de réutilisation
+   par e-mail, chaque pourboire crée un *Natural User* `PAYER` jetable
+   (acceptable). → Confirmer ou prévoir une table de correspondance e-mail→userId.
+
 ## Contexte
 
 TipLink encaisse des pourboires par carte pour des staff (coiffeurs/restauration), vend
