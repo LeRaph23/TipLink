@@ -11,6 +11,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, '.'),
+      // Next.js aliases these build-time markers internally; Vitest does not,
+      // so resolve them to a no-op module instead of failing on a missing pkg.
+      'server-only': resolve(__dirname, '__tests__/stubs/empty.ts'),
+      'client-only': resolve(__dirname, '__tests__/stubs/empty.ts'),
     },
   },
 });

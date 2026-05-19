@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { createCustomStripeAccount } from '@/actions/stripe';
-import type { BankingData } from '@/actions/stripe';
+import { createStandardAccount, createOnboardingLink, staffBankingReturnUrls } from '@/lib/stripe/connect';
 
 export const runtime = 'nodejs';
 
+// Joins a staff member to an establishment, then creates their Stripe Standard
+// connected account and returns a hosted-onboarding URL. Banking details
+// (identity, IBAN, terms) are collected by Stripe — not by this endpoint.
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,12 +18,10 @@ export async function POST(req: Request) {
     fullName?: string;
     selectedProfileId?: string | null;
     avatarUrl?: string | null;
-    bankingData?: Omit<BankingData, 'email' | 'ip'>;
   };
-  const { establishmentId, fullName, selectedProfileId, avatarUrl, bankingData } = body;
+  const { establishmentId, fullName, selectedProfileId, avatarUrl } = body;
 
   if (!establishmentId) return NextResponse.json({ error: 'Missing establishmentId' }, { status: 400 });
-  if (!bankingData) return NextResponse.json({ error: 'Missing banking data' }, { status: 400 });
 
   const service = createServiceClient();
 
@@ -33,11 +33,6 @@ export async function POST(req: Request) {
     .single();
 
   if (!est) return NextResponse.json({ error: 'Establishment not found' }, { status: 404 });
-
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    '0.0.0.0';
 
   let staffProfileId: string;
 
@@ -124,27 +119,26 @@ export async function POST(req: Request) {
     });
   }
 
-  // Create Stripe Custom account
-  const nameParts = (fullName ?? '').trim().split(/\s+/);
-  const stripeFirstName = bankingData.firstName || nameParts[0] || '';
-  const stripeLastName = bankingData.lastName || nameParts.slice(1).join(' ') || stripeFirstName;
-
-  const stripeResult = await createCustomStripeAccount(staffProfileId, {
-    ...bankingData,
-    firstName: stripeFirstName,
-    lastName: stripeLastName,
-    email: user.email ?? '',
-    ip,
-  });
-
-  if ('error' in stripeResult) {
-    // Rollback: deactivate the profile we just created/claimed
+  // Create the Stripe Standard connected account + hosted-onboarding link.
+  try {
+    const accountId = await createStandardAccount({
+      email: user.email ?? undefined,
+      metadata: { staff_profile_id: staffProfileId },
+    });
+    await service
+      .from('staff_profiles')
+      .update({ stripe_account_id: accountId, onboarding_status: 'pending' })
+      .eq('id', staffProfileId);
+    const url = await createOnboardingLink(accountId, staffBankingReturnUrls());
+    return NextResponse.json({ ok: true, onboardingUrl: url });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Création du compte Stripe échouée';
+    console.error('staff/join: Stripe account creation failed', err);
+    // Rollback: deactivate the profile we just created/claimed.
     await service
       .from('staff_profiles')
       .update({ is_active: false, user_id: null, onboarding_status: 'not_started' })
       .eq('id', staffProfileId);
-    return NextResponse.json({ error: stripeResult.error }, { status: 422 });
+    return NextResponse.json({ error: msg }, { status: 422 });
   }
-
-  return NextResponse.json({ ok: true });
 }

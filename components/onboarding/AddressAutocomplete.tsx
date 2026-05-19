@@ -42,8 +42,10 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
       abortRef.current = ctrl;
       setLoading(true);
       try {
+        // Géoplateforme (IGN) geocoder — the old api-adresse.data.gouv.fr host
+        // was decommissioned on 2026-04-14. Same BAN data, same GeoJSON shape.
         const res = await fetch(
-          `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5`,
+          `https://data.geopf.fr/geocodage/search/?q=${encodeURIComponent(q)}&limit=5`,
           { signal: ctrl.signal }
         );
         const data = await res.json();

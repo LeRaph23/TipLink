@@ -165,7 +165,7 @@ export async function POST(
 
   // Acquire the advisory lock — short-circuits parallel requests immediately.
   // RPCs aren't in the generated types yet; cast minimally.
-  const tryLock = (service.rpc as unknown as (
+  const tryLock = (service.rpc.bind(service) as unknown as (
     fn: 'try_advisory_lock_payout',
     args: { p_ambassador_id: string }
   ) => Promise<{ data: boolean | null; error: unknown }>);
@@ -204,15 +204,11 @@ export async function POST(
       return NextResponse.json({ error: 'Erreur enregistrement de la demande' }, { status: 500 });
     }
 
-    // Trigger the Stripe transfer + payout. On failure mark `failed` so the
+    // Move the commission to the ambassador's Stripe Standard account. Stripe
+    // then pays it out to their bank automatically — Standard accounts run
+    // their own (automatic) payout schedule, so the platform issues only the
+    // transfer and never a payout itself. On failure mark `failed` so the
     // payout doesn't stay pending forever — super-admin can retry from admin UI.
-    //
-    // The transfer (platform → connected account) and the payout (connected
-    // account → bank) are two calls. If the transfer succeeds but the payout
-    // fails, the platform-side money has already moved: we MUST persist the
-    // transfer id so computeAvailableCents counts it as committed, otherwise a
-    // retry would transfer the same funds a second time.
-    let transferId: string | null = null;
     try {
       const transfer = await stripe.transfers.create({
         amount: inserted.amount_cents,
@@ -220,19 +216,12 @@ export async function POST(
         destination: amb.stripe_account_id,
         metadata: { ambassador_id: ambassadorId, payout_id: inserted.id },
       }, { idempotencyKey: `amb_payout_transfer:${inserted.id}` });
-      transferId = transfer.id;
-
-      const payout = await stripe.payouts.create(
-        { amount: inserted.amount_cents, currency: 'eur', method: 'standard' },
-        { stripeAccount: amb.stripe_account_id, idempotencyKey: `amb_payout:${inserted.id}` }
-      );
 
       await service
         .from('ambassador_payouts')
         .update({
           status: 'paid',
           stripe_transfer_id: transfer.id,
-          stripe_payout_id: payout.id,
           paid_at: new Date().toISOString(),
         })
         .eq('id', inserted.id);
@@ -241,14 +230,12 @@ export async function POST(
       return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Stripe error';
-      console.error('ambassador payout stripe call failed', err);
+      console.error('ambassador payout transfer failed', err);
+      // The transfer is the only money movement, so a failure here means no
+      // funds left the platform — the `failed` row frees the balance again.
       await service
         .from('ambassador_payouts')
-        .update({
-          status: 'failed',
-          failure_reason: msg,
-          stripe_transfer_id: transferId,
-        })
+        .update({ status: 'failed', failure_reason: msg })
         .eq('id', inserted.id);
       void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'failed');
       return NextResponse.json({
@@ -259,7 +246,7 @@ export async function POST(
       }, { status: 502 });
     }
   } finally {
-    const releaseLock = (service.rpc as unknown as (
+    const releaseLock = (service.rpc.bind(service) as unknown as (
       fn: 'release_advisory_lock_payout',
       args: { p_ambassador_id: string }
     ) => Promise<unknown>);

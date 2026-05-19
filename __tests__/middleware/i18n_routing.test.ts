@@ -48,16 +48,16 @@ describe('i18n + auth middleware', () => {
   });
 
   it('redirects "/" to default locale "/en"', async () => {
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/'));
 
     expect([307, 308]).toContain(response.status);
     expect(response.headers.get('location') ?? '').toMatch(/\/en\/?$/);
   });
 
   it('redirects unprefixed "/pricing" to "/en/pricing"', async () => {
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/pricing'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/pricing'));
 
     expect([307, 308]).toContain(response.status);
     expect(response.headers.get('location') ?? '').toContain('/en/pricing');
@@ -66,8 +66,8 @@ describe('i18n + auth middleware', () => {
   it('redirects unauthenticated users from /en/dashboard to /en/login', async () => {
     getUserMock.mockResolvedValue({ data: { user: null } });
 
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/en/dashboard'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/en/dashboard'));
 
     expect(response.status).toBe(307);
     expect(response.headers.get('location') ?? '').toContain('/en/login');
@@ -76,8 +76,8 @@ describe('i18n + auth middleware', () => {
   it('redirects unauthenticated users from /fr/dashboard/billing to /fr/login', async () => {
     getUserMock.mockResolvedValue({ data: { user: null } });
 
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/fr/dashboard/billing'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/fr/dashboard/billing'));
 
     expect(response.status).toBe(307);
     expect(response.headers.get('location') ?? '').toContain('/fr/login');
@@ -86,8 +86,8 @@ describe('i18n + auth middleware', () => {
   it('redirects authenticated users away from /en/login', async () => {
     getUserMock.mockResolvedValue({ data: { user: { id: 'u1', email: 'x@y.z' } } });
 
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/en/login'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/en/login'));
 
     expect(response.status).toBe(307);
     expect(response.headers.get('location') ?? '').toContain('/en/dashboard');
@@ -96,8 +96,8 @@ describe('i18n + auth middleware', () => {
   it('lets authenticated users through /fr/dashboard', async () => {
     getUserMock.mockResolvedValue({ data: { user: { id: 'u1', email: 'x@y.z' } } });
 
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/fr/dashboard'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/fr/dashboard'));
 
     expect([200, undefined]).toContain(response.status);
   });
@@ -105,8 +105,8 @@ describe('i18n + auth middleware', () => {
   it('NFC "/s/*" paths short-circuit and never hit intl', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
 
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/s/ABC12345'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/s/ABC12345'));
 
     const location = response.headers.get('location') ?? '';
     expect(location).toContain('/not-found');

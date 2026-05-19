@@ -33,10 +33,10 @@ export function RecruitmentForm({ token }: { token: string }) {
     if (!email.trim() || !email.includes('@')) { setError('Email valide requis.'); return; }
     const siretClean = siret.replace(/\s+/g, '');
     if (siretClean && !/^\d{14}$/.test(siretClean)) {
-      setError('SIRET : 14 chiffres. Laisse le champ vide si tu n\'en as pas encore.');
+      setError('SIRET : 14 chiffres. Laissez le champ vide si vous n\'en avez pas encore.');
       return;
     }
-    if (!pledge) { setError("Tu dois accepter l'engagement de non-fraude."); return; }
+    if (!pledge) { setError("Vous devez accepter l'engagement de non-fraude."); return; }
 
     setSubmitting(true);
     try {
@@ -59,7 +59,7 @@ export function RecruitmentForm({ token }: { token: string }) {
       if (!res.ok) { setError(data.error ?? 'Erreur.'); return; }
       setDone(true);
     } catch {
-      setError('Erreur réseau, réessaie.');
+      setError('Erreur réseau, veuillez réessayer.');
     } finally {
       setSubmitting(false);
     }
@@ -76,7 +76,7 @@ export function RecruitmentForm({ token }: { token: string }) {
           Candidature envoyée !
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-          On revient vers toi sous 48h avec ton code promo et ton PIN.
+          Nous revenons vers vous sous 48h avec votre code promo et votre PIN.
         </div>
       </div>
     );
@@ -100,7 +100,7 @@ export function RecruitmentForm({ token }: { token: string }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div><span style={label}>Téléphone</span><input style={inp} type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="06 12 34 56 78" /></div>
-        <div><span style={label}>Email</span><input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="toi@email.com" /></div>
+        <div><span style={label}>Email</span><input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@email.com" /></div>
       </div>
 
       <div>
@@ -108,7 +108,7 @@ export function RecruitmentForm({ token }: { token: string }) {
         <input style={inp} value={siret} onChange={e => setSiret(e.target.value)} placeholder="Pas encore de SIRET ? Laisse vide" inputMode="numeric" />
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 5, lineHeight: 1.4 }}>
           Pas besoin de SIRET pour postuler ni pour commencer. Il sera demandé plus tard,
-          uniquement au moment de toucher tes commissions. Tu peux le créer gratuitement sur{' '}
+          uniquement au moment de toucher vos commissions. Vous pouvez le créer gratuitement sur{' '}
           <a href="https://autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
             autoentrepreneur.urssaf.fr
           </a>.
@@ -116,7 +116,7 @@ export function RecruitmentForm({ token }: { token: string }) {
       </div>
 
       <div>
-        <span style={label}>Un mot sur toi (optionnel)</span>
+        <span style={label}>Un mot sur vous (optionnel)</span>
         <textarea
           value={notes}
           onChange={e => setNotes(e.target.value)}

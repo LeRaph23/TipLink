@@ -1828,6 +1828,20 @@ export type Database = {
           succeeded_volume_cents: number
         }[]
       }
+      ambassador_zone_counts: {
+        Args: never
+        Returns: {
+          zone_id: string
+          city: string
+          name: string
+          bbox_min_lat: number | null
+          bbox_min_lon: number | null
+          bbox_max_lat: number | null
+          bbox_max_lon: number | null
+          salon_count: number
+          todo_count: number
+        }[]
+      }
       claim_nfc_stickers: {
         Args: { p_establishment_id: string; p_short_ids: string[] }
         Returns: {

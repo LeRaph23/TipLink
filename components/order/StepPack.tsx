@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
 import { formatPrice } from './OrderSummary';
 import { htSuffix } from '@/lib/format-price';
+import type { PackPricing } from '@/lib/stripe/pricing';
 
 const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
   solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
@@ -14,10 +15,12 @@ const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
 export function StepPack({
   pack,
   locale,
+  pricing,
   onChange,
 }: {
   pack: PackId;
   locale: string;
+  pricing: Record<PackId, PackPricing>;
   onChange: (p: PackId) => void;
 }) {
   const t = useTranslations('order.pack');
@@ -103,7 +106,7 @@ export function StepPack({
             {/* Price */}
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-                {formatPrice(def.hardwareAmount, locale)}
+                {formatPrice(pricing[p].unitAmount, locale)}
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginLeft: 3 }}>{htSuffix(locale)}</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>

@@ -9,7 +9,6 @@ import {
   enrichSalonsViaGoogleForZone,
   createZone,
   toggleZoneActive,
-  releaseZoneClaim,
   createSalon,
   toggleSalonActive,
 } from '@/actions/admin/salons';
@@ -41,7 +40,6 @@ type Salon = {
   googleEnriched: boolean;
   businessStatus: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
 };
-type Claim = { zoneId: string; ambassadorId: string; ambassadorName: string; claimedAt: string };
 type Visit = {
   id: string; salonId: string; salonName: string; salonCity: string;
   ambassadorId: string; ambassadorName: string;
@@ -64,12 +62,11 @@ function fmtDateShort(iso: string) {
 }
 
 export function SalonsManager({
-  cityStats, zones, salons, activeClaims, visits, mapSalons, mapZones,
+  cityStats, zones, salons, visits, mapSalons, mapZones,
 }: {
   cityStats: CityStats[];
   zones: Zone[];
   salons: Salon[];
-  activeClaims: Claim[];
   visits: Visit[];
   mapSalons: AdminSalon[];
   mapZones: AdminZoneOverlay[];
@@ -82,8 +79,6 @@ export function SalonsManager({
   const [reimport, setReimport] = useState<
     { done: number; total: number; imported: number; current: string; failed: number } | null
   >(null);
-
-  const claimByZone = new Map(activeClaims.map((c) => [c.zoneId, c]));
 
   const runImportZones = () => {
     if (!importCity.trim()) return;
@@ -333,13 +328,6 @@ export function SalonsManager({
       });
     });
   };
-  const handleReleaseClaim = (zoneId: string) => {
-    if (!confirm('Forcer la libération de cette zone ?')) return;
-    startTransition(async () => {
-      const res = await releaseZoneClaim(zoneId);
-      if (!res.ok) setFeedback({ type: 'err', msg: res.error });
-    });
-  };
   const handleToggleSalon = (id: string, active: boolean) => {
     startTransition(async () => {
       const res = await toggleSalonActive(id, active);
@@ -543,7 +531,6 @@ export function SalonsManager({
       {tab === 'zones' && (
         <ZonesTable
           zones={zones}
-          claimByZone={claimByZone}
           salonsByZone={salons.reduce<Record<string, number>>((acc, s) => {
             if (s.zoneId) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
             return acc;
@@ -560,7 +547,6 @@ export function SalonsManager({
           onEnrichAddresses={runEnrichAddresses}
           onEnrichGoogle={runEnrichGoogle}
           onToggleActive={handleToggleZone}
-          onReleaseClaim={handleReleaseClaim}
           pending={pending}
         />
       )}
@@ -661,11 +647,10 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 function ZonesTable({
-  zones, claimByZone, salonsByZone, missingAddressByZone, unenrichedGoogleByZone,
-  onImportSalons, onEnrichAddresses, onEnrichGoogle, onToggleActive, onReleaseClaim, pending,
+  zones, salonsByZone, missingAddressByZone, unenrichedGoogleByZone,
+  onImportSalons, onEnrichAddresses, onEnrichGoogle, onToggleActive, pending,
 }: {
   zones: Zone[];
-  claimByZone: Map<string, Claim>;
   salonsByZone: Record<string, number>;
   missingAddressByZone: Record<string, number>;
   unenrichedGoogleByZone: Record<string, number>;
@@ -673,7 +658,6 @@ function ZonesTable({
   onEnrichAddresses: (zoneId: string, force?: boolean) => void;
   onEnrichGoogle: (zoneId: string, force?: boolean) => void;
   onToggleActive: (id: string, active: boolean) => void;
-  onReleaseClaim: (zoneId: string) => void;
   pending: boolean;
 }) {
   const [creating, setCreating] = useState(false);
@@ -729,7 +713,6 @@ function ZonesTable({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
         {zones.map((z) => {
-          const claim = claimByZone.get(z.id);
           const count = salonsByZone[z.id] ?? 0;
           const missing = missingAddressByZone[z.id] ?? 0;
           const unenrichedGoogle = unenrichedGoogleByZone[z.id] ?? 0;
@@ -769,13 +752,6 @@ function ZonesTable({
                   <span style={{ color: 'var(--warning)', fontSize: 11 }}>
                     ⚠ {missing} sans adresse
                   </span>
-                )}
-                {claim ? (
-                  <span style={{ color: 'var(--accent)', fontSize: 11 }}>
-                    🔒 {claim.ambassadorName} ({fmtDateShort(claim.claimedAt)})
-                  </span>
-                ) : (
-                  <span style={{ color: 'var(--text-3)', fontSize: 11 }}>libre</span>
                 )}
               </div>
 
@@ -829,11 +805,6 @@ function ZonesTable({
                     }}
                   >
                     ⚙ {unenrichedGoogle > 0 ? `Google (${unenrichedGoogle})` : 'Rafraîchir Google'}
-                  </button>
-                )}
-                {claim && (
-                  <button onClick={() => onReleaseClaim(z.id)} disabled={pending} style={miniDangerBtnStyle}>
-                    Libérer
                   </button>
                 )}
               </div>
@@ -1059,6 +1030,3 @@ const cityBulkGhostStyle = (disabled: boolean): React.CSSProperties => ({
   opacity: disabled ? 0.55 : 1,
   whiteSpace: 'nowrap',
 });
-const miniDangerBtnStyle: React.CSSProperties = {
-  ...miniBtnStyle, color: 'var(--error)', borderColor: 'var(--error)',
-};

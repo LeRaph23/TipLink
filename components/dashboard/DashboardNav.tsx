@@ -152,7 +152,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
   const links = [
     { href: '/dashboard',               label: tn('overview'),     icon: <HomeIcon />,   always: true },
     { href: '/dashboard/transactions',  label: tn('transactions'), icon: <TxIcon />,     always: true },
-    { href: '/dashboard/banking',       label: tn('payouts'),      icon: <PayoutIcon />, roles: ['staff', 'group_admin'] as UserRole['role'][] },
+    { href: '/dashboard/banking',       label: tn('payouts'),      icon: <PayoutIcon />, roles: ['staff', 'group_admin'] as UserRole['role'][], staffProfile: true },
     { href: '/dashboard/billing',       label: tn('billing'),      icon: <InvoiceIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/establishments', label: tn('establishments'), icon: <EstIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
@@ -175,12 +175,14 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
     { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
     { href: '/dashboard/admin/promo-codes',   label: ta('promoCodes'),  icon: <TagIcon /> },
     { href: '/dashboard/admin/ambassadeurs',  label: ta('ambassadeurs'), icon: <UsersIcon /> },
-    { href: '/dashboard/admin/salons',        label: ta('salons'),      icon: <EstIcon /> },
     { href: '/dashboard/admin/cold-email',    label: ta('prospects'),    icon: <MailIcon /> },
   ];
 
+  // `staffProfile` links show for anyone with a staff profile — e.g. a manager
+  // who also receives tips, and so has no separate `staff` role row.
   const visibleLinks = links.filter(l =>
     l.always ||
+    (l.staffProfile && hasStaffProfile) ||
     (l.roles && l.roles.some(r => hasRole(r)))
   );
   const isSuperAdmin = hasRole('super_admin');

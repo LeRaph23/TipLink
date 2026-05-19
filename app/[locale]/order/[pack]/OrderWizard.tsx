@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { type PackId } from '@/lib/env';
+import type { PackPricing } from '@/lib/stripe/pricing';
 import {
   emptyOrder,
   parseStep,
@@ -91,7 +92,7 @@ function maxReachable(state: OrderState, activeSteps: readonly Step[]): Step {
   return 'review';
 }
 
-export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: PackId; locale: string; isAuthenticated?: boolean }) {
+export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: { pack: PackId; locale: string; isAuthenticated?: boolean; pricing: Record<PackId, PackPricing> }) {
   const t = useTranslations('order');
   const tErrors = useTranslations('order.errors');
   const router = useRouter();
@@ -334,7 +335,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
   const renderStep = () => {
     switch (currentStep) {
       case 'pack':
-        return <StepPack pack={state.pack} locale={locale} onChange={handlePackChange} />;
+        return <StepPack pack={state.pack} locale={locale} pricing={pricing} onChange={handlePackChange} />;
       case 'shipping':
         return <StepShipping value={state.shipping} onChange={(v) => dispatch({ type: 'setShipping', value: v })} />;
       case 'billing':
@@ -342,7 +343,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
       case 'account':
         return <StepAccount value={state.account} onChange={(v) => dispatch({ type: 'setAccount', value: v })} />;
       case 'review':
-        return <StepReview state={state} locale={locale} onEdit={goToStep} promoCode={promoCode} onPromoChange={setPromoCode} />;
+        return <StepReview state={state} locale={locale} pricing={pricing} onEdit={goToStep} promoCode={promoCode} onPromoChange={setPromoCode} />;
     }
   };
 
@@ -383,6 +384,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
       <OrderLayout
         pack={state.pack}
         locale={locale}
+        pricing={pricing}
         step="review"
         reachable={maxReachable(state, activeSteps)}
         steps={activeSteps}
@@ -411,6 +413,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false }: { pack: P
     <OrderLayout
       pack={state.pack}
       locale={locale}
+      pricing={pricing}
       step={currentStep}
       reachable={maxReachable(state, activeSteps)}
       steps={activeSteps}

@@ -5,9 +5,9 @@ import { routing } from './i18n/routing';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-// Combined middleware: NFC redirect (no auth, no locale) + next-intl (locale routing)
+// Combined proxy: NFC redirect (no auth, no locale) + next-intl (locale routing)
 // + Supabase session refresh (for auth-protected pages).
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1) NFC redirect: /s/[shortId] — short-circuits everything else.

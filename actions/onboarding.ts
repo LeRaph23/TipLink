@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { inviteStaffMember } from './staff';
+import { sendStaffInviteLink } from '@/lib/staff-invite';
 import { verifyOnboardingToken } from '@/lib/auth/onboarding-token';
 
 const ColleagueSchema = z.object({
@@ -14,18 +14,33 @@ const ColleagueSchema = z.object({
 
 async function addColleague(
   service: ReturnType<typeof createServiceClient>,
-  { fullName, email, establishmentId, locale }: {
-    fullName: string; email?: string; establishmentId: string; locale: 'fr' | 'en';
+  { fullName, email, establishmentId, establishmentName, locale }: {
+    fullName: string; email?: string; establishmentId: string;
+    establishmentName: string; locale: 'fr' | 'en';
   }
 ) {
-  const trimmedEmail = email?.trim();
-  if (trimmedEmail) {
-    await inviteStaffMember({ fullName, email: trimmedEmail, establishmentId, role: 'staff', locale });
-  } else {
-    await service.from('staff_profiles').insert({
+  // Onboarding runs before the admin has a session, so the profile is
+  // created with the service role rather than an RLS-checked insert.
+  const { data: staff } = await service
+    .from('staff_profiles')
+    .insert({
       full_name: fullName,
       establishment_id: establishmentId,
       is_active: false,
+    })
+    .select('id')
+    .single();
+
+  const trimmedEmail = email?.trim();
+  if (staff && trimmedEmail) {
+    await sendStaffInviteLink(service, {
+      staffProfileId: staff.id,
+      fullName,
+      email: trimmedEmail,
+      establishmentId,
+      establishmentName,
+      role: 'staff',
+      locale,
     });
   }
 }
@@ -68,12 +83,13 @@ export async function validateSmartTagCode(
     return { valid: false };
   }
   const service = createServiceClient();
+  // `staff_id` was dropped in migration 00014 — a sticker is "unassigned"
+  // (in stock) purely when establishment_id IS NULL.
   const { data } = await service
     .from('nfc_stickers')
     .select('id')
     .eq('short_id', normalized)
     .is('establishment_id', null)
-    .is('staff_id', null)
     .maybeSingle();
 
   return data ? { valid: true, id: data.id } : { valid: false };
@@ -142,7 +158,7 @@ export async function completePostPurchaseOnboarding(
   if (colleagues.length > 0) {
     await Promise.allSettled(
       colleagues.map((c) =>
-        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, locale })
+        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, establishmentName, locale })
       )
     );
   }
@@ -276,7 +292,7 @@ export async function completeExpressOnboarding(
   if (colleagues.length > 0) {
     await Promise.allSettled(
       colleagues.map((c) =>
-        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, locale })
+        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, establishmentName, locale })
       )
     );
   }
@@ -371,7 +387,7 @@ export async function completeNfcOnboarding(
   // Atomically claim the stickers via the SECURITY DEFINER RPC. Two parallel
   // onboardings cannot grab the same sticker thanks to FOR UPDATE SKIP LOCKED.
   // RPC name is not yet in the generated types — cast the rpc() call.
-  const claimRpc = (service.rpc as unknown as (
+  const claimRpc = (service.rpc.bind(service) as unknown as (
     fn: 'claim_nfc_stickers',
     args: { p_short_ids: string[]; p_establishment_id: string }
   ) => Promise<{ data: Array<{ id: string; short_id: string }> | null; error: { message: string } | null }>);
@@ -409,7 +425,7 @@ export async function completeNfcOnboarding(
   if (colleagues.length > 0) {
     await Promise.allSettled(
       colleagues.map((c) =>
-        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, locale })
+        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, establishmentName, locale })
       )
     );
   }

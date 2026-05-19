@@ -8,11 +8,8 @@ import {
   completeNfcOnboarding,
   completeExpressOnboarding,
 } from '@/actions/onboarding';
-import { setupAdminPayments } from '@/actions/stripe';
-import type { BankingData } from '@/actions/stripe';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { getBaseUrl } from '@/lib/env';
-import { validateIban, formatIbanFriendly } from '@/lib/banking/iban';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -334,19 +331,10 @@ export function OnboardingWizard(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
-  const [bankingConfigured, setBankingConfigured] = useState(false);
 
-  // Banking state (tips-opt-in + banking steps, postpurchase mode only)
+  // Whether the admin wants to receive tips personally (tips-opt-in step).
+  // Banking itself is set up afterwards on the dashboard, via Stripe.
   const [wantsTips, setWantsTips] = useState<boolean | null>(null);
-  const [dobDay, setDobDay] = useState('');
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobYear, setDobYear] = useState('');
-  const [bankingAddress, setBankingAddress] = useState('');
-  const [iban, setIban] = useState('');
-  const [tosAccepted, setTosAccepted] = useState(false);
-
-  const ibanValidation = validateIban(iban);
-  const bankingFilled = dobDay && dobMonth && dobYear && bankingAddress.trim() && ibanValidation.ok && tosAccepted;
 
   const goTo = useCallback(
     (step: string) => {
@@ -368,7 +356,7 @@ export function OnboardingWizard(props: Props) {
       case 'password': return state.password.length >= 8;
       case 'team': return true;
       case 'tips-opt-in': return wantsTips !== null;
-      case 'banking': return !!bankingFilled;
+      case 'banking': return true;
       default: return true;
     }
   };
@@ -400,35 +388,11 @@ export function OnboardingWizard(props: Props) {
     if (s) goTo(s);
   };
 
-  async function attemptBankingSetup(): Promise<{ ok: boolean; bankingErr?: string }> {
-    if (!wantsTips || !bankingFilled) return { ok: true };
-
-    const commaIdx = bankingAddress.lastIndexOf(',');
-    const line1 = commaIdx !== -1 ? bankingAddress.slice(0, commaIdx).trim() : bankingAddress;
-    const rest = commaIdx !== -1 ? bankingAddress.slice(commaIdx + 1).trim() : '';
-    const spaceIdx = rest.indexOf(' ');
-    const postal_code = spaceIdx !== -1 ? rest.slice(0, spaceIdx).trim() : '';
-    const city = spaceIdx !== -1 ? rest.slice(spaceIdx + 1).trim() : rest;
-    const nameParts = state.adminFullName.trim().split(/\s+/);
-
-    const bankResult = await setupAdminPayments({
-      firstName: nameParts[0] ?? state.adminFullName,
-      lastName: nameParts.slice(1).join(' ') || (nameParts[0] ?? ''),
-      dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
-      address: { line1, city, postal_code, country: 'FR' },
-      iban: ibanValidation.ok ? ibanValidation.normalized : iban.replace(/\s/g, '').toUpperCase(),
-      tosTimestamp: Math.floor(Date.now() / 1000),
-    } as Parameters<typeof setupAdminPayments>[0]);
-
-    if ('error' in bankResult) return { ok: false, bankingErr: bankResult.error };
-    setBankingConfigured(true);
-    return { ok: true };
-  }
-
-  async function handleSubmit(opts?: { skipBankingSetup?: boolean }) {
+  async function handleSubmit() {
     setSubmitting(true);
     setError(null);
 
+    try {
     if (mode === 'scan') {
       // 1. Create Supabase account client-side
       const supabase = createClient();
@@ -463,16 +427,6 @@ export function OnboardingWizard(props: Props) {
         setError(result.error);
         setSubmitting(false);
         return;
-      }
-
-      // 3. If session exists (email auto-confirmed), set up banking before signing out
-      if (signUpData.session && !opts?.skipBankingSetup) {
-        const { ok, bankingErr } = await attemptBankingSetup();
-        if (!ok) {
-          setError(bankingErr ?? 'Erreur bancaire');
-          setSubmitting(false);
-          return;
-        }
       }
 
       setNeedsEmailVerification(true);
@@ -520,17 +474,6 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
-      // Banking setup needs an authenticated session; skip it when email
-      // confirmation is pending — the user will be prompted after login.
-      if (signUpData.session && !opts?.skipBankingSetup) {
-        const { ok, bankingErr } = await attemptBankingSetup();
-        if (!ok) {
-          setError(bankingErr ?? 'Erreur bancaire');
-          setSubmitting(false);
-          return;
-        }
-      }
-
       if (signUpData.session) await supabase.auth.signOut();
       setNeedsEmailVerification(true);
     } else {
@@ -548,18 +491,17 @@ export function OnboardingWizard(props: Props) {
         return;
       }
 
-      if (!opts?.skipBankingSetup) {
-        const { ok, bankingErr } = await attemptBankingSetup();
-        if (!ok) {
-          setError(bankingErr ?? 'Erreur bancaire');
-          setSubmitting(false);
-          return;
-        }
-      }
     }
 
     setDone(true);
     setSubmitting(false);
+    } catch (err) {
+      // Without this, a thrown error (server action 500, network failure)
+      // would leave the button stuck on "Finalisation…" forever.
+      console.error('onboarding submit failed', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue. Réessayez.');
+      setSubmitting(false);
+    }
   }
 
   // ─── Done screen ───────────────────────────────────────────────────────────
@@ -632,19 +574,7 @@ export function OnboardingWizard(props: Props) {
         <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 24 }}>
           {state.establishmentName} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.
         </p>
-        {bankingConfigured && (
-          <div style={{
-            background: 'var(--success-bg)', border: '1px solid rgba(0,180,100,0.2)',
-            borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'left',
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <span style={{ fontSize: 18 }}>✓</span>
-            <div style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600 }}>
-              Compte bancaire configuré — vous recevrez vos pourboires directement.
-            </div>
-          </div>
-        )}
-        {wantsTips && !bankingConfigured && (
+        {wantsTips && (
           <div style={{
             background: 'var(--surface-2)', border: '1px solid rgba(229,122,151,0.25)',
             borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'left',
@@ -655,7 +585,7 @@ export function OnboardingWizard(props: Props) {
             <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
               Après avoir confirmé votre email, rendez-vous dans{' '}
               <strong style={{ color: 'var(--text)' }}>Dashboard → Virements</strong>{' '}
-              pour renseigner votre IBAN et commencer à recevoir des pourboires.
+              pour configurer vos virements avec Stripe et commencer à recevoir des pourboires.
             </div>
           </div>
         )}
@@ -705,8 +635,8 @@ export function OnboardingWizard(props: Props) {
       subtitle: 'Souhaitez-vous aussi recevoir des pourboires personnellement ?',
     },
     banking: {
-      title: 'Vos informations bancaires',
-      subtitle: 'Pour virer vos pourboires directement sur votre compte. Votre IBAN ne sera jamais visible par votre équipe.',
+      title: 'Recevoir vos pourboires',
+      subtitle: 'Vos virements se configurent ensuite depuis votre tableau de bord, via Stripe.',
     },
   };
 
@@ -824,94 +754,24 @@ export function OnboardingWizard(props: Props) {
           </div>
         );
 
-      case 'banking': {
-        const selectStyle: React.CSSProperties = {
-          ...inp,
-          appearance: 'none' as const,
-          backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%23888\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E")',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 14px center',
-          paddingRight: 36,
-        };
-        const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-        const MONTHS = [
-          { value: 1, label: 'Janvier' }, { value: 2, label: 'Février' },
-          { value: 3, label: 'Mars' }, { value: 4, label: 'Avril' },
-          { value: 5, label: 'Mai' }, { value: 6, label: 'Juin' },
-          { value: 7, label: 'Juillet' }, { value: 8, label: 'Août' },
-          { value: 9, label: 'Septembre' }, { value: 10, label: 'Octobre' },
-          { value: 11, label: 'Novembre' }, { value: 12, label: 'Décembre' },
-        ];
-        const curYear = new Date().getFullYear();
-        const YEARS = Array.from({ length: curYear - 1924 }, (_, i) => curYear - 18 - i);
-
+      case 'banking':
         return (
-          <div>
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
-                Date de naissance <span style={{ color: 'var(--accent)' }}>*</span>
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr', gap: 8 }}>
-                <select value={dobDay} onChange={(e) => setDobDay(e.target.value)} style={selectStyle}>
-                  <option value="">Jour</option>
-                  {DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-                <select value={dobMonth} onChange={(e) => setDobMonth(e.target.value)} style={selectStyle}>
-                  <option value="">Mois</option>
-                  {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
-                <select value={dobYear} onChange={(e) => setDobYear(e.target.value)} style={selectStyle}>
-                  <option value="">Année</option>
-                  {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
+          <div style={{
+            display: 'flex', gap: 12, padding: '16px',
+            borderRadius: 12, background: 'var(--surface-2)',
+            border: '1px solid var(--border-subtle)',
+          }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>🔒</span>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
+              Parfait — tu pourras recevoir des pourboires personnellement. La
+              configuration de tes virements se fait en quelques clics depuis ton
+              tableau de bord (rubrique <strong style={{ color: 'var(--text)' }}>Virements</strong>),
+              via <strong style={{ color: 'var(--text)' }}>Stripe</strong>, notre partenaire de
+              paiement sécurisé. C&apos;est Stripe qui collecte et chiffre tes coordonnées —
+              tes informations bancaires ne transitent jamais par Digitip.
             </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
-                Adresse personnelle <span style={{ color: 'var(--accent)' }}>*</span>
-              </label>
-              <AddressAutocomplete value={bankingAddress} onChange={setBankingAddress} style={inp} />
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
-                IBAN <span style={{ color: 'var(--accent)' }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={iban}
-                onChange={(e) => setIban(e.target.value.toUpperCase())}
-                onBlur={() => iban.trim() && setIban(formatIbanFriendly(iban))}
-                placeholder="FR76 3000 4000 0312 3456 7890 143"
-                style={{ ...inp, fontFamily: 'monospace', letterSpacing: '0.05em' }}
-                autoComplete="off"
-              />
-              {iban.trim().length > 4 && !ibanValidation.ok && (
-                <div style={{ fontSize: 11.5, color: 'var(--error)', marginTop: 5 }}>
-                  {ibanValidation.error}
-                </div>
-              )}
-            </div>
-
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={tosAccepted}
-                onChange={(e) => setTosAccepted(e.target.checked)}
-                style={{ marginTop: 2, flexShrink: 0, accentColor: '#E57A97', width: 16, height: 16 }}
-              />
-              <span style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
-                J&apos;accepte les{' '}
-                <a href="https://stripe.com/fr/legal/connect-account" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-                  Conditions d&apos;utilisation de Stripe
-                </a>
-                {' '}pour la réception de paiements.
-              </span>
-            </label>
           </div>
         );
-      }
 
       default:
         return null;
@@ -1012,37 +872,6 @@ export function OnboardingWizard(props: Props) {
 
         {/* "Skip" for team step (not last) */}
         {currentStep === 'team' && !isLastStep && (
-          <button
-            type="button"
-            onClick={next}
-            style={{
-              background: 'none', border: 'none', color: 'var(--text-3)',
-              fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
-              textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
-            }}
-          >
-            Passer cette étape
-          </button>
-        )}
-
-        {/* "Configure later" for banking step (last step) */}
-        {currentStep === 'banking' && isLastStep && (
-          <button
-            type="button"
-            onClick={() => handleSubmit({ skipBankingSetup: true })}
-            disabled={submitting}
-            style={{
-              background: 'none', border: 'none', color: 'var(--text-3)',
-              fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
-              textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
-            }}
-          >
-            Configurer plus tard
-          </button>
-        )}
-
-        {/* "Skip" for banking step (not last — shouldn't normally happen) */}
-        {currentStep === 'banking' && !isLastStep && (
           <button
             type="button"
             onClick={next}

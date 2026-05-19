@@ -38,6 +38,7 @@ export default async function EstablishmentsPage({
     : { data: [] };
 
   // Tips collected per establishment over the last 28 days
+  // eslint-disable-next-line react-hooks/purity -- Server Component: evaluated once per request
   const since28 = new Date(Date.now() - 28 * 24 * 3600000).toISOString();
   const estIds = (establishments ?? []).map((e) => e.id);
   const { data: txns } = estIds.length

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
 import { htSuffix } from '@/lib/format-price';
+import type { PackPricing } from '@/lib/stripe/pricing';
 
 const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
   solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
@@ -30,14 +31,17 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
 export function OrderSummary({
   pack,
   locale,
+  pricing,
   compact = false,
 }: {
   pack: PackId;
   locale: string;
+  pricing: Record<PackId, PackPricing>;
   compact?: boolean;
 }) {
   const t = useTranslations('order.summary');
   const def = PACKS[pack];
+  const amount = pricing[pack].unitAmount;
   const img = PACK_IMAGES[pack];
 
   return (
@@ -85,7 +89,7 @@ export function OrderSummary({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <Row label={t('hardware')} value={`${formatPrice(def.hardwareAmount, locale)} ${htSuffix(locale)}`} />
+        <Row label={t('hardware')} value={`${formatPrice(amount, locale)} ${htSuffix(locale)}`} />
         <Row label={t('shipping')} value={t('free')} />
         <Row label={t('commission')} value={t('commissionValue')} />
       </div>
@@ -99,7 +103,7 @@ export function OrderSummary({
           fontFamily: 'var(--font-display)',
           fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em',
         }}>
-          {formatPrice(def.hardwareAmount, locale)}
+          {formatPrice(amount, locale)}
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', marginLeft: 4 }}>{htSuffix(locale)}</span>
         </span>
       </div>

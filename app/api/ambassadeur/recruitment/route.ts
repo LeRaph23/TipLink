@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     siretClean = validateSiret(String(siret));
     if (!siretClean) {
       return NextResponse.json({
-        error: "SIRET invalide. Laisse le champ vide si tu n'en as pas encore.",
+        error: "SIRET invalide. Laissez le champ vide si vous n'en avez pas encore.",
       }, { status: 400 });
     }
   }
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       .eq('ip_hash', ipHash)
       .gte('created_at', new Date(Date.now() - 86400000).toISOString());
     if ((count ?? 0) >= 3) {
-      return NextResponse.json({ error: 'Trop de candidatures depuis cette adresse, réessaie demain.' }, { status: 429 });
+      return NextResponse.json({ error: 'Trop de candidatures depuis cette adresse, veuillez réessayer demain.' }, { status: 429 });
     }
   }
 
