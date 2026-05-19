@@ -203,7 +203,7 @@ function ViewToggle({ view, onChange }: { view: 'map' | 'list'; onChange: (v: 'm
             fontSize: 12, fontWeight: 700, cursor: 'pointer',
           }}
         >
-          {v === 'map' ? '🗺️ Carte' : '📋 Liste'}
+          {v === 'map' ? 'Carte' : 'Liste'}
         </button>
       ))}
     </div>

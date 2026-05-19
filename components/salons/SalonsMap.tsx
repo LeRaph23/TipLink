@@ -480,10 +480,10 @@ function AmbassadorMap({
         <Chip active={state.status === 'todo'}   onClick={() => setters.setStatus('todo')}>À faire</Chip>
         <Chip active={state.status === 'mine'}   onClick={() => setters.setStatus('mine')}>Mes visites</Chip>
         <Chip active={state.status === 'others'} onClick={() => setters.setStatus('others')}>Faits</Chip>
-        <Chip active={state.openNow}             onClick={() => setters.setOpenNow(!state.openNow)}>🕐 Ouvert</Chip>
-        <Chip active={state.minRating === 4}     onClick={() => setters.setMinRating(state.minRating === 4 ? 0 : 4)}>⭐4+</Chip>
-        <Chip active={state.minRating === 3}     onClick={() => setters.setMinRating(state.minRating === 3 ? 0 : 3)}>⭐3+</Chip>
-        <Chip active={state.showClosed}          onClick={() => setters.setShowClosed(!state.showClosed)}>☠ Fermés</Chip>
+        <Chip active={state.openNow}             onClick={() => setters.setOpenNow(!state.openNow)}>Ouvert</Chip>
+        <Chip active={state.minRating === 4}     onClick={() => setters.setMinRating(state.minRating === 4 ? 0 : 4)}>4★+</Chip>
+        <Chip active={state.minRating === 3}     onClick={() => setters.setMinRating(state.minRating === 3 ? 0 : 3)}>3★+</Chip>
+        <Chip active={state.showClosed}          onClick={() => setters.setShowClosed(!state.showClosed)}>Fermés</Chip>
       </div>
 
       <div className="salon-map-wrap">
@@ -575,13 +575,13 @@ function AdminMap({
         </select>
         <Chip active={f.state.status === 'all'}   onClick={() => f.setters.setStatus('all')}>Tous</Chip>
         <Chip active={f.state.status === 'never'} onClick={() => f.setters.setStatus('never')}>Pas visités</Chip>
-        <Chip active={f.state.status === 'r3'}    onClick={() => f.setters.setStatus('r3')}>⭐3</Chip>
-        <Chip active={f.state.status === 'r2'}    onClick={() => f.setters.setStatus('r2')}>⭐2</Chip>
-        <Chip active={f.state.status === 'r1'}    onClick={() => f.setters.setStatus('r1')}>⭐1</Chip>
-        <Chip active={f.state.openNow}            onClick={() => f.setters.setOpenNow(!f.state.openNow)}>🕐 Ouvert</Chip>
-        <Chip active={f.state.minRating === 4}    onClick={() => f.setters.setMinRating(f.state.minRating === 4 ? 0 : 4)}>⭐4+</Chip>
-        <Chip active={f.state.showClosed}         onClick={() => f.setters.setShowClosed(!f.state.showClosed)}>☠ Fermés</Chip>
-        <Chip active={f.state.showBboxes}         onClick={() => f.setters.setShowBboxes(!f.state.showBboxes)}>🔲 Bbox zones</Chip>
+        <Chip active={f.state.status === 'r3'}    onClick={() => f.setters.setStatus('r3')}>3★</Chip>
+        <Chip active={f.state.status === 'r2'}    onClick={() => f.setters.setStatus('r2')}>2★</Chip>
+        <Chip active={f.state.status === 'r1'}    onClick={() => f.setters.setStatus('r1')}>1★</Chip>
+        <Chip active={f.state.openNow}            onClick={() => f.setters.setOpenNow(!f.state.openNow)}>Ouvert</Chip>
+        <Chip active={f.state.minRating === 4}    onClick={() => f.setters.setMinRating(f.state.minRating === 4 ? 0 : 4)}>4★+</Chip>
+        <Chip active={f.state.showClosed}         onClick={() => f.setters.setShowClosed(!f.state.showClosed)}>Fermés</Chip>
+        <Chip active={f.state.showBboxes}         onClick={() => f.setters.setShowBboxes(!f.state.showBboxes)}>Bbox zones</Chip>
       </div>
 
       <div className="salon-map-wrap">
