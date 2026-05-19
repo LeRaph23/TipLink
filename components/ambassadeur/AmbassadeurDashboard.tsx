@@ -250,6 +250,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
     const tok = url?.searchParams.get('setup');
 
     if (tok) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.location, unavailable during SSR
       setSetupToken(tok);
       fetch(`/api/ambassadeur/${encodeURIComponent(code)}/set-pin?token=${encodeURIComponent(tok)}`)
         .then(r => r.json().then(d => ({ status: r.status, d })))

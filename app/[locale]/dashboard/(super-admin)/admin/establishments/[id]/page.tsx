@@ -138,7 +138,7 @@ export default async function EstablishmentDetailPage({
 
   // ── Fetch manager user emails via service client ────────────────────────
   const managerUserIds = (managerRoles ?? []).map((r) => r.user_id);
-  let managerEmails: Map<string, string> = new Map();
+  const managerEmails: Map<string, string> = new Map();
 
   if (managerUserIds.length > 0) {
     try {
@@ -160,6 +160,7 @@ export default async function EstablishmentDetailPage({
   const totalGmv = txRows.reduce((s, t) => s + (t.amount ?? 0), 0);
   const currency = est.currency ?? 'EUR';
 
+  // eslint-disable-next-line react-hooks/purity -- Server Component: evaluated once per request
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
   const gmv30d = txRows
