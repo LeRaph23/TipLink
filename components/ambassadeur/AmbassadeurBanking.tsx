@@ -1,14 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { validateIban, formatIbanFriendly } from '@/lib/banking/iban';
-import { IdentityDocumentUpload } from '@/components/banking/IdentityDocumentUpload';
-
-interface Props {
-  code: string;
-  onDone: () => void;
-  defaults?: { email?: string | null; phone?: string | null; city?: string | null };
-}
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '10px 12px', borderRadius: 8,
@@ -20,38 +12,28 @@ const label: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, display: 'block',
 };
 
-export function AmbassadeurBankingForm({ code, onDone, defaults }: Props) {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [dobDay, setDobDay] = useState('');
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobYear, setDobYear] = useState('');
-  const [addressLine, setAddressLine] = useState('');
-  const [city, setCity] = useState(defaults?.city ?? '');
-  const [postalCode, setPostalCode] = useState('');
-  const [iban, setIban] = useState('');
-  const [siret, setSiret] = useState('');
+interface FormProps {
+  code: string;
+  defaults?: { email?: string | null; siret?: string | null };
+}
+
+// Collects only the SIRET (a TipLink requirement — ambassadors are
+// self-employed) and a contact email. Identity, IBAN and terms are gathered by
+// Stripe's hosted onboarding, to which we redirect on submit.
+export function AmbassadeurBankingForm({ code, defaults }: FormProps) {
+  const [siret, setSiret] = useState(defaults?.siret ?? '');
   const [email, setEmail] = useState(defaults?.email ?? '');
-  const [phone, setPhone] = useState(defaults?.phone ?? '');
-  const [tos, setTos] = useState(false);
   const [pledge, setPledge] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
     setError(null);
-    if (!firstName.trim() || !lastName.trim()) { setError('Prénom et nom requis.'); return; }
-    if (!dobDay || !dobMonth || !dobYear) { setError('Date de naissance requise.'); return; }
-    if (!addressLine.trim() || !city.trim() || !/^\d{5}$/.test(postalCode)) {
-      setError('Adresse complète requise (rue, code postal 5 chiffres, ville).'); return;
-    }
-    const ibanResult = validateIban(iban);
-    if (!ibanResult.ok) { setError(ibanResult.error); return; }
     if (!/^\d{14}$/.test(siret.replace(/\s+/g, ''))) {
-      setError("SIRET invalide. Pas encore de SIRET ? Crée-le gratuitement sur autoentrepreneur.urssaf.fr."); return;
+      setError("SIRET invalide. Pas encore de SIRET ? Crée-le gratuitement sur autoentrepreneur.urssaf.fr.");
+      return;
     }
     if (!email.trim()) { setError('Email requis.'); return; }
-    if (!tos) { setError('Tu dois accepter les conditions Stripe.'); return; }
     if (!pledge) { setError("Tu dois accepter l'engagement de non-fraude."); return; }
 
     setSubmitting(true);
@@ -59,43 +41,43 @@ export function AmbassadeurBankingForm({ code, onDone, defaults }: Props) {
       const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/banking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          dob: { day: parseInt(dobDay), month: parseInt(dobMonth), year: parseInt(dobYear) },
-          address: { line1: addressLine.trim(), city: city.trim(), postal_code: postalCode, country: 'FR' },
-          iban: ibanResult.normalized,
-          siret: siret.replace(/\s+/g, ''),
-          email: email.trim(),
-          phone: phone.trim() || undefined,
-          tosAccepted: true,
-        }),
+        body: JSON.stringify({ siret: siret.replace(/\s+/g, ''), email: email.trim() }),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Erreur.'); return; }
-      onDone();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.onboardingUrl) {
+        setError(data.error ?? 'Erreur.');
+        setSubmitting(false);
+        return;
+      }
+      // Redirect to Stripe's hosted onboarding. The page navigates away, so we
+      // intentionally leave `submitting` true.
+      window.location.href = data.onboardingUrl;
     } catch {
       setError('Erreur réseau.');
-    } finally {
       setSubmitting(false);
     }
   }
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 80 }, (_, i) => currentYear - 18 - i);
-  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{
         background: 'var(--accent-muted)', border: '1px solid var(--accent-border)',
-        borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.4,
+        borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.45,
       }}>
-        <strong>SIRET obligatoire</strong> pour recevoir tes virements.<br />
+        🔒 <strong>Paiements sécurisés par Stripe.</strong> Tu vas être redirigé vers
+        Stripe, notre partenaire de paiement, pour saisir ton IBAN et vérifier ton
+        identité. Digitip ne voit jamais tes informations bancaires.
+      </div>
+
+      <div style={{
+        background: 'var(--surface-2)', border: '1px solid var(--border)',
+        borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.45,
+      }}>
+        <strong>SIRET obligatoire</strong> pour recevoir tes virements.{' '}
         Pas encore de SIRET ? Crée-le gratuitement sur{' '}
         <a href="https://autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
           autoentrepreneur.urssaf.fr
-        </a>{' '}avant de continuer.
+        </a>.
       </div>
 
       {error && (
@@ -104,63 +86,15 @@ export function AmbassadeurBankingForm({ code, onDone, defaults }: Props) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <div><span style={label}>Prénom</span><input style={inp} value={firstName} onChange={e => setFirstName(e.target.value)} /></div>
-        <div><span style={label}>Nom</span><input style={inp} value={lastName} onChange={e => setLastName(e.target.value)} /></div>
-      </div>
-
-      <div>
-        <span style={label}>Date de naissance</span>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1.2fr', gap: 8 }}>
-          <select style={inp} value={dobDay} onChange={e => setDobDay(e.target.value)}>
-            <option value="">Jour</option>
-            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={String(d).padStart(2,'0')}>{d}</option>)}
-          </select>
-          <select style={inp} value={dobMonth} onChange={e => setDobMonth(e.target.value)}>
-            <option value="">Mois</option>
-            {months.map((m, i) => <option key={m} value={String(i+1).padStart(2,'0')}>{m}</option>)}
-          </select>
-          <select style={inp} value={dobYear} onChange={e => setDobYear(e.target.value)}>
-            <option value="">Année</option>
-            {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div><span style={label}>Adresse (rue et numéro)</span><input style={inp} value={addressLine} onChange={e => setAddressLine(e.target.value)} placeholder="12 rue de la Paix" /></div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
-        <div><span style={label}>Code postal</span><input style={inp} value={postalCode} onChange={e => setPostalCode(e.target.value.replace(/\D/g, '').slice(0,5))} placeholder="75002" /></div>
-        <div><span style={label}>Ville</span><input style={inp} value={city} onChange={e => setCity(e.target.value)} placeholder="Paris" /></div>
-      </div>
-
-      <div><span style={label}>Email</span><input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="toi@email.com" /></div>
-      <div><span style={label}>Téléphone (optionnel)</span><input style={inp} value={phone} onChange={e => setPhone(e.target.value)} placeholder="06 12 34 56 78" /></div>
-
       <div>
         <span style={label}>SIRET (14 chiffres)</span>
         <input style={inp} value={siret} onChange={e => setSiret(e.target.value)} placeholder="12345678901234" inputMode="numeric" />
       </div>
 
       <div>
-        <span style={label}>IBAN</span>
-        <input
-          style={inp}
-          value={iban}
-          onChange={e => setIban(e.target.value.toUpperCase())}
-          onBlur={() => iban.trim() && setIban(formatIbanFriendly(iban))}
-          placeholder="FR76 3000 1007 9412 3456 7890 185"
-        />
+        <span style={label}>Email</span>
+        <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="toi@email.com" />
       </div>
-
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-        <input type="checkbox" checked={tos} onChange={e => setTos(e.target.checked)} style={{ marginTop: 3, accentColor: 'var(--accent)' }} />
-        <span style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>
-          J&apos;accepte les{' '}
-          <a href="https://stripe.com/fr/legal/connect-account" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
-            conditions Stripe Connect
-          </a>.
-        </span>
-      </label>
 
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={pledge} onChange={e => setPledge(e.target.checked)} style={{ marginTop: 3, accentColor: 'var(--accent)' }} />
@@ -178,7 +112,7 @@ export function AmbassadeurBankingForm({ code, onDone, defaults }: Props) {
           cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1,
         }}
       >
-        {submitting ? 'Configuration…' : 'Configurer mes virements →'}
+        {submitting ? 'Redirection vers Stripe…' : 'Configurer mes virements →'}
       </button>
     </div>
   );
@@ -215,7 +149,7 @@ export function AmbassadeurPayoutPanel({
       if (data.status === 'paid') {
         setSuccessMsg(`Virement de ${fmt(data.amount)} envoyé ! Arrivée sous 1-2 jours ouvrés.`);
       } else {
-        setSuccessMsg(`Demande de ${fmt(data.amount)} enregistrée. ${data.note ?? 'Validation par l\'administrateur.'}`);
+        setSuccessMsg(`Demande de ${fmt(data.amount)} enregistrée. ${data.note ?? "Validation par l'administrateur."}`);
       }
       onChanged();
     } catch {
@@ -225,19 +159,28 @@ export function AmbassadeurPayoutPanel({
     }
   }
 
-  if (!banking.hasStripeAccount) {
+  const cardStyle: React.CSSProperties = {
+    background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--radius)', padding: 18, marginBottom: 16,
+  };
+  const headerStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, color: 'var(--text-3)',
+    textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
+  };
+
+  // No connected account yet, or one exists but Stripe onboarding is unfinished
+  // (payouts not yet enabled) — both states route the ambassador to Stripe.
+  if (!banking.hasStripeAccount || !banking.payoutsEnabled) {
+    const pending = banking.hasStripeAccount;
     return (
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius)', padding: 18, marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-          💰 Virements
-        </div>
+      <div style={cardStyle}>
+        <div style={headerStyle}>💰 Virements</div>
         {!setupOpen ? (
           <>
-            <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>
-              Configure ton RIB + SIRET pour recevoir tes commissions par virement bancaire.
+            <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.5 }}>
+              {pending
+                ? "Ta configuration Stripe n'est pas encore terminée. Reprends-la pour pouvoir recevoir tes commissions."
+                : 'Configure ton compte pour recevoir tes commissions par virement bancaire.'}
             </div>
             <button
               onClick={() => setSetupOpen(true)}
@@ -246,32 +189,17 @@ export function AmbassadeurPayoutPanel({
                 background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               }}
             >
-              Configurer mon compte bancaire →
+              {pending ? 'Reprendre la configuration →' : 'Configurer mon compte bancaire →'}
             </button>
           </>
         ) : (
           <AmbassadeurBankingForm
             code={code}
-            onDone={() => { setSetupOpen(false); onChanged(); }}
-            defaults={{ email: banking.email, phone: banking.phone, city: banking.city }}
+            defaults={{ email: banking.email, siret: banking.siret }}
           />
         )}
       </div>
     );
-  }
-
-  async function handleIdentityUpload(front: File, back: File | null) {
-    const fd = new FormData();
-    fd.append('front', front);
-    if (back) fd.append('back', back);
-    const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/identity-document`, {
-      method: 'POST',
-      body: fd,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { error: data.error ?? 'Erreur.' };
-    onChanged();
-    return { ok: true as const };
   }
 
   // Banking is configured — show available balance + payout button
@@ -280,13 +208,8 @@ export function AmbassadeurPayoutPanel({
   const canPayout = available >= minCents;
 
   return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-      borderRadius: 'var(--radius)', padding: 18, marginBottom: 16,
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-        💰 Virements
-      </div>
+    <div style={cardStyle}>
+      <div style={headerStyle}>💰 Virements</div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
         <div>
@@ -313,15 +236,6 @@ export function AmbassadeurPayoutPanel({
         </div>
       )}
 
-      {banking.needsIdentityDocument && (
-        <div style={{ marginBottom: 12 }}>
-          <IdentityDocumentUpload
-            onUpload={handleIdentityUpload}
-            pendingVerification={banking.pendingVerification}
-          />
-        </div>
-      )}
-
       <button
         onClick={handlePayout}
         disabled={!canPayout || requesting}
@@ -339,7 +253,7 @@ export function AmbassadeurPayoutPanel({
 
       {!canPayout && (
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8, textAlign: 'center' }}>
-          Minimum 30 € — il te manque {fmt(minCents - available)}.
+          Minimum {fmt(minCents)} — il te manque {fmt(minCents - available)}.
         </div>
       )}
 
@@ -372,13 +286,8 @@ export function AmbassadeurPayoutPanel({
 
 interface BankingPanelData {
   hasStripeAccount: boolean;
-  onboardingStatus: string;
   siret: string | null;
   email: string | null;
-  phone: string | null;
-  city: string | null;
-  needsIdentityDocument?: boolean;
-  pendingVerification?: boolean;
   payoutsEnabled?: boolean;
 }
 
