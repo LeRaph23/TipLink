@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Card, SectionHeader, Button, Stat, EmptyState, FONT, WEIGHT } from './ui';
+import { Icon, type IconName } from './icons';
 
 interface StatementEntry {
   id: string;
@@ -19,11 +21,11 @@ interface StatementData {
 function fmtSigned(cents: number): string {
   const sign = cents >= 0 ? '+' : '−';
   const eur = Math.abs(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${sign} ${eur} €`;
+  return `${sign} ${eur} €`;
 }
 
 function fmtEur(cents: number): string {
-  return `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  return `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
 
 function fmtDate(iso: string): string {
@@ -32,11 +34,11 @@ function fmtDate(iso: string): string {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
-const KIND_ICON: Record<StatementEntry['kind'], string> = {
-  commission: '🏷️',
-  bonus: '🎁',
-  referral: '🤝',
-  payout: '🏦',
+const KIND_ICON: Record<StatementEntry['kind'], IconName> = {
+  commission: 'tag',
+  bonus: 'gift',
+  referral: 'users',
+  payout: 'bank',
 };
 
 export function AmbassadeurStatement({ code }: { code: string }) {
@@ -62,36 +64,37 @@ export function AmbassadeurStatement({ code }: { code: string }) {
   const { available, entries } = data;
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden', marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-          Relevé de compte
-        </span>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          style={{ fontSize: 11, color: 'var(--text-3)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}
-        >
-          {loading ? '…' : '↻ Actualiser'}
-        </button>
+    <Card padded={false}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+        <SectionHeader
+          title="Relevé de compte"
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              loading={loading}
+              iconLeft={<Icon name="refresh" size={13} />}
+            >
+              Actualiser
+            </Button>
+          }
+        />
       </div>
 
       {/* Balance summary */}
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--surface-2)' }}>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 2 }}>Solde disponible</div>
-        <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--success)' }}>
-          {fmtEur(available)}
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-          Commissions de vente + bonus et primes validés par l&apos;équipe, moins les virements.
-        </div>
+        <Stat
+          label="Solde disponible"
+          value={fmtEur(available)}
+          tone="success"
+          sub="Commissions de vente + bonus et primes validés par l'équipe, moins les virements."
+        />
       </div>
 
       {/* Ledger */}
       {entries.length === 0 ? (
-        <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-          Aucun mouvement pour l&apos;instant.
-        </div>
+        <EmptyState>Aucun mouvement pour l&apos;instant.</EmptyState>
       ) : (
         entries.map((e, idx) => {
           const credit = e.amountCents >= 0;
@@ -99,24 +102,30 @@ export function AmbassadeurStatement({ code }: { code: string }) {
             <div
               key={e.id}
               style={{
-                display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10,
+                display: 'flex', gap: 10,
                 padding: '11px 16px', alignItems: 'center',
                 borderBottom: idx < entries.length - 1 ? '1px solid var(--border-subtle)' : 'none',
               }}
             >
-              <span style={{ fontSize: 15 }}>{KIND_ICON[e.kind]}</span>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: 'var(--radius-sm)',
+                background: 'var(--surface-2)', color: 'var(--text-3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Icon name={KIND_ICON[e.kind]} size={15} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: FONT.body, fontWeight: WEIGHT.medium, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {e.label}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
+                <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: 1 }}>
                   {fmtDate(e.date)}
                   {e.kind === 'payout' && e.status === 'pending' && ' · en cours'}
                   {e.kind === 'payout' && e.status === 'failed' && ' · échoué'}
                 </div>
               </div>
               <div style={{
-                fontSize: 13, fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap',
+                fontSize: FONT.body, fontWeight: WEIGHT.bold, textAlign: 'right', whiteSpace: 'nowrap',
                 color: credit ? 'var(--success)' : 'var(--text-2)',
               }}>
                 {fmtSigned(e.amountCents)}
@@ -125,6 +134,6 @@ export function AmbassadeurStatement({ code }: { code: string }) {
           );
         })
       )}
-    </div>
+    </Card>
   );
 }

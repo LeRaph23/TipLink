@@ -1,16 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-
-const inp: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', borderRadius: 8,
-  background: 'var(--surface-2)', border: '1px solid var(--border)',
-  color: 'var(--text)', fontSize: 13.5, boxSizing: 'border-box', outline: 'none',
-};
-const label: React.CSSProperties = {
-  fontSize: 11.5, fontWeight: 600, color: 'var(--text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, display: 'block',
-};
+import { Card, SectionHeader, Button, Badge, Stat, Field, Input, FONT, WEIGHT, SPACE } from './ui';
+import { Icon } from './icons';
 
 interface FormProps {
   code: string;
@@ -58,21 +50,27 @@ export function AmbassadeurBankingForm({ code, defaults }: FormProps) {
     }
   }
 
+  const noteBox: React.CSSProperties = {
+    borderRadius: 'var(--radius-sm)', padding: '10px 14px',
+    fontSize: FONT.body - 1, color: 'var(--text-2)', lineHeight: 1.45,
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
       <div style={{
+        ...noteBox,
         background: 'var(--accent-muted)', border: '1px solid var(--accent-border)',
-        borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.45,
+        display: 'flex', gap: SPACE.sm, alignItems: 'flex-start',
       }}>
-        🔒 <strong>Paiements sécurisés par Stripe.</strong> Tu vas être redirigé vers
-        Stripe, notre partenaire de paiement, pour saisir ton IBAN et vérifier ton
-        identité. Digitip ne voit jamais tes informations bancaires.
+        <Icon name="lock" size={15} style={{ marginTop: 1 }} />
+        <span>
+          <strong>Paiements sécurisés par Stripe.</strong> Tu vas être redirigé vers
+          Stripe, notre partenaire de paiement, pour saisir ton IBAN et vérifier ton
+          identité. Digitip ne voit jamais tes informations bancaires.
+        </span>
       </div>
 
-      <div style={{
-        background: 'var(--surface-2)', border: '1px solid var(--border)',
-        borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.45,
-      }}>
+      <div style={{ ...noteBox, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
         <strong>SIRET obligatoire</strong> pour recevoir tes virements.{' '}
         Pas encore de SIRET ? Crée-le gratuitement sur{' '}
         <a href="https://autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
@@ -81,39 +79,29 @@ export function AmbassadeurBankingForm({ code, defaults }: FormProps) {
       </div>
 
       {error && (
-        <div style={{ fontSize: 12.5, color: 'var(--error)', padding: '10px 14px', background: 'var(--error-bg)', borderRadius: 8 }}>
+        <div style={{ fontSize: FONT.body, color: 'var(--error)', padding: '10px 14px', background: 'var(--error-bg)', borderRadius: 'var(--radius-sm)' }}>
           {error}
         </div>
       )}
 
-      <div>
-        <span style={label}>SIRET (14 chiffres)</span>
-        <input style={inp} value={siret} onChange={e => setSiret(e.target.value)} placeholder="12345678901234" inputMode="numeric" />
-      </div>
+      <Field label="SIRET (14 chiffres)" style={{ marginBottom: 0 }}>
+        <Input value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="12345678901234" inputMode="numeric" />
+      </Field>
 
-      <div>
-        <span style={label}>Email</span>
-        <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="toi@email.com" />
-      </div>
+      <Field label="Email" style={{ marginBottom: 0 }}>
+        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="toi@email.com" />
+      </Field>
 
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-        <input type="checkbox" checked={pledge} onChange={e => setPledge(e.target.checked)} style={{ marginTop: 3, accentColor: 'var(--accent)' }} />
-        <span style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>
+        <input type="checkbox" checked={pledge} onChange={(e) => setPledge(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, accentColor: 'var(--accent)' }} />
+        <span style={{ fontSize: FONT.body - 1, color: 'var(--text-2)', lineHeight: 1.5 }}>
           Je m&apos;engage à ne pas frauder (pas de fausses ventes, pas de codes promo utilisés sur mes propres commandes).
         </span>
       </label>
 
-      <button
-        onClick={submit}
-        disabled={submitting}
-        style={{
-          padding: '12px 20px', borderRadius: 10, border: 'none',
-          background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 700,
-          cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1,
-        }}
-      >
-        {submitting ? 'Redirection vers Stripe…' : 'Configurer mes virements →'}
-      </button>
+      <Button full onClick={submit} loading={submitting} iconRight={<Icon name="arrowRight" size={15} />}>
+        {submitting ? 'Redirection vers Stripe…' : 'Configurer mes virements'}
+      </Button>
     </div>
   );
 }
@@ -159,13 +147,8 @@ export function AmbassadeurPayoutPanel({
     }
   }
 
-  const cardStyle: React.CSSProperties = {
-    background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-    borderRadius: 'var(--radius)', padding: 18, marginBottom: 16,
-  };
-  const headerStyle: React.CSSProperties = {
-    fontSize: 11, fontWeight: 700, color: 'var(--text-3)',
-    textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
+  const feedbackBox: React.CSSProperties = {
+    fontSize: FONT.body, padding: '8px 12px', borderRadius: 'var(--radius-sm)', marginBottom: SPACE.sm,
   };
 
   // No connected account yet, or one exists but Stripe onboarding is unfinished
@@ -173,24 +156,18 @@ export function AmbassadeurPayoutPanel({
   if (!banking.hasStripeAccount || !banking.payoutsEnabled) {
     const pending = banking.hasStripeAccount;
     return (
-      <div style={cardStyle}>
-        <div style={headerStyle}>💰 Virements</div>
+      <Card>
+        <SectionHeader title="Virements" icon={<Icon name="wallet" size={14} />} style={{ marginBottom: SPACE.md }} />
         {!setupOpen ? (
           <>
-            <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.5 }}>
+            <div style={{ fontSize: FONT.body, color: 'var(--text-2)', marginBottom: SPACE.md, lineHeight: 1.5 }}>
               {pending
                 ? "Ta configuration Stripe n'est pas encore terminée. Reprends-la pour pouvoir recevoir tes commissions."
                 : 'Configure ton compte pour recevoir tes commissions par virement bancaire.'}
             </div>
-            <button
-              onClick={() => setSetupOpen(true)}
-              style={{
-                padding: '10px 18px', borderRadius: 10, border: 'none',
-                background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              {pending ? 'Reprendre la configuration →' : 'Configurer mon compte bancaire →'}
-            </button>
+            <Button onClick={() => setSetupOpen(true)}>
+              {pending ? 'Reprendre la configuration' : 'Configurer mon compte bancaire'}
+            </Button>
           </>
         ) : (
           <AmbassadeurBankingForm
@@ -198,7 +175,7 @@ export function AmbassadeurPayoutPanel({
             defaults={{ email: banking.email, siret: banking.siret }}
           />
         )}
-      </div>
+      </Card>
     );
   }
 
@@ -208,79 +185,54 @@ export function AmbassadeurPayoutPanel({
   const canPayout = available >= minCents;
 
   return (
-    <div style={cardStyle}>
-      <div style={headerStyle}>💰 Virements</div>
+    <Card>
+      <SectionHeader title="Virements" icon={<Icon name="wallet" size={14} />} style={{ marginBottom: SPACE.md }} />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 2 }}>Solde disponible</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-            {fmt(available)}
-          </div>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: SPACE.md, flexWrap: 'wrap', marginBottom: SPACE.md }}>
+        <Stat label="Solde disponible" value={fmt(available)} />
         {payout && payout.paidOrPendingTotal > 0 && (
-          <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'right' }}>
+          <div style={{ fontSize: FONT.label, color: 'var(--text-3)' }}>
             Déjà versé : {fmt(payout.paidOrPendingTotal)}
           </div>
         )}
       </div>
 
       {error && (
-        <div style={{ fontSize: 12.5, color: 'var(--error)', padding: '8px 12px', background: 'var(--error-bg)', borderRadius: 8, marginBottom: 10 }}>
-          {error}
-        </div>
+        <div style={{ ...feedbackBox, color: 'var(--error)', background: 'var(--error-bg)' }}>{error}</div>
       )}
       {successMsg && (
-        <div style={{ fontSize: 12.5, color: 'var(--success)', padding: '8px 12px', background: 'var(--success-bg)', borderRadius: 8, marginBottom: 10 }}>
-          {successMsg}
-        </div>
+        <div style={{ ...feedbackBox, color: 'var(--success)', background: 'var(--success-bg)' }}>{successMsg}</div>
       )}
 
-      <button
-        onClick={handlePayout}
-        disabled={!canPayout || requesting}
-        style={{
-          width: '100%', padding: '11px 20px', borderRadius: 10, border: 'none',
-          background: canPayout ? 'var(--accent)' : 'var(--surface-3)',
-          color: canPayout ? '#fff' : 'var(--text-3)',
-          fontSize: 13.5, fontWeight: 700,
-          cursor: canPayout && !requesting ? 'pointer' : 'not-allowed',
-          opacity: requesting ? 0.7 : 1,
-        }}
-      >
-        {requesting ? 'Demande en cours…' : `Virer ${fmt(available)} sur mon IBAN →`}
-      </button>
+      <Button full onClick={handlePayout} disabled={!canPayout} loading={requesting}>
+        {requesting ? 'Demande en cours…' : `Virer ${fmt(available)} sur mon IBAN`}
+      </Button>
 
       {!canPayout && (
-        <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8, textAlign: 'center' }}>
+        <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: SPACE.sm, textAlign: 'center' }}>
           Minimum {fmt(minCents)} — il te manque {fmt(minCents - available)}.
         </div>
       )}
 
       {payout && payout.history.length > 0 && (
-        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
+        <div style={{ marginTop: SPACE.md, paddingTop: SPACE.md, borderTop: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: FONT.micro, fontWeight: WEIGHT.bold, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
             Historique
           </div>
           {payout.history.slice(0, 5).map((h) => (
-            <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', fontSize: 12 }}>
+            <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: SPACE.sm, padding: '5px 0', fontSize: FONT.body - 1 }}>
               <span style={{ color: 'var(--text-3)' }}>
                 {new Date(h.requested_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
               </span>
-              <span style={{ fontWeight: 600 }}>{fmt(h.amount_cents)}</span>
-              <span style={{
-                fontSize: 10, padding: '2px 7px', borderRadius: 99,
-                background: h.status === 'paid' ? 'var(--success-bg)' : h.status === 'pending' ? 'var(--warning-bg)' : 'var(--error-bg)',
-                color: h.status === 'paid' ? 'var(--success)' : h.status === 'pending' ? 'var(--warning)' : 'var(--error)',
-                fontWeight: 600,
-              }}>
+              <span style={{ fontWeight: WEIGHT.semibold, marginLeft: 'auto', marginRight: SPACE.sm }}>{fmt(h.amount_cents)}</span>
+              <Badge tone={h.status === 'paid' ? 'success' : h.status === 'pending' ? 'warning' : 'error'}>
                 {h.status === 'paid' ? 'Payé' : h.status === 'pending' ? 'En attente' : 'Échec'}
-              </span>
+              </Badge>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

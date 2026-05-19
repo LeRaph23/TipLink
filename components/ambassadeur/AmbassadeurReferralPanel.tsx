@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { Card, SectionHeader, Button, Badge, Stat, Input, ProgressBar, FONT, WEIGHT, SPACE } from './ui';
+import { Icon } from './icons';
 
 interface ReferralData {
   referralCode: string | null;
@@ -42,9 +44,11 @@ export function AmbassadeurReferralPanel({ code }: { code: string }) {
   if (!data) return null;
   if (!data.referralCode || !data.referralUrl) {
     return (
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18, marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Programme parrainage en cours d&apos;activation pour ton compte.</div>
-      </div>
+      <Card>
+        <div style={{ fontSize: FONT.body, color: 'var(--text-3)' }}>
+          Programme parrainage en cours d&apos;activation pour ton compte.
+        </div>
+      </Card>
     );
   }
 
@@ -93,7 +97,7 @@ export function AmbassadeurReferralPanel({ code }: { code: string }) {
       if (!res.ok) {
         setFeedback(json.error ?? 'Échec envoi');
       } else {
-        setFeedback(`✓ ${json.sent} email${json.sent > 1 ? 's' : ''} envoyé${json.sent > 1 ? 's' : ''}`);
+        setFeedback(`${json.sent} email${json.sent > 1 ? 's' : ''} envoyé${json.sent > 1 ? 's' : ''}`);
         setEmails(['']);
       }
     } catch {
@@ -108,96 +112,97 @@ export function AmbassadeurReferralPanel({ code }: { code: string }) {
     : (stats.validated / 5) * 50;
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18, marginBottom: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
-        Parrainage
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: 14 }}>
+    <Card>
+      <SectionHeader title="Parrainage" style={{ marginBottom: 6 }} />
+      <div style={{ fontSize: FONT.bodyLg, fontWeight: WEIGHT.bold, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: SPACE.md }}>
         25€ par filleul · +100€ à 5 · +250€ à 10
       </div>
 
       {/* Hero code */}
-      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 14, marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: SPACE.md, marginBottom: SPACE.md }}>
+        <div style={{ fontSize: FONT.micro, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
           Ton code perso
         </div>
-        <div style={{ fontFamily: 'monospace', fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '0.02em', wordBreak: 'break-all' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: 22, fontWeight: WEIGHT.heavy, color: 'var(--text)', letterSpacing: '0.02em', wordBreak: 'break-all' }}>
           {referralCode}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, wordBreak: 'break-all' }}>
+        <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: SPACE.sm, wordBreak: 'break-all' }}>
           {referralUrl}
         </div>
       </div>
 
       {/* Action buttons */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginBottom: 14 }}>
-        <button onClick={onShare} style={btnPrimary}>📲 Partager</button>
-        <button onClick={onCopy} style={btnSecondary}>{copied ? '✓ Copié' : '📋 Copier le lien'}</button>
-        <button onClick={() => setShowQr(s => !s)} style={btnSecondary}>{showQr ? 'Masquer QR' : '⬚ QR Code'}</button>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: SPACE.sm, marginBottom: SPACE.md }}>
+        <Button full onClick={onShare} iconLeft={<Icon name="share" size={15} />}>Partager</Button>
+        <Button full variant="secondary" onClick={onCopy} iconLeft={<Icon name={copied ? 'check' : 'copy'} size={15} />}>
+          {copied ? 'Copié' : 'Copier le lien'}
+        </Button>
+        <Button full variant="secondary" onClick={() => setShowQr(s => !s)} iconLeft={<Icon name="qr" size={15} />}>
+          {showQr ? 'Masquer QR' : 'QR Code'}
+        </Button>
       </div>
 
       {showQr && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 16, background: '#fff', borderRadius: 'var(--radius-sm)', marginBottom: 14 }}>
+        // The QR code must sit on a solid white background to stay scannable
+        // regardless of the dashboard theme.
+        <div style={{ display: 'flex', justifyContent: 'center', padding: SPACE.md, background: '#fff', borderRadius: 'var(--radius-sm)', marginBottom: SPACE.md }}>
           <QRCodeSVG value={referralUrl} size={180} level="M" />
         </div>
       )}
 
       {/* Email senders */}
-      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12, marginBottom: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>
-          ✉️ Envoyer à des potes par email (jusqu&apos;à 5)
+      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: SPACE.md, marginBottom: SPACE.md }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: FONT.body - 1, fontWeight: WEIGHT.semibold, color: 'var(--text-2)', marginBottom: SPACE.sm }}>
+          <Icon name="mail" size={14} />
+          Envoyer à des potes par email (jusqu&apos;à 5)
         </div>
         {emails.map((e, i) => (
-          <input
+          <Input
             key={i}
             type="email"
             placeholder="email@exemple.fr"
             value={e}
             onChange={ev => setEmails(prev => prev.map((x, j) => j === i ? ev.target.value : x))}
-            style={inputStyle}
+            style={{ marginBottom: 6 }}
           />
         ))}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: SPACE.sm, alignItems: 'center', marginTop: SPACE.sm }}>
           {emails.length < 5 && (
-            <button onClick={() => setEmails(prev => [...prev, ''])} style={btnGhost} type="button">+ Ajouter</button>
+            <Button variant="ghost" size="sm" onClick={() => setEmails(prev => [...prev, ''])}>+ Ajouter</Button>
           )}
-          <button onClick={onSendEmails} disabled={sending} style={{ ...btnPrimary, marginLeft: 'auto', opacity: sending ? 0.6 : 1 }}>
-            {sending ? 'Envoi...' : 'Envoyer'}
-          </button>
+          <Button size="sm" onClick={onSendEmails} loading={sending} style={{ marginLeft: 'auto' }}>
+            {sending ? 'Envoi…' : 'Envoyer'}
+          </Button>
         </div>
-        {feedback && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 8 }}>{feedback}</div>}
+        {feedback && <div style={{ fontSize: FONT.body - 1, color: 'var(--text-2)', marginTop: SPACE.sm }}>{feedback}</div>}
       </div>
 
       {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
-        <StatBox label="Filleuls validés" value={stats.validated.toString()} accent />
+      <div className="dash-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: SPACE.sm, marginBottom: SPACE.md }}>
+        <StatBox label="Filleuls validés" value={stats.validated.toString()} tone="success" />
         <StatBox label="En attente" value={(stats.pendingAdmin + stats.pendingSales).toString()} />
-        <StatBox label="Gains parrainage" value={fmtEuros(stats.totalEarnedCents)} accent />
+        <StatBox label="Gains parrainage" value={fmtEuros(stats.totalEarnedCents)} tone="success" />
       </div>
 
       {/* Milestone progress */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>
+      <div style={{ marginBottom: SPACE.md }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: SPACE.sm, fontSize: FONT.label, color: 'var(--text-3)', marginBottom: SPACE.xs }}>
           <span>Progression milestones</span>
-          <span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, textAlign: 'right' }}>
             {stats.validated < 5
               ? `${stats.toMilestone5} filleul${stats.toMilestone5 > 1 ? 's' : ''} pour +100€`
               : stats.validated < 10
                 ? `${stats.toMilestone10} pour +250€`
-                : '🏆 Tous les milestones atteints'}
+                : <><Icon name="trophy" size={12} /> Tous les milestones atteints</>}
           </span>
         </div>
-        <div style={{ height: 6, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${milestoneProgress}%`, background: 'var(--success, #22c55e)', borderRadius: 99, transition: 'width .6s' }} />
-        </div>
+        <ProgressBar value={milestoneProgress} max={100} color="var(--success)" />
       </div>
 
       {/* Filleuls list */}
       {(filleuls.length > 0 || pendingApplications.length > 0) && (
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
-            Tes filleuls
-          </div>
+          <SectionHeader title="Tes filleuls" style={{ marginBottom: 6 }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {pendingApplications.map(a => (
               <FilleulRow key={a.id} name={a.firstName} status="pending_admin" />
@@ -208,45 +213,29 @@ export function AmbassadeurReferralPanel({ code }: { code: string }) {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
 function FilleulRow({ name, status }: { name: string; status: 'pending_admin' | 'pending_sales' | 'validated' }) {
   const cfg = {
-    pending_admin: { label: 'Examen admin', color: 'var(--text-3)', bg: 'var(--surface-3)' },
-    pending_sales: { label: '< 3 ventes', color: 'var(--warning, #eab308)', bg: 'var(--warning-bg, rgba(234,179,8,0.12))' },
-    validated:     { label: 'Validé · +25€', color: 'var(--success, #22c55e)', bg: 'rgba(34,197,94,0.12)' },
+    pending_admin: { label: 'Examen admin', tone: 'neutral' as const },
+    pending_sales: { label: '< 3 ventes', tone: 'warning' as const },
+    validated:     { label: 'Validé · +25€', tone: 'success' as const },
   }[status];
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
-      <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{name}</div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: cfg.color, background: cfg.bg, padding: '4px 8px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {cfg.label}
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm, padding: '8px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+      <div style={{ fontSize: FONT.body, color: 'var(--text)', fontWeight: WEIGHT.medium, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+      <Badge tone={cfg.tone}>{cfg.label}</Badge>
     </div>
   );
 }
 
-function StatBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function StatBox({ label, value, tone }: { label: string; value: string; tone?: 'default' | 'success' }) {
   return (
-    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10, textAlign: 'center' }}>
-      <div style={{ fontSize: 18, fontWeight: 800, color: accent ? 'var(--success, #22c55e)' : 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: SPACE.md }}>
+      <Stat label={label} value={value} tone={tone} />
     </div>
   );
 }
-
-const btnPrimary: React.CSSProperties = {
-  background: 'var(--success, #22c55e)', color: '#fff', border: 'none', padding: '10px 14px', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-};
-const btnSecondary: React.CSSProperties = {
-  background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-};
-const btnGhost: React.CSSProperties = {
-  background: 'transparent', color: 'var(--text-2)', border: '1px dashed var(--border)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: 12, cursor: 'pointer',
-};
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 10px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 13, marginBottom: 6, fontFamily: 'inherit',
-};

@@ -6,8 +6,11 @@ import { AmbassadeurContracts } from './AmbassadeurContracts';
 import { AmbassadeurReferralPanel } from './AmbassadeurReferralPanel';
 import { AmbassadeurSalonsTracker } from './AmbassadeurSalonsTracker';
 import { AmbassadeurStatement } from './AmbassadeurStatement';
+import { Card, SectionHeader, Badge, Stat, ProgressBar, EmptyState, FONT, WEIGHT, SPACE } from './ui';
+import { Icon } from './icons';
 
 type AuthState = 'loading' | 'pin-required' | 'pin-setup' | 'pin-setup-invalid' | 'authenticated';
+type TabId = 'ventes' | 'terrain' | 'gains';
 
 interface TierInfo {
   id: string;
@@ -65,12 +68,20 @@ interface PayoutState {
   history: Array<{ id: string; amount_cents: number; status: string; requested_at: string; paid_at: string | null }>;
 }
 
-// Maps tier id → DigiTip CSS variables
+// Maps tier id → DigiTip CSS variables (theme-aware, no hardcoded hex).
 const TIER_VARS: Record<string, { color: string; bg: string; border: string }> = {
   gold:   { color: 'var(--warning)',  bg: 'var(--warning-bg)',  border: 'var(--warning)' },
   silver: { color: 'var(--neutral)',  bg: 'var(--neutral-bg)',  border: 'var(--neutral)' },
   bronze: { color: 'var(--accent)',   bg: 'var(--accent-muted)', border: 'var(--accent-border)' },
 };
+
+const TABS: Array<{ id: TabId; label: string }> = [
+  { id: 'ventes', label: 'Mes ventes' },
+  { id: 'terrain', label: 'Terrain' },
+  { id: 'gains', label: 'Mes gains' },
+];
+
+const TOPBAR_H = 56;
 
 function fmtEuros(cents: number) {
   return `${Math.round(cents / 100)}€`;
@@ -80,54 +91,37 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
-  const pct = Math.min(100, max > 0 ? (value / max) * 100 : 0);
-  return (
-    <div style={{ height: 6, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
-      <div style={{
-        height: '100%',
-        width: `${pct}%`,
-        background: color,
-        borderRadius: 99,
-        transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1)',
-      }} />
-    </div>
-  );
-}
-
 function TierCard({ tier, weekCount }: { tier: TierInfo; weekCount: number }) {
   const vars = TIER_VARS[tier.id] ?? TIER_VARS.bronze;
   const remaining = Math.max(0, tier.threshold - weekCount);
 
   return (
     <div style={{
-      background: tier.unlocked ? vars.bg : 'var(--surface)',
+      background: tier.unlocked ? vars.bg : 'var(--surface-2)',
       border: `1px solid ${tier.unlocked ? vars.border : 'var(--border-subtle)'}`,
       borderRadius: 'var(--radius)',
-      padding: '14px 10px',
+      padding: '12px 10px',
       flex: 1,
       minWidth: 0,
-      transition: 'all 200ms',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 18 }}>{tier.emoji}</span>
-        {tier.unlocked && (
-          <span style={{
-            fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
-            color: vars.color, background: vars.bg,
-            border: `1px solid ${vars.border}`,
-            padding: '2px 6px', borderRadius: 99,
-          }}>✓</span>
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: SPACE.sm }}>
+        <span style={{
+          fontSize: FONT.label, fontWeight: WEIGHT.bold,
+          color: tier.unlocked ? vars.color : 'var(--text-3)',
+          textTransform: 'uppercase', letterSpacing: '0.04em',
+        }}>
+          {tier.label}
+        </span>
+        {tier.unlocked && <Icon name="check" size={13} strokeWidth={2.5} color={vars.color} />}
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: tier.unlocked ? vars.color : 'var(--text-3)', marginBottom: 2, letterSpacing: '-0.01em' }}>
-        {tier.label}
-      </div>
-      <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.03em', color: tier.unlocked ? vars.color : 'var(--text)', marginBottom: 8 }}>
+      <div style={{
+        fontSize: FONT.bodyLg, fontWeight: WEIGHT.heavy, letterSpacing: '-0.03em',
+        color: tier.unlocked ? vars.color : 'var(--text)', marginBottom: SPACE.sm,
+      }}>
         +{fmtEuros(tier.bonus)}
       </div>
       <ProgressBar value={weekCount} max={tier.threshold} color={tier.unlocked ? vars.color : 'var(--border)'} />
-      <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text-3)', display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+      <div style={{ marginTop: 6, fontSize: FONT.micro, color: 'var(--text-3)', display: 'flex', justifyContent: 'space-between', gap: 4 }}>
         <span>{Math.min(weekCount, tier.threshold)}/{tier.threshold}</span>
         {!tier.unlocked && <span>{remaining} rest.</span>}
       </div>
@@ -207,13 +201,13 @@ function PinInput({ onSubmit, error, loading }: {
         <div style={{
           background: 'var(--error-bg)', color: 'var(--error)',
           borderRadius: 'var(--radius-sm)', padding: '10px 14px',
-          fontSize: 13, fontWeight: 500, textAlign: 'center', marginBottom: 16,
+          fontSize: FONT.body, fontWeight: WEIGHT.medium, textAlign: 'center', marginBottom: 16,
         }}>
           {error}
         </div>
       )}
       {loading && (
-        <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: FONT.body }}>
           Vérification…
         </div>
       )}
@@ -230,6 +224,14 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [banking, setBanking] = useState<BankingState | null>(null);
   const [payoutData, setPayoutData] = useState<PayoutState | null>(null);
+  // Initial tab honours a ?tab= deep-link (e.g. links from admin emails).
+  const [tab, setTab] = useState<TabId>(() => {
+    if (typeof window === 'undefined') return 'ventes';
+    const t = new URL(window.location.href).searchParams.get('tab');
+    if (t === 'contracts' || t === 'salons') return 'terrain';
+    if (t === 'payout' || t === 'banking' || t === 'referrals') return 'gains';
+    return 'ventes';
+  });
 
   const refreshBankingAndPayout = useCallback(() => {
     fetch(`/api/ambassadeur/${encodeURIComponent(code)}/banking`)
@@ -375,16 +377,16 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent)', letterSpacing: '-0.03em', marginBottom: 6 }}>
               DigiTip
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: FONT.label, fontWeight: WEIGHT.semibold, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
               Première connexion · {code.toUpperCase()}
             </div>
           </div>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '28px 24px' }}>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-                Bienvenue {ambassadorName} 👋
+              <div style={{ fontSize: 18, fontWeight: WEIGHT.bold, color: 'var(--text)', marginBottom: 6 }}>
+                Bienvenue {ambassadorName}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
+              <div style={{ fontSize: FONT.body, color: 'var(--text-3)', lineHeight: 1.5 }}>
                 Choisis ton <strong>PIN à 4 chiffres</strong>. Tu l&apos;utiliseras à chaque connexion — note-le quelque part.
               </div>
             </div>
@@ -399,11 +401,13 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
     return (
       <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', fontFamily: 'var(--font)' }}>
         <div style={{ maxWidth: 360, textAlign: 'center', padding: 28, background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <Icon name="alert" size={30} color="var(--warning)" />
+          </div>
+          <div style={{ fontSize: FONT.bodyLg + 1, fontWeight: WEIGHT.bold, color: 'var(--text)', marginBottom: SPACE.sm }}>
             Lien d&apos;activation invalide
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: FONT.body, color: 'var(--text-3)', lineHeight: 1.5 }}>
             {setupError ?? 'Ce lien n\'est plus valable.'} Contacte Digitip pour en recevoir un nouveau.
           </div>
         </div>
@@ -426,7 +430,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent)', letterSpacing: '-0.03em', marginBottom: 6 }}>
               DigiTip
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: FONT.label, fontWeight: WEIGHT.semibold, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
               Ambassadeur · {code.toUpperCase()}
             </div>
           </div>
@@ -438,23 +442,15 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             padding: '28px 24px',
           }}>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+              <div style={{ fontSize: FONT.bodyLg + 1, fontWeight: WEIGHT.bold, color: 'var(--text)', marginBottom: 4 }}>
                 Ton PIN à 4 chiffres
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
+              <div style={{ fontSize: FONT.body, color: 'var(--text-3)' }}>
                 Pour accéder à ton dashboard
               </div>
             </div>
 
             <PinInput onSubmit={handlePin} error={pinError} loading={pinLoading} />
-
-            <button
-              onClick={() => {/* auto-submitted via PinInput */}}
-              disabled
-              style={{
-                display: 'none', // bouton caché, auto-submit au 4e chiffre
-              }}
-            />
           </div>
         </div>
       </div>
@@ -474,9 +470,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
   }
 
   // ── Dashboard ─────────────────────────────────────────────────────────────────
-  const { weekCount, monthCount, totalBaseCommission, weeklyBonusCents,
-    tiers, recentSales } = stats;
-
+  const { weekCount, monthCount, totalBaseCommission, weeklyBonusCents, tiers, recentSales } = stats;
   const firstName = ambassadorName.split(' ')[0];
 
   return (
@@ -485,17 +479,18 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       {/* Top bar */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
+        height: TOPBAR_H,
         background: 'var(--surface)',
         borderBottom: '1px solid var(--border-subtle)',
-        padding: '12px 16px',
+        padding: '0 16px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: FONT.micro, fontWeight: WEIGHT.semibold, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             Ambassadeur · {code.toUpperCase()}
           </div>
-          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: '-0.03em', lineHeight: 1.2, marginTop: 1 }}>
-            Bonjour {firstName} 👋
+          <div style={{ fontSize: FONT.bodyLg, fontWeight: WEIGHT.heavy, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', lineHeight: 1.2, marginTop: 1 }}>
+            Bonjour {firstName}
           </div>
         </div>
         <div style={{
@@ -514,215 +509,221 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 48px' }}>
 
         {/* Hero stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-          {/* Cette semaine */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-              Cette semaine
-            </div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1 }}>
-              {weekCount}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
-              vente{weekCount !== 1 ? 's' : ''}
-            </div>
-          </div>
+        <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SPACE.sm, marginBottom: SPACE.lg }}>
+          <Card style={{ marginBottom: 0 }}>
+            <Stat
+              label="Cette semaine"
+              value={weekCount}
+              size="lg"
+              sub={`${stats.allTimeSalesCount} vente${stats.allTimeSalesCount !== 1 ? 's' : ''} au total`}
+            />
+          </Card>
+          <Card style={{ marginBottom: 0 }}>
+            <Stat
+              label="Commissions"
+              value={fmtEuros(totalBaseCommission)}
+              tone="accent"
+              sub={weeklyBonusCents > 0
+                ? <span style={{ color: 'var(--success)', fontWeight: WEIGHT.semibold }}>+{fmtEuros(weeklyBonusCents)} bonus</span>
+                : undefined}
+            />
+          </Card>
+        </div>
 
-          {/* Commissions */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-              Commissions
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.04em', lineHeight: 1 }}>
-              {fmtEuros(totalBaseCommission)}
-            </div>
-            {weeklyBonusCents > 0 ? (
-              <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4, fontWeight: 600 }}>
-                +{fmtEuros(weeklyBonusCents)} bonus
+        {/* Tabs */}
+        <div
+          className="dash-tabs"
+          style={{
+            position: 'sticky', top: TOPBAR_H, zIndex: 9,
+            display: 'flex', gap: 4,
+            background: 'var(--bg)',
+            borderBottom: '1px solid var(--border-subtle)',
+            marginBottom: SPACE.lg,
+          }}
+        >
+          {TABS.map(t => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  flex: 1, minHeight: 44, padding: '10px 8px',
+                  background: 'transparent', border: 'none',
+                  borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
+                  color: active ? 'var(--accent)' : 'var(--text-3)',
+                  fontSize: FONT.body, fontWeight: WEIGHT.bold,
+                  fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Tab: Mes ventes ── */}
+        {tab === 'ventes' && (
+          <>
+            {/* Paliers de la semaine */}
+            <div style={{ marginBottom: SPACE.lg }}>
+              <SectionHeader title="Paliers de la semaine" />
+              <div style={{ fontSize: FONT.label, color: 'var(--text-3)', fontStyle: 'italic', margin: '4px 0 10px' }}>
+                Un seul bonus — le palier le plus élevé atteint
               </div>
-            ) : (
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-                {stats.allTimeSalesCount} vente{stats.allTimeSalesCount !== 1 ? 's' : ''} total
+              <div style={{ display: 'flex', gap: SPACE.sm }}>
+                {tiers.map(tier => (
+                  <TierCard key={tier.id} tier={tier} weekCount={weekCount} />
+                ))}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Total ventes */}
-        <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginBottom: 20 }}>
-          {stats.allTimeSalesCount} vente{stats.allTimeSalesCount !== 1 ? 's' : ''} au total
-        </div>
+            <MonthlyChallenge stats={stats} monthCount={monthCount} />
 
-        {/* Paliers de la semaine */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-            Paliers de la semaine
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic', marginBottom: 10 }}>
-            Un seul bonus — le palier le plus élevé atteint
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {tiers.map(tier => (
-              <TierCard key={tier.id} tier={tier} weekCount={weekCount} />
-            ))}
-          </div>
-        </div>
-
-        {/* Salons à démarcher */}
-        <AmbassadeurSalonsTracker code={code} />
-
-        {/* Parrainage */}
-        <AmbassadeurReferralPanel code={code} />
-
-        {/* Contrats à signer / signés */}
-        <AmbassadeurContracts code={code} />
-
-        {/* Virements */}
-        {banking && (
-          <AmbassadeurPayoutPanel
-            code={code}
-            banking={banking}
-            payout={payoutData}
-            onChanged={refreshBankingAndPayout}
-          />
+            {/* Dernières ventes */}
+            <Card padded={false}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                <SectionHeader title="Dernières ventes" />
+              </div>
+              {recentSales.length === 0 ? (
+                <EmptyState>Aucune vente pour l&apos;instant. Continue !</EmptyState>
+              ) : (
+                recentSales.map((sale, idx) => (
+                  <div key={sale.id} style={{
+                    display: 'grid', gridTemplateColumns: '1fr auto auto',
+                    gap: SPACE.sm, padding: '12px 16px', alignItems: 'center',
+                    borderBottom: idx < recentSales.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: FONT.label, color: 'var(--text-3)' }}>{fmtDate(sale.created_at)}</div>
+                      <div style={{ fontSize: FONT.body, fontWeight: WEIGHT.medium, color: 'var(--text-2)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {sale.salon_name_partial ?? '***'}
+                      </div>
+                    </div>
+                    <Badge tone={sale.pack === 'duo' ? 'accent' : 'success'}>{sale.pack}</Badge>
+                    <div style={{ fontSize: FONT.body, fontWeight: WEIGHT.bold, color: 'var(--success)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      +{fmtEuros(sale.commission_amount)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </Card>
+          </>
         )}
 
-        {/* Relevé de compte — détail du solde */}
-        <AmbassadeurStatement code={code} />
+        {/* ── Tab: Terrain ── */}
+        {tab === 'terrain' && (
+          <>
+            <AmbassadeurSalonsTracker code={code} />
+            <AmbassadeurContracts code={code} />
+          </>
+        )}
 
-        {/* Challenge mensuel — affiché uniquement quand un super-admin l'a activé */}
-        {(() => {
-          const lb = stats.leaderboard;
-          const mc = stats.monthlyChallenge;
-          if (!lb || !mc) return null;
-
-          const rankLabel = lb.rank === 1 ? '🏆' : `#${lb.rank}`;
-          const top3 = lb.top3 ?? [];
-          const leader = top3[0];
-          const gapToLeader = leader && !leader.isYou ? Math.max(0, leader.count - monthCount) : 0;
-          const endsLabel = new Date(mc.endsAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' });
-
-          return (
-            <div style={{
-              background: lb.rank === 1 ? 'var(--warning-bg)' : 'var(--surface)',
-              border: `1px solid ${lb.rank === 1 ? 'var(--warning)' : 'var(--border-subtle)'}`,
-              borderRadius: 'var(--radius)',
-              padding: 18,
-              marginBottom: 16,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-                    Challenge du mois
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: lb.rank === 1 ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
-                    🏆 {mc.prize}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>
-                    Jusqu&apos;au {endsLabel}
-                  </div>
-                </div>
-                <div style={{
-                  background: 'var(--surface-2)', border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-sm)', padding: '8px 12px', textAlign: 'center', flexShrink: 0,
-                }}>
-                  <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', color: lb.rank === 1 ? 'var(--warning)' : 'var(--text)', lineHeight: 1 }}>
-                    {rankLabel}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>/ {lb.total}</div>
-                </div>
-              </div>
-
-              {/* Top 3 podium */}
-              {top3.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-                  {top3.map((entry) => {
-                    const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉';
-                    const max = top3[0]?.count ?? 1;
-                    const pct = max > 0 ? (entry.count / max) * 100 : 0;
-                    return (
-                      <div key={entry.rank} style={{
-                        display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: 8, alignItems: 'center',
-                        padding: '6px 8px', borderRadius: 8,
-                        background: entry.isYou ? 'var(--accent-muted)' : 'transparent',
-                        border: entry.isYou ? '1px solid var(--accent-border)' : '1px solid transparent',
-                      }}>
-                        <span style={{ fontSize: 14 }}>{medal}</span>
-                        <div>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, color: entry.isYou ? 'var(--accent)' : 'var(--text-2)' }}>
-                            {entry.firstName}
-                          </div>
-                          <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, marginTop: 3, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${pct}%`, background: entry.rank === 1 ? 'var(--warning)' : 'var(--accent)', borderRadius: 99 }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{entry.count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-                <span style={{ color: 'var(--text-3)' }}>
-                  {lb.rank === 1
-                    ? `🔥 Tu es en tête (${monthCount} ventes) !`
-                    : gapToLeader === 0
-                      ? `Égalité avec le leader (${monthCount} ventes)`
-                      : `${gapToLeader} vente${gapToLeader !== 1 ? 's' : ''} de retard sur le #1`}
-                </span>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Dernières ventes */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--border)',
-            fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
-            textTransform: 'uppercase', letterSpacing: '0.07em',
-          }}>
-            Dernières ventes
-          </div>
-
-          {recentSales.length === 0 ? (
-            <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-              Aucune vente pour l&apos;instant. Continue ! 💪
-            </div>
-          ) : (
-            recentSales.map((sale, idx) => (
-              <div key={sale.id} style={{
-                display: 'grid', gridTemplateColumns: '1fr auto auto',
-                gap: 10, padding: '12px 16px', alignItems: 'center',
-                borderBottom: idx < recentSales.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-              }}>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{fmtDate(sale.created_at)}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', marginTop: 1 }}>
-                    {sale.salon_name_partial ?? '***'}
-                  </div>
-                </div>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 99,
-                  textTransform: 'uppercase', letterSpacing: '0.05em',
-                  background: sale.pack === 'duo' ? 'var(--accent-muted)' : 'var(--success-bg)',
-                  color: sale.pack === 'duo' ? 'var(--accent)' : 'var(--success)',
-                  border: `1px solid ${sale.pack === 'duo' ? 'var(--accent-border)' : 'var(--success)'}`,
-                  whiteSpace: 'nowrap',
-                }}>
-                  {sale.pack}
-                </span>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  +{fmtEuros(sale.commission_amount)}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        {/* ── Tab: Mes gains ── */}
+        {tab === 'gains' && (
+          <>
+            <AmbassadeurReferralPanel code={code} />
+            {banking && (
+              <AmbassadeurPayoutPanel
+                code={code}
+                banking={banking}
+                payout={payoutData}
+                onChanged={refreshBankingAndPayout}
+              />
+            )}
+            <AmbassadeurStatement code={code} />
+          </>
+        )}
 
       </div>
     </div>
+  );
+}
+
+// Monthly challenge — rendered only when a super-admin has activated one.
+function MonthlyChallenge({ stats, monthCount }: { stats: StatsData; monthCount: number }) {
+  const lb = stats.leaderboard;
+  const mc = stats.monthlyChallenge;
+  if (!lb || !mc) return null;
+
+  const isLeader = lb.rank === 1;
+  const top3 = lb.top3 ?? [];
+  const leader = top3[0];
+  const gapToLeader = leader && !leader.isYou ? Math.max(0, leader.count - monthCount) : 0;
+  const endsLabel = new Date(mc.endsAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' });
+
+  const rankTone = (rank: number) =>
+    rank === 1 ? { bg: 'var(--warning-bg)', fg: 'var(--warning)' }
+    : rank === 2 ? { bg: 'var(--neutral-bg)', fg: 'var(--neutral)' }
+    : { bg: 'var(--accent-muted)', fg: 'var(--accent)' };
+
+  return (
+    <Card style={isLeader ? { background: 'var(--warning-bg)', border: '1px solid var(--warning)' } : undefined}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACE.md, marginBottom: SPACE.md }}>
+        <div style={{ minWidth: 0 }}>
+          <SectionHeader title="Challenge du mois" style={{ marginBottom: 4 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: FONT.bodyLg, fontWeight: WEIGHT.bold, color: isLeader ? 'var(--warning)' : 'var(--text)', letterSpacing: '-0.02em' }}>
+            <Icon name="trophy" size={15} color={isLeader ? 'var(--warning)' : 'var(--text-2)'} />
+            {mc.prize}
+          </div>
+          <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: 3 }}>
+            Jusqu&apos;au {endsLabel}
+          </div>
+        </div>
+        <div style={{
+          background: 'var(--surface-2)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-sm)', padding: '8px 12px', textAlign: 'center', flexShrink: 0,
+          minWidth: 56,
+        }}>
+          <div style={{ fontSize: 22, fontWeight: WEIGHT.heavy, letterSpacing: '-0.03em', color: isLeader ? 'var(--warning)' : 'var(--text)', lineHeight: 1, display: 'flex', justifyContent: 'center' }}>
+            {isLeader ? <Icon name="trophy" size={20} color="var(--warning)" /> : `#${lb.rank}`}
+          </div>
+          <div style={{ fontSize: FONT.micro, color: 'var(--text-3)', marginTop: 3 }}>/ {lb.total}</div>
+        </div>
+      </div>
+
+      {/* Top 3 podium */}
+      {top3.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: SPACE.sm }}>
+          {top3.map((entry) => {
+            const tone = rankTone(entry.rank);
+            const max = top3[0]?.count ?? 1;
+            const pct = max > 0 ? (entry.count / max) * 100 : 0;
+            return (
+              <div key={entry.rank} style={{
+                display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: SPACE.sm, alignItems: 'center',
+                padding: '6px 8px', borderRadius: 'var(--radius-sm)',
+                background: entry.isYou ? 'var(--accent-muted)' : 'transparent',
+                border: entry.isYou ? '1px solid var(--accent-border)' : '1px solid transparent',
+              }}>
+                <span style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: FONT.micro + 1, fontWeight: WEIGHT.heavy,
+                  background: tone.bg, color: tone.fg,
+                }}>{entry.rank}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: FONT.body, fontWeight: WEIGHT.bold, color: entry.isYou ? 'var(--accent)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.firstName}
+                  </div>
+                  <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 999, marginTop: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: entry.rank === 1 ? 'var(--warning)' : 'var(--accent)', borderRadius: 999 }} />
+                  </div>
+                </div>
+                <span style={{ fontSize: FONT.body, fontWeight: WEIGHT.heavy, color: 'var(--text)' }}>{entry.count}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ fontSize: FONT.body - 1, color: 'var(--text-3)' }}>
+        {isLeader
+          ? `Tu es en tête (${monthCount} ventes) !`
+          : gapToLeader === 0
+            ? `Égalité avec le leader (${monthCount} ventes)`
+            : `${gapToLeader} vente${gapToLeader !== 1 ? 's' : ''} de retard sur le #1`}
+      </div>
+    </Card>
   );
 }
