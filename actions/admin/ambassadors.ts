@@ -15,6 +15,7 @@ import {
   computeClosedWeekBonusBreakdown,
 } from '@/lib/ambassador-tiers';
 import { settleExpiredChallenges } from '@/lib/ambassador-monthly-challenge';
+import { createPromoCode, deletePromoCode } from './promo-codes';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -34,6 +35,10 @@ export type CreateAmbassadorInput = {
   name: string;
   promoCodeId: string;
   referrerAmbassadorId?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  siret?: string | null;
+  city?: string | null;
 };
 
 export type CreateAmbassadorResult =
@@ -59,7 +64,7 @@ export async function createAmbassador(
     await requireSuperAdminUser();
     const service = createServiceClient();
 
-    const { name, promoCodeId, referrerAmbassadorId } = input;
+    const { name, promoCodeId, referrerAmbassadorId, email, phone, siret, city } = input;
 
     if (!name || name.trim().length < 2) {
       return { ok: false, error: 'Nom trop court (min 2 caractères).' };
@@ -118,6 +123,10 @@ export async function createAmbassador(
         is_active: true,
         referral_code: referralCode,
         referrer_ambassador_id: referrerAmbassadorId ?? null,
+        email: email ?? null,
+        phone: phone ?? null,
+        siret: siret ?? null,
+        city: city ?? null,
         pin_setup_token: setupToken,
         pin_setup_expires_at: expiresAt,
       })
@@ -504,33 +513,127 @@ export async function setMonthlyChallengeActive(
   }
 }
 
+// Ambassador promo codes are a flat 10% discount, generated as FIRSTNAME + "10"
+// (e.g. "ALI10"), with a random suffix appended on collision.
+const AMBASSADOR_PROMO_PERCENT = 10;
+
+function ambassadorPromoCode(firstName: string, suffix: string): string {
+  const base = firstName
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-zA-Z]/g, '')
+    .toUpperCase()
+    .slice(0, 12) || 'AMBA';
+  return `${base}10${suffix}`;
+}
+
+/**
+ * Creates the ambassador's Stripe-backed promo code, retrying with a random
+ * suffix until the code string is free in both our DB and Stripe.
+ */
+async function provisionAmbassadorPromoCode(
+  firstName: string
+): Promise<{ ok: true; id: string; code: string } | { ok: false; error: string }> {
+  let lastError = 'Création du code promo impossible.';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const suffix = attempt === 0
+      ? ''
+      : crypto.randomBytes(2).toString('hex').toUpperCase().slice(0, 3);
+    const code = ambassadorPromoCode(firstName, suffix);
+    const res = await createPromoCode({ code, percentageOff: AMBASSADOR_PROMO_PERCENT });
+    if (res.ok) return { ok: true, id: res.id, code };
+    lastError = res.error;
+  }
+  return { ok: false, error: lastError };
+}
+
+export type ReviewRecruitmentResult =
+  | { ok: true; provisioned?: { promoCode: string; setupUrl: string; expiresAt: string } }
+  | { ok: false; error: string };
+
+/**
+ * Reviews a recruitment application. Rejecting only flips the status.
+ * Accepting provisions the whole ambassador account in one click: a 10% promo
+ * code, the ambassador record (carrying over the applicant's name, email,
+ * phone, SIRET, city and parrain), and a PIN setup link — returned so the
+ * admin can send it. Provisioning runs before the status flip, so any failure
+ * leaves the application `pending` and retryable; the pending-status guard
+ * stops a double-click from provisioning a second account.
+ */
 export async function reviewRecruitmentApplication(
   id: string,
   status: 'accepted' | 'rejected'
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<ReviewRecruitmentResult> {
   try {
     await requireSuperAdminUser();
     const service = createServiceClient();
 
     const { data: app } = await service
       .from('ambassador_recruitment_applications')
-      .select('id, status')
+      .select('id, status, first_name, last_name, email, phone, siret, city, referrer_ambassador_id')
       .eq('id', id)
       .maybeSingle();
 
     if (!app) return { ok: false, error: 'Candidature introuvable.' };
     if (app.status !== 'pending') return { ok: false, error: 'Cette candidature a déjà été traitée.' };
 
-    const { error } = await service
+    if (status === 'rejected') {
+      const { error } = await service
+        .from('ambassador_recruitment_applications')
+        .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('status', 'pending');
+      if (error) return { ok: false, error: error.message };
+      await logAdminAction('ambassadors.recruitment_rejected', { id });
+      return { ok: true };
+    }
+
+    const firstName = app.first_name.trim();
+    const fullName = `${firstName} ${app.last_name.trim()}`.trim();
+
+    const promo = await provisionAmbassadorPromoCode(firstName);
+    if (!promo.ok) return { ok: false, error: `Code promo : ${promo.error}` };
+
+    const created = await createAmbassador({
+      name: fullName,
+      promoCodeId: promo.id,
+      referrerAmbassadorId: app.referrer_ambassador_id ?? null,
+      email: app.email,
+      phone: app.phone,
+      siret: app.siret,
+      city: app.city,
+    });
+
+    if (!created.ok) {
+      // Roll the promo code back so a failed acceptance leaves no orphan
+      // Stripe coupon behind.
+      await deletePromoCode(promo.id).catch(() => {});
+      return { ok: false, error: `Création ambassadeur : ${created.error}` };
+    }
+
+    const { error: updErr } = await service
       .from('ambassador_recruitment_applications')
-      .update({ status, reviewed_at: new Date().toISOString() })
-      .eq('id', id);
+      .update({ status: 'accepted', reviewed_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'pending');
+    if (updErr) {
+      return { ok: false, error: `Ambassadeur créé, mais statut non mis à jour : ${updErr.message}` };
+    }
 
-    if (error) return { ok: false, error: error.message };
+    await logAdminAction('ambassadors.recruitment_accepted', {
+      id,
+      ambassadorId: created.id,
+      promoCode: promo.code,
+    });
 
-    await logAdminAction(`ambassadors.recruitment_${status}`, { id });
-
-    return { ok: true };
+    return {
+      ok: true,
+      provisioned: {
+        promoCode: promo.code,
+        setupUrl: created.setupUrl,
+        expiresAt: created.expiresAt,
+      },
+    };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }
