@@ -154,11 +154,11 @@ export function RecruitmentLandingForm() {
         <span style={label}>SIRET (14 chiffres) — optionnel</span>
         <input style={inp} value={siret} onChange={e => setSiret(e.target.value)} placeholder="Pas encore de SIRET ? Laisse vide" inputMode="numeric" />
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 5, lineHeight: 1.4 }}>
-          Pas besoin de SIRET pour postuler ni pour commencer. Il sera demandé plus tard,
-          uniquement au moment de toucher vos commissions. Vous pouvez le créer gratuitement sur{' '}
+          Pas besoin de SIRET pour postuler. Pour démarcher ensuite, vous devrez avoir déclaré
+          votre statut d&apos;auto-entrepreneur — gratuit, ~10 min sur{' '}
           <a href="https://autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
             autoentrepreneur.urssaf.fr
-          </a>{' '}(10 min, c&apos;est instantané).
+          </a>{' '}— et vous démarrez le jour même.
         </div>
       </div>
 
