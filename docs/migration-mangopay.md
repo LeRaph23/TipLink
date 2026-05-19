@@ -21,11 +21,13 @@
   d'appoint `00054_payin_contexts.sql`. Voir « Détail Phase 3 » ci-dessous.
 - ✅ **Phase 4 — Handler webhook Mangopay** : `app/api/webhooks/mangopay/route.ts`
   (export `GET`). Voir « Détail Phase 4 » ci-dessous.
-- ✅ **Phases 5 & 6 — Onboarding & retrait (staff)** : `actions/mangopay.ts`
-  (remplace `actions/stripe.ts`) + migration `00055`. Voir « Détail Phases 5-6 ».
-- ⏳ **Reste** : routes ambassadeur (`ambassadeur/[code]/banking` + `payout`) à
-  convertir sur le même modèle ; Phase 7 (frontend Checkout SDK), Phase 8
-  (scripts), Phase 9 (tests).
+- ✅ **Phases 5 & 6 — Onboarding & retrait** : `actions/mangopay.ts` (staff,
+  remplace `actions/stripe.ts`) + routes ambassadeur (`banking`, `payout`,
+  `identity-document`, `statement`) + helper partagé `lib/mangopay/onboarding.ts`
+  + migration `00055`. Voir « Détail Phases 5-6 ».
+- ⏳ **Reste** : Phase 7 (frontend Checkout SDK + composants), Phase 8 (scripts
+  `mangopay-setup`, admin), Phase 9 (tests), nettoyage `lib/stripe/*` + code
+  admin/billing référençant encore des colonnes Stripe supprimées.
 
 > **Correctifs vs plan** découverts pendant l'implémentation :
 > - SDK Node : `mangopay4-nodejs-sdk` v1.68 confirmé.

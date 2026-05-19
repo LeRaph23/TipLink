@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { stripe } from '@/lib/stripe/client';
+import { createTransfer } from '@/lib/mangopay/transfers';
+import { createPayOut } from '@/lib/mangopay/payouts';
+import { platformIds } from '@/lib/mangopay/client';
 import { verifyCookieValue } from '../auth/route';
 import { computeTotalBaseCommission, MIN_PAYOUT_CENTS } from '@/lib/ambassador-tiers';
 import { sumCreditedReferralCents } from '@/lib/referrals';
@@ -36,7 +38,7 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
       .is('voided_at', null),
     service
       .from('ambassador_payouts')
-      .select('amount_cents, status, stripe_transfer_id')
+      .select('amount_cents, status, mangopay_transfer_id')
       .eq('ambassador_id', ambassadorId)
       .in('status', ['pending', 'paid', 'failed']),
     // Referral rewards a super-admin has credited to this ambassador.
@@ -51,14 +53,15 @@ async function computeAvailableCents(ambassadorId: string): Promise<{
   // once a super-admin has explicitly credited them — nothing is automatic.
   const earnedTotal = baseCommission + bonusCredited + referralCredited;
   // A `failed` payout frees its amount back into the balance — UNLESS the
-  // Stripe transfer leg already went through (the platform-side money has
-  // left). Counting a failed-with-transfer payout as committed prevents a
-  // second payout request from transferring the same funds twice.
+  // central->wallet Transfer leg already went through (the funds have already
+  // moved into the ambassador wallet). Counting a failed-with-transfer payout
+  // as committed prevents a second request from transferring the same funds
+  // twice; the retry resumes from the PayOut leg.
   const paidOrPendingTotal = (payouts ?? [])
     .filter((p) =>
       p.status === 'pending' ||
       p.status === 'paid' ||
-      (p.status === 'failed' && p.stripe_transfer_id)
+      (p.status === 'failed' && p.mangopay_transfer_id)
     )
     .reduce((s, p) => s + p.amount_cents, 0);
   const available = Math.max(0, earnedTotal - paidOrPendingTotal);
@@ -136,7 +139,7 @@ export async function POST(
 
   const { data: amb } = await service
     .from('ambassadors')
-    .select('id, stripe_account_id, name, is_active, payouts_frozen')
+    .select('id, mangopay_user_id, mangopay_wallet_id, mangopay_recipient_id, mangopay_kyc_status, mangopay_sca_enrolled, name, is_active, payouts_frozen')
     .eq('id', ambassadorId)
     .maybeSingle();
 
@@ -156,9 +159,21 @@ export async function POST(
       { status: 403 }
     );
   }
-  if (!amb.stripe_account_id) {
+  if (!amb.mangopay_user_id || !amb.mangopay_wallet_id || !amb.mangopay_recipient_id) {
     return NextResponse.json(
       { error: 'Configure d\'abord ton compte bancaire (RIB + SIRET).' },
+      { status: 400 }
+    );
+  }
+  if (amb.mangopay_kyc_status !== 'validated') {
+    return NextResponse.json(
+      { error: "Ton identité n'a pas encore été validée. Le virement sera possible ensuite." },
+      { status: 400 }
+    );
+  }
+  if (!amb.mangopay_sca_enrolled) {
+    return NextResponse.json(
+      { error: 'Vérification de sécurité non terminée. Reconfigure tes coordonnées bancaires.' },
       { status: 400 }
     );
   }
@@ -204,35 +219,43 @@ export async function POST(
       return NextResponse.json({ error: 'Erreur enregistrement de la demande' }, { status: 500 });
     }
 
-    // Trigger the Stripe transfer + payout. On failure mark `failed` so the
-    // payout doesn't stay pending forever — super-admin can retry from admin UI.
-    //
-    // The transfer (platform → connected account) and the payout (connected
-    // account → bank) are two calls. If the transfer succeeds but the payout
-    // fails, the platform-side money has already moved: we MUST persist the
-    // transfer id so computeAvailableCents counts it as committed, otherwise a
-    // retry would transfer the same funds a second time.
+    // Two-leg withdrawal: a Transfer (central wallet -> ambassador wallet, SCA
+    // USER_NOT_PRESENT) then a PayOut (ambassador wallet -> Recipient IBAN). If
+    // the Transfer succeeds but the PayOut fails the funds have already moved:
+    // persist the transfer id so computeAvailableCents counts it as committed
+    // and a retry resumes from the PayOut leg rather than transferring again.
+    const { walletId: centralWalletId, userId: platformUserId } = platformIds();
     let transferId: string | null = null;
     try {
-      const transfer = await stripe.transfers.create({
+      const transfer = await createTransfer({
+        authorId: platformUserId,
+        creditedUserId: amb.mangopay_user_id,
+        debitedWalletId: centralWalletId,
+        creditedWalletId: amb.mangopay_wallet_id,
         amount: inserted.amount_cents,
-        currency: 'eur',
-        destination: amb.stripe_account_id,
-        metadata: { ambassador_id: ambassadorId, payout_id: inserted.id },
-      }, { idempotencyKey: `amb_payout_transfer:${inserted.id}` });
-      transferId = transfer.id;
+        scaContext: 'USER_NOT_PRESENT',
+        tag: `amb_payout:${inserted.id}`,
+      });
+      if (transfer.Status !== 'SUCCEEDED') {
+        throw new Error(transfer.ResultMessage || 'Transfer non abouti');
+      }
+      transferId = transfer.Id;
 
-      const payout = await stripe.payouts.create(
-        { amount: inserted.amount_cents, currency: 'eur', method: 'standard' },
-        { stripeAccount: amb.stripe_account_id, idempotencyKey: `amb_payout:${inserted.id}` }
-      );
+      const payOut = await createPayOut({
+        authorId: amb.mangopay_user_id,
+        debitedWalletId: amb.mangopay_wallet_id,
+        recipientId: amb.mangopay_recipient_id,
+        amount: inserted.amount_cents,
+        bankWireRef: 'TIPLINK',
+        tag: `amb_payout:${inserted.id}`,
+      });
 
       await service
         .from('ambassador_payouts')
         .update({
           status: 'paid',
-          stripe_transfer_id: transfer.id,
-          stripe_payout_id: payout.id,
+          mangopay_transfer_id: transfer.Id,
+          mangopay_payout_id: payOut.Id,
           paid_at: new Date().toISOString(),
         })
         .eq('id', inserted.id);
@@ -240,14 +263,14 @@ export async function POST(
       void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'paid');
       return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Stripe error';
-      console.error('ambassador payout stripe call failed', err);
+      const msg = err instanceof Error ? err.message : 'Mangopay error';
+      console.error('ambassador payout Mangopay call failed', err);
       await service
         .from('ambassador_payouts')
         .update({
           status: 'failed',
           failure_reason: msg,
-          stripe_transfer_id: transferId,
+          mangopay_transfer_id: transferId,
         })
         .eq('id', inserted.id);
       void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'failed');

@@ -4,8 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { validateIban } from '@/lib/banking/iban';
-import { createNaturalOwner } from '@/lib/mangopay/users';
-import { createWallet } from '@/lib/mangopay/wallets';
+import { provisionMangopayAccount } from '@/lib/mangopay/onboarding';
 import { createIbanRecipient, getRecipient, deactivateRecipient } from '@/lib/mangopay/recipients';
 import { createTransfer } from '@/lib/mangopay/transfers';
 import { createPayOut } from '@/lib/mangopay/payouts';
@@ -55,65 +54,26 @@ export async function createStaffMangopayAccount(
   data: BankingData,
   email: string
 ): Promise<{ ok: true; scaRedirectUrl: string | null } | { error: string }> {
-  const ibanResult = validateIban(data.iban);
-  if (!ibanResult.ok) return { error: ibanResult.error };
-
-  const country = ibanResult.country;
-  const nationality = (data.nationality ?? data.address.country).toUpperCase();
-
-  let userId: string;
-  let walletId: string;
-  let recipientId: string;
-  let recipientScaRedirect: string | null = null;
-  try {
-    userId = await createNaturalOwner({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email,
-      birthday: new Date(Date.UTC(data.dob.year, data.dob.month - 1, data.dob.day)),
-      nationality,
-      countryOfResidence: data.address.country.toUpperCase(),
-      address: {
-        addressLine1: data.address.line1,
-        city: data.address.city,
-        postalCode: data.address.postal_code,
-        country: data.address.country.toUpperCase(),
-      },
-    });
-
-    walletId = await createWallet(userId, `TipLink — ${data.firstName} ${data.lastName}`);
-
-    const recipient = await createIbanRecipient({
-      userId,
-      displayName: `${data.firstName} ${data.lastName}`,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      iban: ibanResult.normalized,
-      bic: data.bic,
-      country,
-      address: {
-        addressLine1: data.address.line1,
-        city: data.address.city,
-        postalCode: data.address.postal_code,
-        country: data.address.country.toUpperCase(),
-      },
-      scaContext: 'USER_PRESENT',
-    });
-    recipientId = recipient.Id;
-    recipientScaRedirect = recipient.PendingUserAction?.RedirectUrl ?? null;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Création du compte Mangopay échouée';
-    console.error('createStaffMangopayAccount: Mangopay call failed', err);
-    return { error: msg };
-  }
+  const result = await provisionMangopayAccount({
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email,
+    dob: data.dob,
+    address: data.address,
+    iban: data.iban,
+    bic: data.bic,
+    nationality: data.nationality,
+    walletDescription: `TipLink — ${data.firstName} ${data.lastName}`,
+  });
+  if (!result.ok) return { error: result.error };
 
   const service = createServiceClient();
   const { error: dbErr } = await service
     .from('staff_profiles')
     .update({
-      mangopay_user_id: userId,
-      mangopay_wallet_id: walletId,
-      mangopay_recipient_id: recipientId,
+      mangopay_user_id: result.userId,
+      mangopay_wallet_id: result.walletId,
+      mangopay_recipient_id: result.recipientId,
       onboarding_status: 'pending',
     })
     .eq('id', staffProfileId);
@@ -124,8 +84,8 @@ export async function createStaffMangopayAccount(
 
   return {
     ok: true,
-    scaRedirectUrl: recipientScaRedirect
-      ? appendReturnUrl(recipientScaRedirect, scaReturnUrl())
+    scaRedirectUrl: result.scaRedirectUrl
+      ? appendReturnUrl(result.scaRedirectUrl, scaReturnUrl())
       : null,
   };
 }

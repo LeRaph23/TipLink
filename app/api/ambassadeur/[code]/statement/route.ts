@@ -71,7 +71,7 @@ export async function GET(
       .eq('status', 'credited'),
     service
       .from('ambassador_payouts')
-      .select('id, amount_cents, status, stripe_transfer_id, requested_at, paid_at')
+      .select('id, amount_cents, status, mangopay_transfer_id, requested_at, paid_at')
       .eq('ambassador_id', ambassadorId)
       .in('status', ['pending', 'paid', 'failed']),
   ]);
@@ -115,7 +115,7 @@ export async function GET(
     // A failed payout whose Stripe transfer never went through did not move
     // money — it does not belong in the balance ledger.
     const committed =
-      p.status === 'pending' || p.status === 'paid' || (p.status === 'failed' && !!p.stripe_transfer_id);
+      p.status === 'pending' || p.status === 'paid' || (p.status === 'failed' && !!p.mangopay_transfer_id);
     if (!committed) continue;
     entries.push({
       id: `payout:${p.id}`,

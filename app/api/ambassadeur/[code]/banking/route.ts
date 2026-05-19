@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { stripe, CONNECT_BUSINESS_PROFILE } from '@/lib/stripe/client';
-import { getAccountVerificationStatus } from '@/lib/stripe/identity';
+import { provisionMangopayAccount } from '@/lib/mangopay/onboarding';
+import { getRecipient } from '@/lib/mangopay/recipients';
+import { getBaseUrl } from '@/lib/env';
 import { verifyCookieValue } from '../auth/route';
 import { sendAmbassadorBankingConfirmation } from '@/lib/email';
 import { validateIban } from '@/lib/banking/iban';
@@ -29,7 +30,8 @@ function validateSiret(raw: string): string | null {
   return /^\d{14}$/.test(clean) ? clean : null;
 }
 
-// POST — create Stripe Custom account + attach IBAN for this ambassador
+// POST — create the ambassador's Mangopay account (OWNER user + EUR wallet +
+// IBAN Recipient) and return the hosted SCA redirect.
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -61,7 +63,7 @@ export async function POST(
     return NextResponse.json({ error: ibanResult.error }, { status: 400 });
   }
   if (!email) return NextResponse.json({ error: 'Email requis' }, { status: 400 });
-  if (!tosAccepted) return NextResponse.json({ error: 'Vous devez accepter les conditions Stripe' }, { status: 400 });
+  if (!tosAccepted) return NextResponse.json({ error: 'Vous devez accepter les conditions Mangopay' }, { status: 400 });
 
   const siretClean = siret ? validateSiret(siret) : null;
   if (!siretClean) {
@@ -73,77 +75,44 @@ export async function POST(
   const service = createServiceClient();
   const { data: amb } = await service
     .from('ambassadors')
-    .select('id, stripe_account_id, name')
+    .select('id, mangopay_user_id, name')
     .eq('id', ambassadorId)
     .maybeSingle();
 
   if (!amb) return NextResponse.json({ error: 'Ambassadeur introuvable' }, { status: 404 });
-  if (amb.stripe_account_id) {
+  if (amb.mangopay_user_id) {
     return NextResponse.json({ error: 'Compte bancaire déjà configuré' }, { status: 400 });
   }
 
-  const bankCountry = ibanResult.country;
-  const addressCountry = (address.country ?? bankCountry).toUpperCase();
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    '0.0.0.0';
-
-  let accountId: string;
-  try {
-    const account = await stripe.accounts.create({
-      type: 'custom',
-      country: bankCountry,
-      business_type: 'individual',
-      business_profile: { ...CONNECT_BUSINESS_PROFILE },
-      individual: {
-        first_name: firstName,
-        last_name: lastName,
-        dob: { day: dob.day, month: dob.month, year: dob.year },
-        address: { line1: address.line1, city: address.city, postal_code: address.postal_code, country: addressCountry },
-        email,
-        phone,
-      },
-      company: { tax_id: siretClean },
-      tos_acceptance: { date: Math.floor(Date.now() / 1000), ip },
-      capabilities: { transfers: { requested: true } },
-      settings: { payouts: { schedule: { interval: 'manual' } } },
-      metadata: { ambassador_id: ambassadorId, siret: siretClean },
-    });
-    accountId = account.id;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Création du compte Stripe échouée';
-    console.error('ambassador stripe.accounts.create failed', err);
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-
-  const ibanClean = ibanResult.normalized;
-  try {
-    await stripe.accounts.createExternalAccount(accountId, {
-      external_account: {
-        object: 'bank_account',
-        country: bankCountry,
-        currency: 'eur',
-        account_holder_name: `${firstName} ${lastName}`,
-        account_holder_type: 'individual',
-        account_number: ibanClean,
-      } as Parameters<typeof stripe.accounts.createExternalAccount>[1]['external_account'],
-    });
-  } catch (err) {
-    await stripe.accounts.del(accountId).catch(() => null);
-    const msg = err instanceof Error ? err.message : 'IBAN refusé par Stripe';
-    return NextResponse.json({ error: msg }, { status: 400 });
+  const result = await provisionMangopayAccount({
+    firstName,
+    lastName,
+    email,
+    dob,
+    address: {
+      line1: address.line1,
+      city: address.city,
+      postal_code: address.postal_code,
+      country: address.country ?? ibanResult.country,
+    },
+    iban: ibanResult.normalized,
+    walletDescription: `TipLink ambassadeur — ${firstName} ${lastName}`,
+  });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
   const { error: dbErr } = await service
     .from('ambassadors')
     .update({
-      stripe_account_id: accountId,
+      mangopay_user_id: result.userId,
+      mangopay_wallet_id: result.walletId,
+      mangopay_recipient_id: result.recipientId,
       siret: siretClean,
       email,
       phone: phone ?? null,
       city: address.city,
-      onboarding_status: 'complete',
+      onboarding_status: 'pending',
     })
     .eq('id', ambassadorId);
 
@@ -152,15 +121,21 @@ export async function POST(
     return NextResponse.json({ error: 'Erreur enregistrement' }, { status: 500 });
   }
 
-  await sendAmbassadorBankingConfirmation({
-    to: email,
-    firstName,
-  }).catch(() => {});
+  await sendAmbassadorBankingConfirmation({ to: email, firstName }).catch(() => {});
 
-  return NextResponse.json({ ok: true });
+  // The browser must finish the hosted SCA session to activate the Recipient.
+  let scaRedirectUrl: string | null = null;
+  if (result.scaRedirectUrl) {
+    const returnUrl = `${getBaseUrl()}/ambassadeur/${code}`;
+    const sep = result.scaRedirectUrl.includes('?') ? '&' : '?';
+    scaRedirectUrl = `${result.scaRedirectUrl}${sep}returnUrl=${encodeURIComponent(returnUrl)}`;
+  }
+
+  return NextResponse.json({ ok: true, scaRedirectUrl });
 }
 
-// GET — return banking status
+// GET — banking status. Doubles as the SCA finalisation step: once the
+// Recipient is active, the ambassador's SCA consent is recorded.
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -174,33 +149,38 @@ export async function GET(
   const service = createServiceClient();
   const { data: amb } = await service
     .from('ambassadors')
-    .select('stripe_account_id, siret, onboarding_status, email, phone, city')
+    .select('mangopay_user_id, mangopay_recipient_id, mangopay_kyc_status, mangopay_sca_enrolled, onboarding_status, siret, email, phone, city')
     .eq('id', ambassadorId)
     .maybeSingle();
 
-  let needsIdentityDocument = false;
-  let pendingVerification = false;
-  let payoutsEnabled = false;
-  if (amb?.stripe_account_id) {
+  let recipientActive = false;
+  if (amb?.mangopay_recipient_id) {
     try {
-      const status = await getAccountVerificationStatus(amb.stripe_account_id);
-      needsIdentityDocument = status.needsIdentityDocument;
-      pendingVerification = status.pendingVerification;
-      payoutsEnabled = status.payoutsEnabled;
+      const recipient = await getRecipient(amb.mangopay_recipient_id);
+      recipientActive = recipient.Status === 'ACTIVE';
     } catch (err) {
-      console.error('ambassador banking verification status failed', err);
+      console.error('ambassador recipient lookup failed', err);
     }
   }
 
+  // Record SCA consent the first time we see the Recipient active.
+  if (recipientActive && amb && !amb.mangopay_sca_enrolled) {
+    await service
+      .from('ambassadors')
+      .update({ mangopay_sca_enrolled: true })
+      .eq('id', ambassadorId);
+  }
+
+  const kycStatus = amb?.mangopay_kyc_status ?? 'none';
   return NextResponse.json({
-    hasStripeAccount: !!amb?.stripe_account_id,
+    hasStripeAccount: !!amb?.mangopay_user_id,
     onboardingStatus: amb?.onboarding_status ?? 'not_started',
     siret: amb?.siret ?? null,
     email: amb?.email ?? null,
     phone: amb?.phone ?? null,
     city: amb?.city ?? null,
-    needsIdentityDocument,
-    pendingVerification,
-    payoutsEnabled,
+    needsIdentityDocument: !!amb?.mangopay_user_id && (kycStatus === 'none' || kycStatus === 'refused'),
+    pendingVerification: kycStatus === 'pending',
+    payoutsEnabled: recipientActive && kycStatus === 'validated',
   });
 }

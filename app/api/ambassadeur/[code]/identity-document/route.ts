@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { fileToDocument, uploadIdentityDocument } from '@/lib/stripe/identity';
+import { fileToDocument, submitIdentityProof } from '@/lib/mangopay/kyc';
 import { verifyCookieValue } from '../auth/route';
 
 export const runtime = 'nodejs';
@@ -15,8 +15,7 @@ async function authenticateAmbassador(req: NextRequest, code: string) {
   return ambassadorId;
 }
 
-// POST — upload an identity document for this ambassador's Stripe account.
-// Used only when Stripe lists a verification document as required.
+// POST — submit an identity proof for this ambassador's KYC validation.
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -30,11 +29,11 @@ export async function POST(
   const service = createServiceClient();
   const { data: amb } = await service
     .from('ambassadors')
-    .select('stripe_account_id')
+    .select('mangopay_user_id')
     .eq('id', ambassadorId)
     .maybeSingle();
 
-  if (!amb?.stripe_account_id) {
+  if (!amb?.mangopay_user_id) {
     return NextResponse.json({ error: 'Aucun compte bancaire configuré' }, { status: 400 });
   }
 
@@ -59,12 +58,17 @@ export async function POST(
   }
 
   try {
-    await uploadIdentityDocument(amb.stripe_account_id, front, back);
+    await submitIdentityProof(amb.mangopay_user_id, front, back);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Envoi du document échoué';
     console.error('ambassador identity-document upload failed', err);
     return NextResponse.json({ error: msg }, { status: 400 });
   }
+
+  await service
+    .from('ambassadors')
+    .update({ mangopay_kyc_status: 'pending' })
+    .eq('id', ambassadorId);
 
   return NextResponse.json({ ok: true });
 }
