@@ -374,8 +374,8 @@ export type Database = {
           paid_at: string | null
           requested_at: string
           status: string
-          stripe_payout_id: string | null
-          stripe_transfer_id: string | null
+          mangopay_payout_id: string | null
+          mangopay_transfer_id: string | null
         }
         Insert: {
           ambassador_id: string
@@ -385,8 +385,8 @@ export type Database = {
           paid_at?: string | null
           requested_at?: string
           status?: string
-          stripe_payout_id?: string | null
-          stripe_transfer_id?: string | null
+          mangopay_payout_id?: string | null
+          mangopay_transfer_id?: string | null
         }
         Update: {
           ambassador_id?: string
@@ -396,8 +396,8 @@ export type Database = {
           paid_at?: string | null
           requested_at?: string
           status?: string
-          stripe_payout_id?: string | null
-          stripe_transfer_id?: string | null
+          mangopay_payout_id?: string | null
+          mangopay_transfer_id?: string | null
         }
         Relationships: [
           {
@@ -614,7 +614,10 @@ export type Database = {
           referral_validated_at: string | null
           referrer_ambassador_id: string | null
           siret: string | null
-          stripe_account_id: string | null
+          mangopay_user_id: string | null
+          mangopay_wallet_id: string | null
+          mangopay_recipient_id: string | null
+          mangopay_kyc_status: string
         }
         Insert: {
           city?: string | null
@@ -635,7 +638,10 @@ export type Database = {
           referral_validated_at?: string | null
           referrer_ambassador_id?: string | null
           siret?: string | null
-          stripe_account_id?: string | null
+          mangopay_user_id?: string | null
+          mangopay_wallet_id?: string | null
+          mangopay_recipient_id?: string | null
+          mangopay_kyc_status?: string
         }
         Update: {
           city?: string | null
@@ -656,7 +662,10 @@ export type Database = {
           referral_validated_at?: string | null
           referrer_ambassador_id?: string | null
           siret?: string | null
-          stripe_account_id?: string | null
+          mangopay_user_id?: string | null
+          mangopay_wallet_id?: string | null
+          mangopay_recipient_id?: string | null
+          mangopay_kyc_status?: string
         }
         Relationships: [
           {
@@ -802,7 +811,6 @@ export type Database = {
           name: string
           onboarding_status: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug: string
-          stripe_account_id: string | null
         }
         Insert: {
           address?: string | null
@@ -816,7 +824,6 @@ export type Database = {
           name: string
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug: string
-          stripe_account_id?: string | null
         }
         Update: {
           address?: string | null
@@ -830,7 +837,6 @@ export type Database = {
           name?: string
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug?: string
-          stripe_account_id?: string | null
         }
         Relationships: [
           {
@@ -852,7 +858,7 @@ export type Database = {
           reversed_at: string | null
           staff_id: string
           status: string
-          stripe_transfer_id: string | null
+          mangopay_transfer_id: string | null
           transaction_id: string
         }
         Insert: {
@@ -864,7 +870,7 @@ export type Database = {
           reversed_at?: string | null
           staff_id: string
           status?: string
-          stripe_transfer_id?: string | null
+          mangopay_transfer_id?: string | null
           transaction_id: string
         }
         Update: {
@@ -876,7 +882,7 @@ export type Database = {
           reversed_at?: string | null
           staff_id?: string
           status?: string
-          stripe_transfer_id?: string | null
+          mangopay_transfer_id?: string | null
           transaction_id?: string
         }
         Relationships: [
@@ -910,7 +916,6 @@ export type Database = {
           platform_fee_bps: number
           settings: Json
           shipping_address: Json | null
-          stripe_customer_id: string | null
           vat_number: string | null
         }
         Insert: {
@@ -926,7 +931,6 @@ export type Database = {
           platform_fee_bps?: number
           settings?: Json
           shipping_address?: Json | null
-          stripe_customer_id?: string | null
           vat_number?: string | null
         }
         Update: {
@@ -942,7 +946,6 @@ export type Database = {
           platform_fee_bps?: number
           settings?: Json
           shipping_address?: Json | null
-          stripe_customer_id?: string | null
           vat_number?: string | null
         }
         Relationships: []
@@ -1124,8 +1127,6 @@ export type Database = {
           max_redemptions: number | null
           notes: string | null
           percentage_off: number
-          stripe_coupon_id: string
-          stripe_promo_code_id: string
           times_redeemed: number
         }
         Insert: {
@@ -1139,8 +1140,6 @@ export type Database = {
           max_redemptions?: number | null
           notes?: string | null
           percentage_off: number
-          stripe_coupon_id: string
-          stripe_promo_code_id: string
           times_redeemed?: number
         }
         Update: {
@@ -1154,8 +1153,6 @@ export type Database = {
           max_redemptions?: number | null
           notes?: string | null
           percentage_off?: number
-          stripe_coupon_id?: string
-          stripe_promo_code_id?: string
           times_redeemed?: number
         }
         Relationships: []
@@ -1483,10 +1480,8 @@ export type Database = {
           shipped_at: string | null
           shipping_address: Json | null
           status: string
-          stripe_checkout_session_id: string | null
-          stripe_discount_id: string | null
-          stripe_invoice_id: string | null
-          stripe_payment_intent_id: string | null
+          mangopay_payin_id: string | null
+          invoice_pdf_url: string | null
           tags_encoded_count: number
           tracking_number: string | null
           updated_at: string
@@ -1506,10 +1501,8 @@ export type Database = {
           shipped_at?: string | null
           shipping_address?: Json | null
           status?: string
-          stripe_checkout_session_id?: string | null
-          stripe_discount_id?: string | null
-          stripe_invoice_id?: string | null
-          stripe_payment_intent_id?: string | null
+          mangopay_payin_id?: string | null
+          invoice_pdf_url?: string | null
           tags_encoded_count?: number
           tracking_number?: string | null
           updated_at?: string
@@ -1529,10 +1522,8 @@ export type Database = {
           shipped_at?: string | null
           shipping_address?: Json | null
           status?: string
-          stripe_checkout_session_id?: string | null
-          stripe_discount_id?: string | null
-          stripe_invoice_id?: string | null
-          stripe_payment_intent_id?: string | null
+          mangopay_payin_id?: string | null
+          invoice_pdf_url?: string | null
           tags_encoded_count?: number
           tracking_number?: string | null
           updated_at?: string
@@ -1565,7 +1556,8 @@ export type Database = {
           paid_at: string | null
           staff_id: string
           status: string
-          stripe_payout_id: string
+          mangopay_payout_id: string
+          mangopay_transfer_id: string | null
         }
         Insert: {
           amount: number
@@ -1577,7 +1569,8 @@ export type Database = {
           paid_at?: string | null
           staff_id: string
           status: string
-          stripe_payout_id: string
+          mangopay_payout_id: string
+          mangopay_transfer_id?: string | null
         }
         Update: {
           amount?: number
@@ -1589,7 +1582,8 @@ export type Database = {
           paid_at?: string | null
           staff_id?: string
           status?: string
-          stripe_payout_id?: string
+          mangopay_payout_id?: string
+          mangopay_transfer_id?: string | null
         }
         Relationships: [
           {
@@ -1615,7 +1609,10 @@ export type Database = {
           lifecycle_emails_opt_out_at: string | null
           onboarding_status: Database["public"]["Enums"]["stripe_onboarding_status"]
           payouts_frozen: boolean
-          stripe_account_id: string | null
+          mangopay_user_id: string | null
+          mangopay_wallet_id: string | null
+          mangopay_recipient_id: string | null
+          mangopay_kyc_status: string
           user_id: string | null
         }
         Insert: {
@@ -1631,7 +1628,10 @@ export type Database = {
           lifecycle_emails_opt_out_at?: string | null
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           payouts_frozen?: boolean
-          stripe_account_id?: string | null
+          mangopay_user_id?: string | null
+          mangopay_wallet_id?: string | null
+          mangopay_recipient_id?: string | null
+          mangopay_kyc_status?: string
           user_id?: string | null
         }
         Update: {
@@ -1647,7 +1647,10 @@ export type Database = {
           lifecycle_emails_opt_out_at?: string | null
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           payouts_frozen?: boolean
-          stripe_account_id?: string | null
+          mangopay_user_id?: string | null
+          mangopay_wallet_id?: string | null
+          mangopay_recipient_id?: string | null
+          mangopay_kyc_status?: string
           user_id?: string | null
         }
         Relationships: [
@@ -1663,62 +1666,56 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
-          application_fee_amount: number | null
+          platform_fee_amount: number | null
           created_at: string
           currency: string
-          dispute_id: string | null
+          mangopay_dispute_id: string | null
           establishment_id: string
           id: string
           idempotency_key: string
+          mangopay_payin_id: string | null
+          mangopay_card_id: string | null
           metadata: Json
           refunded_amount: number
           reversed_at: string | null
           staff_id: string | null
           status: Database["public"]["Enums"]["transaction_status"]
-          stripe_charge_id: string | null
-          stripe_payment_intent_id: string | null
-          stripe_session_id: string | null
-          stripe_transfer_id: string | null
           succeeded_at: string | null
         }
         Insert: {
           amount: number
-          application_fee_amount?: number | null
+          platform_fee_amount?: number | null
           created_at?: string
           currency: string
-          dispute_id?: string | null
+          mangopay_dispute_id?: string | null
           establishment_id: string
           id?: string
           idempotency_key: string
+          mangopay_payin_id?: string | null
+          mangopay_card_id?: string | null
           metadata?: Json
           refunded_amount?: number
           reversed_at?: string | null
           staff_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
-          stripe_charge_id?: string | null
-          stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
-          stripe_transfer_id?: string | null
           succeeded_at?: string | null
         }
         Update: {
           amount?: number
-          application_fee_amount?: number | null
+          platform_fee_amount?: number | null
           created_at?: string
           currency?: string
-          dispute_id?: string | null
+          mangopay_dispute_id?: string | null
           establishment_id?: string
           id?: string
           idempotency_key?: string
+          mangopay_payin_id?: string | null
+          mangopay_card_id?: string | null
           metadata?: Json
           refunded_amount?: number
           reversed_at?: string | null
           staff_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
-          stripe_charge_id?: string | null
-          stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
-          stripe_transfer_id?: string | null
           succeeded_at?: string | null
         }
         Relationships: [
@@ -1786,27 +1783,30 @@ export type Database = {
           error: string | null
           event_type: string
           id: string
-          payload: Json
+          mangopay_event_type: string | null
+          mangopay_resource_id: string | null
+          payload: Json | null
           processed_at: string | null
-          stripe_event_id: string
         }
         Insert: {
           created_at?: string
           error?: string | null
           event_type: string
           id?: string
-          payload: Json
+          mangopay_event_type?: string | null
+          mangopay_resource_id?: string | null
+          payload?: Json | null
           processed_at?: string | null
-          stripe_event_id: string
         }
         Update: {
           created_at?: string
           error?: string | null
           event_type?: string
           id?: string
-          payload?: Json
+          mangopay_event_type?: string | null
+          mangopay_resource_id?: string | null
+          payload?: Json | null
           processed_at?: string | null
-          stripe_event_id?: string
         }
         Relationships: []
       }
