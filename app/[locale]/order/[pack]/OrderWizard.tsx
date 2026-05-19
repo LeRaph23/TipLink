@@ -109,7 +109,6 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
   const [promoCode, setPromoCode] = useState('');
   // Once set, the wizard shows the in-page payment instead of the step form.
   const [payment, setPayment] = useState<{
-    clientSecret: string;
     htAmount: number;
     taxAmount: number;
     totalAmount: number;
@@ -252,20 +251,16 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         }
       }
 
-      const res = await fetch('/api/billing/checkout', {
+      // Quote the VAT breakdown for display. The actual charge is created by
+      // /api/billing/checkout when the card is submitted (in OrderPayment).
+      const res = await fetch('/api/billing/pack-tax', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           pack: state.pack,
-          locale,
-          promoCode: promoCode.trim() || null,
-          business: {
-            legal_name: state.business.legal_name,
-            vat_number: state.business.vat_number || null,
-            shipping: state.shipping,
-            billing_same_as_shipping: state.business.billing_same,
-            billing: state.business.billing_same ? undefined : state.business.billing,
-          },
+          country: state.shipping.country,
+          vatNumber: state.business.vat_number || undefined,
+          promoCode: promoCode.trim() || undefined,
         }),
       });
 
@@ -277,24 +272,17 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       }
 
       const data = (await res.json()) as {
-        clientSecret?: string;
-        amount?: number;
+        totalAmount?: number;
         htAmount?: number;
         taxAmount?: number;
         taxRatePercent?: number | null;
       };
-      if (!data.clientSecret) {
-        setError('checkout_failed::missing_secret');
-        setSubmitting(false);
-        return;
-      }
 
       try { window.localStorage.removeItem(STORAGE_KEY(pack)); } catch { /* ignore */ }
       setPayment({
-        clientSecret: data.clientSecret,
         htAmount: data.htAmount ?? 0,
         taxAmount: data.taxAmount ?? 0,
-        totalAmount: data.amount ?? 0,
+        totalAmount: data.totalAmount ?? 0,
         taxRatePercent: data.taxRatePercent ?? null,
       });
       setSubmitting(false);
@@ -396,8 +384,16 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         showSummary
       >
         <OrderPayment
-          clientSecret={payment.clientSecret}
           locale={locale}
+          pack={state.pack}
+          promoCode={promoCode.trim() || null}
+          business={{
+            legal_name: state.business.legal_name,
+            vat_number: state.business.vat_number || null,
+            shipping: state.shipping,
+            billing_same_as_shipping: state.business.billing_same,
+            billing: state.business.billing_same ? undefined : state.business.billing,
+          }}
           htAmount={payment.htAmount}
           taxAmount={payment.taxAmount}
           totalAmount={payment.totalAmount}

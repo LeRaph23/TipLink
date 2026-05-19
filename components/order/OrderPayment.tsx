@@ -1,68 +1,56 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { loadStripe, type Stripe, type StripeElementsOptions } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { MangopayCheckout } from '@/components/payment/MangopayCheckout';
 
-let stripePromise: Promise<Stripe | null> | null = null;
-function getStripe() {
-  if (!stripePromise) {
-    const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    stripePromise = pk ? loadStripe(pk) : Promise.resolve(null);
-  }
-  return stripePromise;
-}
+type Address = {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  postal_code: string;
+  country: string;
+};
+
+export type OrderBusiness = {
+  legal_name: string;
+  vat_number?: string | null;
+  shipping: Address;
+  billing_same_as_shipping?: boolean;
+  billing?: Address;
+};
 
 export type OrderPaymentProps = {
-  clientSecret: string;
   locale: string;
+  pack: 'solo' | 'duo';
+  promoCode: string | null;
+  business: OrderBusiness;
   htAmount: number;
   taxAmount: number;
   totalAmount: number;
   taxRatePercent: number | null;
 };
 
-// In-page payment for the /order wizard. Shipping/billing were already
-// collected by the wizard and live on the PaymentIntent, so this only needs
-// to capture the card and confirm — no Stripe-hosted redirect.
-export function OrderPayment(props: OrderPaymentProps) {
-  const options: StripeElementsOptions = {
-    clientSecret: props.clientSecret,
-    appearance: {
-      theme: 'stripe',
-      variables: {
-        colorPrimary: '#E57A97',
-        colorText: '#0f1020',
-        borderRadius: '12px',
-        fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
-      },
-    },
-  };
-  return (
-    <Elements stripe={getStripe()} options={options}>
-      <PayForm
-        locale={props.locale}
-        htAmount={props.htAmount}
-        taxAmount={props.taxAmount}
-        totalAmount={props.totalAmount}
-        taxRatePercent={props.taxRatePercent}
-      />
-    </Elements>
-  );
-}
-
-function PayForm({
+// In-page payment for the /order wizard. The business details collected by
+// the wizard are sent with the card to /api/billing/checkout, which finds or
+// creates the billing group and creates the pack PayIn.
+export function OrderPayment({
   locale,
+  pack,
+  promoCode,
+  business,
   htAmount,
   taxAmount,
   totalAmount,
   taxRatePercent,
-}: Omit<OrderPaymentProps, 'clientSecret'>) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+}: OrderPaymentProps) {
   const isFr = locale === 'fr';
+  const [error, setError] = useState<string | null>(null);
+
+  const [nonce] = useState(() =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`
+  );
 
   const fmt = useMemo(
     () => new Intl.NumberFormat(isFr ? 'fr-FR' : 'en-US', {
@@ -71,18 +59,16 @@ function PayForm({
     [isFr]
   );
 
-  async function pay() {
-    if (!stripe || !elements) return;
-    setError(null);
-    setLoading(true);
-    const { error: err } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: `${window.location.origin}/${locale}/order/success` },
-    });
-    if (err) {
-      setError(err.message ?? (isFr ? 'Le paiement a échoué.' : 'Payment failed.'));
-      setLoading(false);
-    }
+  const paymentContext = {
+    pack,
+    locale,
+    nonce,
+    promoCode: promoCode ?? undefined,
+    business,
+  };
+
+  function handleSuccess(payIn: { Id: string }) {
+    window.location.href = `/${locale}/order/success?payin=${encodeURIComponent(payIn.Id)}`;
   }
 
   return (
@@ -98,7 +84,14 @@ function PayForm({
         </div>
       )}
 
-      <PaymentElement options={{ layout: 'tabs' }} />
+      <MangopayCheckout
+        amount={totalAmount}
+        currency="EUR"
+        createPaymentUrl="/api/billing/checkout"
+        paymentContext={paymentContext}
+        onSuccess={handleSuccess}
+        onError={setError}
+      />
 
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
@@ -113,24 +106,8 @@ function PayForm({
         <Row label={isFr ? 'Total TTC' : 'Total incl. VAT'} value={fmt.format(totalAmount / 100)} bold />
       </div>
 
-      <button
-        type="button"
-        onClick={() => { void pay(); }}
-        disabled={!stripe || !elements || loading}
-        style={{
-          width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-          background: loading ? '#F2B3C4' : 'linear-gradient(135deg, #E57A97, #EC97B0)',
-          color: '#fff', fontSize: 15, fontWeight: 700,
-          cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font)',
-        }}
-      >
-        {loading
-          ? (isFr ? 'Traitement…' : 'Processing…')
-          : `${isFr ? 'Payer' : 'Pay'} ${fmt.format(totalAmount / 100)}`}
-      </button>
-
       <p style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
-        {isFr ? 'Paiement sécurisé et chiffré par Stripe.' : 'Secure, encrypted payment by Stripe.'}
+        {isFr ? 'Paiement sécurisé et chiffré par Mangopay.' : 'Secure, encrypted payment by Mangopay.'}
       </p>
     </div>
   );

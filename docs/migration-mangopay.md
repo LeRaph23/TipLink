@@ -25,9 +25,22 @@
   remplace `actions/stripe.ts`) + routes ambassadeur (`banking`, `payout`,
   `identity-document`, `statement`) + helper partagé `lib/mangopay/onboarding.ts`
   + migration `00055`. Voir « Détail Phases 5-6 ».
-- ⏳ **Reste** : Phase 7 (frontend Checkout SDK + composants), Phase 8 (scripts
-  `mangopay-setup`, admin), Phase 9 (tests), nettoyage `lib/stripe/*` + code
-  admin/billing référençant encore des colonnes Stripe supprimées.
+- ✅ **Phase 7 — Frontend Checkout SDK** : wrapper `MangopayCheckout` +
+  `TipCheckout` / `GroupTipCheckout` / `PackCheckout` / `OrderPayment` réécrits ;
+  CSP `next.config.ts`. Voir « Détail Phase 7 ».
+- ✅ **Phase 8 — Scripts & nettoyage** : `scripts/mangopay-setup.ts` ; tout le
+  code admin/billing/dashboard migré ; `lib/stripe/*` supprimé.
+- ✅ **Phase 9 — Tests** : tests Stripe retirés, units Mangopay ajoutés.
+
+> **Migration backend complète — code non-test type-clean (`tsc`), lint-clean,
+> suite de tests verte (137 passés).**
+>
+> **À tester manuellement (impossible sans navigateur + sandbox Mangopay) :**
+> tout le parcours Checkout SDK de la Phase 7 (tokenisation carte, 3DS, event
+> `paymentComplete`), le round-trip SCA d'onboarding/retrait, la livraison réelle
+> des Hooks. L'API runtime exacte du SDK vanilla (`loadCheckoutSdk`, payloads
+> d'events, `profilingMerchantId`) est codée d'après les types du package et
+> doit être confirmée sur la sandbox.
 
 > **Correctifs vs plan** découverts pendant l'implémentation :
 > - SDK Node : `mangopay4-nodejs-sdk` v1.68 confirmé.
@@ -149,8 +162,27 @@
 > **À confirmer (Phases 5-6)** — mécanique SCA exacte : on suppose que terminer
 > la session SCA d'enregistrement du *Recipient* vaut présence SCA suffisante
 > pour les `Transfer` `USER_NOT_PRESENT`. Si Mangopay exige un `Users.enroll`
-> distinct, ajouter une 2e étape. Le webhook `KYC_SUCCEEDED` doit aussi
-> promouvoir `onboarding_status` → `complete`. À valider sur la sandbox.
+> distinct, ajouter une 2e étape. À valider sur la sandbox.
+
+### Détail Phase 7 — frontend Checkout SDK
+
+- **`components/payment/MangopayCheckout.tsx`** (nouveau) — wrapper React maison
+  autour du SDK vanilla `@mangopay/checkout-sdk` (le package React ne supporte
+  pas React 19). `loadCheckoutSdk` charge le script depuis `checkout.mangopay.com`
+  (PCI). Câble `onCreateCardRegistration` → `/api/mangopay/create-card-registration`
+  et `onCreatePayment` → l'URL fournie ; écoute `paymentComplete` / `error`.
+- **`TipCheckout` / `GroupTipCheckout`** — réécrits sur `MangopayCheckout`
+  (`create-payin` / `create-group-payin`) ; succès → `/{locale}/pay/success?payin=`.
+- **`PackCheckout`** (express) — formulaire e-mail + adresse in-app (le SDK ne
+  collecte que la carte), devis TVA via `pack-tax`, puis `MangopayCheckout` vers
+  `create-pack-intent`.
+- **`OrderPayment`** — réécrit : reçoit le contexte business du wizard et monte
+  `MangopayCheckout` vers `billing/checkout`. `OrderWizard` ne pré-appelle plus
+  `billing/checkout` (il quote la TVA via `pack-tax`).
+- **CSP** (`next.config.ts`) : `checkout.mangopay.com` + `*.mangopay.com` +
+  `*.payline.com` + `*.google.com` ; domaines Stripe retirés.
+- Pages succès `pay/success` / `order/success` : lisent un `?payin=` et
+  vérifient le PayIn côté serveur.
 
 ## Contexte
 

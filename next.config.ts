@@ -5,12 +5,13 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 const CSP = [
   "default-src 'self'",
-  // Next.js inline scripts + Stripe.js
-  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://connect.stripe.com",
-  // Stripe Elements / Connect iframes
-  "frame-src https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com",
-  // Supabase REST/Realtime + Stripe API calls (from browser SDK)
-  "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co",
+  // Next.js inline scripts + the Mangopay Checkout SDK (PCI: must load from
+  // checkout.mangopay.com, never bundled) + Google profiling for fraud checks.
+  "script-src 'self' 'unsafe-inline' https://checkout.mangopay.com https://*.google.com",
+  // Mangopay Checkout SDK iframes (card form + hosted 3DS).
+  "frame-src https://checkout.mangopay.com https://*.mangopay.com",
+  // Supabase REST/Realtime + Mangopay API calls from the browser SDK.
+  "connect-src 'self' https://*.mangopay.com https://*.payline.com https://*.supabase.co wss://*.supabase.co",
   // Avatars and logos live in Supabase Storage (public-media bucket).
   // Carto tiles power the salon map.
   "img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com",
