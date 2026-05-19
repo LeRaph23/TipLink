@@ -83,12 +83,13 @@ export async function validateSmartTagCode(
     return { valid: false };
   }
   const service = createServiceClient();
+  // `staff_id` was dropped in migration 00014 — a sticker is "unassigned"
+  // (in stock) purely when establishment_id IS NULL.
   const { data } = await service
     .from('nfc_stickers')
     .select('id')
     .eq('short_id', normalized)
     .is('establishment_id', null)
-    .is('staff_id', null)
     .maybeSingle();
 
   return data ? { valid: true, id: data.id } : { valid: false };
