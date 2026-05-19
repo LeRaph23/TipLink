@@ -2,7 +2,6 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { stripe } from '@/lib/stripe/client';
 import { Link } from '@/i18n/navigation';
 import { CancelOrderButton } from './CancelOrderButton';
 import { getOrderPaymentSummary } from '@/actions/billing/orders';
@@ -68,7 +67,7 @@ export default async function OrderDetailPage({
   // Fetch the order
   const { data: order } = await service
     .from('smarttag_orders')
-    .select('id, group_id, pack, quantity, status, tracking_number, created_at, shipped_at, delivered_at, fulfilled_at, stripe_invoice_id, stripe_checkout_session_id, stripe_payment_intent_id, shipping_address, promo_code, discount_amount')
+    .select('id, group_id, pack, quantity, status, tracking_number, created_at, shipped_at, delivered_at, fulfilled_at, invoice_pdf_url, mangopay_payin_id, shipping_address, promo_code, discount_amount')
     .eq('id', id)
     .single();
 
@@ -93,16 +92,9 @@ export default async function OrderDetailPage({
   const paySummary = await getOrderPaymentSummary(id);
   const payment = paySummary.ok ? paySummary.data : null;
 
-  // Fetch invoice PDF from Stripe if available
-  let invoicePdfUrl: string | null = null;
-  let invoiceNumber: string | null = null;
-  if (order.stripe_invoice_id) {
-    try {
-      const inv = await stripe.invoices.retrieve(order.stripe_invoice_id);
-      invoicePdfUrl = inv.invoice_pdf ?? null;
-      invoiceNumber = inv.number ?? null;
-    } catch { /* graceful fallback */ }
-  }
+  // The invoice PDF is generated in-app and stored on the order row.
+  const invoicePdfUrl: string | null = order.invoice_pdf_url;
+  const invoiceNumber: string | null = null;
 
   const cancellable = ['pending_payment', 'pending_fulfillment', 'encoding', 'ready_to_ship']
     .includes(order.status);
@@ -252,7 +244,7 @@ export default async function OrderDetailPage({
             { label: locale === 'fr' ? 'Montant' : 'Amount', value: fmtMoney(payment.amount, payment.currency) },
             ...(payment.paymentMethod ? [{ label: locale === 'fr' ? 'Méthode' : 'Method', value: payment.paymentMethod }] : []),
             ...((order.discount_amount ?? 0) > 0 ? [{ label: locale === 'fr' ? 'Code promo' : 'Promo code', value: `${order.promo_code} (−${fmtMoney(order.discount_amount ?? 0, payment.currency)})` }] : []),
-            ...(order.stripe_payment_intent_id ? [{ label: 'Payment intent', value: order.stripe_payment_intent_id, mono: true }] : []),
+            ...(order.mangopay_payin_id ? [{ label: 'PayIn', value: order.mangopay_payin_id, mono: true }] : []),
           ].map(({ label, value, mono }) => (
             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
               <span style={{ color: 'var(--text-3)' }}>{label}</span>
@@ -327,7 +319,7 @@ export default async function OrderDetailPage({
       )}
 
       {/* Invoice */}
-      {order.stripe_invoice_id && (
+      {invoicePdfUrl && (
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius)', padding: 20, marginBottom: 16,

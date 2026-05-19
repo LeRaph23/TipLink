@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
 import { formatPrice } from './OrderSummary';
 import { htSuffix } from '@/lib/format-price';
-import type { PackPricing } from '@/lib/stripe/pricing';
+import type { PackPricing } from '@/lib/mangopay/pricing';
 
 const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
   solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },

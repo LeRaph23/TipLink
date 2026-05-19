@@ -1,9 +1,12 @@
 'use server';
 
-import { stripe } from '@/lib/stripe/client';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
+
+// Promo codes are pure database rows: the percentage discount is applied
+// in-app at checkout (lib/billing/promo.ts). Mangopay has no coupon catalog,
+// so there are no external resources to keep in sync.
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -43,36 +46,10 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
     const { data: existing } = await service.from('promo_codes').select('id').eq('code', normalizedCode).is('deleted_at', null).maybeSingle();
     if (existing) return { ok: false, error: `Le code "${normalizedCode}" existe déjà.` };
 
-    const coupon = await stripe.coupons.create({
-      percent_off: percentageOff,
-      duration: 'once',
-      name: `TipLink ${percentageOff}% — ${normalizedCode}`,
-      ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
-      ...(expiresAt ? { redeem_by: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
-    });
-
-    let promotionCodeId: string | null = null;
-    try {
-      const promotionCode = await stripe.promotionCodes.create({
-        promotion: { type: 'coupon', coupon: coupon.id },
-        code: normalizedCode,
-        active: true,
-        ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
-        ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
-      });
-      promotionCodeId = promotionCode.id;
-    } catch (err) {
-      // Roll back the orphan coupon so we don't leak Stripe resources.
-      await stripe.coupons.del(coupon.id).catch(() => {});
-      throw err;
-    }
-
     const { data: saved, error: dbErr } = await service
       .from('promo_codes')
       .insert({
         code: normalizedCode,
-        stripe_coupon_id: coupon.id,
-        stripe_promo_code_id: promotionCodeId,
         percentage_off: percentageOff,
         max_redemptions: maxRedemptions ?? null,
         expires_at: expiresAt ?? null,
@@ -83,10 +60,6 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<
       .single();
 
     if (dbErr || !saved) {
-      // DB write failed — roll back Stripe so we don't end up with orphan
-      // resources in Stripe that nobody can see in the admin UI.
-      await stripe.promotionCodes.update(promotionCodeId!, { active: false }).catch(() => {});
-      await stripe.coupons.del(coupon.id).catch(() => {});
       return { ok: false, error: `Erreur DB: ${dbErr?.message ?? 'unknown'}` };
     }
 
@@ -111,17 +84,11 @@ export async function togglePromoCode(
 
     const { data: promo } = await service
       .from('promo_codes')
-      .select('stripe_coupon_id, stripe_promo_code_id, code')
+      .select('code')
       .eq('id', id)
       .single();
 
     if (!promo) return { ok: false, error: 'Code promo introuvable.' };
-
-    try {
-      await stripe.promotionCodes.update(promo.stripe_promo_code_id, { active: isActive });
-    } catch {
-      // Legacy code — stripe_promo_code_id may not exist yet; DB flag is still enforced at checkout.
-    }
 
     await service.from('promo_codes').update({ is_active: isActive }).eq('id', id);
 
@@ -176,57 +143,11 @@ export async function updatePromoCode(
       if (existing) return { ok: false, error: `Le code "${normalizedCode}" existe déjà.` };
     }
 
-    let newStripeCouponId = promo.stripe_coupon_id;
-    let newStripePromoCodeId = promo.stripe_promo_code_id;
-
-    if (percentageOff !== promo.percentage_off) {
-      // Recreate Stripe resources when percentage changes
-      try {
-        await stripe.promotionCodes.update(promo.stripe_promo_code_id, { active: false });
-      } catch { /* ignore */ }
-
-      try {
-        await stripe.coupons.del(promo.stripe_coupon_id);
-      } catch { /* ignore */ }
-
-      const newCoupon = await stripe.coupons.create({
-        percent_off: percentageOff,
-        duration: 'once',
-        name: `TipLink ${percentageOff}% — ${normalizedCode}`,
-        ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
-        ...(expiresAt ? { redeem_by: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
-      });
-      newStripeCouponId = newCoupon.id;
-
-      // Create new Stripe promo code only if code string changed (old string is still "taken" in Stripe even when deactivated)
-      if (normalizedCode !== promo.code) {
-        try {
-          const newPromo = await stripe.promotionCodes.create({
-            promotion: { type: 'coupon', coupon: newCoupon.id },
-            code: normalizedCode,
-            active: promo.is_active,
-            ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
-            ...(expiresAt ? { expires_at: Math.floor(new Date(expiresAt).getTime() / 1000) } : {}),
-          });
-          newStripePromoCodeId = newPromo.id;
-        } catch { /* keep old reference */ }
-      }
-    } else if (normalizedCode !== promo.code) {
-      // Only code name changed — update Stripe coupon display name
-      try {
-        await stripe.coupons.update(promo.stripe_coupon_id, {
-          name: `TipLink ${percentageOff}% — ${normalizedCode}`,
-        });
-      } catch { /* ignore */ }
-    }
-
     const { error: dbErr } = await service.from('promo_codes').update({
       code: normalizedCode,
       percentage_off: percentageOff,
       max_redemptions: maxRedemptions ?? null,
       expires_at: expiresAt ?? null,
-      stripe_coupon_id: newStripeCouponId,
-      stripe_promo_code_id: newStripePromoCodeId,
     }).eq('id', id);
 
     if (dbErr) return { ok: false, error: `Erreur DB: ${dbErr.message}` };
@@ -251,24 +172,13 @@ export async function deletePromoCode(
 
     const { data: promo } = await service
       .from('promo_codes')
-      .select('stripe_coupon_id, stripe_promo_code_id, code, times_redeemed')
+      .select('code, times_redeemed')
       .eq('id', id)
       .is('deleted_at', null)
       .single();
 
     if (!promo) return { ok: false, error: 'Code promo introuvable.' };
 
-    // Deactivate Stripe promotion code
-    try {
-      await stripe.promotionCodes.update(promo.stripe_promo_code_id, { active: false });
-    } catch { /* ignore */ }
-
-    // Delete Stripe coupon
-    try {
-      await stripe.coupons.del(promo.stripe_coupon_id);
-    } catch { /* ignore */ }
-
-    // Soft delete in DB
     await service.from('promo_codes').update({ deleted_at: new Date().toISOString(), is_active: false }).eq('id', id);
 
     await logAdminAction('promo_codes.delete', { id, code: promo.code, timesRedeemed: promo.times_redeemed });

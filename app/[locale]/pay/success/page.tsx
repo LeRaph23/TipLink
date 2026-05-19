@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { stripe } from '@/lib/stripe/client';
+import { getPayIn } from '@/lib/mangopay/payins';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,8 +9,8 @@ type RedirectStatus = 'succeeded' | 'processing' | 'requires_payment_method' | '
 interface Props {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{
-    payment_intent?: string;
-    redirect_status?: string;
+    payin?: string;
+    staff?: string;
   }>;
 }
 
@@ -65,43 +65,25 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   const sp = await searchParams;
   const t = await getTranslations('pay');
 
-  const queryStatus: RedirectStatus = (() => {
-    switch (sp.redirect_status) {
-      case 'succeeded': return 'succeeded';
-      case 'processing': return 'processing';
-      case 'requires_payment_method': return 'requires_payment_method';
-      default: return sp.redirect_status === undefined ? 'succeeded' : 'failed';
-    }
-  })();
-
-  // Server-side verification: retrieve real status and amount from Stripe
-  let status: RedirectStatus = queryStatus;
+  // Server-side verification: retrieve the real status and amount from the
+  // Mangopay PayIn. The Checkout SDK handles 3DS internally and hands the
+  // PayIn id back to the checkout component, which links here.
+  let status: RedirectStatus = 'succeeded';
   let amountCents: number | null = null;
   let currency: string | null = null;
-  let staffId: string | null = null;
+  const staffId: string | null = sp.staff ?? null;
 
-  if (sp.payment_intent && sp.redirect_status === 'succeeded') {
+  if (sp.payin) {
     try {
-      const pi = await stripe.paymentIntents.retrieve(sp.payment_intent);
+      const payIn = await getPayIn(sp.payin);
       status =
-        pi.status === 'succeeded' ? 'succeeded' :
-        pi.status === 'processing' ? 'processing' :
-        'requires_payment_method';
-      amountCents = pi.amount;
-      currency = pi.currency?.toUpperCase() ?? null;
-      staffId = pi.metadata?.staff_id ?? null;
+        payIn.Status === 'SUCCEEDED' ? 'succeeded' :
+        payIn.Status === 'CREATED' ? 'processing' :
+        'failed';
+      amountCents = payIn.DebitedFunds?.Amount ?? null;
+      currency = payIn.DebitedFunds?.Currency ?? null;
     } catch {
-      // Stripe unreachable — keep query-param as fallback
-    }
-  } else if (sp.payment_intent && sp.redirect_status !== 'succeeded') {
-    // Even on failure, try to get the staffId for the retry link
-    try {
-      const pi = await stripe.paymentIntents.retrieve(sp.payment_intent);
-      staffId = pi.metadata?.staff_id ?? null;
-      amountCents = pi.amount;
-      currency = pi.currency?.toUpperCase() ?? null;
-    } catch {
-      // ignore
+      // Mangopay unreachable — fall back to the optimistic default.
     }
   }
 
@@ -175,18 +157,12 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmtAmount}</span>
             </div>
           )}
-          {sp.payment_intent && (
+          {sp.payin && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: fmtAmount ? undefined : '1px solid var(--border-subtle)' }}>
               <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successReference')}</span>
               <span style={{ fontSize: 12, color: 'var(--text)', fontFamily: 'monospace' }}>
-                {sp.payment_intent.slice(0, 12)}…
+                {sp.payin.slice(0, 12)}…
               </span>
-            </div>
-          )}
-          {!sp.payment_intent && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Stripe</span>
-              <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>✓</span>
             </div>
           )}
         </div>

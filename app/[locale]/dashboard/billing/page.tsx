@@ -47,7 +47,7 @@ export default async function BillingPage({
 
   const ordersQuery = service
     .from('smarttag_orders')
-    .select('id, pack, quantity, status, tracking_number, created_at, stripe_invoice_id, shipped_at, delivered_at, group_id, groups(name)')
+    .select('id, pack, quantity, status, tracking_number, created_at, invoice_pdf_url, shipped_at, delivered_at, group_id, groups(name)')
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -147,7 +147,7 @@ export default async function BillingPage({
                       {o.tracking_number ?? '—'}
                     </td>
                     <td style={{ padding: '11px 16px' }}>
-                      {o.stripe_invoice_id ? (
+                      {o.invoice_pdf_url ? (
                         <Link href={`/dashboard/billing/orders/${o.id}`} style={{ color: 'var(--accent)', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>
                           {t('viewInvoice')}
                         </Link>

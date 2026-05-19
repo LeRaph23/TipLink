@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { validatePack } from '@/lib/order-validation';
 import { createClient } from '@/lib/supabase/server';
-import { getAllPackPricing } from '@/lib/stripe/pricing';
+import { getAllPackPricing } from '@/lib/mangopay/pricing';
 import { OrderWizard } from './OrderWizard';
 
 export default async function OrderPage({

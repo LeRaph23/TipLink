@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import type { PackPricing } from '@/lib/stripe/pricing';
+import type { PackPricing } from '@/lib/mangopay/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
 
 type Pack = 'solo' | 'duo';

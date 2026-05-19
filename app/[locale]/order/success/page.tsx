@@ -1,32 +1,24 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { stripe } from '@/lib/stripe/client';
+import { getPayIn } from '@/lib/mangopay/payins';
 
 type PackInfo = {
-  label: string;
-  quantity: number;
   amount: string;
 };
 
-async function resolvePack(paymentIntentId: string | undefined, locale: string): Promise<PackInfo | null> {
-  if (!paymentIntentId || !paymentIntentId.startsWith('pi_')) return null;
+async function resolvePack(payInId: string | undefined, locale: string): Promise<PackInfo | null> {
+  if (!payInId) return null;
   try {
-    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (intent.status !== 'succeeded' && intent.status !== 'processing') return null;
-    const rawPack = intent.metadata?.pack;
-    const pack = rawPack === 'solo' || rawPack === 'duo' ? rawPack : null;
-    if (!pack) return null;
-    const quantity = Number(intent.metadata?.quantity ?? 0) || (pack === 'solo' ? 1 : 2);
+    const payIn = await getPayIn(payInId);
+    if (payIn.Status === 'FAILED') return null;
+    const amount = payIn.DebitedFunds?.Amount ?? 0;
+    if (amount <= 0) return null;
     const fmt = new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
       style: 'currency',
-      currency: intent.currency.toUpperCase(),
+      currency: payIn.DebitedFunds?.Currency ?? 'EUR',
       minimumFractionDigits: 2,
     });
-    return {
-      label: pack === 'solo' ? 'Pack Solo' : 'Pack Duo',
-      quantity,
-      amount: fmt.format(intent.amount / 100),
-    };
+    return { amount: fmt.format(amount / 100) };
   } catch {
     return null;
   }
@@ -37,15 +29,15 @@ export default async function OrderSuccessPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ payment_intent?: string; redirect_status?: string }>;
+  searchParams: Promise<{ payin?: string }>;
 }) {
   const { locale } = await params;
-  const { payment_intent } = await searchParams;
+  const { payin } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('orderSuccess');
 
   const steps = [t('steps.s1'), t('steps.s2'), t('steps.s3')];
-  const packInfo = await resolvePack(payment_intent, locale);
+  const packInfo = await resolvePack(payin, locale);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
@@ -70,18 +62,15 @@ export default async function OrderSuccessPage({
           {t('body')}
         </p>
 
-        {/* Order summary (only when we have a PI) */}
+        {/* Amount paid (only when the PayIn resolved) */}
         {packInfo && (
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 12, padding: '14px 18px', marginBottom: 24, textAlign: 'left',
           }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{packInfo.label}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>
-                {packInfo.quantity} plaque{packInfo.quantity > 1 ? 's' : ''} NFC
-              </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+              {t('title')}
             </div>
             <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text)' }}>
               {packInfo.amount}

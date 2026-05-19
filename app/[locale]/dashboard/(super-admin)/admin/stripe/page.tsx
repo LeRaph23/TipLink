@@ -3,8 +3,10 @@ import { requireSuperAdmin } from '@/lib/auth/require-super-admin';
 import { createClient } from '@/lib/supabase/server';
 
 function dashBase(): string {
-  const sk = process.env.STRIPE_SECRET_KEY ?? '';
-  return sk.startsWith('sk_test') ? 'https://dashboard.stripe.com/test' : 'https://dashboard.stripe.com';
+  const apiBase = process.env.MANGOPAY_BASE_URL ?? 'https://api.sandbox.mangopay.com';
+  return apiBase.includes('sandbox')
+    ? 'https://dashboard.sandbox.mangopay.com'
+    : 'https://dashboard.mangopay.com';
 }
 
 export default async function AdminStripePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -18,19 +20,19 @@ export default async function AdminStripePage({ params }: { params: Promise<{ lo
   const [{ data: groups }, { data: establishments }, { data: staff }] = await Promise.all([
     supabase
       .from('groups')
-      .select('id, name, stripe_customer_id')
+      .select('id, name')
       .is('deleted_at', null)
       .order('name'),
     supabase
       .from('establishments')
-      .select('id, name, stripe_account_id, onboarding_status, groups(name)')
+      .select('id, name, onboarding_status, groups(name)')
       .is('deleted_at', null)
       .order('name'),
     supabase
       .from('staff_profiles')
-      .select('id, full_name, stripe_account_id, onboarding_status, establishment_id, establishments(name)')
+      .select('id, full_name, mangopay_user_id, mangopay_kyc_status, onboarding_status, establishment_id, establishments(name)')
       .is('deleted_at', null)
-      .not('stripe_account_id', 'is', null)
+      .not('mangopay_user_id', 'is', null)
       .order('full_name')
       .limit(200),
   ]);
@@ -56,13 +58,7 @@ export default async function AdminStripePage({ params }: { params: Promise<{ lo
             {(groups ?? []).map((g) => (
               <tr key={g.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <td style={td}>{g.name}</td>
-                <td style={td}>
-                  {g.stripe_customer_id ? (
-                    <a href={`${base}/customers/${g.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
-                      {g.stripe_customer_id}
-                    </a>
-                  ) : '—'}
-                </td>
+                <td style={td}>—</td>
               </tr>
             ))}
           </tbody>
@@ -86,13 +82,7 @@ export default async function AdminStripePage({ params }: { params: Promise<{ lo
                 <tr key={e.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={td}>{e.name}</td>
                   <td style={td}>{grp?.name ?? '—'}</td>
-                  <td style={td}>
-                    {e.stripe_account_id ? (
-                      <a href={`${base}/connect/accounts/${e.stripe_account_id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
-                        {e.stripe_account_id}
-                      </a>
-                    ) : '—'}
-                  </td>
+                  <td style={td}>—</td>
                   <td style={td}>{e.onboarding_status}</td>
                 </tr>
               );
@@ -123,13 +113,13 @@ export default async function AdminStripePage({ params }: { params: Promise<{ lo
                 <td style={td}>{s.full_name}</td>
                 <td style={td}>{estName ?? s.establishment_id}</td>
                 <td style={td}>
-                  {s.stripe_account_id ? (
-                    <a href={`${base}/connect/accounts/${s.stripe_account_id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
-                      {s.stripe_account_id}
+                  {s.mangopay_user_id ? (
+                    <a href={`${base}/Users/Natural/${s.mangopay_user_id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+                      {s.mangopay_user_id}
                     </a>
                   ) : '—'}
                 </td>
-                <td style={td}>{s.onboarding_status}</td>
+                <td style={td}>{s.onboarding_status} · KYC {s.mangopay_kyc_status}</td>
               </tr>
             );})}
           </tbody>

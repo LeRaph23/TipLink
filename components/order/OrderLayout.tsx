@@ -7,7 +7,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ProgressBar } from './ProgressBar';
 import { OrderSummary } from './OrderSummary';
 import type { PackId } from '@/lib/env';
-import type { PackPricing } from '@/lib/stripe/pricing';
+import type { PackPricing } from '@/lib/mangopay/pricing';
 import { STEPS, type Step } from '@/lib/order-validation';
 
 

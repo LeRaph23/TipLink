@@ -34,7 +34,7 @@ export default async function DashboardPage({
   const [{ data: staffProfile }, { data: roles }] = await Promise.all([
     supabase
       .from('staff_profiles')
-      .select('id, full_name, onboarding_status, stripe_account_id')
+      .select('id, full_name, onboarding_status, mangopay_user_id')
       .eq('user_id', user!.id)
       .is('deleted_at', null)
       .maybeSingle(),
@@ -131,7 +131,7 @@ export default async function DashboardPage({
       )}
 
       {/* Staff profile exists but banking not set up */}
-      {staffProfile && !staffProfile.stripe_account_id && (
+      {staffProfile && !staffProfile.mangopay_user_id && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 14,
           background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.05))',

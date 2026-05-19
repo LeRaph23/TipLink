@@ -6,7 +6,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PACKS, type PackId } from '@/lib/env';
 import { htSuffix } from '@/lib/format-price';
 import { createClient } from '@/lib/supabase/server';
-import { getAllPackPricing } from '@/lib/stripe/pricing';
+import { getAllPackPricing } from '@/lib/mangopay/pricing';
 import { pageAlternates } from '@/lib/seo';
 
 export async function generateMetadata({

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 import { sendOrderCanceled } from '@/lib/email';
-import { stripe } from '@/lib/stripe/client';
+import { getPayIn } from '@/lib/mangopay/payins';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -32,7 +32,7 @@ export async function cancelMyOrder(
   // Caller must be group_admin (or super_admin) of the order's group.
   const { data: order } = await service
     .from('smarttag_orders')
-    .select('id, group_id, pack, quantity, status, stripe_payment_intent_id')
+    .select('id, group_id, pack, quantity, status, mangopay_payin_id')
     .eq('id', orderId)
     .single();
   if (!order) return { ok: false, error: 'Order not found' };
@@ -123,51 +123,28 @@ export async function getOrderPaymentSummary(
   const service = createServiceClient();
   const { data: order } = await service
     .from('smarttag_orders')
-    .select('stripe_payment_intent_id, stripe_checkout_session_id')
+    .select('mangopay_payin_id')
     .eq('id', orderId)
     .single();
   if (!order) return { ok: false, error: 'Order not found' };
+  if (!order.mangopay_payin_id) {
+    return { ok: false, error: 'No payment reference on this order' };
+  }
 
   try {
-    if (order.stripe_payment_intent_id) {
-      const intent = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id, {
-        expand: ['latest_charge'],
-      });
-      const charge = intent.latest_charge as import('stripe').Stripe.Charge | null;
-      const pmType = charge?.payment_method_details?.type ?? null;
-      // Map raw Stripe type to a humane label
-      const niceType: Record<string, string> = {
-        card: 'Carte bancaire',
-        link: 'Link',
-        sepa_debit: 'Prélèvement SEPA',
-        apple_pay: 'Apple Pay',
-        google_pay: 'Google Pay',
-      };
-      return {
-        ok: true,
-        data: {
-          amount: intent.amount,
-          currency: intent.currency.toUpperCase(),
-          paymentMethod: pmType ? niceType[pmType] ?? pmType : null,
-          receiptUrl: charge?.receipt_url ?? null,
-        },
-      };
-    }
-    if (order.stripe_checkout_session_id) {
-      const session = await stripe.checkout.sessions.retrieve(order.stripe_checkout_session_id);
-      return {
-        ok: true,
-        data: {
-          amount: session.amount_total ?? 0,
-          currency: (session.currency ?? 'eur').toUpperCase(),
-          paymentMethod: null,
-          receiptUrl: null,
-        },
-      };
-    }
+    const payIn = await getPayIn(order.mangopay_payin_id);
+    return {
+      ok: true,
+      data: {
+        amount: payIn.DebitedFunds?.Amount ?? 0,
+        currency: payIn.DebitedFunds?.Currency ?? 'EUR',
+        // The pack PayIn is always a card payment (Checkout SDK).
+        paymentMethod: 'Carte bancaire',
+        receiptUrl: null,
+      },
+    };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Stripe lookup failed';
+    const msg = err instanceof Error ? err.message : 'Mangopay lookup failed';
     return { ok: false, error: msg };
   }
-  return { ok: false, error: 'No payment reference on this order' };
 }

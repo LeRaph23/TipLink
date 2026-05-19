@@ -10,7 +10,7 @@ import { BuyModal } from '@/components/landing/BuyModal';
 import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
 import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFlag';
 import { fetchPackPricingAction } from '@/actions/pricing';
-import type { PackPricing } from '@/lib/stripe/pricing';
+import type { PackPricing } from '@/lib/mangopay/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
 
 type PackId = 'solo' | 'duo';

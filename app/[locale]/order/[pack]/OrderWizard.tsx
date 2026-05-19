@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { type PackId } from '@/lib/env';
-import type { PackPricing } from '@/lib/stripe/pricing';
+import type { PackPricing } from '@/lib/mangopay/pricing';
 import {
   emptyOrder,
   parseStep,

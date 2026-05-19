@@ -6,7 +6,7 @@ export type AdminSearchResult = {
   establishments: { id: string; name: string; slug: string }[];
   staff: { id: string; full_name: string; establishment_id: string }[];
   stickers: { id: string; short_id: string; establishment_id: string | null }[];
-  transactions: { id: string; stripe_payment_intent_id: string | null; amount: number; created_at: string }[];
+  transactions: { id: string; mangopay_payin_id: string | null; amount: number; created_at: string }[];
 };
 
 const LIMIT = 15;
@@ -41,13 +41,13 @@ export async function runAdminSearch(
     const [byId, byPi] = await Promise.all([
       supabase
         .from('transactions')
-        .select('id, stripe_payment_intent_id, amount, created_at')
+        .select('id, mangopay_payin_id, amount, created_at')
         .eq('id', q)
         .limit(LIMIT),
       supabase
         .from('transactions')
-        .select('id, stripe_payment_intent_id, amount, created_at')
-        .eq('stripe_payment_intent_id', q)
+        .select('id, mangopay_payin_id, amount, created_at')
+        .eq('mangopay_payin_id', q)
         .limit(LIMIT),
     ]);
     const map = new Map<string, (typeof transactions)[0]>();
@@ -58,8 +58,8 @@ export async function runAdminSearch(
   } else {
     const { data } = await supabase
       .from('transactions')
-      .select('id, stripe_payment_intent_id, amount, created_at')
-      .ilike('stripe_payment_intent_id', like)
+      .select('id, mangopay_payin_id, amount, created_at')
+      .ilike('mangopay_payin_id', like)
       .limit(LIMIT);
     transactions = data ?? [];
   }

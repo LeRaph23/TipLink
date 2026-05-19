@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { PackCheckout } from '@/components/checkout/PackCheckout';
-import { getPackPricing } from '@/lib/stripe/pricing';
+import { getPackPricing } from '@/lib/mangopay/pricing';
 import type { PackId } from '@/lib/env';
 
 const PACK_VISUAL = {

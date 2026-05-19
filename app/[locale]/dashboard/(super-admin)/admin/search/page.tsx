@@ -62,9 +62,7 @@ export default async function AdminSearchPage({
           ))} />
           <ResultBlock title={t('secTransactions')} empty={t('none')} items={results.transactions.map((tx) => (
             <li key={tx.id}>
-              {formatAmount(tx.amount, locale)} · {tx.stripe_payment_intent_id ? (
-                <a href={`https://dashboard.stripe.com/payments/${tx.stripe_payment_intent_id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 12 }}>Stripe</a>
-              ) : tx.id}
+              {formatAmount(tx.amount, locale)} · <code style={{ fontSize: 12 }}>{tx.mangopay_payin_id ?? tx.id}</code>
             </li>
           ))} />
         </div>

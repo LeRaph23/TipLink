@@ -11,7 +11,6 @@ import {
   sendOrderCanceled,
   sendOrderCustomNote,
 } from '@/lib/email';
-import { stripe } from '@/lib/stripe/client';
 import { voidAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -66,7 +65,7 @@ async function resolveOrderRecipient(
 
   const { data: order } = await service
     .from('smarttag_orders')
-    .select('group_id, stripe_payment_intent_id, stripe_checkout_session_id')
+    .select('group_id, mangopay_payin_id')
     .eq('id', orderId)
     .single();
   if (!order) return null;
@@ -81,45 +80,21 @@ async function resolveOrderRecipient(
     };
   }
 
-  // 2) Pre-onboarding express groups — try the Stripe customer.
-  const { data: grp } = await service
-    .from('groups')
-    .select('stripe_customer_id')
-    .eq('id', order.group_id)
-    .single();
-
-  if (grp?.stripe_customer_id) {
-    try {
-      const customer = await stripe.customers.retrieve(grp.stripe_customer_id);
-      if (!customer.deleted && customer.email) {
-        return {
-          email: customer.email,
-          locale: 'fr',
-          onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(customer.email)}`,
-        };
-      }
-    } catch { /* swallow — fall through */ }
-  }
-
-  // 3) Fallback to the billing_details on the PI's charge (Link populates it).
-  if (order.stripe_payment_intent_id) {
-    try {
-      const intent = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
-      const chargeId = typeof intent.latest_charge === 'string'
-        ? intent.latest_charge
-        : intent.latest_charge?.id;
-      if (chargeId) {
-        const charge = await stripe.charges.retrieve(chargeId);
-        const email = intent.receipt_email ?? charge.billing_details?.email ?? null;
-        if (email) {
-          return {
-            email,
-            locale: 'fr',
-            onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(email)}`,
-          };
-        }
-      }
-    } catch { /* swallow */ }
+  // 2) Pre-onboarding express groups — the buyer email is on the PayIn context.
+  if (order.mangopay_payin_id) {
+    const { data: ctx } = await service
+      .from('payin_contexts')
+      .select('context')
+      .eq('mangopay_payin_id', order.mangopay_payin_id)
+      .maybeSingle();
+    const email = (ctx?.context as { customer_email?: string } | null)?.customer_email;
+    if (email) {
+      return {
+        email,
+        locale: 'fr',
+        onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(email)}`,
+      };
+    }
   }
 
   return null;
@@ -212,7 +187,7 @@ export async function markOrderShipped(
 
   const { data: order } = await auth.supabase
     .from('smarttag_orders')
-    .select('id, group_id, pack, quantity')
+    .select('id, group_id, pack, quantity, mangopay_payin_id')
     .eq('id', orderId)
     .single();
 
@@ -245,21 +220,18 @@ export async function markOrderShipped(
           to = adminContact.email;
           locale = adminContact.locale;
           onboardingUrl = `${base}/dashboard`;
-        } else {
-          // Express checkout group — retrieve customer email from Stripe
+        } else if (order.mangopay_payin_id) {
+          // Express checkout group — the buyer email is on the PayIn context.
           const service = createServiceClient();
-          const { data: grp } = await service
-            .from('groups')
-            .select('stripe_customer_id')
-            .eq('id', order.group_id)
-            .single();
-
-          if (grp?.stripe_customer_id) {
-            const customer = await stripe.customers.retrieve(grp.stripe_customer_id);
-            if (!customer.deleted && customer.email) {
-              to = customer.email;
-              onboardingUrl = `${base}/fr/onboarding?group=${order.group_id}`;
-            }
+          const { data: ctx } = await service
+            .from('payin_contexts')
+            .select('context')
+            .eq('mangopay_payin_id', order.mangopay_payin_id)
+            .maybeSingle();
+          const email = (ctx?.context as { customer_email?: string } | null)?.customer_email;
+          if (email) {
+            to = email;
+            onboardingUrl = `${base}/fr/onboarding?group=${order.group_id}`;
           }
         }
 
@@ -341,7 +313,7 @@ export async function markOrderDelivered(orderId: string): Promise<Result<null>>
 
   const { data: order } = await auth.supabase
     .from('smarttag_orders')
-    .select('id, group_id, pack, quantity')
+    .select('id, group_id, pack, quantity, mangopay_payin_id')
     .eq('id', orderId)
     .single();
 
@@ -474,7 +446,7 @@ export async function resendOrderEmail(
 
   const { data: order } = await auth.supabase
     .from('smarttag_orders')
-    .select('id, pack, quantity, tracking_number, stripe_invoice_id')
+    .select('id, pack, quantity, tracking_number, invoice_pdf_url')
     .eq('id', orderId)
     .single();
   if (!order) return { ok: false, error: 'Order not found' };
@@ -486,19 +458,12 @@ export async function resendOrderEmail(
 
   try {
     if (kind === 'confirmation') {
-      let invoicePdfUrl: string | null = null;
-      if (order.stripe_invoice_id) {
-        try {
-          const inv = await stripe.invoices.retrieve(order.stripe_invoice_id);
-          invoicePdfUrl = inv.invoice_pdf ?? null;
-        } catch { /* non-blocking */ }
-      }
       await sendOrderConfirmation({
         to: recipient.email,
         pack: order.pack,
         quantity: order.quantity,
         orderId: order.id,
-        invoicePdfUrl,
+        invoicePdfUrl: order.invoice_pdf_url,
         setupUrl: recipient.onboardingUrl,
         locale: recipient.locale,
       });

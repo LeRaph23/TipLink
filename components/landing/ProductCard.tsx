@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import type { PackPricing } from '@/lib/stripe/pricing';
+import type { PackPricing } from '@/lib/mangopay/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
 import { CountryFlag } from '@/components/landing/CountryFlag';
 

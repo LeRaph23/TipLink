@@ -1,6 +1,5 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { stripe } from '@/lib/stripe/client';
 import { getBaseUrl } from '@/lib/env';
 import { signLifecycleUnsubToken } from '@/lib/auth/lifecycle-unsub-token';
 
@@ -82,27 +81,8 @@ export async function resolveGroupAdmin(
     }
   }
 
-  // Ghost fallback: resolve email from the Stripe customer on the group.
-  const { data: group } = await loose(service)
-    .from('groups')
-    .select('name, legal_name, stripe_customer_id')
-    .eq('id', groupId)
-    .maybeSingle();
-
-  if (group?.stripe_customer_id) {
-    try {
-      const customer = await stripe.customers.retrieve(group.stripe_customer_id as string);
-      if (customer && !('deleted' in customer && customer.deleted) && 'email' in customer && customer.email) {
-        return {
-          email: customer.email,
-          locale: 'fr',
-          name: (group.name as string) || (group.legal_name as string) || null,
-        };
-      }
-    } catch {
-      /* customer gone — give up */
-    }
-  }
+  // No Mangopay equivalent of a Stripe customer to fall back to — the group's
+  // billing identity carries no email. Give up when no user row resolved.
   return null;
 }
 

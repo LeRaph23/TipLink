@@ -5,7 +5,7 @@ import { PACKS, type PackId } from '@/lib/env';
 import type { OrderState, Step } from '@/lib/order-validation';
 import { formatPrice } from './OrderSummary';
 import { htSuffix } from '@/lib/format-price';
-import type { PackPricing } from '@/lib/stripe/pricing';
+import type { PackPricing } from '@/lib/mangopay/pricing';
 
 function Row({
   label,
