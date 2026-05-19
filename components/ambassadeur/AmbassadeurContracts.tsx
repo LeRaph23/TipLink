@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Card, SectionHeader, Button, Badge, Modal, FONT, WEIGHT, SPACE } from './ui';
+import { Icon } from './icons';
 
 type ContractListItem = {
   id: string;
@@ -22,10 +24,10 @@ type ContractDetail = {
   signed_at: string | null;
 };
 
-const STATUS_META: Record<ContractListItem['status'], { label: string; color: string; bg: string }> = {
-  sent: { label: 'À signer', color: 'var(--warning)', bg: 'var(--warning-bg)' },
-  viewed: { label: 'À signer', color: 'var(--warning)', bg: 'var(--warning-bg)' },
-  signed: { label: 'Signé ✓', color: 'var(--success)', bg: 'var(--success-bg)' },
+const STATUS_META: Record<ContractListItem['status'], { label: string; tone: 'warning' | 'success' }> = {
+  sent: { label: 'À signer', tone: 'warning' },
+  viewed: { label: 'À signer', tone: 'warning' },
+  signed: { label: 'Signé', tone: 'success' },
 };
 
 export function AmbassadeurContracts({ code }: { code: string }) {
@@ -52,9 +54,11 @@ export function AmbassadeurContracts({ code }: { code: string }) {
     return null;
   }
   if (error) {
-    return <Section>
-      <div style={{ fontSize: 12, color: 'var(--error)' }}>{error}</div>
-    </Section>;
+    return (
+      <Card>
+        <div style={{ fontSize: FONT.body, color: 'var(--error)' }}>{error}</div>
+      </Card>
+    );
   }
   if (!list || list.length === 0) {
     return null; // hide the section entirely when there's nothing to show
@@ -63,53 +67,48 @@ export function AmbassadeurContracts({ code }: { code: string }) {
   const pendingCount = list.filter((c) => c.status !== 'signed').length;
 
   return (
-    <Section>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-          Contrats
-        </div>
-        {pendingCount > 0 && (
-          <span style={{
-            padding: '2px 8px', borderRadius: 99, fontSize: 10.5, fontWeight: 700,
-            background: 'var(--warning-bg)', color: 'var(--warning)',
-          }}>
-            {pendingCount} à signer
-          </span>
-        )}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {list.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => setOpenId(c.id)}
-            style={{
-              background: 'var(--surface)',
-              border: `1px solid ${c.status === 'signed' ? 'var(--border-subtle)' : 'var(--warning)'}`,
-              borderRadius: 'var(--radius)',
-              padding: '12px 14px',
-              textAlign: 'left',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              color: 'inherit',
-            }}
-          >
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{c.title}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-                Reçu le {fmtDate(c.sent_at)}
-                {c.signed_at && ` · Signé le ${fmtDate(c.signed_at)}`}
+    <Card>
+      <SectionHeader
+        title="Contrats"
+        badge={pendingCount > 0 ? <Badge tone="warning">{pendingCount} à signer</Badge> : undefined}
+        style={{ marginBottom: SPACE.md }}
+      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+        {list.map((c) => {
+          const meta = STATUS_META[c.status];
+          return (
+            <button
+              key={c.id}
+              onClick={() => setOpenId(c.id)}
+              style={{
+                background: 'var(--surface-2)',
+                border: `1px solid ${c.status === 'signed' ? 'var(--border)' : 'var(--accent-border)'}`,
+                borderRadius: 'var(--radius)',
+                padding: '12px 14px',
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: SPACE.md,
+                color: 'inherit',
+                fontFamily: 'inherit',
+              }}
+            >
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: FONT.body, fontWeight: WEIGHT.bold, color: 'var(--text)' }}>{c.title}</div>
+                <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: 2 }}>
+                  Reçu le {fmtDate(c.sent_at)}
+                  {c.signed_at && ` · Signé le ${fmtDate(c.signed_at)}`}
+                </div>
               </div>
-            </div>
-            <span style={{
-              padding: '3px 10px', borderRadius: 99, fontSize: 10.5, fontWeight: 700,
-              background: STATUS_META[c.status].bg, color: STATUS_META[c.status].color,
-              whiteSpace: 'nowrap',
-            }}>{STATUS_META[c.status].label}</span>
-          </button>
-        ))}
+              <Badge tone={meta.tone}>
+                {c.status === 'signed' && <Icon name="check" size={11} />}
+                {meta.label}
+              </Badge>
+            </button>
+          );
+        })}
       </div>
 
       {openId && (
@@ -119,12 +118,8 @@ export function AmbassadeurContracts({ code }: { code: string }) {
           onClose={() => { setOpenId(null); refresh(); }}
         />
       )}
-    </Section>
+    </Card>
   );
-}
-
-function Section({ children }: { children: React.ReactNode }) {
-  return <div style={{ marginBottom: 16 }}>{children}</div>;
 }
 
 function fmtDate(iso: string) {
@@ -160,83 +155,60 @@ function ContractModal({
     return () => { cancelled = true; };
   }, [code, contractId]);
 
-  return (
+  const footer = detail && !signed ? (
+    <SignatureFooter
+      code={code}
+      contractId={contractId}
+      consentText={detail.consent_text}
+      consent={consent}
+      setConsent={setConsent}
+      signing={signing}
+      setSigning={setSigning}
+      onSigned={() => {
+        setSigned(true);
+        setDetail({ ...detail, status: 'signed', signed_at: new Date().toISOString() });
+      }}
+    />
+  ) : detail && signed ? (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      padding: 12,
+      padding: '14px 18px', borderTop: '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md,
+      background: 'var(--success-bg)',
     }}>
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        width: '100%', maxWidth: 720, maxHeight: '92vh',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        <div style={{
-          padding: '14px 18px', borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-            {detail?.title ?? 'Contrat'}
-          </div>
-          <button onClick={onClose} style={{
-            background: 'transparent', border: '1px solid var(--border)',
-            color: 'var(--text-3)', padding: '5px 12px', borderRadius: 6,
-            cursor: 'pointer', fontSize: 12,
-          }}>Fermer</button>
-        </div>
-
-        <div style={{ overflow: 'auto', flex: 1, padding: 0 }}>
-          {loading && <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>Chargement…</div>}
-          {error && <div style={{ padding: 24, color: 'var(--error)', fontSize: 13 }}>{error}</div>}
-          {detail && (
-            <iframe
-              srcDoc={`<div style="font-family:-apple-system,sans-serif;color:#222;padding:24px;max-width:640px;margin:0 auto;line-height:1.6;background:#fff">${detail.content_snapshot}</div>`}
-              sandbox=""
-              style={{ width: '100%', height: 480, border: 'none', background: '#fff' }}
-              title="contract"
-            />
-          )}
-        </div>
-
-        {detail && !signed && (
-          <SignatureFooter
-            code={code}
-            contractId={contractId}
-            consentText={detail.consent_text}
-            consent={consent}
-            setConsent={setConsent}
-            signing={signing}
-            setSigning={setSigning}
-            onSigned={() => {
-              setSigned(true);
-              setDetail({ ...detail, status: 'signed', signed_at: new Date().toISOString() });
-            }}
-          />
-        )}
-        {detail && signed && (
-          <div style={{
-            padding: '14px 18px', borderTop: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-            background: 'var(--success-bg)',
-          }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>
-              ✓ Contrat signé électroniquement
-            </div>
-            <a
-              href={`/api/ambassadeur/${encodeURIComponent(code)}/contracts/${contractId}/download`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                padding: '8px 16px', borderRadius: 8,
-                background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >Voir / imprimer →</a>
-          </div>
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: FONT.body, fontWeight: WEIGHT.semibold, color: 'var(--success)' }}>
+        <Icon name="check" size={15} />
+        Contrat signé électroniquement
       </div>
+      <a
+        href={`/api/ambassadeur/${encodeURIComponent(code)}/contracts/${contractId}/download`}
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          display: 'inline-flex', alignItems: 'center', minHeight: 38,
+          padding: '8px 14px', borderRadius: 'var(--radius)',
+          background: 'var(--accent)', color: 'var(--accent-fg)',
+          fontSize: FONT.body - 1, fontWeight: WEIGHT.bold,
+          textDecoration: 'none', whiteSpace: 'nowrap',
+        }}
+      >Voir / imprimer</a>
     </div>
+  ) : undefined;
+
+  return (
+    <Modal variant="center" onClose={onClose} title={detail?.title ?? 'Contrat'} footer={footer}>
+      {loading && <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)', fontSize: FONT.body }}>Chargement…</div>}
+      {error && <div style={{ padding: 24, color: 'var(--error)', fontSize: FONT.body }}>{error}</div>}
+      {detail && (
+        // Sandboxed legal document — it renders on white "paper" with dark
+        // text on purpose, independent of the dashboard theme.
+        <iframe
+          srcDoc={`<div style="font-family:-apple-system,sans-serif;color:#222;padding:24px;max-width:640px;margin:0 auto;line-height:1.6;background:#fff">${detail.content_snapshot}</div>`}
+          sandbox=""
+          style={{ width: '100%', height: 'min(480px, 50vh)', border: 'none', background: '#fff', display: 'block' }}
+          title="contract"
+        />
+      )}
+    </Modal>
   );
 }
 
@@ -271,6 +243,7 @@ function SignatureFooter({
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.lineWidth = 2;
+    // White ink on the near-black pad below — kept hardcoded for contrast.
     ctx.strokeStyle = '#fff';
   }, []);
 
@@ -341,30 +314,23 @@ function SignatureFooter({
   };
 
   return (
-    <div style={{
-      padding: '14px 18px', borderTop: '1px solid var(--border)',
-      background: 'var(--surface-2)',
-    }}>
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12, cursor: 'pointer', fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
+    <div style={{ padding: '14px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: SPACE.md, cursor: 'pointer', fontSize: FONT.body, color: 'var(--text-2)', lineHeight: 1.5 }}>
         <input
           type="checkbox"
           checked={consent}
           onChange={(e) => setConsent(e.target.checked)}
-          style={{ marginTop: 3, flexShrink: 0, cursor: 'pointer' }}
+          style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0, cursor: 'pointer', accentColor: 'var(--accent)' }}
         />
         <span>{consentText}</span>
       </label>
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom: SPACE.sm }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          <div style={{ fontSize: FONT.label, fontWeight: WEIGHT.semibold, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             Signature manuscrite
           </div>
           {hasDrawn && (
-            <button onClick={clear} style={{
-              background: 'transparent', border: '1px solid var(--border)',
-              color: 'var(--text-3)', padding: '3px 10px', borderRadius: 6,
-              cursor: 'pointer', fontSize: 11,
-            }}>Effacer</button>
+            <Button variant="ghost" size="sm" onClick={clear}>Effacer</Button>
           )}
         </div>
         <canvas
@@ -376,25 +342,16 @@ function SignatureFooter({
           style={{
             display: 'block', width: '100%', height: 130,
             background: '#0a0a0a', border: '1px dashed var(--border)',
-            borderRadius: 8, touchAction: 'none',
+            borderRadius: 'var(--radius-sm)', touchAction: 'none',
           }}
         />
       </div>
       {error && (
-        <div style={{ marginBottom: 8, color: 'var(--error)', fontSize: 12 }}>{error}</div>
+        <div style={{ marginBottom: SPACE.sm, color: 'var(--error)', fontSize: FONT.body - 1 }}>{error}</div>
       )}
-      <button
-        onClick={submit}
-        disabled={signing || !consent || !hasDrawn}
-        style={{
-          width: '100%', padding: '12px', borderRadius: 8, border: 'none',
-          background: (signing || !consent || !hasDrawn) ? 'var(--surface-3)' : 'var(--accent)',
-          color: '#fff', fontSize: 14, fontWeight: 700,
-          cursor: (signing || !consent || !hasDrawn) ? 'not-allowed' : 'pointer',
-        }}
-      >
+      <Button full onClick={submit} disabled={!consent || !hasDrawn} loading={signing}>
         {signing ? 'Signature en cours…' : 'Signer électroniquement'}
-      </button>
+      </Button>
     </div>
   );
 }

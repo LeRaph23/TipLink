@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { isOpenNow, mapsLink as buildMapsLink } from '@/lib/salon-hours';
 import { CategoryIcon, type AmbassadorSalon } from '@/components/salons/SalonsMap';
+import { Card, SectionHeader, Button, Badge, Modal, Field, Textarea, Input, EmptyState, FONT, WEIGHT, SPACE } from './ui';
+import { Icon, type IconName } from './icons';
 
 const SalonsMap = dynamic(
   () => import('@/components/salons/SalonsMap').then((m) => m.SalonsMap),
   { ssr: false, loading: () => (
-    <div style={{ height: '60vh', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13, background: 'var(--surface-2)', borderRadius: 'var(--radius)' }}>
+    <div style={{ height: '60vh', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: FONT.body, background: 'var(--surface-2)', borderRadius: 'var(--radius)' }}>
       Chargement de la carte…
     </div>
   ) }
@@ -49,6 +52,17 @@ function usePersistedView(key: string): ['map' | 'list', (v: 'map' | 'list') => 
     if (typeof window !== 'undefined') window.localStorage.setItem(key, v);
   }, [key]);
   return [view, change];
+}
+
+function TrackerCard({ children }: { children: ReactNode }) {
+  return (
+    <Card padded={false}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+        <SectionHeader title="Établissements à démarcher" icon={<Icon name="location" size={14} />} />
+      </div>
+      {children}
+    </Card>
+  );
 }
 
 export function AmbassadeurSalonsTracker({ code }: { code: string }) {
@@ -93,11 +107,9 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
 
   if (loading) {
     return (
-      <SectionShell title="Établissements à démarcher">
-        <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-          Chargement…
-        </div>
-      </SectionShell>
+      <TrackerCard>
+        <EmptyState>Chargement…</EmptyState>
+      </TrackerCard>
     );
   }
 
@@ -106,41 +118,45 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
   const visitedByMe = salons.filter((s) => s.visit?.visitedByMe);
 
   return (
-    <SectionShell title="Établissements à démarcher">
+    <TrackerCard>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
         {city && (
           <>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            <div style={{ fontSize: FONT.label, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               Secteur
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)', marginTop: 2 }}>
+            <div style={{ fontSize: FONT.bodyLg, fontWeight: WEIGHT.bold, color: 'var(--accent)', marginTop: 2 }}>
               {city}
             </div>
           </>
         )}
-        <div style={{ display: 'flex', gap: 10, marginTop: city ? 8 : 0, fontSize: 11, color: 'var(--text-3)', flexWrap: 'wrap' }}>
-          <span>📍 {salons.length} établissements</span>
-          <span>✓ {visitedByMe.length} faits par toi</span>
+        <div style={{ display: 'flex', gap: SPACE.md, marginTop: city ? SPACE.sm : 0, fontSize: FONT.label, color: 'var(--text-3)', flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="location" size={13} /> {salons.length} établissements
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="check" size={13} /> {visitedByMe.length} faits par toi
+          </span>
         </div>
       </div>
 
       {actionError && (
         <div style={{
-          margin: 12, background: 'var(--error-bg)', color: 'var(--error)',
-          borderRadius: 'var(--radius-sm)', padding: '8px 12px', fontSize: 12,
+          margin: SPACE.md, background: 'var(--error-bg)', color: 'var(--error)',
+          borderRadius: 'var(--radius-sm)', padding: '8px 12px', fontSize: FONT.body - 1,
         }}>{actionError}</div>
       )}
 
       {salons.length === 0 ? (
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)', fontSize: 12 }}>
+        <EmptyState>
           Aucun établissement à démarcher pour le moment. Reviens plus tard ou préviens l&apos;admin.
-        </div>
+        </EmptyState>
       ) : (
         <>
           <ViewToggle view={view} onChange={onChangeView} />
 
           {view === 'map' ? (
-            <div style={{ padding: 12 }}>
+            <div style={{ padding: SPACE.md }}>
               <SalonsMap
                 variant="ambassador"
                 salons={salons}
@@ -184,23 +200,23 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
           }}
         />
       )}
-    </SectionShell>
+    </TrackerCard>
   );
 }
 
 function ViewToggle({ view, onChange }: { view: 'map' | 'list'; onChange: (v: 'map' | 'list') => void }) {
   return (
-    <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', gap: 4 }}>
+    <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', gap: SPACE.xs }}>
       {(['map', 'list'] as const).map((v) => (
         <button
           key={v}
           onClick={() => onChange(v)}
           style={{
-            padding: '6px 14px', borderRadius: 99,
+            minHeight: 36, padding: '7px 16px', borderRadius: 999,
             background: view === v ? 'var(--accent-muted)' : 'transparent',
             color: view === v ? 'var(--accent)' : 'var(--text-3)',
             border: `1px solid ${view === v ? 'var(--accent-border)' : 'var(--border)'}`,
-            fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            fontSize: FONT.body - 1, fontWeight: WEIGHT.bold, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
           {v === 'map' ? 'Carte' : 'Liste'}
@@ -210,38 +226,11 @@ function ViewToggle({ view, onChange }: { view: 'map' | 'list'; onChange: (v: 'm
   );
 }
 
-function SectionShell({
-  title, right, children,
-}: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div style={{
-      background: 'var(--surface)',
-      border: '1px solid var(--border-subtle)',
-      borderRadius: 'var(--radius)',
-      overflow: 'hidden',
-      marginBottom: 16,
-    }}>
-      <div style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <span style={{
-          fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
-          textTransform: 'uppercase', letterSpacing: '0.07em',
-        }}>{title}</span>
-        {right}
-      </div>
-      {children}
-    </div>
-  );
-}
-
 function SubHeading({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       padding: '10px 16px 6px',
-      fontSize: 10, fontWeight: 700, color: 'var(--text-3)',
+      fontSize: FONT.micro, fontWeight: WEIGHT.bold, color: 'var(--text-3)',
       textTransform: 'uppercase', letterSpacing: '0.07em',
       background: 'var(--surface-2)',
       borderTop: '1px solid var(--border-subtle)',
@@ -249,6 +238,15 @@ function SubHeading({ children }: { children: React.ReactNode }) {
     }}>{children}</div>
   );
 }
+
+const rowLinkStyle: CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 4,
+  minHeight: 38, padding: '7px 10px',
+  fontSize: FONT.micro + 1, fontWeight: WEIGHT.semibold,
+  background: 'var(--surface-2)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-sm)', color: 'var(--text-2)',
+  textDecoration: 'none', whiteSpace: 'nowrap',
+};
 
 function SalonRow({
   salon, onLogVisit, dimmed,
@@ -261,125 +259,75 @@ function SalonRow({
       borderBottom: '1px solid var(--border-subtle)',
       opacity: dimmed ? 0.55 : 1,
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACE.sm }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               <CategoryIcon category={salon.category} size={14} color="var(--text-3)" strokeWidth={2.2} />
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{salon.name}</span>
+              <span style={{ fontSize: FONT.body + 1, fontWeight: WEIGHT.bold, color: 'var(--text)' }}>{salon.name}</span>
             </span>
-            {salon.converted && (
-              <span style={{
-                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
-                background: 'rgba(37,99,235,0.12)', color: '#2563eb',
-                border: '1px solid #2563eb', whiteSpace: 'nowrap',
-              }}>
-                🔵 Client
-              </span>
-            )}
+            {salon.converted && <Badge tone="accent">Client</Badge>}
             {openState && (
-              <span style={{
-                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
-                background: openState.open ? 'var(--success-bg)' : 'var(--error-bg)',
-                color: openState.open ? 'var(--success)' : 'var(--error)',
-                border: `1px solid ${openState.open ? 'var(--success)' : 'var(--error)'}`,
-                whiteSpace: 'nowrap',
-              }}>
-                {openState.open ? '● Ouvert' : '○ Fermé'}
-              </span>
+              <Badge tone={openState.open ? 'success' : 'error'}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
+                {openState.open ? 'Ouvert' : 'Fermé'}
+              </Badge>
             )}
             {salon.google_rating != null && (
-              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
-                ⭐ {salon.google_rating.toFixed(1)}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: FONT.micro, color: 'var(--text-3)' }}>
+                <Icon name="star" size={11} /> {salon.google_rating.toFixed(1)}
               </span>
             )}
           </div>
           {openState?.nextChange && (
-            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>
+            <div style={{ fontSize: FONT.micro, color: 'var(--text-3)', marginTop: 2 }}>
               {openState.nextChange}
             </div>
           )}
           {salon.address && (
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+            <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: 2 }}>
               {salon.address}{salon.postal_code ? ` · ${salon.postal_code}` : ''}
             </div>
           )}
           {v && (
-            <div style={{
-              display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6, fontSize: 10,
-            }}>
-              <Pill>{fmtDate(v.lastVisitAt)}</Pill>
-              <Pill color={v.bestRating === 3 ? 'success' : v.bestRating === 2 ? 'warning' : 'neutral'}>
-                ⭐ {v.bestRating}/3 · {RATING_LABEL[v.bestRating]}
-              </Pill>
-              {v.flyerLeft && <Pill>🪧 Flyer</Pill>}
-              {v.bestConvinced === 'yes' && <Pill color="success">✓ Convaincu</Pill>}
-              {v.bestConvinced === 'maybe' && <Pill color="warning">~ Peut-être</Pill>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+              <Badge tone="neutral" caps={false}>{fmtDate(v.lastVisitAt)}</Badge>
+              <Badge
+                tone={v.bestRating === 3 ? 'success' : v.bestRating === 2 ? 'warning' : 'neutral'}
+                caps={false}
+              >
+                <Icon name="star" size={10} /> {v.bestRating}/3 · {RATING_LABEL[v.bestRating]}
+              </Badge>
+              {v.flyerLeft && <Badge tone="neutral"><Icon name="flag" size={10} /> Flyer</Badge>}
+              {v.bestConvinced === 'yes' && <Badge tone="success"><Icon name="check" size={10} /> Convaincu</Badge>}
+              {v.bestConvinced === 'maybe' && <Badge tone="warning">Peut-être</Badge>}
             </div>
           )}
           {v?.myNotes && (
-            <div style={{
-              marginTop: 6, fontSize: 11, color: 'var(--text-2)',
-              fontStyle: 'italic',
-            }}>« {v.myNotes} »</div>
+            <div style={{ marginTop: 6, fontSize: FONT.label, color: 'var(--text-2)', fontStyle: 'italic' }}>
+              « {v.myNotes} »
+            </div>
           )}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
           {(salon.lat != null || salon.address) && (
-            <a
-              href={mapsLink(salon)} target="_blank" rel="noopener noreferrer"
-              style={{
-                fontSize: 10, padding: '3px 8px',
-                background: 'var(--surface-2)', border: '1px solid var(--border)',
-                borderRadius: 99, color: 'var(--text-2)', textDecoration: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >📍 Maps</a>
+            <a href={mapsLink(salon)} target="_blank" rel="noopener noreferrer" style={rowLinkStyle}>
+              <Icon name="location" size={13} /> Maps
+            </a>
           )}
           {salon.phone && (
-            <a
-              href={`tel:${salon.phone}`}
-              style={{
-                fontSize: 10, padding: '3px 8px',
-                background: 'var(--surface-2)', border: '1px solid var(--border)',
-                borderRadius: 99, color: 'var(--text-2)', textDecoration: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >☎ Appeler</a>
+            <a href={`tel:${salon.phone}`} style={rowLinkStyle}>
+              <Icon name="phone" size={13} /> Appeler
+            </a>
           )}
           {onLogVisit && (
-            <button
-              onClick={onLogVisit}
-              style={{
-                fontSize: 11, padding: '5px 12px',
-                background: 'var(--accent)', color: '#fff',
-                border: 'none', borderRadius: 99, cursor: 'pointer',
-                fontWeight: 600, whiteSpace: 'nowrap',
-              }}
-            >
+            <Button size="sm" onClick={onLogVisit}>
               {v?.visitedByMe ? 'Re-visiter' : 'Visiter'}
-            </button>
+            </Button>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-function Pill({ children, color }: { children: React.ReactNode; color?: 'success' | 'warning' | 'neutral' }) {
-  const styles =
-    color === 'success'
-      ? { bg: 'var(--success-bg)', fg: 'var(--success)', bd: 'var(--success)' }
-    : color === 'warning'
-      ? { bg: 'var(--warning-bg)', fg: 'var(--warning)', bd: 'var(--warning)' }
-      : { bg: 'var(--surface-2)', fg: 'var(--text-3)', bd: 'var(--border)' };
-  return (
-    <span style={{
-      fontSize: 10, padding: '2px 7px', borderRadius: 99,
-      background: styles.bg, color: styles.fg,
-      border: `1px solid ${styles.bd}`, fontWeight: 600,
-      whiteSpace: 'nowrap',
-    }}>{children}</span>
   );
 }
 
@@ -444,46 +392,31 @@ function VisitModal({
     } finally { setSaving(false); }
   };
 
-  const geoStyle =
+  const geoIcon: IconName = geoStatus === 'ok' ? 'location' : geoStatus === 'locating' ? 'clock' : 'alert';
+  const geoColors =
     geoStatus === 'ok'
-      ? { bg: 'var(--success-bg)', fg: 'var(--success)', bd: 'var(--success)', icon: '📍' }
+      ? { bg: 'var(--success-bg)', fg: 'var(--success)' }
     : geoStatus === 'locating'
-      ? { bg: 'var(--surface-2)', fg: 'var(--text-3)', bd: 'var(--border)', icon: '⏳' }
-      : { bg: 'var(--warning-bg)', fg: 'var(--warning)', bd: 'var(--warning)', icon: '⚠️' };
+      ? { bg: 'var(--surface-2)', fg: 'var(--text-3)' }
+      : { bg: 'var(--warning-bg)', fg: 'var(--warning)' };
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.45)', zIndex: 2000,
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--surface)', width: '100%', maxWidth: 480,
-          borderTopLeftRadius: 'var(--radius-xl)', borderTopRightRadius: 'var(--radius-xl)',
-          padding: '20px 18px 24px', maxHeight: '92dvh', overflowY: 'auto',
-        }}
-      >
-        <div style={{ width: 36, height: 4, background: 'var(--border)', borderRadius: 99, margin: '0 auto 14px' }} />
-        <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', marginBottom: 2 }}>
+    <Modal variant="sheet" onClose={onClose}>
+      <div style={{ padding: '4px 18px 24px' }}>
+        <div style={{ fontSize: FONT.bodyLg, fontWeight: WEIGHT.heavy, color: 'var(--text)', marginBottom: 2 }}>
           {salon.name}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 14 }}>
+        <div style={{ fontSize: FONT.body - 1, color: 'var(--text-3)', marginBottom: SPACE.md }}>
           {salon.address ?? 'Enregistrer ta visite'}
         </div>
 
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 10px', borderRadius: 'var(--radius-sm)', marginBottom: 16,
-          fontSize: 11.5, fontWeight: 500, lineHeight: 1.4,
-          background: geoStyle.bg, color: geoStyle.fg,
-          border: `1px solid ${geoStyle.bd}`,
+          display: 'flex', alignItems: 'flex-start', gap: SPACE.sm,
+          padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: SPACE.lg,
+          fontSize: FONT.body - 1, lineHeight: 1.4,
+          background: geoColors.bg, color: geoColors.fg,
         }}>
-          <span style={{ fontSize: 14 }}>{geoStyle.icon}</span>
+          <Icon name={geoIcon} size={15} style={{ marginTop: 1 }} />
           <span>
             {geoStatus === 'locating' && 'Localisation en cours… reste sur place.'}
             {geoStatus === 'ok' && geo &&
@@ -496,14 +429,14 @@ function VisitModal({
         </div>
 
         <Field label="Tu as laissé un flyer ?">
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: SPACE.sm }}>
             <Toggle active={!flyerLeft} onClick={() => setFlyerLeft(false)}>Non</Toggle>
-            <Toggle active={flyerLeft} onClick={() => setFlyerLeft(true)}>Oui 🪧</Toggle>
+            <Toggle active={flyerLeft} onClick={() => setFlyerLeft(true)}>Oui</Toggle>
           </div>
         </Field>
 
         <Field label="Convaincu·e de commander ?">
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: SPACE.sm }}>
             <Toggle active={convinced === 'no'} onClick={() => setConvinced('no')}>Non</Toggle>
             <Toggle active={convinced === 'maybe'} onClick={() => setConvinced('maybe')}>Peut-être</Toggle>
             <Toggle active={convinced === 'yes'} onClick={() => setConvinced('yes')}>Oui</Toggle>
@@ -511,95 +444,54 @@ function VisitModal({
         </Field>
 
         <Field label="Probabilité de commande">
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: SPACE.sm }}>
             {[1, 2, 3].map((r) => (
               <Toggle key={r} active={rating === r} onClick={() => setRating(r)}>
-                {'⭐'.repeat(r)} <span style={{ marginLeft: 4, fontSize: 11, opacity: 0.8 }}>{RATING_LABEL[r]}</span>
+                <span style={{ display: 'inline-flex' }}>
+                  {Array.from({ length: r }).map((_, i) => <Icon key={i} name="star" size={11} />)}
+                </span>
+                <span style={{ fontSize: FONT.micro + 1, opacity: 0.85 }}>{RATING_LABEL[r]}</span>
               </Toggle>
             ))}
           </div>
         </Field>
 
         <Field label="Devenu client ? (l'établissement a commandé)">
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: SPACE.sm }}>
             <Toggle active={!isClient} onClick={() => setIsClient(false)}>Non</Toggle>
-            <Toggle active={isClient} onClick={() => setIsClient(true)}>Oui 🔵</Toggle>
+            <Toggle active={isClient} onClick={() => setIsClient(true)}>Oui</Toggle>
           </div>
         </Field>
 
         <Field label="Notes (optionnel)">
-          <textarea
+          <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value.slice(0, 1000))}
             rows={3}
             placeholder="Ex: parler à Sophie, repasser jeudi…"
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              padding: '8px 10px', borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)', color: 'var(--text)',
-              fontSize: 13, resize: 'vertical', fontFamily: 'inherit',
-            }}
           />
         </Field>
 
         <Field label="Date de relance (optionnel)">
-          <input
-            type="date"
-            value={followUpAt}
-            onChange={(e) => setFollowUpAt(e.target.value)}
-            style={{
-              padding: '8px 10px', borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)', color: 'var(--text)',
-              fontSize: 13,
-            }}
-          />
+          <Input type="date" value={followUpAt} onChange={(e) => setFollowUpAt(e.target.value)} />
         </Field>
 
         {error && (
           <div style={{
             background: 'var(--error-bg)', color: 'var(--error)',
             borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-            fontSize: 12, marginBottom: 12,
+            fontSize: FONT.body - 1, marginBottom: SPACE.md,
           }}>{error}</div>
         )}
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: '12px',
-              background: 'var(--surface-2)', color: 'var(--text-2)',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}
-          >Annuler</button>
-          <button
-            onClick={save}
-            disabled={saving}
-            style={{
-              flex: 2, padding: '12px',
-              background: 'var(--accent)', color: '#fff',
-              border: 'none', borderRadius: 'var(--radius-sm)',
-              fontSize: 13, fontWeight: 700, cursor: 'pointer',
-            }}
-          >{saving ? 'Enregistrement…' : 'Enregistrer la visite'}</button>
+        <div style={{ display: 'flex', gap: SPACE.sm }}>
+          <Button variant="secondary" onClick={onClose} style={{ flex: 1 }}>Annuler</Button>
+          <Button onClick={save} loading={saving} style={{ flex: 2 }}>
+            {saving ? 'Enregistrement…' : 'Enregistrer la visite'}
+          </Button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: 'var(--text-3)',
-        textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
-      }}>{label}</div>
-      {children}
-    </div>
+    </Modal>
   );
 }
 
@@ -610,12 +502,13 @@ function Toggle({
     <button
       onClick={onClick}
       style={{
-        flex: 1, padding: '9px 8px',
+        flex: 1, minHeight: 40, padding: '9px 8px',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4,
         background: active ? 'var(--accent-muted)' : 'var(--surface-2)',
         color: active ? 'var(--accent)' : 'var(--text-2)',
         border: `1px solid ${active ? 'var(--accent-border)' : 'var(--border)'}`,
-        borderRadius: 'var(--radius-sm)', fontSize: 12, fontWeight: 600,
-        cursor: 'pointer', whiteSpace: 'nowrap',
+        borderRadius: 'var(--radius-sm)', fontSize: FONT.body - 1, fontWeight: WEIGHT.semibold,
+        cursor: 'pointer', fontFamily: 'inherit',
       }}
     >{children}</button>
   );
