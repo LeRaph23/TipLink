@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { AddressAutocomplete } from '@/components/onboarding/AddressAutocomplete';
 
 interface UnclaimedProfile {
   id: string;
@@ -11,7 +9,7 @@ interface UnclaimedProfile {
   email?: string;
 }
 
-type Step = 'welcome' | 'identity' | 'name-photo' | 'payment-intro' | 'banking' | 'email' | 'password';
+type Step = 'welcome' | 'identity' | 'name-photo' | 'payment-intro' | 'email' | 'password';
 
 const inp: React.CSSProperties = {
   width: '100%',
@@ -55,23 +53,6 @@ const btnSecondary: React.CSSProperties = {
   width: '100%',
 };
 
-function parseAddressLabel(label: string): { line1: string; city: string; postal_code: string } {
-  // BAN API format: "12 rue de la Paix, 75002 Paris"
-  const commaIdx = label.lastIndexOf(',');
-  if (commaIdx === -1) return { line1: label, city: '', postal_code: '' };
-  const line1 = label.slice(0, commaIdx).trim();
-  const rest = label.slice(commaIdx + 1).trim(); // "75002 Paris"
-  const spaceIdx = rest.indexOf(' ');
-  if (spaceIdx === -1) return { line1, city: rest, postal_code: '' };
-  const postal_code = rest.slice(0, spaceIdx).trim();
-  const city = rest.slice(spaceIdx + 1).trim();
-  return { line1, city, postal_code };
-}
-
-const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: currentYear - 1924 }, (_, i) => currentYear - 18 - i);
-
 export function JoinForm({
   establishmentId,
   establishmentName,
@@ -81,16 +62,6 @@ export function JoinForm({
   establishmentName: string;
   unclaimedProfiles: UnclaimedProfile[];
 }) {
-  const locale = useLocale();
-  // Month labels localized via Intl rather than a hardcoded French array.
-  const MONTHS = useMemo(() => {
-    const fmt = new Intl.DateTimeFormat(locale, { month: 'long' });
-    return Array.from({ length: 12 }, (_, i) => {
-      const label = fmt.format(new Date(2000, i, 1));
-      return { value: i + 1, label: label.charAt(0).toUpperCase() + label.slice(1) };
-    });
-  }, [locale]);
-
   const [step, setStep] = useState<Step>('welcome');
   const [selectedProfile, setSelectedProfile] = useState<UnclaimedProfile | null>(null);
 
@@ -102,14 +73,6 @@ export function JoinForm({
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Banking
-  const [dobDay, setDobDay] = useState('');
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobYear, setDobYear] = useState('');
-  const [addressLabel, setAddressLabel] = useState('');
-  const [iban, setIban] = useState('');
-  const [tosAccepted, setTosAccepted] = useState(false);
 
   // Account
   const [email, setEmail] = useState('');
@@ -144,7 +107,6 @@ export function JoinForm({
 
   const effectiveName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
   const firstNameFilled = firstName.trim().length > 0;
-  const bankingFilled = dobDay && dobMonth && dobYear && addressLabel.trim() && iban.trim().length >= 15 && tosAccepted;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   function selectProfile(p: UnclaimedProfile) {
@@ -180,9 +142,6 @@ export function JoinForm({
   }
 
   async function submitJoin() {
-    const parsed = parseAddressLabel(addressLabel);
-    const tosTimestamp = Math.floor(Date.now() / 1000);
-
     const res = await fetch('/api/staff/join', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -191,14 +150,6 @@ export function JoinForm({
         fullName: effectiveName,
         selectedProfileId: selectedProfile?.id ?? null,
         avatarUrl,
-        bankingData: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
-          address: { ...parsed, country: 'FR' },
-          iban: iban.replace(/\s/g, '').toUpperCase(),
-          tosTimestamp,
-        },
       }),
     });
 
@@ -209,7 +160,9 @@ export function JoinForm({
       return;
     }
 
-    window.location.href = '/dashboard';
+    // Hand off to Stripe's hosted onboarding (Standard connected account).
+    const body = (await res.json().catch(() => ({}))) as { onboardingUrl?: string };
+    window.location.href = body.onboardingUrl ?? '/dashboard';
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -482,121 +435,26 @@ export function JoinForm({
           margin: '0 auto 20px', fontSize: 26,
         }}>🏦</div>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 12 }}>
-          Vos coordonnées bancaires
+          Recevoir vos pourboires
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 12 }}>
-          Pour virer vos pourboires directement sur votre compte, nous avons besoin de votre IBAN et de quelques informations personnelles.
+          Après avoir créé ton compte, tu seras redirigé vers <strong>Stripe</strong>, notre
+          partenaire de paiement, pour configurer tes virements en quelques clics.
         </p>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 32 }}>
-          Ces informations sont transmises de façon chiffrée à notre partenaire de paiement <strong>Stripe</strong>. Votre IBAN ne sera jamais visible par votre employeur.
+        <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
+          C&apos;est Stripe — leader mondial du paiement — qui collecte et chiffre ta pièce
+          d&apos;identité et ton IBAN. Digitip ne voit jamais ces informations, et ton IBAN
+          n&apos;est jamais visible par ton employeur.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button type="button" onClick={() => setStep('banking')} style={btnPrimary}>
-            Continuer →
-          </button>
-          <button type="button" onClick={() => setStep('name-photo')} style={btnSecondary}>
-            ← Retour
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Step: banking ────────────────────────────────────────────────────────
-
-  if (step === 'banking') {
-    const selectStyle: React.CSSProperties = {
-      ...inp,
-      appearance: 'none' as const,
-      backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%23888\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E")',
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'right 14px center',
-      paddingRight: 36,
-    };
-
-    return (
-      <div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 20 }}>
-          Informations bancaires
-        </h1>
-
         {error && (
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>
             {error}
           </div>
         )}
-
-        {/* DOB */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
-            Date de naissance <span style={{ color: 'var(--accent)' }}>*</span>
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr', gap: 8 }}>
-            <select value={dobDay} onChange={(e) => setDobDay(e.target.value)} style={selectStyle}>
-              <option value="">Jour</option>
-              {DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <select value={dobMonth} onChange={(e) => setDobMonth(e.target.value)} style={selectStyle}>
-              <option value="">Mois</option>
-              {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
-            <select value={dobYear} onChange={(e) => setDobYear(e.target.value)} style={selectStyle}>
-              <option value="">Année</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {/* Address */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
-            Adresse personnelle <span style={{ color: 'var(--accent)' }}>*</span>
-          </label>
-          <AddressAutocomplete
-            value={addressLabel}
-            onChange={setAddressLabel}
-            style={inp}
-          />
-        </div>
-
-        {/* IBAN */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 8 }}>
-            IBAN <span style={{ color: 'var(--accent)' }}>*</span>
-          </label>
-          <input
-            type="text"
-            value={iban}
-            onChange={(e) => setIban(e.target.value.toUpperCase())}
-            placeholder="FR76 3000 4000 0312 3456 7890 143"
-            style={{ ...inp, fontFamily: 'monospace', letterSpacing: '0.05em' }}
-            autoComplete="off"
-          />
-          <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>
-            Votre IBAN se trouve sur votre relevé de compte ou dans votre application bancaire.
-          </p>
-        </div>
-
-        {/* ToS */}
-        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 24 }}>
-          <input
-            type="checkbox"
-            checked={tosAccepted}
-            onChange={(e) => setTosAccepted(e.target.checked)}
-            style={{ marginTop: 2, flexShrink: 0, accentColor: '#E57A97', width: 16, height: 16 }}
-          />
-          <span style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
-            J&apos;accepte les{' '}
-            <a href="https://stripe.com/fr/legal/connect-account" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-              Conditions d&apos;utilisation de Stripe
-            </a>
-            {' '}pour la réception de paiements sur mon compte.
-          </span>
-        </label>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
             type="button"
+            disabled={loading}
             onClick={async () => {
               if (isAuthenticated) {
                 setError(null);
@@ -606,12 +464,11 @@ export function JoinForm({
                 setStep('email');
               }
             }}
-            disabled={!bankingFilled || loading}
-            style={{ ...btnPrimary, opacity: bankingFilled && !loading ? 1 : 0.4 }}
+            style={{ ...btnPrimary, opacity: loading ? 0.4 : 1 }}
           >
             {loading ? 'Création du compte…' : 'Continuer →'}
           </button>
-          <button type="button" onClick={() => { setError(null); setStep('payment-intro'); }} style={btnSecondary}>
+          <button type="button" onClick={() => setStep('name-photo')} style={btnSecondary}>
             ← Retour
           </button>
         </div>
@@ -666,7 +523,7 @@ export function JoinForm({
           >
             Continuer →
           </button>
-          <button type="button" onClick={() => setStep('banking')} style={btnSecondary}>
+          <button type="button" onClick={() => setStep('payment-intro')} style={btnSecondary}>
             ← Retour
           </button>
         </div>
