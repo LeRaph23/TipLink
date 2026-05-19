@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { IdentityDocumentUpload } from '@/components/banking/IdentityDocumentUpload';
-import { uploadStaffIdentityDocument } from '@/actions/stripe';
+import { uploadStaffIdentityDocument } from '@/actions/mangopay';
 
 export function StaffIdentityUpload({ pendingVerification }: { pendingVerification?: boolean }) {
   const router = useRouter();

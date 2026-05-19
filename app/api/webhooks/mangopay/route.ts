@@ -467,13 +467,20 @@ async function handleKyc(documentId: string, supabase: Supabase): Promise<void> 
 
   const { data: staff } = await supabase
     .from('staff_profiles')
-    .select('id')
+    .select('id, mangopay_sca_enrolled, mangopay_recipient_id')
     .eq('mangopay_user_id', doc.UserId)
     .maybeSingle();
   if (staff) {
+    // KYC validated is the last onboarding gate — once the SCA-confirmed
+    // Recipient is also in place, the staff member can withdraw.
+    const onboardingComplete =
+      status === 'validated' && staff.mangopay_sca_enrolled && !!staff.mangopay_recipient_id;
     await supabase
       .from('staff_profiles')
-      .update({ mangopay_kyc_status: status })
+      .update({
+        mangopay_kyc_status: status,
+        ...(onboardingComplete ? { onboarding_status: 'complete' as const } : {}),
+      })
       .eq('id', staff.id);
     return;
   }

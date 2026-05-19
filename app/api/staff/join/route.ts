@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { createCustomStripeAccount } from '@/actions/stripe';
-import type { BankingData } from '@/actions/stripe';
+import { createStaffMangopayAccount } from '@/actions/mangopay';
+import type { BankingData } from '@/actions/mangopay';
 
 export const runtime = 'nodejs';
 
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     fullName?: string;
     selectedProfileId?: string | null;
     avatarUrl?: string | null;
-    bankingData?: Omit<BankingData, 'email' | 'ip'>;
+    bankingData?: BankingData;
   };
   const { establishmentId, fullName, selectedProfileId, avatarUrl, bankingData } = body;
 
@@ -33,11 +33,6 @@ export async function POST(req: Request) {
     .single();
 
   if (!est) return NextResponse.json({ error: 'Establishment not found' }, { status: 404 });
-
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    '0.0.0.0';
 
   let staffProfileId: string;
 
@@ -124,27 +119,26 @@ export async function POST(req: Request) {
     });
   }
 
-  // Create Stripe Custom account
+  // Create the Mangopay account (Natural User + Wallet + Recipient).
   const nameParts = (fullName ?? '').trim().split(/\s+/);
-  const stripeFirstName = bankingData.firstName || nameParts[0] || '';
-  const stripeLastName = bankingData.lastName || nameParts.slice(1).join(' ') || stripeFirstName;
+  const firstName = bankingData.firstName || nameParts[0] || '';
+  const lastName = bankingData.lastName || nameParts.slice(1).join(' ') || firstName;
 
-  const stripeResult = await createCustomStripeAccount(staffProfileId, {
-    ...bankingData,
-    firstName: stripeFirstName,
-    lastName: stripeLastName,
-    email: user.email ?? '',
-    ip,
-  });
+  const result = await createStaffMangopayAccount(
+    staffProfileId,
+    { ...bankingData, firstName, lastName },
+    user.email ?? ''
+  );
 
-  if ('error' in stripeResult) {
+  if ('error' in result) {
     // Rollback: deactivate the profile we just created/claimed
     await service
       .from('staff_profiles')
       .update({ is_active: false, user_id: null, onboarding_status: 'not_started' })
       .eq('id', staffProfileId);
-    return NextResponse.json({ error: stripeResult.error }, { status: 422 });
+    return NextResponse.json({ error: result.error }, { status: 422 });
   }
 
-  return NextResponse.json({ ok: true });
+  // The browser must finish the hosted SCA session to activate the Recipient.
+  return NextResponse.json({ ok: true, scaRedirectUrl: result.scaRedirectUrl });
 }

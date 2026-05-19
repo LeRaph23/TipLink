@@ -618,6 +618,7 @@ export type Database = {
           mangopay_wallet_id: string | null
           mangopay_recipient_id: string | null
           mangopay_kyc_status: string
+          mangopay_sca_enrolled: boolean
         }
         Insert: {
           city?: string | null
@@ -642,6 +643,7 @@ export type Database = {
           mangopay_wallet_id?: string | null
           mangopay_recipient_id?: string | null
           mangopay_kyc_status?: string
+          mangopay_sca_enrolled?: boolean
         }
         Update: {
           city?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           mangopay_wallet_id?: string | null
           mangopay_recipient_id?: string | null
           mangopay_kyc_status?: string
+          mangopay_sca_enrolled?: boolean
         }
         Relationships: [
           {
@@ -1556,7 +1559,7 @@ export type Database = {
           paid_at: string | null
           staff_id: string
           status: string
-          mangopay_payout_id: string
+          mangopay_payout_id: string | null
           mangopay_transfer_id: string | null
         }
         Insert: {
@@ -1569,7 +1572,7 @@ export type Database = {
           paid_at?: string | null
           staff_id: string
           status: string
-          mangopay_payout_id: string
+          mangopay_payout_id?: string | null
           mangopay_transfer_id?: string | null
         }
         Update: {
@@ -1613,6 +1616,7 @@ export type Database = {
           mangopay_wallet_id: string | null
           mangopay_recipient_id: string | null
           mangopay_kyc_status: string
+          mangopay_sca_enrolled: boolean
           user_id: string | null
         }
         Insert: {
@@ -1632,6 +1636,7 @@ export type Database = {
           mangopay_wallet_id?: string | null
           mangopay_recipient_id?: string | null
           mangopay_kyc_status?: string
+          mangopay_sca_enrolled?: boolean
           user_id?: string | null
         }
         Update: {
@@ -1651,6 +1656,7 @@ export type Database = {
           mangopay_wallet_id?: string | null
           mangopay_recipient_id?: string | null
           mangopay_kyc_status?: string
+          mangopay_sca_enrolled?: boolean
           user_id?: string | null
         }
         Relationships: [

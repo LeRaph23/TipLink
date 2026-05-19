@@ -1,45 +1,53 @@
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getStaffStripeBalance } from '@/actions/stripe';
-import { getAccountVerificationStatus } from '@/lib/stripe/identity';
+import { getStaffBalance, finalizeOnboardingSca } from '@/actions/mangopay';
 import { BankingSetupForm } from './BankingSetupForm';
 import { PayoutSection } from './PayoutSection';
 import { StaffIdentityUpload } from './StaffIdentityUpload';
 
 export default async function BankingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ sca?: string }>;
 }) {
   const { locale } = await params;
+  const { sca } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
 
+  // Returning from the hosted SCA session — record the consent and refresh.
+  if (sca === 'return') {
+    await finalizeOnboardingSca().catch(() => null);
+  }
+
   const { data: staffProfile } = await supabase
     .from('staff_profiles')
-    .select('id, full_name, stripe_account_id, onboarding_status')
+    .select('id, full_name, mangopay_user_id, mangopay_kyc_status, onboarding_status')
     .eq('user_id', user.id)
     .is('deleted_at', null)
     .maybeSingle();
 
-  const hasStripeAccount = !!staffProfile?.stripe_account_id;
+  const hasStripeAccount = !!staffProfile?.mangopay_user_id;
   const mode = hasStripeAccount ? 'update' : 'setup';
   const fullName = staffProfile?.full_name ?? user.email?.split('@')[0] ?? 'Utilisateur';
 
-  const balance = hasStripeAccount ? await getStaffStripeBalance() : null;
+  const balance = hasStripeAccount ? await getStaffBalance() : null;
 
-  let verification = null;
-  if (hasStripeAccount && staffProfile?.stripe_account_id) {
-    try {
-      verification = await getAccountVerificationStatus(staffProfile.stripe_account_id);
-    } catch {
-      verification = null;
-    }
-  }
+  // KYC: an identity proof is needed when none has been submitted yet, or a
+  // previous one was refused; 'pending' means it is awaiting Mangopay review.
+  const kycStatus = staffProfile?.mangopay_kyc_status ?? 'none';
+  const verification = hasStripeAccount
+    ? {
+        needsIdentityDocument: kycStatus === 'none' || kycStatus === 'refused',
+        pendingVerification: kycStatus === 'pending',
+      }
+    : null;
 
   return (
     <div style={{ maxWidth: 520 }}>

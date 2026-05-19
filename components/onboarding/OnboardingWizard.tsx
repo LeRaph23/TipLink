@@ -8,8 +8,7 @@ import {
   completeNfcOnboarding,
   completeExpressOnboarding,
 } from '@/actions/onboarding';
-import { setupAdminPayments } from '@/actions/stripe';
-import type { BankingData } from '@/actions/stripe';
+import { setupAdminPayments } from '@/actions/mangopay';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { getBaseUrl } from '@/lib/env';
 import { validateIban, formatIbanFriendly } from '@/lib/banking/iban';
@@ -417,10 +416,14 @@ export function OnboardingWizard(props: Props) {
       dob: { day: Number(dobDay), month: Number(dobMonth), year: Number(dobYear) },
       address: { line1, city, postal_code, country: 'FR' },
       iban: ibanValidation.ok ? ibanValidation.normalized : iban.replace(/\s/g, '').toUpperCase(),
-      tosTimestamp: Math.floor(Date.now() / 1000),
-    } as Parameters<typeof setupAdminPayments>[0]);
+    });
 
     if ('error' in bankResult) return { ok: false, bankingErr: bankResult.error };
+    // Registering the IBAN Recipient needs a hosted SCA session.
+    if (bankResult.scaRedirectUrl) {
+      window.location.href = bankResult.scaRedirectUrl;
+      return { ok: true };
+    }
     setBankingConfigured(true);
     return { ok: true };
   }

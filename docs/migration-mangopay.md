@@ -21,7 +21,11 @@
   d'appoint `00054_payin_contexts.sql`. Voir « Détail Phase 3 » ci-dessous.
 - ✅ **Phase 4 — Handler webhook Mangopay** : `app/api/webhooks/mangopay/route.ts`
   (export `GET`). Voir « Détail Phase 4 » ci-dessous.
-- ⏳ **Phases 5 à 9** — non implémentées.
+- ✅ **Phases 5 & 6 — Onboarding & retrait (staff)** : `actions/mangopay.ts`
+  (remplace `actions/stripe.ts`) + migration `00055`. Voir « Détail Phases 5-6 ».
+- ⏳ **Reste** : routes ambassadeur (`ambassadeur/[code]/banking` + `payout`) à
+  convertir sur le même modèle ; Phase 7 (frontend Checkout SDK), Phase 8
+  (scripts), Phase 9 (tests).
 
 > **Correctifs vs plan** découverts pendant l'implémentation :
 > - SDK Node : `mangopay4-nodejs-sdk` v1.68 confirmé.
@@ -112,6 +116,39 @@
 > ⇒ non contesté ⇒ chargeback définitif ⇒ transaction `reversed` + lignes ledger
 > annulées ; `ContestedFunds > 0` ⇒ revue manuelle super-admin. Le staff reste
 > gelé jusqu'à revue. À valider sur la sandbox.
+
+### Détail Phases 5-6 — onboarding & retrait (staff)
+
+- **`actions/mangopay.ts`** (remplace `actions/stripe.ts`).
+- **Onboarding** (`createStaffMangopayAccount` / `setupStaffBanking` /
+  `setupAdminPayments`) : crée un *Natural User* `OWNER` + Wallet EUR + *Recipient*
+  IBAN. Le *Recipient* `PAYOUT` exige un SCA → sa création renvoie un
+  `PendingUserAction.RedirectUrl` ; le serveur y ajoute un `returnUrl`
+  (`/dashboard/banking?sca=return`) et le client redirige le navigateur.
+- **`finalizeOnboardingSca`** — au retour SCA : refetch du *Recipient*, pose
+  `mangopay_sca_enrolled = true`, passe `onboarding_status` à `complete` si la
+  KYC est déjà validée (sinon le webhook `KYC_SUCCEEDED` le fera — **à câbler**).
+- **`updateBankAccountIBAN`** — réenregistre un *Recipient* (réutilise
+  nom/adresse de l'ancien), nouveau SCA, désactive l'ancien.
+- **`uploadStaffIdentityDocument`** — `submitIdentityProof` (KYC) + statut
+  `pending`.
+- **Retrait** (`requestPayout`) : pré-conditions (ids présents, KYC `validated`,
+  `mangopay_sca_enrolled`, non gelé) ; **leg 1** `Transfer` central→wallet en
+  `USER_NOT_PRESENT` ; **leg 2** `PayOut` wallet→Recipient. Si le PayOut échoue
+  après un Transfer réussi, la ligne `staff_payouts` garde le `mangopay_transfer_id`
+  (payout id nul) et un nouvel essai **reprend au PayOut** (pas de re-transfert).
+  Minimum **40 €**.
+- **Solde** = ledger pur : tips solo `succeeded` (`amount − platform_fee −
+  refunded`) + lignes `group_tip_transfers` non annulées − payouts déjà émis ;
+  fenêtre de rétention 3 j.
+- **Migration `00055`** : `mangopay_sca_enrolled` (staff + ambassadeurs),
+  `staff_payouts.mangopay_payout_id` rendu nullable.
+
+> **À confirmer (Phases 5-6)** — mécanique SCA exacte : on suppose que terminer
+> la session SCA d'enregistrement du *Recipient* vaut présence SCA suffisante
+> pour les `Transfer` `USER_NOT_PRESENT`. Si Mangopay exige un `Users.enroll`
+> distinct, ajouter une 2e étape. Le webhook `KYC_SUCCEEDED` doit aussi
+> promouvoir `onboarding_status` → `complete`. À valider sur la sandbox.
 
 ## Contexte
 

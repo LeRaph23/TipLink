@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AddressAutocomplete } from '@/components/onboarding/AddressAutocomplete';
-import { setupStaffBanking, updateBankAccountIBAN } from '@/actions/stripe';
-import type { BankingData } from '@/actions/stripe';
+import { setupStaffBanking, updateBankAccountIBAN } from '@/actions/mangopay';
+import type { BankingData } from '@/actions/mangopay';
 import { validateIban, formatIbanFriendly } from '@/lib/banking/iban';
 
 const inp: React.CSSProperties = {
@@ -67,22 +67,24 @@ export function BankingSetupForm({ mode, fullName }: Props) {
     if (!address.trim()) { setError('Adresse requise'); return; }
     const ibanResult = validateIban(iban);
     if (!ibanResult.ok) { setError(ibanResult.error); return; }
-    if (!tosAccepted) { setError('Vous devez accepter les conditions Stripe'); return; }
+    if (!tosAccepted) { setError('Vous devez accepter les conditions Mangopay'); return; }
 
     setError(null);
     const parsed = parseAddressLabel(address);
-    const data: Omit<BankingData, 'email' | 'ip'> = {
+    const data: BankingData = {
       firstName,
       lastName,
       dob: { day: parseInt(dobDay), month: parseInt(dobMonth), year: parseInt(dobYear) },
       address: { line1: parsed.line1, city: parsed.city, postal_code: parsed.postal_code, country: 'FR' },
       iban: ibanResult.normalized,
-      tosTimestamp: Math.floor(Date.now() / 1000),
     };
 
     startTransition(async () => {
       const res = await setupStaffBanking(data);
       if ('error' in res) { setError(res.error); return; }
+      // Registering the IBAN Recipient needs a hosted SCA session — send the
+      // staff member there to finish; they return to /dashboard/banking.
+      if (res.scaRedirectUrl) { window.location.href = res.scaRedirectUrl; return; }
       setSuccess(true);
       router.refresh();
     });
@@ -96,6 +98,7 @@ export function BankingSetupForm({ mode, fullName }: Props) {
     startTransition(async () => {
       const res = await updateBankAccountIBAN(ibanResult.normalized, fullName);
       if ('error' in res) { setError(res.error); return; }
+      if (res.scaRedirectUrl) { window.location.href = res.scaRedirectUrl; return; }
       setSuccess(true);
       router.refresh();
     });
@@ -175,7 +178,7 @@ export function BankingSetupForm({ mode, fullName }: Props) {
           </select>
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 5 }}>
-          Requise par Stripe pour la vérification d&apos;identité.
+          Requise par Mangopay pour la vérification d&apos;identité.
         </div>
       </div>
 
@@ -184,7 +187,7 @@ export function BankingSetupForm({ mode, fullName }: Props) {
         <span style={label}>Adresse personnelle</span>
         <AddressAutocomplete value={address} onChange={setAddress} style={inp} />
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 5 }}>
-          Transmise à Stripe de façon sécurisée. Jamais visible par votre employeur.
+          Transmise à Mangopay de façon sécurisée. Jamais visible par votre employeur.
         </div>
       </div>
 
@@ -213,10 +216,10 @@ export function BankingSetupForm({ mode, fullName }: Props) {
         />
         <span style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
           J&apos;accepte les{' '}
-          <a href="https://stripe.com/fr/legal/connect-account" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
-            conditions d&apos;utilisation de Stripe
+          <a href="https://www.mangopay.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+            conditions d&apos;utilisation de Mangopay
           </a>{' '}
-          pour les comptes connectés.
+          pour la réception de paiements.
         </span>
       </label>
 

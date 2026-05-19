@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { requestPayout } from '@/actions/stripe';
+import { requestPayout } from '@/actions/mangopay';
 
-const MIN_PAYOUT_CENTS = 3_000;
+const MIN_PAYOUT_CENTS = 4_000;
 
 interface Props {
   available: number;
@@ -101,7 +101,7 @@ export function PayoutSection({ available, pending }: Props) {
 
       {!canPayout && (
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 10, textAlign: 'center' }}>
-          Minimum requis : 30 € — il vous manque {fmt.format((MIN_PAYOUT_CENTS - available) / 100)}.
+          Minimum requis : 40 € — il vous manque {fmt.format((MIN_PAYOUT_CENTS - available) / 100)}.
         </div>
       )}
     </div>
