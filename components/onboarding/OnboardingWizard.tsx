@@ -392,6 +392,7 @@ export function OnboardingWizard(props: Props) {
     setSubmitting(true);
     setError(null);
 
+    try {
     if (mode === 'scan') {
       // 1. Create Supabase account client-side
       const supabase = createClient();
@@ -494,6 +495,13 @@ export function OnboardingWizard(props: Props) {
 
     setDone(true);
     setSubmitting(false);
+    } catch (err) {
+      // Without this, a thrown error (server action 500, network failure)
+      // would leave the button stuck on "Finalisation…" forever.
+      console.error('onboarding submit failed', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue. Réessayez.');
+      setSubmitting(false);
+    }
   }
 
   // ─── Done screen ───────────────────────────────────────────────────────────

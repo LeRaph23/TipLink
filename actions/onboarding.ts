@@ -371,7 +371,7 @@ export async function completeNfcOnboarding(
   // Atomically claim the stickers via the SECURITY DEFINER RPC. Two parallel
   // onboardings cannot grab the same sticker thanks to FOR UPDATE SKIP LOCKED.
   // RPC name is not yet in the generated types — cast the rpc() call.
-  const claimRpc = (service.rpc as unknown as (
+  const claimRpc = (service.rpc.bind(service) as unknown as (
     fn: 'claim_nfc_stickers',
     args: { p_short_ids: string[]; p_establishment_id: string }
   ) => Promise<{ data: Array<{ id: string; short_id: string }> | null; error: { message: string } | null }>);

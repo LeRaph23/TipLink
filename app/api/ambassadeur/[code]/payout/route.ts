@@ -165,7 +165,7 @@ export async function POST(
 
   // Acquire the advisory lock — short-circuits parallel requests immediately.
   // RPCs aren't in the generated types yet; cast minimally.
-  const tryLock = (service.rpc as unknown as (
+  const tryLock = (service.rpc.bind(service) as unknown as (
     fn: 'try_advisory_lock_payout',
     args: { p_ambassador_id: string }
   ) => Promise<{ data: boolean | null; error: unknown }>);
@@ -246,7 +246,7 @@ export async function POST(
       }, { status: 502 });
     }
   } finally {
-    const releaseLock = (service.rpc as unknown as (
+    const releaseLock = (service.rpc.bind(service) as unknown as (
       fn: 'release_advisory_lock_payout',
       args: { p_ambassador_id: string }
     ) => Promise<unknown>);
