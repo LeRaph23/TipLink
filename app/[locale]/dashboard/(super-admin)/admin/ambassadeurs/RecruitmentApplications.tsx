@@ -41,6 +41,8 @@ export function RecruitmentApplications({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [provisioned, setProvisioned] = useState<Record<string, { promoCode: string; setupUrl: string }>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleReview = (id: string, status: 'accepted' | 'rejected') => {
     setErrorMsg(null);
@@ -50,6 +52,10 @@ export function RecruitmentApplications({
         setErrorMsg(result.error);
         return;
       }
+      if (status === 'accepted' && result.provisioned) {
+        const prov = result.provisioned;
+        setProvisioned(prev => ({ ...prev, [id]: prov }));
+      }
       setApps(prev =>
         prev.map(a => a.id === id
           ? { ...a, status, reviewed_at: new Date().toISOString() }
@@ -57,6 +63,13 @@ export function RecruitmentApplications({
         )
       );
     });
+  };
+
+  const copyLink = (id: string, url: string) => {
+    navigator.clipboard?.writeText(url).then(
+      () => { setCopiedId(id); setTimeout(() => setCopiedId(null), 1800); },
+      () => {},
+    );
   };
 
   const pending  = apps.filter(a => a.status === 'pending');
@@ -164,6 +177,31 @@ export function RecruitmentApplications({
                     <p style={{ fontSize: 12.5, color: 'var(--text)', margin: 0, fontStyle: 'italic' }}>
                       {app.notes}
                     </p>
+                  </td>
+                </tr>
+              )}
+              {provisioned[app.id] && (
+                <tr key={`${app.id}-prov`} style={{ background: 'var(--success-bg)' }}>
+                  <td colSpan={showActions ? 9 : 8} style={{ padding: '10px 14px 12px 28px' }}>
+                    <div style={{ fontSize: 12.5, color: 'var(--text)' }}>
+                      <strong style={{ color: 'var(--success)' }}>✓ Ambassadeur créé.</strong>
+                      {' '}Code promo : <code style={{ fontWeight: 700 }}>{provisioned[app.id].promoCode}</code>
+                    </div>
+                    <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                        Lien d&apos;activation à envoyer à l&apos;ambassadeur :
+                      </span>
+                      <code style={{ fontSize: 11, wordBreak: 'break-all', color: 'var(--text-2)' }}>
+                        {provisioned[app.id].setupUrl}
+                      </code>
+                      <button
+                        type="button"
+                        style={{ ...btnBase, background: 'var(--surface-2)', color: 'var(--text)' }}
+                        onClick={() => copyLink(app.id, provisioned[app.id].setupUrl)}
+                      >
+                        {copiedId === app.id ? '✓ Copié' : 'Copier le lien'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )}

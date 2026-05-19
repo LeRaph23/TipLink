@@ -16,11 +16,11 @@ export async function generateMetadata({
   const { locale } = await params;
   return {
     title: 'Devenir ambassadeur Digitip · 25-35€ par vente',
-    description: "Rejoignez le programme ambassadeur Digitip : vous placez des SmartTags NFC chez des coiffeurs, instituts et restaurants et touchez 25-35€ par vente. Pas de stock, pas d'avance. SIRET requis.",
+    description: "Rejoignez le programme ambassadeur Digitip : vous placez des SmartTags NFC chez des coiffeurs, instituts et restaurants et touchez 25-35€ par vente. Pas de stock, pas d'avance, pas besoin de SIRET pour postuler.",
     alternates: pageAlternates(locale, '/devenir-ambassadeur', ['fr']),
     openGraph: {
       title: 'Devenez ambassadeur Digitip',
-      description: '25-35€ par vente. Pas de stock. SIRET requis.',
+      description: '25-35€ par vente. Pas de stock. Démarrez sans SIRET.',
       locale: 'fr_FR',
       type: 'website',
     },
@@ -37,7 +37,7 @@ const PERKS = [
 const FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'Faut-il avoir un SIRET ?',
-    a: 'Oui, obligatoire. Si vous n\'en avez pas, créez-le gratuitement en 10 min sur autoentrepreneur.urssaf.fr (statut auto-entrepreneur / micro-entreprise). C\'est instantané.',
+    a: 'Pas pour postuler ni pour commencer. Le SIRET vous sera demandé uniquement au moment de toucher vos commissions. Vous pouvez le créer gratuitement en 10 min sur autoentrepreneur.urssaf.fr (statut auto-entrepreneur / micro-entreprise). C\'est instantané.',
   },
   {
     q: 'Comment suis-je payé ?',
@@ -45,7 +45,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Combien de temps cela prend-il ?',
-    a: 'C\'est vous qui décidez. Nos meilleurs ambassadeurs (BTS NDRC en alternance) travaillent environ 5h par semaine et réalisent 8 à 12 ventes, soit environ 250-400€ par semaine en complément.',
+    a: 'C\'est vous qui décidez. Nos meilleurs ambassadeurs travaillent environ 5h par semaine et réalisent 8 à 12 ventes, soit environ 250-400€ par semaine.',
   },
   {
     q: 'Quel est le produit que je vends ?',
