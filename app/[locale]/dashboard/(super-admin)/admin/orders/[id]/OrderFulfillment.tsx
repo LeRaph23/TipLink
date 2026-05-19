@@ -263,7 +263,7 @@ export function OrderFulfillment({
           </button>
         </div>
         {forceStatus === status && (
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8 }}>Statut actuel déjà "{statusLabels[status as OrderStatus]}"</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8 }}>Statut actuel déjà &quot;{statusLabels[status as OrderStatus]}&quot;</div>
         )}
       </div>
 

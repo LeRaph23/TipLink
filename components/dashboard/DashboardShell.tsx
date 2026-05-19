@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import type { Database } from '@/types/database';
@@ -18,9 +18,14 @@ interface Props {
 export function DashboardShell({ userRoles, userEmail, userName, hasStaffProfile = false, children }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [shownPath, setShownPath] = useState(pathname);
 
-  // Close sidebar whenever the route changes (mobile navigation)
-  useEffect(() => { setOpen(false); }, [pathname]);
+  // Close the sidebar whenever the route changes (mobile navigation).
+  // Adjusting state during render is the React-recommended alternative to an effect.
+  if (pathname !== shownPath) {
+    setShownPath(pathname);
+    setOpen(false);
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>

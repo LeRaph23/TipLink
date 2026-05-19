@@ -42,6 +42,8 @@ export function RecruitmentLandingForm() {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const d: Partial<Draft> = JSON.parse(raw);
+      /* eslint-disable react-hooks/set-state-in-effect -- restores a saved draft
+         from localStorage on mount; localStorage is unavailable during SSR. */
       if (d.firstName) setFirstName(d.firstName);
       if (d.lastName) setLastName(d.lastName);
       if (d.city) setCity(d.city);
@@ -49,6 +51,7 @@ export function RecruitmentLandingForm() {
       if (d.email) setEmail(d.email);
       if (d.siret) setSiret(d.siret);
       if (d.notes) setNotes(d.notes);
+      /* eslint-enable react-hooks/set-state-in-effect */
     } catch { /* ignore */ }
   }, []);
 

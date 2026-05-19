@@ -35,9 +35,9 @@ describe('NFC Redirect Middleware', () => {
       json: async () => [{ establishment_id: 'est-uuid-456' }],
     });
 
-    const { middleware } = await import('@/middleware');
+    const { proxy } = await import('@/proxy');
     const request = new NextRequest('https://digitip.app/s/XYZ98765');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(response.status).toBe(302);
     // Middleware now adds locale prefix to NFC redirects
@@ -50,9 +50,9 @@ describe('NFC Redirect Middleware', () => {
       json: async () => [],
     });
 
-    const { middleware } = await import('@/middleware');
+    const { proxy } = await import('@/proxy');
     const request = new NextRequest('https://digitip.app/s/UNKNOWN1');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(response.headers.get('location')).toContain('/not-found');
   });
@@ -63,9 +63,9 @@ describe('NFC Redirect Middleware', () => {
       json: async () => [{ establishment_id: null }],
     });
 
-    const { middleware } = await import('@/middleware');
+    const { proxy } = await import('@/proxy');
     const request = new NextRequest('https://digitip.app/s/ORPHAN01');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     // Unassigned stickers launch the onboarding wizard, not a 404.
     expect(response.headers.get('location')).toContain('/onboarding');
@@ -77,9 +77,9 @@ describe('NFC Redirect Middleware', () => {
       json: async () => ({ message: 'Unauthorized' }),
     });
 
-    const { middleware } = await import('@/middleware');
+    const { proxy } = await import('@/proxy');
     const request = new NextRequest('https://digitip.app/s/ABC12345');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(response.headers.get('location')).toContain('/not-found');
   });
@@ -90,8 +90,8 @@ describe('NFC Redirect Middleware', () => {
       json: async () => [{ establishment_id: 'est-uuid-456' }],
     });
 
-    const { middleware } = await import('@/middleware');
-    await middleware(new NextRequest('https://digitip.app/s/ABC12345'));
+    const { proxy } = await import('@/proxy');
+    await proxy(new NextRequest('https://digitip.app/s/ABC12345'));
 
     const fetchCall = mockFetch.mock.calls[0];
     expect(fetchCall[1].headers['Authorization']).toContain('Bearer test-service-role-key');
@@ -100,8 +100,8 @@ describe('NFC Redirect Middleware', () => {
   it('rejects short_id with non-alphanumeric characters (blocks ILIKE wildcards)', async () => {
     // shortIds with characters outside [a-z0-9_-] are rejected before hitting
     // PostgREST to prevent ILIKE wildcard injection (e.g. "%%%%").
-    const { middleware } = await import('@/middleware');
-    const response = await middleware(new NextRequest('https://digitip.app/s/AB+CD'));
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(new NextRequest('https://digitip.app/s/AB+CD'));
 
     expect(mockFetch).not.toHaveBeenCalled();
     expect(response.headers.get('location')).toContain('/not-found');
