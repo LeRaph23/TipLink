@@ -10,12 +10,13 @@ const required: { key: string; hint: string }[] = [
   { key: 'NEXT_PUBLIC_SUPABASE_URL',         hint: 'Supabase project URL' },
   { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY',    hint: 'Supabase anon key' },
   { key: 'SUPABASE_SERVICE_ROLE_KEY',        hint: 'Supabase service role key (server-only)' },
-  { key: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', hint: 'Stripe publishable key (pk_...)' },
-  { key: 'STRIPE_SECRET_KEY',                hint: 'Stripe secret key (sk_...)' },
-  { key: 'STRIPE_WEBHOOK_SECRET',            hint: 'Stripe webhook secret (whsec_...)' },
+  { key: 'NEXT_PUBLIC_MANGOPAY_CLIENT_ID',   hint: 'Mangopay ClientId (also used by the browser SDK)' },
+  { key: 'MANGOPAY_CLIENT_ID',               hint: 'Mangopay ClientId (Dashboard > API keys)' },
+  { key: 'MANGOPAY_API_KEY',                 hint: 'Mangopay API key (Dashboard > API keys)' },
   { key: 'NEXT_PUBLIC_BASE_URL',             hint: 'e.g. https://digitip.app' },
-  { key: 'STRIPE_PRICE_PACK_SOLO_HARDWARE', hint: 'Run: npm run setup:stripe' },
-  { key: 'STRIPE_PRICE_PACK_DUO_HARDWARE',  hint: 'Run: npm run setup:stripe' },
+  { key: 'MANGOPAY_PLATFORM_USER_ID',        hint: 'Run: npm run setup:mangopay' },
+  { key: 'MANGOPAY_CENTRAL_WALLET_ID',       hint: 'Run: npm run setup:mangopay' },
+  { key: 'MANGOPAY_WEBHOOK_ALLOWED_IPS',     hint: 'Mangopay Hook IPs (Dashboard > Webhooks)' },
 ];
 
 const optional: { key: string; hint: string }[] = [
