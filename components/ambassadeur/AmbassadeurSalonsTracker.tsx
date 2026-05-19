@@ -273,11 +273,6 @@ function SalonRow({
                 {openState.open ? 'Ouvert' : 'Fermé'}
               </Badge>
             )}
-            {salon.google_rating != null && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: FONT.micro, color: 'var(--text-3)' }}>
-                <Icon name="star" size={11} /> {salon.google_rating.toFixed(1)}
-              </span>
-            )}
           </div>
           {openState?.nextChange && (
             <div style={{ fontSize: FONT.micro, color: 'var(--text-3)', marginTop: 2 }}>
