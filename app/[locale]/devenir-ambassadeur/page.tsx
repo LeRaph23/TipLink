@@ -37,7 +37,7 @@ const PERKS = [
 const FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'Faut-il avoir un SIRET ?',
-    a: 'Pas pour postuler ni pour commencer. Le SIRET vous sera demandé uniquement au moment de toucher vos commissions. Vous pouvez le créer gratuitement en 10 min sur autoentrepreneur.urssaf.fr (statut auto-entrepreneur / micro-entreprise). C\'est instantané.',
+    a: 'Pour postuler, non. Pour démarcher en tant qu\'ambassadeur, oui : vous devez avoir déclaré votre statut d\'auto-entrepreneur. La déclaration est gratuite et prend ~10 min sur autoentrepreneur.urssaf.fr — et vous pouvez démarcher dès le jour de votre déclaration. Le numéro SIRET vous parvient ensuite sous quelques jours ; il sert à facturer vos commissions.',
   },
   {
     q: 'Comment suis-je payé ?',
