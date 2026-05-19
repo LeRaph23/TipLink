@@ -209,7 +209,7 @@
 
 /* Filter bar */
 .salon-map-filters {
-  display: flex; gap: 6px; flex-wrap: wrap;
+  display: flex; gap: 6px; flex-wrap: nowrap;
   margin-bottom: 10px;
   overflow-x: auto;
   scrollbar-width: none;
