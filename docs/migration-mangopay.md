@@ -19,7 +19,9 @@
   régénérer via `npm run db:types` après application).
 - ✅ **Phase 3 — Routes API de paiement** : routes Checkout SDK écrites + migration
   d'appoint `00054_payin_contexts.sql`. Voir « Détail Phase 3 » ci-dessous.
-- ⏳ **Phases 4 à 9** — non implémentées.
+- ✅ **Phase 4 — Handler webhook Mangopay** : `app/api/webhooks/mangopay/route.ts`
+  (export `GET`). Voir « Détail Phase 4 » ci-dessous.
+- ⏳ **Phases 5 à 9** — non implémentées.
 
 > **Correctifs vs plan** découverts pendant l'implémentation :
 > - SDK Node : `mangopay4-nodejs-sdk` v1.68 confirmé.
@@ -80,6 +82,36 @@
 - **`lib/billing/promo.ts`** (nouveau) — résolution partagée d'un code promo.
 - `lib/mangopay/payins.ts` accepte une clé d'idempotence ;
   `lib/mangopay/idempotency.ts` : champ `staffId` → `scope` (générique).
+
+### Détail Phase 4 — webhook Mangopay
+
+- **`app/api/webhooks/mangopay/route.ts`** (remplace `webhooks/stripe`) — export
+  **`GET`** (les Hooks sont des GET). Allowlist IP (`isAllowedWebhookIp`) → parse
+  `EventType`/`RessourceId` → gate d'idempotence sur `webhook_events`
+  `(mangopay_resource_id, mangopay_event_type)` → **refetch** de la ressource →
+  dispatch. `200` succès / doublon traité ; `500` sur échec (retry Mangopay).
+- **Choix : pas de `after()`** — le handler refetch + traite **en synchrone**.
+  Le budget 2 s est best-effort : un dépassement fait juste un retry Mangopay
+  que le gate d'idempotence court-circuite (`processed_at`) ; les handlers sont
+  idempotents. Plus simple et garde le filet de retry natif (pas de cron maison).
+- Événements gérés : `PAYIN_NORMAL_SUCCEEDED/FAILED`, `PAYIN_REFUND_SUCCEEDED`,
+  `TRANSFER_NORMAL_FAILED`, `TRANSFER_REFUND_SUCCEEDED`,
+  `PAYOUT_NORMAL_SUCCEEDED/FAILED`, `KYC_SUCCEEDED/FAILED`, `DISPUTE_CREATED`,
+  `DISPUTE_CLOSED`. `TRANSFER_NORMAL_SUCCEEDED` /  `DISPUTE_ACTION_REQUIRED` /
+  `PAYIN_REPUDIATION_CREATED` : informatifs (no-op).
+- Le succès d'un PayIn est résolu via `transactions.mangopay_payin_id` (pourboire
+  solo / groupe) **ou** `payin_contexts.mangopay_payin_id` (pack express / order).
+  Le split de groupe écrit des lignes `group_tip_transfers` `succeeded` (ledger).
+- Suppression de `app/api/webhooks/stripe/`. `lib/stripe/*` encore référencé par
+  `actions/stripe.ts` → retiré en Phase 5.
+- Helpers de refetch ajoutés : `getRefund` (`refunds.ts`), `getKycDocument` +
+  `kycStatusFromDocument` (`kyc.ts`), `getDispute` (nouveau `disputes.ts`).
+
+> **À confirmer (Phase 4)** — `DISPUTE_CLOSED` : aucun champ « gagné/perdu »
+> fiable dans `DisputeData`. Règle retenue (conservatrice) : `ContestedFunds == 0`
+> ⇒ non contesté ⇒ chargeback définitif ⇒ transaction `reversed` + lignes ledger
+> annulées ; `ContestedFunds > 0` ⇒ revue manuelle super-admin. Le staff reste
+> gelé jusqu'à revue. À valider sur la sandbox.
 
 ## Contexte
 

@@ -74,3 +74,18 @@ export async function getKycStatus(userId: string): Promise<KycStatus> {
     .sort((a, b) => (b.CreationDate ?? 0) - (a.CreationDate ?? 0))[0];
   return mapStatus(identity?.Status);
 }
+
+// Refetches a KYC document by id. The webhook resolves a KYC_SUCCEEDED/FAILED
+// Hook to the owning user via KycDocumentData.UserId.
+export async function getKycDocument(
+  documentId: string
+): Promise<Mangopay.kycDocument.KycDocumentData> {
+  return mangopay().KycDocuments.get(documentId);
+}
+
+// Maps a KYC document status to the staff_profiles.mangopay_kyc_status column.
+export function kycStatusFromDocument(
+  s: Mangopay.kycDocument.DocumentStatus | undefined
+): KycStatus {
+  return mapStatus(s);
+}

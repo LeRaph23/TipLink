@@ -19,3 +19,9 @@ export async function refundTransfer(
     AuthorId: platformIds().userId,
   });
 }
+
+// Refetches a Refund — used by the webhook to resolve a PAYIN_REFUND_SUCCEEDED
+// Hook back to the original transaction (RefundData.InitialTransactionId).
+export async function getRefund(refundId: string): Promise<Mangopay.refund.RefundData> {
+  return mangopay().Refunds.get(refundId);
+}
