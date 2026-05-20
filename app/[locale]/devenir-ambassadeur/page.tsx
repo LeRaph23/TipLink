@@ -16,13 +16,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    title: 'Programme Ambassadeurs Digitip · Activité étudiante déclarée, 25-35 € par vente',
+    title: 'Programme Ambassadeurs Digitip · Activité déclarée, 25-35 € par vente',
     description:
-      "Programme officiel d'ambassadeurs Digitip : une activité étudiante en micro-entreprise, encadrée et déclarée. Vous présentez nos SmartTags NFC à des commerces de proximité et touchez 25 à 35 € par vente. Pas de stock, pas d'avance, paiement Stripe Connect.",
+      "Programme officiel d'ambassadeurs Digitip : une activité en micro-entreprise, encadrée et déclarée, ouverte aux étudiants, salariés, demandeurs d'emploi, indépendants et retraités actifs. Vous présentez nos SmartTags NFC à des commerces de proximité et touchez 25 à 35 € par vente. Pas de stock, pas d'avance, paiement Stripe Connect.",
     alternates: pageAlternates(locale, '/devenir-ambassadeur', ['fr']),
     openGraph: {
       title: 'Programme Ambassadeurs Digitip',
-      description: 'Activité étudiante déclarée · 25 à 35 € par vente · Candidature en 2 minutes.',
+      description: 'Activité déclarée, ouverte à tous les profils · 25 à 35 € par vente · Candidature en 2 minutes.',
       locale: 'fr_FR',
       type: 'website',
     },
@@ -66,17 +66,32 @@ const AUDIENCES: Audience[] = [
   {
     icon: 'users',
     title: 'Étudiants et alternants',
-    body: "Une activité compatible avec les études : vous choisissez vos horaires, vous arrêtez quand vous voulez.",
+    body: "Une activité compatible avec les études : horaires libres, intensité ajustable selon les périodes d'examens.",
   },
   {
     icon: 'trophy',
     title: 'Jeunes diplômés',
-    body: "Un premier revenu commercial pour étoffer un CV — vente terrain, négociation, suivi client.",
+    body: "Un premier revenu commercial pour étoffer un CV — prospection terrain, négociation, suivi client.",
+  },
+  {
+    icon: 'wallet',
+    title: 'Salariés en complément',
+    body: "Un revenu d'appoint cumulable avec un CDI ou un CDD, sur le temps libre. Statut micro déclaré séparément.",
   },
   {
     icon: 'refresh',
-    title: 'Personnes en reconversion',
-    body: "Un complément de revenu déclaré, sans engagement et sans avance financière.",
+    title: 'Reconversion et demandeurs d’emploi',
+    body: "Compatible avec l’ARE / France Travail (à déclarer). Aucune avance, aucun engagement de résultat.",
+  },
+  {
+    icon: 'tag',
+    title: 'Indépendants et freelances',
+    body: "Un canal de revenu supplémentaire à intégrer à une activité existante (commerciale, terrain, services).",
+  },
+  {
+    icon: 'clock',
+    title: 'Retraités actifs et parents',
+    body: "Un rythme entièrement choisi, quelques heures par semaine, sans contrainte d’objectif.",
   },
 ];
 
@@ -114,8 +129,8 @@ const FAQ: Array<{ q: string; a: string }> = [
     a: "Non. Vous pouvez candidater sans SIRET. En revanche, pour démarcher activement, vous devrez avoir déclaré votre statut d'auto-entrepreneur — démarche gratuite, en ligne, environ 10 minutes sur autoentrepreneur.urssaf.fr. Vous pouvez démarcher dès le jour de la déclaration ; le numéro SIRET vous parvient quelques jours plus tard et sert à émettre vos factures.",
   },
   {
-    q: "Est-ce compatible avec mes études ou un autre emploi ?",
-    a: "Oui. Le statut de micro-entrepreneur est cumulable avec le statut étudiant, un contrat salarié, une bourse, le chômage ou une autre activité indépendante. Vous gérez votre temps : nos ambassadeurs actifs y consacrent en moyenne 5 heures par semaine.",
+    q: "Est-ce compatible avec ma situation actuelle ?",
+    a: "Oui, dans la quasi-totalité des cas. Le statut de micro-entrepreneur est cumulable avec : statut étudiant, contrat salarié (CDI/CDD), bourse, allocation chômage (ARE — à déclarer mensuellement à France Travail), retraite, congé parental, ou une autre activité indépendante. Seules certaines professions réglementées (fonctionnaires, professions médicales libérales) ont des restrictions à vérifier. Vous gérez votre temps : nos ambassadeurs actifs y consacrent en moyenne 5 heures par semaine.",
   },
   {
     q: "Comment et quand suis-je payé ?",
@@ -207,7 +222,7 @@ export default async function DevenirAmbassadeurPage({
         {/* Hero */}
         <section style={{ ...card, padding: '36px 28px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 12 }}>
-            Activité étudiante encadrée et déclarée
+            Activité encadrée et déclarée · Ouverte à tous les profils
           </div>
           <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1.1, margin: '0 0 14px', fontFamily: 'var(--font-display)' }}>
             Rejoignez le programme officiel d&apos;ambassadeurs Digitip.
@@ -289,10 +304,10 @@ export default async function DevenirAmbassadeurPage({
         {/* Audience — explicit for school administrators */}
         <section style={card}>
           <div style={sectionLabel}>À qui s&apos;adresse le programme</div>
-          <h2 style={sectionTitle}>Conçu pour les profils en début de parcours.</h2>
+          <h2 style={sectionTitle}>Ouvert à tous les profils, à temps choisi.</h2>
           <p style={sectionLead}>
-            Le programme vise prioritairement les profils qui cherchent une première expérience commerciale
-            ou un complément de revenu compatible avec une formation.
+            Aucun prérequis de diplôme ni d&apos;âge. Le programme convient aussi bien à un premier revenu
+            qu&apos;à un complément d&apos;activité sur le temps libre — vous fixez votre rythme.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
@@ -359,9 +374,10 @@ export default async function DevenirAmbassadeurPage({
         {/* FAQ */}
         <section style={card}>
           <div style={sectionLabel}>Questions fréquentes</div>
-          <h2 style={sectionTitle}>Tout ce que vos proches voudront savoir.</h2>
+          <h2 style={sectionTitle}>Tout ce que vous (ou vos proches) voudrez savoir.</h2>
           <p style={sectionLead}>
-            Réponses détaillées sur le statut, les paiements et l&apos;engagement attendu.
+            Réponses détaillées sur le cadre légal, le cumul avec votre situation actuelle,
+            les paiements et l&apos;engagement attendu.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -410,27 +426,28 @@ export default async function DevenirAmbassadeurPage({
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <Icon name="share" size={18} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
-              Responsables d&apos;établissement et chargés d&apos;insertion
+              Établissements, missions locales, associations, France Travail
             </div>
           </div>
           <h2 style={{ ...sectionTitle, marginBottom: 8 }}>
-            Vous souhaitez partager cette opportunité à vos étudiants&nbsp;?
+            Vous accompagnez un public en recherche d&apos;activité&nbsp;?
           </h2>
           <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 14px' }}>
-            Cette page est conçue pour pouvoir être partagée telle quelle dans un mail aux étudiants,
-            sur un intranet ou sur les supports de communication d&apos;un BDE / d&apos;un service emploi-stage. L&apos;activité
-            est compatible avec un statut étudiant et n&apos;exige aucune avance financière.
+            Cette page peut être partagée telle quelle par mail, sur un intranet, dans un atelier d&apos;insertion ou
+            sur les canaux d&apos;un BDE, d&apos;un service emploi-stage, d&apos;une mission locale ou d&apos;une structure
+            d&apos;accompagnement. L&apos;activité est déclarée, sans avance financière et compatible avec la plupart
+            des situations (étudiants, salariés, demandeurs d&apos;emploi, retraités).
           </p>
           <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 16px' }}>
-            Pour un brief institutionnel détaillé (présentation du programme, conditions, points de vigilance
-            anti-fraude, contact référent), écrivez-nous à{' '}
-            <a href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20%C3%A9tablissement" style={{ color: 'var(--accent)', fontWeight: 600 }}>
+            Pour un brief détaillé (présentation du programme, conditions, points de vigilance anti-fraude,
+            contact référent), écrivez-nous à{' '}
+            <a href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20institutionnelle" style={{ color: 'var(--accent)', fontWeight: 600 }}>
               contact@digitip.app
             </a>
             . Nous répondons sous 48 h ouvrées.
           </p>
           <a
-            href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20%C3%A9tablissement"
+            href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20institutionnelle"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
