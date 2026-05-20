@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Icon } from '@/components/ambassadeur/icons';
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '10px 12px', borderRadius: 8,
@@ -109,12 +110,27 @@ export function RecruitmentLandingForm() {
         background: 'var(--success-bg)', border: '1px solid var(--success)',
         borderRadius: 12, padding: '24px 20px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🎉</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--success)', marginBottom: 6 }}>
-          Candidature envoyée !
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            background: 'var(--success)',
+            color: '#fff',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 10,
+          }}
+        >
+          <Icon name="check" size={22} strokeWidth={2.5} />
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-          Nous revenons vers vous sous 48h avec votre code promo et votre PIN.
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--success)', marginBottom: 6 }}>
+          Candidature reçue
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
+          Votre dossier a bien été enregistré. Nous revenons vers vous sous 48&nbsp;h ouvrées
+          avec votre code ambassadeur et l&apos;accès à votre tableau de bord.
         </div>
       </div>
     );
