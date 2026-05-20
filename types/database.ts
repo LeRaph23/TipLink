@@ -1074,6 +1074,66 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_step: string | null
+          done: number
+          error: string | null
+          failed_count: number
+          finished_at: string | null
+          id: string
+          last_heartbeat_at: string | null
+          params: Json
+          result: Json
+          started_at: string | null
+          status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+          succeeded: number
+          total: number
+          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import'
+          worker_token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_step?: string | null
+          done?: number
+          error?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          params?: Json
+          result?: Json
+          started_at?: string | null
+          status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+          succeeded?: number
+          total?: number
+          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import'
+          worker_token?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_step?: string | null
+          done?: number
+          error?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          params?: Json
+          result?: Json
+          started_at?: string | null
+          status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+          succeeded?: number
+          total?: number
+          type?: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import'
+          worker_token?: string
+        }
+        Relationships: []
+      }
       nfc_stickers: {
         Row: {
           batch_label: string | null
