@@ -11,10 +11,6 @@
     {
       "path": "/api/cron/lifecycle-emails",
       "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/import-jobs-recover",
-      "schedule": "*/2 * * * *"
     }
   ]
 }
