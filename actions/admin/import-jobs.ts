@@ -62,10 +62,41 @@ export async function listImportJobs(): Promise<Result<{ jobs: ImportJobView[] }
     // refreshed and want to see the result".
     const { data, error } = await service
       .from('import_jobs')
-      .select('id, type, status, params, total, done, succeeded, failed_count, current_step, result, created_at, started_at, finished_at, last_heartbeat_at, error')
+      .select('id, type, status, params, total, done, succeeded, failed_count, current_step, result, created_at, started_at, finished_at, last_heartbeat_at, error, worker_token')
       .order('created_at', { ascending: false })
       .limit(40);
     if (error) return { ok: false, error: error.message };
+
+    // Auto-resume: every poll, look for jobs whose chain has gone silent and
+    // re-poke the worker. Catches the case where a chunk crashed mid-way, a
+    // cold start ate the inter-chunk fetch, or the previous worker hit its
+    // maxDuration before its `after()` could fire the next poke. The page
+    // polling drives recovery — no cron needed.
+    const now = Date.now();
+    const STALE_RUNNING_MS = 60_000;   // chunks update heartbeat every few items
+    const STALE_PENDING_MS = 45_000;   // initial poke should land in < 30s
+    const toResume: Array<{ id: string; worker_token: string }> = [];
+    for (const r of data ?? []) {
+      if (r.status === 'running') {
+        const hb = r.last_heartbeat_at ? new Date(r.last_heartbeat_at).getTime() : 0;
+        if (now - hb > STALE_RUNNING_MS) toResume.push({ id: r.id, worker_token: r.worker_token });
+      } else if (r.status === 'pending') {
+        if (now - new Date(r.created_at).getTime() > STALE_PENDING_MS) {
+          toResume.push({ id: r.id, worker_token: r.worker_token });
+        }
+      }
+    }
+    if (toResume.length > 0) {
+      // Bump heartbeat first so a flurry of concurrent polls don't all poke at
+      // once. Then fire pokes in parallel — pokeWorker swallows its own errors.
+      const ids = toResume.map((j) => j.id);
+      await service
+        .from('import_jobs')
+        .update({ last_heartbeat_at: new Date().toISOString() })
+        .in('id', ids);
+      await Promise.all(toResume.map((j) => pokeWorker(j.id, j.worker_token)));
+    }
+
     const jobs: ImportJobView[] = (data ?? []).map((r) => ({
       id: r.id,
       type: r.type,

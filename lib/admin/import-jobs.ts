@@ -82,9 +82,13 @@ export async function createJob(
 }
 
 /**
- * Fire a POST at the worker route. Awaits only until the route responds
- * (it responds 200 immediately; work happens after the response). Failures
- * are swallowed — the UI exposes a "Relancer" button for stalled rows.
+ * Fire a POST at the worker route. Awaits only until the route responds —
+ * it returns 200 immediately because work happens inside `after()`. The 15 s
+ * timeout is generous enough for a Vercel cold-start (5-10 s) yet leaves the
+ * caller comfortable headroom under its own 60 s maxDuration (a chunk that
+ * spent ~35 s working still has ~25 s to wait for headers + a couple of DB
+ * writes). When the timeout does fire, the auto-resume in `listImportJobs`
+ * re-pokes the job on the next panel poll.
  */
 export async function pokeWorker(jobId: string, workerToken: string): Promise<void> {
   const url = `${getBaseUrl()}/api/admin/import-jobs/worker`;
@@ -93,9 +97,9 @@ export async function pokeWorker(jobId: string, workerToken: string): Promise<vo
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId, workerToken }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(15000),
     });
   } catch {
-    /* worker offline / cold-start timeout — UI can retry */
+    /* let the auto-resume on next list-jobs poll pick this back up */
   }
 }
