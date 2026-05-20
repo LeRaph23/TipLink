@@ -71,17 +71,22 @@ async function fetchPackPricing(pack: PackId): Promise<PackPricing> {
 }
 
 // 1-hour cache so landing page hits don't fan out to Stripe on every paint.
-// Invalidate by deploying or by calling revalidateTag('stripe-pricing').
-const cached = unstable_cache(fetchPackPricing, ['stripe-pack-pricing'], {
-  revalidate: 3600,
-  tags: ['stripe-pricing'],
-});
+// The cache key includes the price ID so rotating STRIPE_PRICE_PACK_*_HARDWARE
+// auto-invalidates instead of serving the previous price for up to an hour.
+// Invalidate manually by calling revalidateTag('stripe-pricing').
+function getCached(pack: PackId) {
+  const priceId = process.env[`STRIPE_PRICE_PACK_${pack.toUpperCase()}_HARDWARE`] ?? 'fallback';
+  return unstable_cache(fetchPackPricing, ['stripe-pack-pricing', pack, priceId], {
+    revalidate: 3600,
+    tags: ['stripe-pricing'],
+  })(pack);
+}
 
 export async function getPackPricing(pack: PackId): Promise<PackPricing> {
-  return cached(pack);
+  return getCached(pack);
 }
 
 export async function getAllPackPricing(): Promise<Record<PackId, PackPricing>> {
-  const [solo, duo] = await Promise.all([cached('solo'), cached('duo')]);
+  const [solo, duo] = await Promise.all([getCached('solo'), getCached('duo')]);
   return { solo, duo };
 }
