@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
-  importZonesFromOsm,
-  importSalonsForZone,
-  enrichSalonAddressesForZone,
-  enrichSalonsViaGoogleForZone,
   createZone,
   toggleZoneActive,
   createSalon,
   toggleSalonActive,
 } from '@/actions/admin/salons';
+import { startImportJob } from '@/actions/admin/import-jobs';
+import type { ImportJobParams } from '@/lib/admin/import-jobs';
+import { ImportJobsPanel } from '@/components/dashboard/admin/ImportJobsPanel';
 import type { AdminSalon, AdminZoneOverlay } from '@/components/salons/SalonsMap';
 
 const SalonsMap = dynamic(
@@ -71,261 +71,108 @@ export function SalonsManager({
   mapSalons: AdminSalon[];
   mapZones: AdminZoneOverlay[];
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState<'overview' | 'map' | 'zones' | 'salons' | 'visits'>('overview');
   const [importCity, setImportCity] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const [pending, startTransition] = useTransition();
-  // Live progress of the "re-import everything" run (null when idle).
-  const [reimport, setReimport] = useState<
-    { done: number; total: number; imported: number; current: string; failed: number } | null
-  >(null);
+  // Used only for the few remaining synchronous actions (zone CRUD, salon
+  // toggle). Long imports go through background jobs and don't gate the UI.
+  const [, startTransition] = useTransition();
 
-  const runImportZones = () => {
-    if (!importCity.trim()) return;
-    setFeedback(null);
-    startTransition(async () => {
-      const res = await importZonesFromOsm(importCity.trim());
-      if (res.ok) {
-        setFeedback({ type: 'ok', msg: `${res.inserted} zone(s) importée(s), ${res.skipped} déjà existante(s).` });
-      } else {
-        setFeedback({ type: 'err', msg: res.error });
-      }
-    });
-  };
+  // Zone multi-select drives the bulk-action bar. Reset whenever the zones
+  // list changes (e.g. an "import_zones" job finishes and revalidates the page).
+  const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
 
-  // Compute empty-zones list eagerly so the button can advertise the count.
+  // ── Derived stats (used by quick selectors + per-zone counters) ───────────
   const salonsCountByZone = salons.reduce<Record<string, number>>((acc, s) => {
     if (s.zoneId) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
     return acc;
   }, {});
-  const emptyZones = zones.filter((z) => z.isActive && (salonsCountByZone[z.id] ?? 0) === 0);
-  const activeZones = zones.filter((z) => z.isActive);
-
-  // Zones that still have at least one salon missing an address.
   const missingAddressCountByZone = salons.reduce<Record<string, number>>((acc, s) => {
     if (s.zoneId && !s.address) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
     return acc;
   }, {});
-  const zonesWithMissingAddresses = zones.filter(
-    (z) => z.isActive && (missingAddressCountByZone[z.id] ?? 0) > 0
+  const unenrichedGoogleByZone = salons.reduce<Record<string, number>>((acc, s) => {
+    if (s.zoneId && !s.googleEnriched) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
+    return acc;
+  }, {});
+  const activeZones = zones.filter((z) => z.isActive);
+  const emptyZones = activeZones.filter((z) => (salonsCountByZone[z.id] ?? 0) === 0);
+  const zonesWithMissingAddresses = activeZones.filter(
+    (z) => (missingAddressCountByZone[z.id] ?? 0) > 0
   );
-  const totalMissingAddresses = Object.values(missingAddressCountByZone).reduce((a, b) => a + b, 0);
 
-  const runImportAllEmptyZones = () => {
-    if (emptyZones.length === 0) return;
-    if (!confirm(
-      `Importer les établissements des ${emptyZones.length} zones encore vides ? Cela peut prendre ~${Math.ceil(emptyZones.length * 1.5 / 60)} min.`
-    )) return;
-
-    setFeedback({ type: 'ok', msg: `Import en cours sur ${emptyZones.length} zones…` });
-    startTransition(async () => {
-      let totalInserted = 0;
-      let totalSkipped = 0;
-      let failed = 0;
-      for (const z of emptyZones) {
-        try {
-          const r = await importSalonsForZone(z.id);
-          if (r.ok) { totalInserted += r.inserted; totalSkipped += r.skipped; }
-          else failed += 1;
-        } catch {
-          failed += 1;
-        }
-        await new Promise((r) => setTimeout(r, 800));
-      }
-      setFeedback({
-        type: failed === 0 ? 'ok' : 'err',
-        msg: `${emptyZones.length - failed}/${emptyZones.length} zones traitées · ${totalInserted} établissements importés, ${totalSkipped} ignorés${failed ? ` · ${failed} échec(s)` : ''}.`,
-      });
+  // ── Job dispatcher: every long-running action goes through this ───────────
+  // Returns immediately — progress shows in ImportJobsPanel above. We don't
+  // gate the UI on this so the admin can queue multiple jobs in a row.
+  const dispatchJob = (params: ImportJobParams, okMessage?: string) => {
+    setFeedback(null);
+    startImportJob(params).then((r) => {
+      if (!r.ok) setFeedback({ type: 'err', msg: r.error });
+      else setFeedback({ type: 'ok', msg: okMessage ?? 'Job lancé — progression dans le panneau ci-dessus.' });
     });
   };
 
-  // Re-import every active zone, one at a time, with a live progress bar.
-  // Driven from the client so each zone is its own short server call.
-  const runReimportAll = async () => {
-    if (activeZones.length === 0 || reimport) return;
-    if (!confirm(
-      `Réimporter les établissements des ${activeZones.length} zones actives depuis OpenStreetMap ? ` +
-      `Les zones rate-limitées sont réessayées automatiquement — ça peut être long, garde cet onglet ouvert.`
-    )) return;
+  const runImportZones = () => {
+    const city = importCity.trim();
+    if (!city) return;
+    dispatchJob({ type: 'import_zones', city }, `Import des zones pour "${city}" lancé.`);
+  };
 
-    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
-    setFeedback(null);
+  // Quick zone-selectors — fill the multi-select from the action bar.
+  const selectAllActive       = () => setSelectedZoneIds(new Set(activeZones.map((z) => z.id)));
+  const selectEmptyOnly       = () => setSelectedZoneIds(new Set(emptyZones.map((z) => z.id)));
+  const selectMissingAddrOnly = () => setSelectedZoneIds(new Set(zonesWithMissingAddresses.map((z) => z.id)));
+  const clearSelection        = () => setSelectedZoneIds(new Set());
 
-    let imported = 0;
-    const failedZones: string[] = [];
-
-    for (let i = 0; i < activeZones.length; i++) {
-      const z = activeZones[i];
-      const label = `${z.city} · ${z.name}`;
-      setReimport({ done: i, total: activeZones.length, imported, current: label, failed: failedZones.length });
-
-      // Retry the zone until it succeeds — an OSM rate-limit is transient and
-      // skipping would leave a silent gap. Only a structural error (zone gone
-      // / no bbox) stops the retries; otherwise we keep going, with backoff.
-      for (let attempt = 1; ; attempt++) {
-        try {
-          const r = await importSalonsForZone(z.id);
-          if (r.ok) { imported += r.inserted; break; }
-          if (/introuvable|bbox/i.test(r.error)) { failedZones.push(label); break; }
-        } catch {
-          // network error — fall through and retry
-        }
-        if (attempt >= 12) { failedZones.push(label); break; }
-        setReimport({
-          done: i, total: activeZones.length, imported,
-          current: `${label} — nouvel essai (${attempt})…`, failed: failedZones.length,
-        });
-        await sleep(Math.min(3000 * attempt, 30000));
-      }
-
-      if (i + 1 < activeZones.length) await sleep(500);
+  // Bulk runners — operate on the selection.
+  const runBulkOnSelection = (
+    type: 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import',
+    force = false,
+  ) => {
+    const ids = Array.from(selectedZoneIds);
+    if (ids.length === 0) {
+      setFeedback({ type: 'err', msg: 'Sélectionne au moins une zone.' });
+      return;
     }
-
-    setReimport(null);
-    setFeedback({
-      type: failedZones.length === 0 ? 'ok' : 'err',
-      msg: failedZones.length === 0
-        ? `Ré-import terminé : ${imported} nouvel(s) établissement(s) importé(s) sur ${activeZones.length} zones.`
-        : `Ré-import terminé : ${imported} importé(s). ${failedZones.length} zone(s) en échec : ${failedZones.join(', ')}.`,
-    });
+    const params: ImportJobParams =
+        type === 'enrich_addresses' ? { type, zoneIds: ids, force }
+      : type === 'enrich_google'    ? { type, zoneIds: ids, force }
+      : type === 'full_import'      ? { type, zoneIds: ids }
+      :                                { type, zoneIds: ids };
+    dispatchJob(params, `${ids.length} zone${ids.length > 1 ? 's' : ''} en file d'attente.`);
   };
 
-  const runEnrichAllMissingAddresses = () => {
-    if (zonesWithMissingAddresses.length === 0) return;
-    // Nominatim throttles to 1 req/s, so the cost in seconds ≈ total missing.
-    const seconds = totalMissingAddresses;
-    if (!confirm(
-      `Enrichir les adresses des ${totalMissingAddresses} établissements manquants via Nominatim ? ` +
-      `Cela peut prendre ~${Math.ceil(seconds / 60)} min (limite 1 req/s).`
-    )) return;
-
-    setFeedback({ type: 'ok', msg: `Enrichissement de ${totalMissingAddresses} adresses en cours…` });
-    startTransition(async () => {
-      let totalEnriched = 0;
-      let totalSkipped = 0;
-      let failed = 0;
-      for (const z of zonesWithMissingAddresses) {
-        try {
-          const r = await enrichSalonAddressesForZone(z.id); // force=false → only missing
-          if (r.ok) { totalEnriched += r.enriched; totalSkipped += r.skipped; }
-          else failed += 1;
-        } catch {
-          failed += 1;
-        }
-        // Short pause between zones; Nominatim is the bottleneck inside.
-        await new Promise((r) => setTimeout(r, 300));
-      }
-      setFeedback({
-        type: failed === 0 ? 'ok' : 'err',
-        msg: `${zonesWithMissingAddresses.length - failed}/${zonesWithMissingAddresses.length} zones traitées · ${totalEnriched} adresses ajoutées, ${totalSkipped} introuvables${failed ? ` · ${failed} échec(s)` : ''}.`,
-      });
-    });
+  // Per-zone shortcut (job with a single zone) — used by the zones grid.
+  const runForZone = (
+    type: 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import',
+    zoneId: string,
+    force = false,
+  ) => {
+    const params: ImportJobParams =
+        type === 'enrich_addresses' ? { type, zoneIds: [zoneId], force }
+      : type === 'enrich_google'    ? { type, zoneIds: [zoneId], force }
+      : type === 'full_import'      ? { type, zoneIds: [zoneId] }
+      :                                { type, zoneIds: [zoneId] };
+    dispatchJob(params);
   };
 
-  const runImportSalons = (zoneId: string) => {
-    setFeedback(null);
-    startTransition(async () => {
-      const res = await importSalonsForZone(zoneId);
-      if (res.ok) {
-        setFeedback({ type: 'ok', msg: `${res.inserted} établissement(s) importé(s), ${res.skipped} ignoré(s).` });
-      } else {
-        setFeedback({ type: 'err', msg: res.error });
-      }
-    });
+  // City-overview bulk: builds a job over every active zone in the city.
+  const runBulkForCity = (city: string, kind: 'salons' | 'google' | 'addresses' | 'full') => {
+    const ids = activeZones.filter((z) => z.city === city).map((z) => z.id);
+    if (ids.length === 0) return;
+    const params: ImportJobParams =
+        kind === 'salons'    ? { type: 'import_salons',    zoneIds: ids }
+      : kind === 'google'    ? { type: 'enrich_google',    zoneIds: ids, force: true }
+      : kind === 'addresses' ? { type: 'enrich_addresses', zoneIds: ids, force: true }
+      :                        { type: 'full_import',      zoneIds: ids };
+    dispatchJob(params, `Job sur ${ids.length} zone${ids.length > 1 ? 's' : ''} de ${city} lancé.`);
   };
-
-
 
   const handleToggleZone = (id: string, active: boolean) => {
     startTransition(async () => {
       const res = await toggleZoneActive(id, active);
       if (!res.ok) setFeedback({ type: 'err', msg: res.error });
-    });
-  };
-  const runEnrichAddresses = (zoneId: string, force = false) => {
-    setFeedback(null);
-    startTransition(async () => {
-      const res = await enrichSalonAddressesForZone(zoneId, { force });
-      if (res.ok) {
-        setFeedback({
-          type: 'ok',
-          msg: res.total === 0
-            ? 'Aucune adresse à enrichir.'
-            : `${res.enriched} adresse(s) ${force ? 'mises à jour' : 'ajoutées'} via Nominatim, ${res.skipped} introuvable(s).`,
-        });
-      } else {
-        setFeedback({ type: 'err', msg: res.error });
-      }
-    });
-  };
-  const runEnrichGoogle = (zoneId: string, force = false) => {
-    setFeedback(null);
-    startTransition(async () => {
-      const res = await enrichSalonsViaGoogleForZone(zoneId, { force });
-      if (res.ok) {
-        if (res.total === 0) {
-          setFeedback({ type: 'ok', msg: 'Aucun établissement à enrichir.' });
-        } else {
-          const base = `${res.matched}/${res.total} établissements enrichis. ${res.closed} fermé(s) définitivement → désactivés. ${res.missing} introuvable(s) sur Google.`;
-          const suffix = res.apiError ? ` ⚠ Erreur API : ${res.apiError}` : '';
-          setFeedback({
-            type: res.apiError ? 'err' : 'ok',
-            msg: base + suffix,
-          });
-        }
-      } else {
-        setFeedback({ type: 'err', msg: res.error });
-      }
-    });
-  };
-
-  // ── City-level bulk runners ──────────────────────────────────────────────
-  type Bulk = 'salons' | 'google' | 'addresses';
-
-  const runBulkForCity = (city: string, kind: Bulk) => {
-    const zonesForCity = zones.filter((z) => z.city === city && z.isActive);
-    if (zonesForCity.length === 0) return;
-    const labels: Record<Bulk, string> = {
-      salons:    `Réimporter les établissements des ${zonesForCity.length} zones de ${city} ?`,
-      google:    `Ré-enrichir Google sur les ${zonesForCity.length} zones de ${city} ? (consomme du quota API)`,
-      addresses: `Ré-enrichir les adresses des ${zonesForCity.length} zones de ${city} via Nominatim ?`,
-    };
-    if (!confirm(labels[kind])) return;
-
-    setFeedback({ type: 'ok', msg: `Traitement de ${zonesForCity.length} zones en cours…` });
-    startTransition(async () => {
-      let okCount = 0, failed = 0;
-      const totals = { matched: 0, missing: 0, closed: 0, inserted: 0, skipped: 0, enriched: 0 };
-
-      for (const z of zonesForCity) {
-        let r;
-        try {
-          if (kind === 'salons')     r = await importSalonsForZone(z.id);
-          else if (kind === 'google') r = await enrichSalonsViaGoogleForZone(z.id, { force: true });
-          else                        r = await enrichSalonAddressesForZone(z.id, { force: true });
-        } catch (e) {
-          r = { ok: false, error: e instanceof Error ? e.message : 'Erreur' } as const;
-        }
-        if (r.ok) {
-          okCount += 1;
-          if (kind === 'salons')        { totals.inserted += (r as { inserted: number }).inserted; totals.skipped += (r as { skipped: number }).skipped; }
-          else if (kind === 'google')   { totals.matched += (r as { matched: number }).matched; totals.missing += (r as { missing: number }).missing; totals.closed += (r as { closed: number }).closed; }
-          else                          { totals.enriched += (r as { enriched: number }).enriched; }
-        } else {
-          failed += 1;
-        }
-        await new Promise((r) => setTimeout(r, 800));
-      }
-
-      const summary =
-        kind === 'salons'   ? `${okCount}/${zonesForCity.length} zones · ${totals.inserted} établissements importés, ${totals.skipped} ignorés`
-      : kind === 'google'   ? `${okCount}/${zonesForCity.length} zones · ${totals.matched} matchés, ${totals.closed} fermés, ${totals.missing} introuvables`
-      :                       `${okCount}/${zonesForCity.length} zones · ${totals.enriched} adresses enrichies`;
-
-      setFeedback({
-        type: failed === 0 ? 'ok' : 'err',
-        msg: summary + (failed ? ` · ${failed} échec(s)` : ''),
-      });
     });
   };
   const handleToggleSalon = (id: string, active: boolean) => {
@@ -335,8 +182,14 @@ export function SalonsManager({
     });
   };
 
+  // When all jobs go terminal, ask Next to refresh the server-rendered counts.
+  const refreshServerData = () => router.refresh();
+
   return (
     <div>
+      {/* Live progress for every running / recent job. Hidden when empty. */}
+      <ImportJobsPanel onAnyComplete={refreshServerData} />
+
       {/* Import bar */}
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
@@ -349,6 +202,7 @@ export function SalonsManager({
           <input
             value={importCity}
             onChange={(e) => setImportCity(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') runImportZones(); }}
             placeholder="Ex: Paris · Mulhouse · Bas-Rhin · Yvelines…"
             style={{
               flex: 1, minWidth: 200, padding: '8px 12px',
@@ -358,131 +212,68 @@ export function SalonsManager({
           />
           <button
             onClick={runImportZones}
-            disabled={pending || !importCity.trim()}
+            disabled={!importCity.trim()}
             style={{
               padding: '8px 14px', background: 'var(--accent)', color: '#fff',
               border: 'none', borderRadius: 'var(--radius-sm)',
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            {pending ? 'Import…' : 'Importer zones'}
+            Importer zones
           </button>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
           Ville → arrondissements ou commune entière selon la taille. Département → toutes ses communes.
+          Le job tourne côté serveur — tu peux fermer cet onglet, il continue.
         </div>
 
+        {/* Zone-selection bulk-actions bar. Visible when zones exist; bulk
+            buttons activate as soon as the user picks at least one zone. */}
         {zones.length > 0 && (
           <div style={{
             marginTop: 12, paddingTop: 12,
             borderTop: '1px dashed var(--border-subtle)',
           }}>
-            {reimport ? (
-              <div>
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6,
-                  fontSize: 12, color: 'var(--text-2)', marginBottom: 4,
-                }}>
-                  <span>
-                    <strong>Ré-import en cours…</strong>{' '}
-                    Zone {Math.min(reimport.done + 1, reimport.total)} / {reimport.total}
-                  </span>
-                  <span>
-                    <strong style={{ color: 'var(--accent)' }}>{reimport.imported}</strong>{' '}
-                    établissement{reimport.imported !== 1 ? 's' : ''} importé{reimport.imported !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <div style={{
-                  fontSize: 11, color: 'var(--text-3)', marginBottom: 6,
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  📍 {reimport.current}
-                </div>
-                <div style={{ height: 8, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${Math.round((reimport.done / reimport.total) * 100)}%`,
-                    background: 'var(--accent)', borderRadius: 99,
-                    transition: 'width 0.3s ease',
-                  }} />
-                </div>
-                {reimport.failed > 0 && (
-                  <div style={{ fontSize: 11, color: 'var(--error)', marginTop: 4 }}>
-                    {reimport.failed} zone(s) définitivement en échec — la liste s&apos;affichera à la fin.
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
-                  Réimporte les établissements (coiffure, esthétique, restaurants, cafés, bars) des{' '}
-                  <strong>{activeZones.length}</strong> zone{activeZones.length > 1 ? 's' : ''} active
-                  {activeZones.length > 1 ? 's' : ''} depuis OpenStreetMap.
-                </div>
-                <button
-                  onClick={runReimportAll}
-                  disabled={pending || activeZones.length === 0}
-                  style={{
-                    padding: '8px 14px', background: 'var(--accent)', color: '#fff',
-                    border: 'none', borderRadius: 'var(--radius-sm)',
-                    fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-                  }}
-                >
-                  🔄 Tout réimporter ({activeZones.length})
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {emptyZones.length > 0 && (
-          <div style={{
-            marginTop: 12, paddingTop: 12,
-            borderTop: '1px dashed var(--border-subtle)',
-            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          }}>
-            <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
-              <strong style={{ color: 'var(--accent)' }}>{emptyZones.length}</strong> zone
-              {emptyZones.length > 1 ? 's' : ''} sans aucun établissement importé pour l&apos;instant.
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                <strong style={{ color: 'var(--accent)' }}>{selectedZoneIds.size}</strong>
+                {' '}zone{selectedZoneIds.size !== 1 ? 's' : ''} sélectionnée{selectedZoneIds.size !== 1 ? 's' : ''}
+              </span>
+              <button onClick={selectAllActive}       style={chipBtnStyle}>Toutes actives ({activeZones.length})</button>
+              {emptyZones.length > 0 && (
+                <button onClick={selectEmptyOnly}     style={chipBtnStyle}>Vides ({emptyZones.length})</button>
+              )}
+              {zonesWithMissingAddresses.length > 0 && (
+                <button onClick={selectMissingAddrOnly} style={chipBtnStyle}>Sans adresse ({zonesWithMissingAddresses.length})</button>
+              )}
+              {selectedZoneIds.size > 0 && (
+                <button onClick={clearSelection}      style={chipBtnGhostStyle}>Désélectionner</button>
+              )}
             </div>
-            <button
-              onClick={runImportAllEmptyZones}
-              disabled={pending}
-              style={{
-                padding: '8px 14px', background: 'var(--accent-muted)', color: 'var(--accent)',
-                border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-sm)',
-                fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-              }}
-            >
-              ⚡ Importer les établissements des zones vides ({emptyZones.length})
-            </button>
-          </div>
-        )}
 
-        {zonesWithMissingAddresses.length > 0 && (
-          <div style={{
-            marginTop: 12, paddingTop: 12,
-            borderTop: '1px dashed var(--border-subtle)',
-            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          }}>
-            <div style={{ flex: 1, minWidth: 200, fontSize: 12, color: 'var(--text-2)' }}>
-              <strong style={{ color: 'var(--warning)' }}>{totalMissingAddresses}</strong> établissement
-              {totalMissingAddresses > 1 ? 's' : ''} sans adresse,
-              répartis sur {zonesWithMissingAddresses.length} zone
-              {zonesWithMissingAddresses.length > 1 ? 's' : ''}.
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => runBulkOnSelection('full_import')}
+                disabled={selectedZoneIds.size === 0}
+                title="OSM + enrichissement adresses Nominatim, en chaîne"
+                style={primaryActionStyle(selectedZoneIds.size === 0)}
+              >🚀 Import complet ({selectedZoneIds.size})</button>
+              <button
+                onClick={() => runBulkOnSelection('import_salons')}
+                disabled={selectedZoneIds.size === 0}
+                style={secondaryActionStyle(selectedZoneIds.size === 0)}
+              >🔄 OSM seul ({selectedZoneIds.size})</button>
+              <button
+                onClick={() => runBulkOnSelection('enrich_addresses', false)}
+                disabled={selectedZoneIds.size === 0}
+                style={secondaryActionStyle(selectedZoneIds.size === 0)}
+              >📍 Adresses manquantes</button>
+              <button
+                onClick={() => runBulkOnSelection('enrich_google', false)}
+                disabled={selectedZoneIds.size === 0}
+                style={secondaryActionStyle(selectedZoneIds.size === 0)}
+              >⚙ Google</button>
             </div>
-            <button
-              onClick={runEnrichAllMissingAddresses}
-              disabled={pending}
-              style={{
-                padding: '8px 14px',
-                background: 'var(--warning-bg)', color: 'var(--warning)',
-                border: '1px solid var(--warning)', borderRadius: 'var(--radius-sm)',
-                fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-              }}
-            >
-              📍 Enrichir les adresses manquantes ({totalMissingAddresses})
-            </button>
           </div>
         )}
       </div>
@@ -521,7 +312,7 @@ export function SalonsManager({
       </div>
 
       {tab === 'overview' && (
-        <CityOverview cityStats={cityStats} onBulk={runBulkForCity} pending={pending} />
+        <CityOverview cityStats={cityStats} onBulk={runBulkForCity} />
       )}
 
       {tab === 'map' && (
@@ -531,28 +322,24 @@ export function SalonsManager({
       {tab === 'zones' && (
         <ZonesTable
           zones={zones}
-          salonsByZone={salons.reduce<Record<string, number>>((acc, s) => {
-            if (s.zoneId) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
-            return acc;
-          }, {})}
-          missingAddressByZone={salons.reduce<Record<string, number>>((acc, s) => {
-            if (s.zoneId && !s.address) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
-            return acc;
-          }, {})}
-          unenrichedGoogleByZone={salons.reduce<Record<string, number>>((acc, s) => {
-            if (s.zoneId && !s.googleEnriched) acc[s.zoneId] = (acc[s.zoneId] ?? 0) + 1;
-            return acc;
-          }, {})}
-          onImportSalons={runImportSalons}
-          onEnrichAddresses={runEnrichAddresses}
-          onEnrichGoogle={runEnrichGoogle}
+          salonsByZone={salonsCountByZone}
+          missingAddressByZone={missingAddressCountByZone}
+          unenrichedGoogleByZone={unenrichedGoogleByZone}
+          selectedZoneIds={selectedZoneIds}
+          onToggleSelected={(id, selected) => {
+            setSelectedZoneIds((prev) => {
+              const next = new Set(prev);
+              if (selected) next.add(id); else next.delete(id);
+              return next;
+            });
+          }}
+          onRunForZone={runForZone}
           onToggleActive={handleToggleZone}
-          pending={pending}
         />
       )}
 
       {tab === 'salons' && (
-        <SalonsTable salons={salons} zones={zones} onToggle={handleToggleSalon} pending={pending} />
+        <SalonsTable salons={salons} zones={zones} onToggle={handleToggleSalon} />
       )}
 
       {tab === 'visits' && (
@@ -563,8 +350,8 @@ export function SalonsManager({
 }
 
 function CityOverview({
-  cityStats, onBulk, pending,
-}: { cityStats: CityStats[]; onBulk: (city: string, kind: 'salons' | 'google' | 'addresses') => void; pending: boolean }) {
+  cityStats, onBulk,
+}: { cityStats: CityStats[]; onBulk: (city: string, kind: 'salons' | 'google' | 'addresses' | 'full') => void }) {
   if (cityStats.length === 0) {
     return (
       <Empty>Aucune ville importée. Démarre avec le formulaire ci-dessus.</Empty>
@@ -602,19 +389,22 @@ function CityOverview({
                   Actions sur toutes les zones
                 </div>
                 <button
-                  onClick={() => onBulk(c.city, 'salons')}
-                  disabled={pending}
+                  onClick={() => onBulk(c.city, 'full')}
                   style={cityBulkPrimaryStyle}
-                >🔄 {hasSalons ? 'Ré-importer' : 'Importer'} les établissements OSM</button>
+                >🚀 Import complet (OSM + adresses)</button>
+                <button
+                  onClick={() => onBulk(c.city, 'salons')}
+                  style={cityBulkGhostStyle(false)}
+                >🔄 {hasSalons ? 'Ré-importer' : 'Importer'} OSM seulement</button>
                 <button
                   onClick={() => onBulk(c.city, 'google')}
-                  disabled={pending || !hasSalons}
+                  disabled={!hasSalons}
                   style={cityBulkGhostStyle(!hasSalons)}
                   title={!hasSalons ? 'Importe d\'abord les établissements' : ''}
                 >⚙ Enrichir Google (horaires, fermés, note)</button>
                 <button
                   onClick={() => onBulk(c.city, 'addresses')}
-                  disabled={pending || !hasSalons}
+                  disabled={!hasSalons}
                   style={cityBulkGhostStyle(!hasSalons)}
                   title={!hasSalons ? 'Importe d\'abord les établissements' : ''}
                 >📍 Enrichir les adresses (Nominatim)</button>
@@ -646,19 +436,20 @@ function Empty({ children }: { children: React.ReactNode }) {
   );
 }
 
+type PerZoneAction = 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import';
+
 function ZonesTable({
   zones, salonsByZone, missingAddressByZone, unenrichedGoogleByZone,
-  onImportSalons, onEnrichAddresses, onEnrichGoogle, onToggleActive, pending,
+  selectedZoneIds, onToggleSelected, onRunForZone, onToggleActive,
 }: {
   zones: Zone[];
   salonsByZone: Record<string, number>;
   missingAddressByZone: Record<string, number>;
   unenrichedGoogleByZone: Record<string, number>;
-  onImportSalons: (zoneId: string) => void;
-  onEnrichAddresses: (zoneId: string, force?: boolean) => void;
-  onEnrichGoogle: (zoneId: string, force?: boolean) => void;
+  selectedZoneIds: Set<string>;
+  onToggleSelected: (id: string, selected: boolean) => void;
+  onRunForZone: (action: PerZoneAction, zoneId: string, force?: boolean) => void;
   onToggleActive: (id: string, active: boolean) => void;
-  pending: boolean;
 }) {
   const [creating, setCreating] = useState(false);
   const [newCity, setNewCity] = useState('');
@@ -716,29 +507,37 @@ function ZonesTable({
           const count = salonsByZone[z.id] ?? 0;
           const missing = missingAddressByZone[z.id] ?? 0;
           const unenrichedGoogle = unenrichedGoogleByZone[z.id] ?? 0;
+          const isSelected = selectedZoneIds.has(z.id);
           return (
             <div key={z.id} style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border-subtle)',
+              background: isSelected ? 'var(--accent-muted)' : 'var(--surface)',
+              border: `1px solid ${isSelected ? 'var(--accent-border)' : 'var(--border-subtle)'}`,
               borderRadius: 'var(--radius)',
               padding: 14,
               opacity: z.isActive ? 1 : 0.55,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {z.city}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => onToggleSelected(z.id, e.target.checked)}
+                    style={{ marginTop: 3 }}
+                  />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {z.city}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 2, wordBreak: 'break-word' }}>
+                      {z.name}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 2, wordBreak: 'break-word' }}>
-                    {z.name}
-                  </div>
-                </div>
+                </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-3)' }}>
                   <input
                     type="checkbox"
                     checked={z.isActive}
                     onChange={(e) => onToggleActive(z.id, e.target.checked)}
-                    disabled={pending}
                   />
                   actif
                 </label>
@@ -757,8 +556,8 @@ function ZonesTable({
 
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => onImportSalons(z.id)}
-                  disabled={pending}
+                  onClick={() => onRunForZone('full_import', z.id)}
+                  title="Import OSM puis enrichissement adresses, en chaîne"
                   style={{
                     flex: 1, minWidth: 0,
                     padding: '8px 12px',
@@ -767,13 +566,17 @@ function ZonesTable({
                     fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     whiteSpace: 'nowrap',
                   }}
+                >🚀 Import complet</button>
+                <button
+                  onClick={() => onRunForZone('import_salons', z.id)}
+                  title="OSM seul, sans enrichissement"
+                  style={miniBtnStyle}
                 >
-                  {count > 0 ? 'Réimporter établissements' : 'Importer établissements'}
+                  {count > 0 ? 'OSM ↻' : 'OSM'}
                 </button>
                 {count > 0 && (
                   <button
-                    onClick={() => onEnrichAddresses(z.id, missing === 0)}
-                    disabled={pending}
+                    onClick={() => onRunForZone('enrich_addresses', z.id, missing === 0)}
                     title={missing > 0 ? `${missing} établissement(s) sans adresse` : 'Toutes les adresses sont remplies — relance pour rafraîchir'}
                     style={{
                       padding: '8px 12px',
@@ -785,26 +588,18 @@ function ZonesTable({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    📍 {missing > 0 ? `Adresses (${missing})` : 'Rafraîchir adresses'}
+                    📍 {missing > 0 ? `Adresses (${missing})` : 'Adresses ↻'}
                   </button>
                 )}
                 {count > 0 && (
                   <button
-                    onClick={() => onEnrichGoogle(z.id, unenrichedGoogle === 0)}
-                    disabled={pending}
+                    onClick={() => onRunForZone('enrich_google', z.id, unenrichedGoogle === 0)}
                     title={unenrichedGoogle > 0
                       ? `${unenrichedGoogle} établissement(s) à enrichir via Google`
                       : 'Tous les établissements sont déjà enrichis — relance pour rafraîchir horaires & note'}
-                    style={{
-                      padding: '8px 12px',
-                      background: 'var(--surface-2)', color: 'var(--text-2)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
+                    style={miniBtnStyle}
                   >
-                    ⚙ {unenrichedGoogle > 0 ? `Google (${unenrichedGoogle})` : 'Rafraîchir Google'}
+                    ⚙ {unenrichedGoogle > 0 ? `Google (${unenrichedGoogle})` : 'Google ↻'}
                   </button>
                 )}
               </div>
@@ -817,12 +612,45 @@ function ZonesTable({
 }
 
 function SalonsTable({
-  salons, zones, onToggle, pending,
-}: { salons: Salon[]; zones: Zone[]; onToggle: (id: string, active: boolean) => void; pending: boolean }) {
+  salons, zones, onToggle,
+}: { salons: Salon[]; zones: Zone[]; onToggle: (id: string, active: boolean) => void }) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ zoneId: '', city: '', name: '', address: '', postalCode: '', phone: '' });
   const [busy, startTr] = useTransition();
   const zoneById = new Map(zones.map((z) => [z.id, z]));
+
+  // Filters — kept entirely client-side. The page already streams the full
+  // salons list (it's bounded by zone count, not by user activity).
+  const [query, setQuery]       = useState('');
+  const [cityFilter, setCityF]  = useState<string>('');
+  const [addrFilter, setAddrF]  = useState<'all' | 'with' | 'without'>('all');
+  const [googleFilter, setGF]   = useState<'all' | 'enriched' | 'not_enriched'>('all');
+  const [statusFilter, setSF]   = useState<'all' | 'active' | 'inactive' | 'closed'>('all');
+
+  const allCities = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of salons) set.add(s.city);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [salons]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return salons.filter((s) => {
+      if (cityFilter && s.city !== cityFilter) return false;
+      if (addrFilter === 'with' && !s.address) return false;
+      if (addrFilter === 'without' && s.address) return false;
+      if (googleFilter === 'enriched'     && !s.googleEnriched) return false;
+      if (googleFilter === 'not_enriched' &&  s.googleEnriched) return false;
+      if (statusFilter === 'active'   && !s.isActive) return false;
+      if (statusFilter === 'inactive' &&  s.isActive) return false;
+      if (statusFilter === 'closed'   && s.businessStatus !== 'CLOSED_PERMANENTLY') return false;
+      if (q) {
+        const hay = `${s.name} ${s.address ?? ''} ${s.city} ${s.phone ?? ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [salons, query, cityFilter, addrFilter, googleFilter, statusFilter]);
 
   const submit = () => {
     if (!form.name.trim() || !form.city.trim()) return;
@@ -857,42 +685,78 @@ function SalonsTable({
       background: 'var(--surface)', border: '1px solid var(--border-subtle)',
       borderRadius: 'var(--radius)', overflow: 'hidden',
     }}>
-      <div style={{ padding: 10, borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      {/* Filter bar */}
+      <div style={{
+        padding: 10, borderBottom: '1px solid var(--border-subtle)',
+        display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
+      }}>
+        <input
+          placeholder="Recherche nom / adresse / téléphone…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{ ...inputStyle, flex: '1 1 200px', minWidth: 160 }}
+        />
+        <select value={cityFilter} onChange={(e) => setCityF(e.target.value)} style={inputStyle}>
+          <option value="">Toutes villes</option>
+          {allCities.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={addrFilter} onChange={(e) => setAddrF(e.target.value as typeof addrFilter)} style={inputStyle}>
+          <option value="all">Adresse : toutes</option>
+          <option value="with">Avec adresse</option>
+          <option value="without">Sans adresse</option>
+        </select>
+        <select value={googleFilter} onChange={(e) => setGF(e.target.value as typeof googleFilter)} style={inputStyle}>
+          <option value="all">Google : tous</option>
+          <option value="enriched">Enrichis</option>
+          <option value="not_enriched">Non enrichis</option>
+        </select>
+        <select value={statusFilter} onChange={(e) => setSF(e.target.value as typeof statusFilter)} style={inputStyle}>
+          <option value="all">Statut : tous</option>
+          <option value="active">Actifs</option>
+          <option value="inactive">Inactifs</option>
+          <option value="closed">Fermés Google</option>
+        </select>
+        <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 'auto' }}>
+          {visible.length} / {salons.length}
+        </span>
         {!creating ? (
           <button onClick={() => setCreating(true)} style={miniBtnStyle}>+ Établissement manuel</button>
-        ) : (
-          <>
-            <select value={form.zoneId} onChange={(e) => setForm({ ...form, zoneId: e.target.value })} style={inputStyle}>
-              <option value="">— Aucune zone —</option>
-              {zones.map((z) => <option key={z.id} value={z.id}>{z.city} · {z.name}</option>)}
-            </select>
-            <input placeholder="Ville" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} style={inputStyle} />
-            <input placeholder="Nom" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
-            <input placeholder="Adresse" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} style={inputStyle} />
-            <input placeholder="CP" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} style={{ ...inputStyle, width: 70 }} />
-            <input placeholder="Tél" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} style={inputStyle} />
-            <button onClick={submit} disabled={busy} style={primaryBtnStyle}>OK</button>
-            <button onClick={() => setCreating(false)} style={ghostBtnStyle}>Annuler</button>
-          </>
-        )}
+        ) : null}
       </div>
+
+      {creating && (
+        <div style={{ padding: 10, borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <select value={form.zoneId} onChange={(e) => setForm({ ...form, zoneId: e.target.value })} style={inputStyle}>
+            <option value="">— Aucune zone —</option>
+            {zones.map((z) => <option key={z.id} value={z.id}>{z.city} · {z.name}</option>)}
+          </select>
+          <input placeholder="Ville" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} style={inputStyle} />
+          <input placeholder="Nom" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
+          <input placeholder="Adresse" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} style={inputStyle} />
+          <input placeholder="CP" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} style={{ ...inputStyle, width: 70 }} />
+          <input placeholder="Tél" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} style={inputStyle} />
+          <button onClick={submit} disabled={busy} style={primaryBtnStyle}>OK</button>
+          <button onClick={() => setCreating(false)} style={ghostBtnStyle}>Annuler</button>
+        </div>
+      )}
+
       <div style={{ maxHeight: 600, overflowY: 'auto', overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-2)' }}>
             <tr><Th>Ville</Th><Th>Zone</Th><Th>Nom</Th><Th>Adresse</Th><Th>Tél</Th><Th>Visites</Th><Th>Actif</Th></tr>
           </thead>
           <tbody>
-            {salons.map((s) => (
+            {visible.map((s) => (
               <tr key={s.id} style={{ borderTop: '1px solid var(--border-subtle)' }}>
                 <Td>{s.city}</Td>
                 <Td>{s.zoneId ? zoneById.get(s.zoneId)?.name ?? '—' : <span style={{ color: 'var(--text-3)' }}>—</span>}</Td>
                 <Td><strong>{s.name}</strong></Td>
-                <Td>{s.address ?? '—'}{s.postalCode ? ` · ${s.postalCode}` : ''}</Td>
+                <Td>{s.address ?? <span style={{ color: 'var(--warning)' }}>— manquante</span>}{s.postalCode ? ` · ${s.postalCode}` : ''}</Td>
                 <Td>{s.phone ?? '—'}</Td>
                 <Td>{s.visitCount}</Td>
                 <Td>
                   <input type="checkbox" checked={s.isActive}
-                    onChange={(e) => onToggle(s.id, e.target.checked)} disabled={pending} />
+                    onChange={(e) => onToggle(s.id, e.target.checked)} />
                 </Td>
               </tr>
             ))}
@@ -1028,5 +892,33 @@ const cityBulkGhostStyle = (disabled: boolean): React.CSSProperties => ({
   fontSize: 12, fontWeight: 600,
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.55 : 1,
+  whiteSpace: 'nowrap',
+});
+
+// Selection-bar buttons in the import header
+const chipBtnStyle: React.CSSProperties = {
+  padding: '4px 10px', background: 'var(--surface-2)', color: 'var(--text-2)',
+  border: '1px solid var(--border)', borderRadius: 99,
+  fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+};
+const chipBtnGhostStyle: React.CSSProperties = {
+  ...chipBtnStyle, background: 'transparent', color: 'var(--text-3)',
+};
+const primaryActionStyle = (disabled: boolean): React.CSSProperties => ({
+  padding: '8px 14px',
+  background: disabled ? 'var(--surface-3)' : 'var(--accent)',
+  color: disabled ? 'var(--text-3)' : '#fff',
+  border: 'none', borderRadius: 'var(--radius-sm)',
+  fontSize: 13, fontWeight: 700,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  whiteSpace: 'nowrap',
+});
+const secondaryActionStyle = (disabled: boolean): React.CSSProperties => ({
+  padding: '8px 14px',
+  background: disabled ? 'var(--surface-3)' : 'var(--surface-2)',
+  color: disabled ? 'var(--text-3)' : 'var(--text-2)',
+  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+  fontSize: 12, fontWeight: 600,
+  cursor: disabled ? 'not-allowed' : 'pointer',
   whiteSpace: 'nowrap',
 });
