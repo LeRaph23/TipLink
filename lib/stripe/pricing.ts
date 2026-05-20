@@ -17,7 +17,7 @@ export type PackPricing = {
   currency: string;
   productName: string;
   quantity: number;
-  listAmount: number | null; // strikethrough — read from product.metadata.list_price_cents
+  listAmount: number | null; // strikethrough — always unitAmount + 30€
   savingsPercent: number | null;
 };
 
@@ -38,14 +38,15 @@ async function fetchPackPricing(pack: PackId): Promise<PackPricing> {
         'falling back to the hardcoded lib/env.ts amount; prices are not linked to Stripe.'
     );
     const def = PACKS[pack];
+    const listAmount = def.hardwareAmount + 3000;
     return {
       pack,
       unitAmount: def.hardwareAmount,
       currency: def.currency,
       productName: `Digitip — Pack ${pack === 'solo' ? 'Solo' : 'Duo'}`,
       quantity: def.quantity,
-      listAmount: def.listAmount,
-      savingsPercent: computeSavings(def.hardwareAmount, def.listAmount),
+      listAmount,
+      savingsPercent: computeSavings(def.hardwareAmount, listAmount),
     };
   }
 
@@ -53,11 +54,7 @@ async function fetchPackPricing(pack: PackId): Promise<PackPricing> {
   const product = price.product as Stripe.Product;
 
   const unitAmount = price.unit_amount ?? PACKS[pack].hardwareAmount;
-  // Prefer the Stripe product's `list_price_cents` metadata; fall back to the
-  // catalog list price so the strikethrough always renders.
-  const listRaw = product.metadata?.list_price_cents;
-  const list = listRaw ? parseInt(listRaw, 10) : NaN;
-  const listAmount = Number.isFinite(list) ? list : PACKS[pack].listAmount;
+  const listAmount = unitAmount + 3000;
 
   return {
     pack,
