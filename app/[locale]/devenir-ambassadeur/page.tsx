@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { pageAlternates } from '@/lib/seo';
+import { Icon, type IconName } from '@/components/ambassadeur/icons';
 import { RecruitmentLandingForm } from './RecruitmentLandingForm';
 
 export const dynamic = 'force-dynamic';
@@ -15,47 +16,153 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    title: 'Devenir ambassadeur Digitip · 25-35€ par vente',
-    description: "Rejoignez le programme ambassadeur Digitip : vous placez des SmartTags NFC chez des coiffeurs, instituts et restaurants et touchez 25-35€ par vente. Pas de stock, pas d'avance, pas besoin de SIRET pour postuler.",
+    title: 'Programme Ambassadeurs Digitip · Activité étudiante déclarée, 25-35 € par vente',
+    description:
+      "Programme officiel d'ambassadeurs Digitip : une activité étudiante en micro-entreprise, encadrée et déclarée. Vous présentez nos SmartTags NFC à des commerces de proximité et touchez 25 à 35 € par vente. Pas de stock, pas d'avance, paiement Stripe Connect.",
     alternates: pageAlternates(locale, '/devenir-ambassadeur', ['fr']),
     openGraph: {
-      title: 'Devenez ambassadeur Digitip',
-      description: '25-35€ par vente. Pas de stock. Candidature en 2 min.',
+      title: 'Programme Ambassadeurs Digitip',
+      description: 'Activité étudiante déclarée · 25 à 35 € par vente · Candidature en 2 minutes.',
       locale: 'fr_FR',
       type: 'website',
     },
   };
 }
 
-const PERKS = [
-  { icon: '💰', label: '25-35€ par vente', sub: 'Solo 25€ · Duo 35€' },
-  { icon: '🎁', label: 'Bonus parrainage', sub: '+25€ par filleul · +250€ aux 10' },
-  { icon: '⚡', label: 'Virement Stripe', sub: 'Dès 30€ · 1×/mois max' },
-  { icon: '📱', label: '0 stock', sub: 'Tout en ligne, depuis votre téléphone' },
+type Perk = { icon: IconName; label: string; sub: string };
+const PERKS: Perk[] = [
+  { icon: 'wallet', label: '25 à 35 € par vente', sub: 'Solo 25 € · Duo 35 €' },
+  { icon: 'gift', label: 'Bonus parrainage', sub: '+25 € par filleul · +250 € aux 10' },
+  { icon: 'bank', label: 'Paiement Stripe Connect', sub: 'Dès 30 € · virement mensuel' },
+  { icon: 'tag', label: 'Aucun stock à avancer', sub: '100 % en ligne, depuis le téléphone' },
+];
+
+type Step = { n: string; title: string; body: string };
+const STEPS: Step[] = [
+  {
+    n: '01',
+    title: 'Candidature',
+    body: "Vous remplissez le formulaire ci-dessous. Nous examinons votre dossier sous 48 h ouvrées.",
+  },
+  {
+    n: '02',
+    title: 'Activation du compte',
+    body: "Vous recevez votre code ambassadeur, votre PIN et l'accès à votre tableau de bord personnel.",
+  },
+  {
+    n: '03',
+    title: 'Démarchage encadré',
+    body: "Vous présentez le SmartTag à des commerces de proximité (coiffeurs, instituts, restauration) à votre rythme.",
+  },
+  {
+    n: '04',
+    title: 'Commissions versées',
+    body: "À chaque vente confirmée, votre commission est créditée. Retrait Stripe dès 30 € de solde.",
+  },
+];
+
+type Audience = { icon: IconName; title: string; body: string };
+const AUDIENCES: Audience[] = [
+  {
+    icon: 'users',
+    title: 'Étudiants et alternants',
+    body: "Une activité compatible avec les études : vous choisissez vos horaires, vous arrêtez quand vous voulez.",
+  },
+  {
+    icon: 'trophy',
+    title: 'Jeunes diplômés',
+    body: "Un premier revenu commercial pour étoffer un CV — vente terrain, négociation, suivi client.",
+  },
+  {
+    icon: 'refresh',
+    title: 'Personnes en reconversion',
+    body: "Un complément de revenu déclaré, sans engagement et sans avance financière.",
+  },
+];
+
+type Trust = { icon: IconName; title: string; body: string };
+const TRUST: Trust[] = [
+  {
+    icon: 'check',
+    title: 'Activité 100 % déclarée',
+    body: "Vous démarchez sous statut de micro-entrepreneur. Vos commissions sont facturées à Digitip et soumises aux cotisations URSSAF — aucun travail au noir.",
+  },
+  {
+    icon: 'lock',
+    title: 'Paiements traçables',
+    body: "Les commissions transitent par Stripe Connect, prestataire bancaire agréé. Chaque versement est documenté et téléchargeable depuis le tableau de bord.",
+  },
+  {
+    icon: 'flag',
+    title: 'Engagement anti-fraude',
+    body: "Charte signée à l'inscription : pas de fausses ventes, pas d'auto-utilisation du code. Tout manquement entraîne la suspension immédiate du compte.",
+  },
+  {
+    icon: 'clock',
+    title: 'Sans engagement',
+    body: "Aucune obligation de résultat, aucune pénalité. Vous testez, vous décidez si cela vous correspond, vous arrêtez quand vous le souhaitez.",
+  },
 ];
 
 const FAQ: Array<{ q: string; a: string }> = [
   {
-    q: 'Faut-il avoir un SIRET ?',
-    a: 'Pour postuler, non. Pour démarcher en tant qu\'ambassadeur, oui : vous devez avoir déclaré votre statut d\'auto-entrepreneur. La déclaration est gratuite et prend ~10 min sur autoentrepreneur.urssaf.fr — et vous pouvez démarcher dès le jour de votre déclaration. Le numéro SIRET vous parvient ensuite sous quelques jours ; il sert à facturer vos commissions.',
+    q: "L'activité est-elle légale et déclarée ?",
+    a: "Oui. Vous exercez en tant que micro-entrepreneur (auto-entrepreneur). Vous nous facturez vos commissions, vous déclarez votre chiffre d'affaires à l'URSSAF et payez vos cotisations selon le régime micro. C'est le cadre légal standard utilisé par la majorité des programmes d'apporteurs d'affaires en France.",
   },
   {
-    q: 'Comment suis-je payé ?',
-    a: 'Vous connectez votre RIB via Stripe Connect depuis votre tableau de bord. Vous pouvez retirer vos gains dès 30€ de solde, dans la limite d\'un virement par mois. Le virement arrive sous 2-5 jours ouvrés.',
+    q: "Faut-il déjà avoir un SIRET pour postuler ?",
+    a: "Non. Vous pouvez candidater sans SIRET. En revanche, pour démarcher activement, vous devrez avoir déclaré votre statut d'auto-entrepreneur — démarche gratuite, en ligne, environ 10 minutes sur autoentrepreneur.urssaf.fr. Vous pouvez démarcher dès le jour de la déclaration ; le numéro SIRET vous parvient quelques jours plus tard et sert à émettre vos factures.",
   },
   {
-    q: 'Combien de temps cela prend-il ?',
-    a: 'C\'est vous qui décidez. Nos meilleurs ambassadeurs travaillent environ 5h par semaine et réalisent 8 à 12 ventes, soit environ 250-400€ par semaine.',
+    q: "Est-ce compatible avec mes études ou un autre emploi ?",
+    a: "Oui. Le statut de micro-entrepreneur est cumulable avec le statut étudiant, un contrat salarié, une bourse, le chômage ou une autre activité indépendante. Vous gérez votre temps : nos ambassadeurs actifs y consacrent en moyenne 5 heures par semaine.",
   },
   {
-    q: 'Quel est le produit que je vends ?',
-    a: 'SmartTag : un sticker NFC qui permet aux clients de laisser un pourboire sans contact directement aux employés. Cible prioritaire : salons de coiffure et instituts d\'esthétique. Ensuite : barbiers, spas, restaurants, bars.',
+    q: "Comment et quand suis-je payé ?",
+    a: "Vous connectez votre RIB via Stripe Connect depuis votre tableau de bord. Vos commissions sont créditées automatiquement à chaque vente confirmée. Vous pouvez retirer dès 30 € de solde, dans la limite d'un virement par mois. Le virement arrive sous 2 à 5 jours ouvrés.",
   },
   {
-    q: 'Et si je ne réalise aucune vente ?',
-    a: 'Aucune obligation, aucune pénalité. Vous testez, vous voyez si cela vous convient, vous arrêtez quand vous le souhaitez.',
+    q: "Quel produit présente-t-on aux commerces ?",
+    a: "Le SmartTag Digitip : un sticker NFC qui permet aux clients d'un commerce de laisser un pourboire sans contact directement à l'employé qui les a servis. Cible prioritaire : salons de coiffure, instituts d'esthétique, barbiers, spas, restauration et bars.",
+  },
+  {
+    q: "Et si je ne réalise aucune vente ?",
+    a: "Aucune obligation, aucune pénalité, aucun frais. Vous arrêtez quand vous le souhaitez, simplement en cessant l'activité ou, si vous l'aviez ouverte uniquement pour ce programme, en clôturant votre micro-entreprise (gratuit, en ligne).",
   },
 ];
+
+const sectionLabel: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: 'var(--text-3)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.09em',
+  marginBottom: 14,
+};
+
+const sectionTitle: React.CSSProperties = {
+  fontSize: 22,
+  fontWeight: 800,
+  color: 'var(--text)',
+  letterSpacing: '-0.02em',
+  margin: '0 0 6px',
+  fontFamily: 'var(--font-display)',
+};
+
+const sectionLead: React.CSSProperties = {
+  fontSize: 14,
+  color: 'var(--text-2)',
+  lineHeight: 1.6,
+  margin: '0 0 20px',
+};
+
+const card: React.CSSProperties = {
+  background: 'var(--surface)',
+  border: '1px solid var(--border-subtle)',
+  borderRadius: 'var(--radius-xl)',
+  padding: '28px 28px',
+  marginBottom: 18,
+};
 
 export default async function DevenirAmbassadeurPage({
   params,
@@ -66,73 +173,292 @@ export default async function DevenirAmbassadeurPage({
   if (locale !== 'fr') notFound();
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', padding: '40px 20px', fontFamily: 'var(--font)' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent)', letterSpacing: '-0.03em', marginBottom: 4 }}>
-            DigiTip
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', padding: '48px 20px 64px', fontFamily: 'var(--font)' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+        {/* Brand header */}
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent)', letterSpacing: '-0.03em' }}>
+              Digitip
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>
+              Programme Ambassadeurs · Édition 2026
+            </div>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-            Programme Ambassadeurs
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--success)',
+              background: 'var(--success-bg)',
+              border: '1px solid color-mix(in oklch, var(--success) 30%, transparent)',
+              padding: '6px 10px',
+              borderRadius: 999,
+            }}
+          >
+            <Icon name="check" size={12} strokeWidth={2.5} />
+            Programme officiel
           </div>
-        </div>
+        </header>
 
         {/* Hero */}
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-xl)', padding: '36px 28px', marginBottom: 20,
-        }}>
-          <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1.1, margin: '0 0 12px' }}>
-            Gagnez 25-35€ par vente.
+        <section style={{ ...card, padding: '36px 28px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 12 }}>
+            Activité étudiante encadrée et déclarée
+          </div>
+          <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1.1, margin: '0 0 14px', fontFamily: 'var(--font-display)' }}>
+            Rejoignez le programme officiel d&apos;ambassadeurs Digitip.
           </h1>
-          <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.6, margin: '0 0 24px' }}>
-            Rejoignez l&apos;équipe Digitip. Vous placez des SmartTags NFC (pourboires sans contact) en priorité chez des coiffeurs et instituts d&apos;esthétique.
-            Pas de stock à avancer, pas d&apos;horaires imposés. Vous facturez via micro-entreprise, nous nous occupons du reste.
+          <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 24px' }}>
+            Vous présentez nos SmartTags NFC — un dispositif de pourboire sans contact — à des
+            commerces de proximité (coiffeurs, instituts d&apos;esthétique, restauration). Chaque vente vous
+            rapporte 25 à 35 €. Activité exercée en micro-entreprise, sans stock, sans avance financière,
+            sans horaires imposés.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
             {PERKS.map(p => (
-              <div key={p.label} style={{
-                background: 'var(--surface-2)', border: '1px solid var(--border)',
-                borderRadius: 'var(--radius)', padding: 14, textAlign: 'center',
-              }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>{p.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{p.label}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{p.sub}</div>
+              <div
+                key={p.label}
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  padding: '14px 14px',
+                }}
+              >
+                <Icon name={p.icon} size={20} strokeWidth={1.75} style={{ color: 'var(--accent)', marginBottom: 8 }} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>{p.label}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.4 }}>{p.sub}</div>
               </div>
             ))}
           </div>
+        </section>
 
+        {/* How it works */}
+        <section style={card}>
+          <div style={sectionLabel}>Comment ça marche</div>
+          <h2 style={sectionTitle}>Quatre étapes, encadrées de bout en bout.</h2>
+          <p style={sectionLead}>De la candidature à la première commission versée, le parcours est balisé et transparent.</p>
+
+          <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {STEPS.map(s => (
+              <li
+                key={s.n}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '44px 1fr',
+                  gap: 14,
+                  alignItems: 'flex-start',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: 'var(--accent)',
+                    background: 'var(--accent-muted)',
+                    border: '1px solid var(--accent-border)',
+                    borderRadius: 8,
+                    height: 36,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {s.n}
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{s.title}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.55 }}>{s.body}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* Audience — explicit for school administrators */}
+        <section style={card}>
+          <div style={sectionLabel}>À qui s&apos;adresse le programme</div>
+          <h2 style={sectionTitle}>Conçu pour les profils en début de parcours.</h2>
+          <p style={sectionLead}>
+            Le programme vise prioritairement les profils qui cherchent une première expérience commerciale
+            ou un complément de revenu compatible avec une formation.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+            {AUDIENCES.map(a => (
+              <div
+                key={a.title}
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  padding: '14px 14px',
+                }}
+              >
+                <Icon name={a.icon} size={20} strokeWidth={1.75} style={{ color: 'var(--accent)', marginBottom: 8 }} />
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{a.title}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>{a.body}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Candidature form */}
+        <section style={card} id="candidature">
+          <div style={sectionLabel}>Candidature</div>
+          <h2 style={sectionTitle}>Postulez en 2 minutes.</h2>
+          <p style={sectionLead}>
+            Dossier examiné sous 48 h ouvrées. Aucune information n&apos;est partagée avec des tiers.
+          </p>
           <Suspense fallback={<div style={{ height: 600 }} />}>
             <RecruitmentLandingForm />
           </Suspense>
-        </div>
+        </section>
+
+        {/* Trust / legal framework */}
+        <section style={card}>
+          <div style={sectionLabel}>Cadre légal et garanties</div>
+          <h2 style={sectionTitle}>Un programme transparent et traçable.</h2>
+          <p style={sectionLead}>
+            Toutes les conditions sont documentées : contrat d&apos;apporteur d&apos;affaires, charte anti-fraude,
+            relevés Stripe téléchargeables.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+            {TRUST.map(t => (
+              <div
+                key={t.title}
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  padding: '14px 14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <Icon name={t.icon} size={18} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{t.title}</div>
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>{t.body}</div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* FAQ */}
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-xl)', padding: '24px 28px', marginBottom: 20,
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
-            FAQ
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <section style={card}>
+          <div style={sectionLabel}>Questions fréquentes</div>
+          <h2 style={sectionTitle}>Tout ce que vos proches voudront savoir.</h2>
+          <p style={sectionLead}>
+            Réponses détaillées sur le statut, les paiements et l&apos;engagement attendu.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {FAQ.map(f => (
-              <details key={f.q} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
-                <summary style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
-                  {f.q}
+              <details
+                key={f.q}
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  padding: '14px 16px',
+                }}
+              >
+                <summary
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    listStyle: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
+                >
+                  <span>{f.q}</span>
+                  <span style={{ color: 'var(--text-3)', fontSize: 18, lineHeight: 1, flexShrink: 0 }}>+</span>
                 </summary>
-                <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginTop: 8 }}>
+                <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65, marginTop: 10 }}>
                   {f.a}
                 </div>
               </details>
             ))}
           </div>
-        </div>
+        </section>
 
-        <p style={{ fontSize: 11.5, color: 'var(--text-3)', textAlign: 'center', marginTop: 12 }}>
-          Votre dossier sera examiné sous 48h. Pas de spam, pas de partage de vos données.
-        </p>
+        {/* Callout for school administrators */}
+        <section
+          style={{
+            ...card,
+            background: 'var(--accent-muted)',
+            border: '1px solid var(--accent-border)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <Icon name="share" size={18} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+              Responsables d&apos;établissement et chargés d&apos;insertion
+            </div>
+          </div>
+          <h2 style={{ ...sectionTitle, marginBottom: 8 }}>
+            Vous souhaitez partager cette opportunité à vos étudiants&nbsp;?
+          </h2>
+          <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 14px' }}>
+            Cette page est conçue pour pouvoir être partagée telle quelle dans un mail aux étudiants,
+            sur un intranet ou sur les supports de communication d&apos;un BDE / d&apos;un service emploi-stage. L&apos;activité
+            est compatible avec un statut étudiant et n&apos;exige aucune avance financière.
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 16px' }}>
+            Pour un brief institutionnel détaillé (présentation du programme, conditions, points de vigilance
+            anti-fraude, contact référent), écrivez-nous à{' '}
+            <a href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20%C3%A9tablissement" style={{ color: 'var(--accent)', fontWeight: 600 }}>
+              contact@digitip.app
+            </a>
+            . Nous répondons sous 48 h ouvrées.
+          </p>
+          <a
+            href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20%C3%A9tablissement"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              borderRadius: 10,
+              background: 'var(--accent)',
+              color: 'var(--accent-fg)',
+              fontSize: 13.5,
+              fontWeight: 700,
+              textDecoration: 'none',
+            }}
+          >
+            Demander la fiche de présentation
+            <Icon name="arrowRight" size={14} strokeWidth={2} />
+          </a>
+        </section>
+
+        {/* Legal footer */}
+        <footer style={{ marginTop: 28, padding: '0 4px' }}>
+          <p style={{ fontSize: 11.5, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.6, margin: 0 }}>
+            Programme édité par YUZU LABS, SAS au capital de 100 € · SIREN 994 879 013 ·
+            Siège social : 11 rue de Lorraine, 68490 Petit-Landau, France · Contact :{' '}
+            <a href="mailto:contact@digitip.app" style={{ color: 'var(--text-2)' }}>contact@digitip.app</a>
+            <br />
+            Vos données sont traitées conformément à notre politique de confidentialité. Aucune transmission à des tiers commerciaux.
+          </p>
+        </footer>
       </div>
     </div>
   );
