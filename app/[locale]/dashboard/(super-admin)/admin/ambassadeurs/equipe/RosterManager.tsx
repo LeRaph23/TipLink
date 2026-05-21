@@ -277,7 +277,7 @@ export function RosterManager({
           </div>
           <div style={{ marginTop: 10 }}>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 4px' }}>
-              Commissions : <strong>25 € / vente Solo</strong> · <strong>35 € / vente Duo</strong>
+              Commissions : <strong>35 € / vente Solo</strong> · <strong>45 € / vente Duo</strong>
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: 0 }}>
               <strong>Le PIN sera défini par l&apos;ambassadeur</strong> via le lien d&apos;activation généré à la création.

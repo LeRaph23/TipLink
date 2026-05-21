@@ -1,5 +1,5 @@
 // Commission amounts in euro-cents per pack type
-export const COMMISSION_BY_PACK = { solo: 2500, duo: 3500 } as const;
+export const COMMISSION_BY_PACK = { solo: 3500, duo: 4500 } as const;
 
 // Weekly bonus tiers — NON-cumulative: only the highest reached tier pays out.
 // Reduced from previous values (25/50/100€) to fund the referral program.
@@ -25,7 +25,7 @@ export const REFERRAL_REWARDS = {
   milestone_10:  25000, // +250€ once parrain reaches 10 validated filleuls
 } as const;
 
-// Raised from 2 to 3: better ROI per validated filleul (3×25€ commission vs 25€ referral bonus)
+// Raised from 2 to 3: better ROI per validated filleul (3×35€ commission vs 25€ referral bonus)
 export const REFERRAL_VALIDATION_MIN_SALES = 3;
 
 // Minimum amount an ambassador can withdraw in a single payout (30€).
