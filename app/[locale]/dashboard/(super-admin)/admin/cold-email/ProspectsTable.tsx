@@ -4,10 +4,16 @@ import { useMemo, useState, useTransition } from 'react';
 import {
   type ProspectRow,
   type ProspectStatus,
+  type ColdTargetProgram,
   updateProspect,
   createManualProspect,
   deleteProspect,
 } from '@/actions/admin/cold-email';
+
+const PROGRAM_META: Record<ColdTargetProgram, { label: string; short: string; color: string; bg: string }> = {
+  ambassador: { label: 'Ambassadeur',     short: 'AMB', color: '#15803d', bg: '#dcfce7' },
+  commercial: { label: 'Commercial Pro',  short: 'PRO', color: '#a16207', bg: '#fef3c7' },
+};
 
 const STATUS_OPTIONS: { value: ProspectStatus; label: string; color: string; bg: string }[] = [
   { value: 'not_contacted', label: 'Non contacté', color: '#64748b', bg: '#f1f5f9' },
@@ -23,9 +29,12 @@ function statusMeta(s: ProspectStatus) {
 
 type Filter = 'all' | ProspectStatus;
 
+type ProgramFilter = 'all' | ColdTargetProgram;
+
 export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
   const [rows, setRows] = useState<ProspectRow[]>(initial);
   const [filter, setFilter] = useState<Filter>('all');
+  const [programFilter, setProgramFilter] = useState<ProgramFilter>('all');
   const [query, setQuery] = useState('');
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +43,7 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
     const q = query.trim().toLowerCase();
     return rows.filter(r => {
       if (filter !== 'all' && r.status !== filter) return false;
+      if (programFilter !== 'all' && r.target_program !== programFilter) return false;
       if (!q) return true;
       return (
         (r.company_name ?? '').toLowerCase().includes(q) ||
@@ -43,11 +53,18 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
         (r.notes ?? '').toLowerCase().includes(q)
       );
     });
-  }, [rows, filter, query]);
+  }, [rows, filter, programFilter, query]);
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: rows.length, not_contacted: 0, contacted: 0, in_discussion: 0, accepted: 0, refused: 0 };
-    for (const r of rows) c[r.status]++;
+    const inScope = programFilter === 'all' ? rows : rows.filter(r => r.target_program === programFilter);
+    const c: Record<Filter, number> = { all: inScope.length, not_contacted: 0, contacted: 0, in_discussion: 0, accepted: 0, refused: 0 };
+    for (const r of inScope) c[r.status]++;
+    return c;
+  }, [rows, programFilter]);
+
+  const programCounts = useMemo(() => {
+    const c: Record<ProgramFilter, number> = { all: rows.length, ambassador: 0, commercial: 0 };
+    for (const r of rows) c[r.target_program]++;
     return c;
   }, [rows]);
 
@@ -85,7 +102,28 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
         <AddProspectForm onAdded={(row) => setRows(prev => [row, ...prev])} />
       </div>
 
+      {/* Program filter (row 1) — separate dimension from status filter (row 2). */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: 4 }}>Programme</span>
+        <FilterChip active={programFilter === 'all'} onClick={() => setProgramFilter('all')} label={`Tous · ${programCounts.all}`} />
+        <FilterChip
+          active={programFilter === 'ambassador'}
+          onClick={() => setProgramFilter('ambassador')}
+          label={`Ambassadeur · ${programCounts.ambassador}`}
+          color={PROGRAM_META.ambassador.color}
+          bg={PROGRAM_META.ambassador.bg}
+        />
+        <FilterChip
+          active={programFilter === 'commercial'}
+          onClick={() => setProgramFilter('commercial')}
+          label={`Commercial Pro · ${programCounts.commercial}`}
+          color={PROGRAM_META.commercial.color}
+          bg={PROGRAM_META.commercial.bg}
+        />
+      </div>
+
       <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: 4 }}>Statut</span>
         <FilterChip active={filter === 'all'}        onClick={() => setFilter('all')}        label={`Tous · ${counts.all}`}      />
         {STATUS_OPTIONS.map(o => (
           <FilterChip
@@ -121,11 +159,13 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, fontFamily: 'var(--font)' }}>
           <thead>
             <tr style={{ background: 'var(--surface-2)', textAlign: 'left' }}>
+              <Th>Programme</Th>
               <Th>Entreprise</Th>
               <Th>Prénom</Th>
               <Th>Email</Th>
               <Th>LinkedIn</Th>
               <Th>Ville</Th>
+              <Th>Séquence</Th>
               <Th>Notes</Th>
               <Th>Statut</Th>
               <Th>—</Th>
@@ -133,10 +173,23 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>Aucun prospect.</td></tr>
+              <tr><td colSpan={10} style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>Aucun prospect.</td></tr>
             )}
-            {filtered.map(r => (
+            {filtered.map(r => {
+              const pm = PROGRAM_META[r.target_program];
+              const seqLabel = r.unsubscribed_at
+                ? 'Désinscrit'
+                : r.replied_at
+                  ? 'Répondu'
+                  : `Étape ${r.sequence_step}/3`;
+              return (
               <tr key={r.id} style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                <Td>
+                  <span title={pm.label} style={{
+                    padding: '3px 8px', borderRadius: 99, fontSize: 10.5, fontWeight: 700,
+                    background: pm.bg, color: pm.color, fontFamily: 'monospace', letterSpacing: '0.04em',
+                  }}>{pm.short}</span>
+                </Td>
                 <Td>
                   <InlineText value={r.company_name ?? ''} placeholder="—" onCommit={v => { patchRow(r.id, { company_name: v || null }); commit(r.id, { company_name: v || null }); }} />
                 </Td>
@@ -161,6 +214,12 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
                   <span style={{ color: 'var(--text-2)' }}>{r.city ?? '—'}</span>
                 </Td>
                 <Td>
+                  <span title={r.last_sent_at ? `Dernier envoi : ${new Date(r.last_sent_at).toLocaleString('fr-FR')}` : 'Jamais envoyé'}
+                    style={{ fontSize: 11, color: r.unsubscribed_at ? 'var(--error)' : r.replied_at ? 'var(--success)' : 'var(--text-3)', fontWeight: 600 }}>
+                    {seqLabel}
+                  </span>
+                </Td>
+                <Td>
                   <InlineText value={r.notes ?? ''} placeholder="…" wide onCommit={v => { patchRow(r.id, { notes: v || null }); commit(r.id, { notes: v || null }); }} />
                 </Td>
                 <Td>
@@ -174,7 +233,8 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
                   >×</button>
                 </Td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -320,13 +380,14 @@ function LinkedInCell({ value, onCommit }: { value: string; onCommit: (v: string
 
 function AddProspectForm({ onAdded }: { onAdded: (r: ProspectRow) => void }) {
   const [open, setOpen] = useState(false);
+  const [program, setProgram] = useState<ColdTargetProgram>('ambassador');
   const [form, setForm] = useState({ company_name: '', first_name: '', email: '', linkedin_url: '', city: '', notes: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function submit() {
     setBusy(true); setErr(null);
-    const res = await createManualProspect(form);
+    const res = await createManualProspect({ ...form, targetProgram: program });
     setBusy(false);
     if (!res.ok) { setErr(res.error); return; }
     onAdded({
@@ -342,6 +403,11 @@ function AddProspectForm({ onAdded }: { onAdded: (r: ProspectRow) => void }) {
       creation_date: null,
       imported_at: new Date().toISOString(),
       status: 'not_contacted',
+      target_program: program,
+      sequence_step: 0,
+      last_sent_at: null,
+      unsubscribed_at: null,
+      replied_at: null,
     });
     setForm({ company_name: '', first_name: '', email: '', linkedin_url: '', city: '', notes: '' });
     setOpen(false);
@@ -362,6 +428,17 @@ function AddProspectForm({ onAdded }: { onAdded: (r: ProspectRow) => void }) {
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: 8 }}>
+      <select
+        value={program}
+        onChange={e => setProgram(e.target.value as ColdTargetProgram)}
+        style={{
+          background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 6,
+          padding: '5px 8px', fontSize: 12, color: 'var(--text)', fontFamily: 'var(--font)', outline: 'none',
+        }}
+      >
+        <option value="ambassador">Ambassadeur</option>
+        <option value="commercial">Commercial Pro</option>
+      </select>
       <Inp v={form.company_name}   p="Entreprise"   o={v => setForm({ ...form, company_name: v })} />
       <Inp v={form.first_name}     p="Prénom"       o={v => setForm({ ...form, first_name: v })} />
       <Inp v={form.email}          p="Email"        o={v => setForm({ ...form, email: v })} />

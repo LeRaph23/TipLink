@@ -166,12 +166,41 @@ export async function enrichProspectEmails(
   }
 }
 
+export type ColdTargetProgram = 'ambassador' | 'commercial';
+
 export type SireneScrapeInput = {
   nafCodes: string[];
   monthsBack: number;          // creation_date >= NOW - monthsBack months
   postalCodePrefix?: string;
   maxPages: number;            // pages to fetch (each ~100 results)
   youngOnly?: boolean;         // if true, only keep prospects with birth_year_estimate set
+  targetProgram?: ColdTargetProgram; // defaults to 'ambassador' for legacy callers
+};
+
+/** NAF/APE codes pre-selected per programme in the SIRENE scraper UI. */
+export const NAF_PRESETS: Record<ColdTargetProgram, { code: string; label: string }[]> = {
+  ambassador: [
+    { code: '4791B', label: 'Vente à distance catalogue spécialisé' },
+    { code: '4791A', label: 'Vente à distance catalogue général' },
+    { code: '7311Z', label: 'Agences de publicité' },
+    { code: '7022Z', label: 'Conseil pour les affaires' },
+    { code: '7320Z', label: 'Études de marché et sondages' },
+    { code: '4799B', label: 'Vente hors magasin (porte-à-porte, MLM)' },
+    { code: '7021Z', label: 'Relations publiques et communication' },
+    { code: '8230Z', label: 'Salons professionnels et congrès' },
+    { code: '7490B', label: 'Activités spécialisées diverses' },
+  ],
+  // Apporteurs d'affaires B2B / agents commerciaux structurés.
+  commercial: [
+    { code: '4619A', label: 'Intermédiaires non spécialisés (apporteurs d\'affaires)' },
+    { code: '4619B', label: 'Autres intermédiaires du commerce non spécialisés' },
+    { code: '7022Z', label: 'Conseil pour les affaires et autre conseil de gestion' },
+    { code: '7311Z', label: 'Agences de publicité' },
+    { code: '4690Z', label: 'Commerce de gros non spécialisé' },
+    { code: '4611A', label: 'Centrales d\'achat alimentaires' },
+    { code: '7820Z', label: 'Activités des agences de travail temporaire' },
+    { code: '7490B', label: 'Activités spécialisées diverses' },
+  ],
 };
 
 export async function scrapeSireneProspects(
@@ -187,6 +216,7 @@ export async function scrapeSireneProspects(
     if (!input.nafCodes.length) return { ok: false, error: 'Aucun code NAF sélectionné.' };
     const maxPages = Math.min(Math.max(1, input.maxPages), 20);
     const monthsBack = Math.min(Math.max(1, input.monthsBack), 36);
+    const targetProgram: ColdTargetProgram = input.targetProgram ?? 'ambassador';
 
     const createdAfter = new Date(Date.now() - monthsBack * 30 * 86400000)
       .toISOString().slice(0, 10);
@@ -228,12 +258,15 @@ export async function scrapeSireneProspects(
           naf_code: item.nafCode,
           creation_date: item.creationDate,
           birth_year_estimate: birthYear,
+          target_program: targetProgram,
           notes: `Source: SIRENE INSEE · NAF ${item.nafCode ?? '?'} · ${item.postalCode ?? ''}`,
         };
 
+        // Composite UNIQUE on (siret, target_program) allows the same SIRET to
+        // exist in both programmes independently (rare but legitimate).
         const { error, count } = await service
           .from('cold_email_prospects')
-          .upsert(row, { onConflict: 'siret', ignoreDuplicates: true, count: 'exact' });
+          .upsert(row, { onConflict: 'siret,target_program', ignoreDuplicates: true, count: 'exact' });
 
         if (error) errors.push(`SIRET ${item.siret} : ${error.message}`);
         else if ((count ?? 0) === 0) skippedDuplicates++;
@@ -246,6 +279,7 @@ export async function scrapeSireneProspects(
 
     await logAdminAction('cold_email.scrape_sirene', {
       nafCodes: input.nafCodes,
+      targetProgram,
       monthsBack,
       maxPages,
       fetched,
@@ -276,19 +310,26 @@ export type ProspectRow = {
   notes: string | null;
   linkedin_url: string | null;
   status: ProspectStatus;
+  target_program: ColdTargetProgram;
+  sequence_step: number;
+  last_sent_at: string | null;
+  unsubscribed_at: string | null;
+  replied_at: string | null;
 };
 
-export async function listProspects(): Promise<
-  { ok: true; prospects: ProspectRow[] } | { ok: false; error: string }
-> {
+export async function listProspects(
+  filter?: { targetProgram?: ColdTargetProgram },
+): Promise<{ ok: true; prospects: ProspectRow[] } | { ok: false; error: string }> {
   try {
     await requireSuperAdminUser();
     const service = createServiceClient();
-    const { data, error } = await service
+    let q = service
       .from('cold_email_prospects')
-      .select('id, siret, company_name, email, first_name, city, naf_code, creation_date, imported_at, notes, linkedin_url, status')
+      .select('id, siret, company_name, email, first_name, city, naf_code, creation_date, imported_at, notes, linkedin_url, status, target_program, sequence_step, last_sent_at, unsubscribed_at, replied_at')
       .order('imported_at', { ascending: false })
       .limit(2000);
+    if (filter?.targetProgram) q = q.eq('target_program', filter.targetProgram);
+    const { data, error } = await q;
     if (error) return { ok: false, error: error.message };
     return { ok: true, prospects: (data ?? []) as ProspectRow[] };
   } catch (e) {
@@ -338,7 +379,7 @@ export async function updateProspect(
 }
 
 export async function createManualProspect(
-  input: { company_name?: string; first_name?: string; email?: string; linkedin_url?: string; city?: string; notes?: string }
+  input: { company_name?: string; first_name?: string; email?: string; linkedin_url?: string; city?: string; notes?: string; targetProgram?: ColdTargetProgram }
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   try {
     await requireSuperAdminUser();
@@ -368,6 +409,7 @@ export async function createManualProspect(
         city,
         notes,
         status: 'not_contacted',
+        target_program: input.targetProgram ?? 'ambassador',
       })
       .select('id')
       .single();
@@ -394,22 +436,36 @@ export async function deleteProspect(id: string): Promise<{ ok: true } | { ok: f
   }
 }
 
-export async function getColdEmailStats(): Promise<
-  | { ok: true; stats: { total: number; step0: number; step1: number; step2: number; step3: number; unsubscribed: number; replied: number } }
-  | { ok: false; error: string }
-> {
+export type ColdEmailProgramStats = {
+  total: number;
+  step0: number;
+  step1: number;
+  step2: number;
+  step3: number;
+  unsubscribed: number;
+  replied: number;
+};
+
+export async function getColdEmailStats(
+  targetProgram?: ColdTargetProgram,
+): Promise<{ ok: true; stats: ColdEmailProgramStats } | { ok: false; error: string }> {
   try {
     await requireSuperAdminUser();
     const service = createServiceClient();
+    const mk = () => {
+      let q = service.from('cold_email_prospects').select('id', { count: 'exact', head: true });
+      if (targetProgram) q = q.eq('target_program', targetProgram);
+      return q;
+    };
 
     const [total, step0, step1, step2, step3, unsub, replied] = await Promise.all([
-      service.from('cold_email_prospects').select('id', { count: 'exact', head: true }),
-      service.from('cold_email_prospects').select('id', { count: 'exact', head: true }).eq('sequence_step', 0),
-      service.from('cold_email_prospects').select('id', { count: 'exact', head: true }).eq('sequence_step', 1),
-      service.from('cold_email_prospects').select('id', { count: 'exact', head: true }).eq('sequence_step', 2),
-      service.from('cold_email_prospects').select('id', { count: 'exact', head: true }).eq('sequence_step', 3),
-      service.from('cold_email_prospects').select('id', { count: 'exact', head: true }).not('unsubscribed_at', 'is', null),
-      service.from('cold_email_prospects').select('id', { count: 'exact', head: true }).not('replied_at', 'is', null),
+      mk(),
+      mk().eq('sequence_step', 0),
+      mk().eq('sequence_step', 1),
+      mk().eq('sequence_step', 2),
+      mk().eq('sequence_step', 3),
+      mk().not('unsubscribed_at', 'is', null),
+      mk().not('replied_at', 'is', null),
     ]);
 
     return {
@@ -424,6 +480,34 @@ export async function getColdEmailStats(): Promise<
         replied: replied.count ?? 0,
       },
     };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+/**
+ * Manually fires a cold-email batch for one or both programmes from the admin
+ * UI. Same `runColdEmailBatch` used by the daily cron, just gated by a small
+ * cap so an accidental double-click can't drain a quota.
+ */
+export async function triggerColdEmailBatch(
+  input: { targetProgram?: ColdTargetProgram; limit?: number } = {},
+): Promise<
+  | { ok: true; tallies: Array<{ program: ColdTargetProgram; considered: number; sent: number; skipped: number; failed: number }> }
+  | { ok: false; error: string }
+> {
+  try {
+    await requireSuperAdminUser();
+    const { runColdEmailBatch } = await import('@/lib/cold-email/dispatch');
+    const tallies = await runColdEmailBatch({
+      program: input.targetProgram,
+      limit: Math.min(Math.max(1, input.limit ?? 20), 100),
+    });
+    await logAdminAction('cold_email.trigger_batch', {
+      targetProgram: input.targetProgram ?? 'all',
+      tallies,
+    });
+    return { ok: true, tallies };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }

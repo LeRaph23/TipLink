@@ -1,19 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { scrapeSireneProspects } from '@/actions/admin/cold-email';
-
-const SUGGESTED_NAF = [
-  { code: '4791B', label: 'Vente à distance catalogue spécialisé' },
-  { code: '4791A', label: 'Vente à distance catalogue général' },
-  { code: '7311Z', label: 'Agences de publicité' },
-  { code: '7022Z', label: 'Conseil pour les affaires' },
-  { code: '7320Z', label: 'Études de marché et sondages' },
-  { code: '4799B', label: 'Vente hors magasin (porte-à-porte, MLM)' },
-  { code: '7021Z', label: 'Relations publiques et communication' },
-  { code: '8230Z', label: 'Salons professionnels et congrès' },
-  { code: '7490B', label: 'Activités spécialisées diverses' },
-];
+import { useMemo, useState } from 'react';
+import {
+  scrapeSireneProspects,
+  NAF_PRESETS,
+  type ColdTargetProgram,
+} from '@/actions/admin/cold-email';
 
 const inp: React.CSSProperties = {
   padding: '8px 10px', background: 'var(--surface-2)', color: 'var(--text)',
@@ -25,8 +17,19 @@ const lbl: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'block',
 };
 
+const PROGRAM_DEFAULTS: Record<ColdTargetProgram, Set<string>> = {
+  ambassador: new Set(['4791B', '7022Z']),
+  commercial: new Set(['4619A', '4619B', '7022Z']),
+};
+
+const PROGRAM_LABEL: Record<ColdTargetProgram, { name: string; tag: string }> = {
+  ambassador: { name: 'Ambassadeurs', tag: 'Resend · ambassadeur@digitip.app' },
+  commercial: { name: 'Commerciaux Pros', tag: 'Brevo · raphael@partenaires.digitip.app' },
+};
+
 export function SireneScraperForm() {
-  const [selectedNaf, setSelectedNaf] = useState<Set<string>>(new Set(['4791B', '7022Z']));
+  const [program, setProgram] = useState<ColdTargetProgram>('ambassador');
+  const [selectedNaf, setSelectedNaf] = useState<Set<string>>(new Set(PROGRAM_DEFAULTS.ambassador));
   const [monthsBack, setMonthsBack] = useState(12);
   const [postalPrefix, setPostalPrefix] = useState('');
   const [maxPages, setMaxPages] = useState(2);
@@ -37,6 +40,18 @@ export function SireneScraperForm() {
     | { ok: false; error: string }
     | null
   >(null);
+
+  const presets = useMemo(() => NAF_PRESETS[program], [program]);
+
+  function switchProgram(next: ColdTargetProgram) {
+    setProgram(next);
+    setSelectedNaf(new Set(PROGRAM_DEFAULTS[next]));
+    // The "young only" filter is irrelevant for the commercial programme
+    // (targets established commerciaux pros, not new auto-entrepreneurs).
+    if (next === 'commercial') setYoungOnly(false);
+    else setYoungOnly(true);
+    setResult(null);
+  }
 
   function toggleNaf(code: string) {
     setSelectedNaf(prev => {
@@ -58,6 +73,7 @@ export function SireneScraperForm() {
         postalCodePrefix: postalPrefix.trim() || undefined,
         maxPages,
         youngOnly,
+        targetProgram: program,
       });
       setResult(r);
     } finally {
@@ -66,23 +82,56 @@ export function SireneScraperForm() {
   }
 
   const estimatedCalls = maxPages;
+  const programMeta = PROGRAM_LABEL[program];
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 20, marginBottom: 16 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-        Scraper SIRENE INSEE (auto-entrepreneurs récents)
+        Scraper SIRENE INSEE
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16, lineHeight: 1.5 }}>
-        Récupère depuis la base publique SIRENE les entreprises individuelles (catégorie 1000)
-        créées récemment sur des NAF commerciaux. Les emails ne sont pas inclus (SIRENE ne les
-        expose pas) — il faudra enrichir via Dropcontact/Hunter par SIRET avant que la séquence
-        ne démarre. Requiert <code>INSEE_API_KEY</code> dans les env Vercel (gratuit, portail-api.insee.fr).
+        Récupère depuis la base publique SIRENE les structures (entreprises individuelles + sociétés)
+        sur des NAF cibles. Les emails ne sont pas inclus (SIRENE ne les expose pas) — il faudra enrichir
+        manuellement / Dropcontact / Hunter via SIRET avant que la séquence ne démarre. Requiert
+        <code> INSEE_API_KEY</code> dans Vercel.
+      </div>
+
+      {/* Programme cible — pills */}
+      <div style={{ marginBottom: 16 }}>
+        <span style={lbl}>Programme cible</span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {(['ambassador', 'commercial'] as const).map((p) => {
+            const active = program === p;
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => switchProgram(p)}
+                style={{
+                  padding: '8px 14px',
+                  background: active ? 'var(--accent)' : 'var(--surface-2)',
+                  color: active ? '#fff' : 'var(--text-2)',
+                  border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                  borderRadius: 99,
+                  fontSize: 12.5,
+                  fontWeight: active ? 700 : 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {PROGRAM_LABEL[p].name}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, fontFamily: 'var(--font-mono, monospace)' }}>
+          Envoi : {programMeta.tag}
+        </div>
       </div>
 
       <div style={{ marginBottom: 16 }}>
         <span style={lbl}>Codes NAF cibles ({selectedNaf.size} sélectionné{selectedNaf.size > 1 ? 's' : ''})</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {SUGGESTED_NAF.map(({ code, label }) => {
+          {presets.map(({ code, label }) => {
             const active = selectedNaf.has(code);
             return (
               <button
@@ -142,7 +191,10 @@ export function SireneScraperForm() {
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-2)', marginBottom: 16, cursor: 'pointer' }}>
         <input type="checkbox" checked={youngOnly} onChange={e => setYoungOnly(e.target.checked)} />
-        <span>Garder uniquement les prospects estimés <strong>&lt; 25 ans</strong> (via prénom INSEE)</span>
+        <span>
+          Garder uniquement les prospects estimés <strong>&lt; 25 ans</strong> (via prénom INSEE)
+          {program === 'commercial' && <em style={{ color: 'var(--text-3)', fontWeight: 400 }}> — désactivé par défaut pour les commerciaux pros</em>}
+        </span>
       </label>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

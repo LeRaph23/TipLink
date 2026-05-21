@@ -694,6 +694,7 @@ export type Database = {
           sequence_step: number
           siret: string | null
           status: string
+          target_program: string
           unsubscribed_at: string | null
         }
         Insert: {
@@ -714,6 +715,7 @@ export type Database = {
           sequence_step?: number
           siret?: string | null
           status?: string
+          target_program?: string
           unsubscribed_at?: string | null
         }
         Update: {
@@ -734,6 +736,7 @@ export type Database = {
           sequence_step?: number
           siret?: string | null
           status?: string
+          target_program?: string
           unsubscribed_at?: string | null
         }
         Relationships: []

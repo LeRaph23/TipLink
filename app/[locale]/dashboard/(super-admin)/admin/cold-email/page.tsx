@@ -1,7 +1,8 @@
 import { setRequestLocale } from 'next-intl/server';
 import { SireneScraperForm } from './SireneScraperForm';
 import { ProspectsTable } from './ProspectsTable';
-import { listProspects } from '@/actions/admin/cold-email';
+import { ColdBatchPanel } from './ColdBatchPanel';
+import { listProspects, getColdEmailStats } from '@/actions/admin/cold-email';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,14 @@ export default async function ProspectsPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const res = await listProspects();
-  const prospects = res.ok ? res.prospects : [];
-  const error = res.ok ? null : res.error;
+  const [listRes, ambStats, comStats] = await Promise.all([
+    listProspects(),
+    getColdEmailStats('ambassador'),
+    getColdEmailStats('commercial'),
+  ]);
+
+  const prospects = listRes.ok ? listRes.prospects : [];
+  const error = listRes.ok ? null : listRes.error;
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 20px', fontFamily: 'var(--font)' }}>
@@ -23,9 +29,15 @@ export default async function ProspectsPage({
         Prospection
       </h1>
       <p style={{ fontSize: 13, color: 'var(--text-2)', margin: '0 0 24px', lineHeight: 1.5 }}>
-        Scrape SIRENE pour alimenter le tableau, puis enrichis manuellement chaque prospect
-        (email, LinkedIn, notes) et fais évoluer son statut au fil des contacts.
+        Scrape SIRENE pour alimenter le tableau, enrichis manuellement chaque prospect, puis lance
+        une vague d&apos;envoi par programme. Les Ambassadeurs partent via Resend (digitip.app),
+        les Commerciaux Pros via Brevo (partenaires.digitip.app) — réputations isolées.
       </p>
+
+      <ColdBatchPanel
+        ambassadorStats={ambStats.ok ? ambStats.stats : null}
+        commercialStats={comStats.ok ? comStats.stats : null}
+      />
 
       <SireneScraperForm />
 
