@@ -1269,6 +1269,109 @@ export async function sendColdEmailStep(opts: {
   return { ok: !result.error, id: result.data?.id };
 }
 
+// ─── Commercial Pros cold email B2B sequence (sent via Brevo) ──────────────
+
+function coldEmailFooterCommercial(unsubscribeUrl: string): string {
+  // B2B-tone unsub footer — references intérêt légitime RGPD article 6§1f and
+  // gives the postal address required by Loi Informatique & Libertés. Plain
+  // text styling to match the sobriety of the rest of the commercial mails.
+  return `<tr><td class="divider-strong text-muted" style="padding:24px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
+    Vous recevez ce message à titre professionnel car votre activité figure dans la base publique SIRENE (INSEE) sur un code APE en lien avec une activité de prospection commerciale. Traitement fondé sur notre intérêt légitime de recrutement B2B (art. 6§1 f) du RGPD).
+    <br/>Pour vous opposer à tout traitement futur : <a href="${unsubscribeUrl}" style="color:#E57A97">se désinscrire en un clic</a>.
+    <br/>YUZU LABS · SIREN 994&nbsp;879&nbsp;013 · 11 rue de Lorraine, 68490 Petit-Landau, France · privacy@digitip.app
+  </td></tr>`;
+}
+
+/**
+ * Sends a single cold-email step to a commercial pro prospect via Brevo.
+ *
+ * Brevo is used (not Resend) so the sender reputation of the partner-recruitment
+ * domain (partenaires.digitip.app) stays fully isolated from digitip.app
+ * transactional traffic. A reputational hit on this channel can never spill
+ * over to ambassador / customer / contract emails.
+ */
+export async function sendCommercialColdEmailStep(opts: {
+  to: string;
+  firstName: string | null;
+  companyName: string | null;
+  city: string | null;
+  step: 1 | 2 | 3;
+  unsubscribeUrl: string;
+  landingUrl: string;
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const { to, firstName, companyName, city, step, unsubscribeUrl, landingUrl } = opts;
+  const { brevoSendTransactionalEmail, BREVO_COMMERCIAL_SENDER } = await import('@/lib/brevo/client');
+
+  const greet = firstName ? `Bonjour ${firstName}` : 'Bonjour';
+  const companyMention = companyName ? ` (${companyName})` : '';
+  const cityFragment = city ? ` à ${city}` : '';
+
+  const variants: Record<1 | 2 | 3, { subject: string; body: string }> = {
+    1: {
+      subject: firstName
+        ? `${firstName}, un partenariat à étudier — apport d'affaires B2B`
+        : `Un partenariat à étudier — apport d'affaires B2B`,
+      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je suis Raphaël Meyer, fondateur de Digitip. On édite un dispositif de pourboire sans contact (SmartTag NFC) pour les commerces de proximité — coiffeurs, instituts, restauration, bars. Je vois que votre activité${companyMention}${cityFragment} pourrait correspondre à un canal d'apport d'affaires que nous structurons.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Le cadre est <strong class="text-strong" style="color:#0f0f12">strictement professionnel</strong> : contrat d'apporteur d'affaires en bonne et due forme, facturation B2B, paiement Stripe Connect, sans exclusivité ni quota. Le ticket moyen côté commerçant est court (1-2 RDV) et le produit répond à un vrai manque.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si le sujet vous intéresse, voici la fiche de candidature (~2 min) :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:11px 20px;background:#0f0f12;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Découvrir le programme partenaire →</a></p>
+        <p class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6;margin-top:18px">Cordialement,<br/>Raphaël Meyer · Fondateur Digitip</p>`,
+    },
+    2: {
+      subject: firstName
+        ? `${firstName}, complément d'information sur Digitip`
+        : `Complément d'information sur Digitip`,
+      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je vous écris en suivi de mon précédent message. Quelques précisions concrètes sur le programme :</p>
+        <ul style="font-size:14px;color:#5a5a6a;line-height:1.7;margin:8px 0 14px;padding-left:22px">
+          <li>Barème commissionnement transparent, détaillé en MP — supérieur à ce qui se pratique sur l'apport d'affaires sur ce segment</li>
+          <li>Pas de stock à avancer, pas d'investissement initial</li>
+          <li>Paiement via Stripe Connect dès 30&nbsp;€ de solde, contrat formel</li>
+          <li>Code commercial dédié + tableau de bord pour suivre vos ventes en temps réel</li>
+        </ul>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si vous souhaitez en discuter, vous pouvez me répondre directement à ce mail ou candidater en 2 minutes ici :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:11px 20px;background:#0f0f12;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Programme partenaire Digitip →</a></p>
+        <p class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6;margin-top:18px">Cordialement,<br/>Raphaël Meyer · Fondateur Digitip</p>`,
+    },
+    3: {
+      subject: firstName
+        ? `${firstName}, dernier message`
+        : `Dernier message`,
+      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Comme promis, c'est mon dernier message sur ce sujet. Si le programme partenaire Digitip ne correspond pas à votre activité actuelle, aucun souci — vous pouvez vous désinscrire en un clic depuis le pied de ce mail et je ne vous recontacterai plus.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si au contraire vous voulez en savoir plus, voici une dernière fois le lien vers la fiche détaillée :</p>
+        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #e5e7eb">Programme partenaire Digitip</a></p>
+        <p class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6;margin-top:18px">Bien cordialement,<br/>Raphaël Meyer · Fondateur Digitip</p>`,
+    },
+  };
+
+  const v = variants[step];
+
+  // List-Unsubscribe + List-Unsubscribe-Post are required by Gmail/Outlook
+  // bulk-sender rules (Feb 2024) for senders going beyond ~100/day.
+  const result = await brevoSendTransactionalEmail({
+    sender: { email: BREVO_COMMERCIAL_SENDER.email, name: BREVO_COMMERCIAL_SENDER.name },
+    to: [{ email: to, name: firstName ?? undefined }],
+    replyTo: { email: BREVO_COMMERCIAL_SENDER.email, name: BREVO_COMMERCIAL_SENDER.name },
+    subject: v.subject,
+    htmlContent: themedLayout(`
+    <tr><td style="padding:28px 32px 20px">
+      ${v.body}
+    </td></tr>
+    ${coldEmailFooterCommercial(unsubscribeUrl)}`),
+    headers: {
+      'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+  return { ok: true, id: result.messageId };
+}
+
 // ─── Staff invite — admin invites a colleague to join an establishment ───────
 
 export async function sendStaffInviteEmail(opts: {
