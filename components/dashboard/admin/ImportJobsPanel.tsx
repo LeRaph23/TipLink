@@ -27,6 +27,7 @@ const TYPE_LABEL: Record<ImportJobType, string> = {
   enrich_addresses: 'Enrichissement adresses',
   enrich_google:    'Enrichissement Google',
   full_import:      'Import complet',
+  import_france:    'Import France',
 };
 
 const STATUS_LABEL: Record<ImportJobStatus, string> = {
@@ -40,21 +41,25 @@ const STATUS_LABEL: Record<ImportJobStatus, string> = {
 export function ImportJobsPanel({ onAnyComplete }: { onAnyComplete?: () => void }) {
   const [jobs, setJobs] = useState<ImportJobView[]>([]);
   const [loading, setLoading] = useState(true);
+  // `now` ticks with every poll so JobRow can derive "is this stalled?" purely
+  // from props. Storing the timestamp in state keeps render pure (react-hooks/purity).
+  const [now, setNow] = useState<number>(() => Date.now());
   const [, startTransition] = useTransition();
 
   const refresh = useCallback(async () => {
     const r = await listImportJobs();
+    const tick = Date.now();
     if (r.ok) {
       // Drop jobs that finished more than KEEP_FINISHED_MS ago — they just
       // clutter the panel. They're still queryable in the DB.
-      const now = Date.now();
       const visible = r.jobs.filter((j) => {
         if (j.status === 'pending' || j.status === 'running') return true;
         if (!j.finishedAt) return true;
-        return now - new Date(j.finishedAt).getTime() < KEEP_FINISHED_MS;
+        return tick - new Date(j.finishedAt).getTime() < KEEP_FINISHED_MS;
       });
       setJobs(visible);
     }
+    setNow(tick);
     setLoading(false);
   }, []);
 
@@ -103,6 +108,7 @@ export function ImportJobsPanel({ onAnyComplete }: { onAnyComplete?: () => void 
           <JobRow
             key={j.id}
             job={j}
+            now={now}
             onCancel={() => handleCancel(j.id)}
             onRetry={() => handleRetry(j.id)}
           />
@@ -112,16 +118,17 @@ export function ImportJobsPanel({ onAnyComplete }: { onAnyComplete?: () => void 
   );
 }
 
-function JobRow({ job, onCancel, onRetry }: {
-  job: ImportJobView; onCancel: () => void; onRetry: () => void;
+function JobRow({ job, now, onCancel, onRetry }: {
+  job: ImportJobView; now: number; onCancel: () => void; onRetry: () => void;
 }) {
   const isActive   = job.status === 'pending' || job.status === 'running';
   // A 'running' job is stalled when its heartbeat is silent for >2 min — the
   // chunk crashed or pokeWorker dropped on the floor. A 'pending' job is
   // stalled if it never moved past pending for >2 min (initial poke failed).
+  // `now` is a tick passed by the parent so render stays pure.
   const isStalled  =
-    (job.status === 'running' && isStaleHeartbeat(job.lastHeartbeatAt)) ||
-    (job.status === 'pending' && Date.now() - new Date(job.createdAt).getTime() > 120_000);
+    (job.status === 'running' && isStaleHeartbeat(job.lastHeartbeatAt, now)) ||
+    (job.status === 'pending' && now - new Date(job.createdAt).getTime() > 120_000);
   const pct = job.total > 0 ? Math.min(100, Math.round((job.done / job.total) * 100)) : null;
 
   const summary = describeJobParams(job);
@@ -193,14 +200,18 @@ function JobRow({ job, onCancel, onRetry }: {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function isStaleHeartbeat(iso: string | null): boolean {
+function isStaleHeartbeat(iso: string | null, now: number): boolean {
   if (!iso) return false;
-  return Date.now() - new Date(iso).getTime() > 120_000; // 2 min without progress
+  return now - new Date(iso).getTime() > 120_000; // 2 min without progress
 }
 
 function describeJobParams(job: ImportJobView): string {
   const p = job.params;
   if (p.type === 'import_zones') return `Ville : ${p.city}`;
+  if (p.type === 'import_france') {
+    return `${p.regions.length} région${p.regions.length > 1 ? 's' : ''}` +
+      (p.enrich ? ' · enrichissement BAN' : '');
+  }
   return `${p.zoneIds.length} zone${p.zoneIds.length > 1 ? 's' : ''}` +
     ('force' in p && p.force ? ' · re-traitement forcé' : '');
 }

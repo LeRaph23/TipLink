@@ -1091,7 +1091,7 @@ export type Database = {
           status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
           succeeded: number
           total: number
-          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import'
+          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import' | 'import_france'
           worker_token: string
         }
         Insert: {
@@ -1110,7 +1110,7 @@ export type Database = {
           status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
           succeeded?: number
           total?: number
-          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import'
+          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import' | 'import_france'
           worker_token?: string
         }
         Update: {
@@ -1129,7 +1129,7 @@ export type Database = {
           status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
           succeeded?: number
           total?: number
-          type?: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import'
+          type?: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import' | 'import_france'
           worker_token?: string
         }
         Relationships: []

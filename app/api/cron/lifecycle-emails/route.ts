@@ -502,7 +502,19 @@ export async function GET(req: NextRequest) {
     results.weeklyRecap = await runWeeklyRecap(service, dryRun);
   }
 
-  return NextResponse.json({ ok: true, dryRun, results });
+  // Piggyback: resume any stalled OSM import jobs. Hobby plan limits us to
+  // daily crons, so daily cron handlers each fire this as a side-effect to
+  // give us multiple recovery checkpoints per day without burning slots.
+  let importResumed = 0;
+  if (!dryRun) {
+    try {
+      const { resumeStalledImportJobs } = await import('@/lib/admin/import-jobs');
+      const r = await resumeStalledImportJobs();
+      importResumed = r.resumed;
+    } catch { /* never let a stale-job sweep break lifecycle-emails */ }
+  }
+
+  return NextResponse.json({ ok: true, dryRun, results, importResumed });
 }
 
 // Vercel cron issues GET; allow POST for parity with the other cron routes.
