@@ -16,13 +16,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    title: 'Programme Ambassadeurs Digitip · Activité déclarée, 25-35 € par vente',
+    title: 'Programme Ambassadeurs Digitip · Activité déclarée, 35-45 € par vente',
     description:
-      "Programme officiel d'ambassadeurs Digitip : une activité en micro-entreprise, encadrée et déclarée, ouverte aux étudiants, salariés, demandeurs d'emploi, indépendants et retraités actifs. Vous présentez nos SmartTags NFC à des commerces de proximité et touchez 25 à 35 € par vente. Pas de stock, pas d'avance, paiement Stripe Connect.",
+      "Programme officiel d'ambassadeurs Digitip : une activité en micro-entreprise, encadrée et déclarée, ouverte aux étudiants, salariés, demandeurs d'emploi, indépendants et retraités actifs. Vous présentez nos SmartTags NFC à des commerces de proximité et touchez 35 à 45 € par vente. Pas de stock, pas d'avance, paiement Stripe Connect.",
     alternates: pageAlternates(locale, '/devenir-ambassadeur', ['fr']),
     openGraph: {
       title: 'Programme Ambassadeurs Digitip',
-      description: 'Activité déclarée, ouverte à tous les profils · 25 à 35 € par vente · Candidature en 2 minutes.',
+      description: 'Activité déclarée, ouverte à tous les profils · 35 à 45 € par vente · Candidature en 2 minutes.',
       locale: 'fr_FR',
       type: 'website',
     },
@@ -31,7 +31,7 @@ export async function generateMetadata({
 
 type Perk = { icon: IconName; label: string; sub: string };
 const PERKS: Perk[] = [
-  { icon: 'wallet', label: '25 à 35 € par vente', sub: 'Solo 25 € · Duo 35 €' },
+  { icon: 'wallet', label: '35 à 45 € par vente', sub: 'Solo 35 € · Duo 45 €' },
   { icon: 'gift', label: 'Bonus parrainage', sub: '+25 € par filleul · +250 € aux 10' },
   { icon: 'bank', label: 'Paiement Stripe Connect', sub: 'Dès 30 € · virement mensuel' },
   { icon: 'tag', label: 'Aucun stock à avancer', sub: '100 % en ligne, depuis le téléphone' },
@@ -230,7 +230,7 @@ export default async function DevenirAmbassadeurPage({
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 24px' }}>
             Vous présentez nos SmartTags NFC — un dispositif de pourboire sans contact — à des
             commerces de proximité (coiffeurs, instituts d&apos;esthétique, restauration). Chaque vente vous
-            rapporte 25 à 35 €. Activité exercée en micro-entreprise, sans stock, sans avance financière,
+            rapporte 35 à 45 €. Activité exercée en micro-entreprise, sans stock, sans avance financière,
             sans horaires imposés.
           </p>
 

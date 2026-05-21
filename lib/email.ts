@@ -988,7 +988,7 @@ export async function sendReferralEmailFromAmbassador(opts: {
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div class="text-primary" style="font-size:24px;font-weight:800;color:#0f0f12;margin-bottom:10px">${parrainName} pense à toi</div>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip — placer des SmartTags NFC chez des restos et toucher 25 à 35 € par vente. ${parrainName} pense que tu pourrais cartonner.</p>
+      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip — placer des SmartTags NFC chez des restos et toucher 35 à 45 € par vente. ${parrainName} pense que tu pourrais cartonner.</p>
       <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">Pas d'engagement, pas de stock à avancer — juste un SIRET (auto-entrepreneur) et l'envie de prospecter.</p>
     </td></tr>
     <tr><td style="padding:8px 32px 32px">
@@ -1060,7 +1060,7 @@ export async function sendColdEmailStep(opts: {
     1: {
       subject: `${firstName ? firstName + ', ' : ''}une idée pour ton activité`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je tombe sur ton SIRET dans la base SIRENE — tu es enregistré(e) en activité commerciale${cityFragment}. On lance un programme ambassadeur Digitip : tu places des SmartTags NFC (pourboires sans contact) dans les restos, et tu touches <strong class="text-strong" style="color:#0f0f12">25 à 35€ par vente</strong>. Pas de stock, pas d'avance.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je tombe sur ton SIRET dans la base SIRENE — tu es enregistré(e) en activité commerciale${cityFragment}. On lance un programme ambassadeur Digitip : tu places des SmartTags NFC (pourboires sans contact) dans les restos, et tu touches <strong class="text-strong" style="color:#0f0f12">35 à 45€ par vente</strong>. Pas de stock, pas d'avance.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si ça te dit d'en savoir plus, jette un œil :</p>
         <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Voir le programme →</a></p>`,
     },

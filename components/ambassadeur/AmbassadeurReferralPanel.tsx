@@ -67,7 +67,7 @@ export function AmbassadeurReferralPanel({ code }: { code: string }) {
   const onShare = async () => {
     const shareData = {
       title: 'Rejoins-moi sur Digitip',
-      text: 'Je gagne 25-35€ par vente sur Digitip — viens tester :',
+      text: 'Je gagne 35-45€ par vente sur Digitip — viens tester :',
       url: referralUrl,
     };
     if (typeof navigator !== 'undefined' && 'share' in navigator) {

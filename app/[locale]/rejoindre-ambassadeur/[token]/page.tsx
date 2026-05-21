@@ -39,7 +39,7 @@ export default async function RecruitmentPage({
             Devenez ambassadeur DigiTip
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.55, margin: '0 0 20px' }}>
-            Vous touchez <strong>25 €</strong> par vente Solo et <strong>35 €</strong> par vente Duo,
+            Vous touchez <strong>35 €</strong> par vente Solo et <strong>45 €</strong> par vente Duo,
             plus jusqu&apos;à <strong>100 €</strong> de bonus hebdomadaire et <strong>200 €</strong> pour le n°1 du mois.
           </p>
 
