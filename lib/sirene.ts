@@ -29,6 +29,15 @@ export type SireneSearchOptions = {
   createdBefore?: string;
   postalCodePrefix?: string;       // ex: '69' for Lyon dept
   personnePhysiqueOnly?: boolean;  // default true
+  /**
+   * SIRENE `trancheEffectifsUniteLegale` values to OR-filter.
+   *   NN = personne physique sans effectif
+   *   00 = 0 salarié, 01 = 1-2, 02 = 3-5, 03 = 6-9, 11 = 10-19,
+   *   12 = 20-49, 21 = 50-99, 22 = 100-199, …
+   * Used to keep the commercial-pro funnel restricted to small structures
+   * "à leur compte" — large groups (Gamm Vert, etc.) would otherwise leak in.
+   */
+  trancheEffectifs?: string[];
   page?: number;                   // 0-indexed
   pageSize?: number;               // default 100, max 1000
 };
@@ -89,6 +98,13 @@ function buildQueryForNaf(opts: SireneSearchOptions, nafCode: string | null): st
 
   if (opts.postalCodePrefix) {
     parts.push(`codePostalEtablissement:${opts.postalCodePrefix}*`);
+  }
+
+  if (opts.trancheEffectifs && opts.trancheEffectifs.length > 0) {
+    // Quote each value — "NN" and "00" need quoting so SIRENE parses them as
+    // the raw string token and not as an integer / wildcard.
+    const ored = opts.trancheEffectifs.map((v) => `trancheEffectifsUniteLegale:"${v}"`).join(' OR ');
+    parts.push(`(${ored})`);
   }
 
   return parts.join(' AND ');

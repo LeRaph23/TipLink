@@ -179,6 +179,12 @@ export type SireneScrapeInput = {
   maxPages: number;            // pages to fetch (each ~100 results)
   youngOnly?: boolean;         // if true, only keep prospects with birth_year_estimate set
   targetProgram?: ColdTargetProgram; // defaults to 'ambassador' for legacy callers
+  /**
+   * SIRENE `trancheEffectifsUniteLegale` codes to restrict to.
+   * Pass `['NN','00','01','02']` to keep only ≤5 salariés ("à leur compte").
+   * Omit to disable the size filter (all sizes accepted).
+   */
+  trancheEffectifs?: string[];
 };
 
 export async function scrapeSireneProspects(
@@ -207,6 +213,9 @@ export async function scrapeSireneProspects(
       // EI) — restricting to personnes physiques would miss the bulk of
       // the audience. Ambassadeurs keep the AE-only filter.
       personnePhysiqueOnly: targetProgram === 'ambassador',
+      trancheEffectifs: input.trancheEffectifs && input.trancheEffectifs.length > 0
+        ? input.trancheEffectifs
+        : undefined,
       pageSize: 100,
     };
 
