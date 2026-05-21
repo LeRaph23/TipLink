@@ -1,11 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import {
-  scrapeSireneProspects,
-  NAF_PRESETS,
-  type ColdTargetProgram,
-} from '@/actions/admin/cold-email';
+import { scrapeSireneProspects } from '@/actions/admin/cold-email';
+import { NAF_PRESETS, type ColdTargetProgram } from '@/lib/cold-email/programs';
 
 const inp: React.CSSProperties = {
   padding: '8px 10px', background: 'var(--surface-2)', color: 'var(--text)',
