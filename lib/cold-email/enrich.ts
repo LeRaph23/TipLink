@@ -1,40 +1,55 @@
 // Automatic enrichment for cold-email prospects.
 //
 // Pipeline, all free / no API key:
-//   1. recherche-entreprises.api.gouv.fr — official public API (no auth,
-//      ~50 req/min) — returns site_internet and contact info when the
-//      company has declared them.
-//   2. If a website is found, fetch homepage + /contact + /mentions-legales
-//      + /qui-sommes-nous and regex for emails. FR business sites are
-//      legally required (LCEN art. 6) to publish a contact email on the
-//      mentions-légales page, so the hit rate is high.
+//   1. recherche-entreprises.api.gouv.fr — official public API (no auth)
+//      returns site_internet when the company has declared one.
+//   2. If a website is found, fetch the homepage + a fan of common contact
+//      paths and regex for emails. We also decode Cloudflare's
+//      `data-cfemail` obfuscation, the most common anti-bot trick used by
+//      small FR business sites.
 //
 // The whole pipeline is best-effort: a network error / 403 / parse failure
 // silently leaves the prospect unchanged, just marks enrichment_attempted_at
-// so the cron / batch worker doesn't keep retrying the same prospect.
+// + a diagnostic in enrichment_source so the admin can see WHY enrichment
+// failed (no_company / no_website / fetch_failed / no_email_in_html).
 
-const FETCH_TIMEOUT_MS = 6000;
+const FETCH_TIMEOUT_MS = 9000;
 const USER_AGENT =
-  'Mozilla/5.0 (compatible; DigitipBot/1.0; +https://digitip.app) AppleWebKit/537.36';
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15';
 
-// Generic catch-all addresses we KEEP (they're still useful to start a
-// conversation) but de-prioritise vs nominative addresses.
+// Generic catch-all addresses we KEEP (still useful to start a conversation)
+// but de-prioritise vs nominative addresses.
 const GENERIC_LOCAL_PARTS = new Set([
-  'contact', 'info', 'hello', 'bonjour', 'commercial', 'commercial-fr',
-  'sales', 'partenariats', 'partenariat', 'partners', 'partenaires',
+  'contact', 'info', 'hello', 'bonjour', 'commercial',
+  'sales', 'partenariat', 'partenariats', 'partners', 'partenaires',
+  'accueil', 'reception', 'service',
 ]);
 
 // Never-useful addresses we DROP outright.
 const REJECTED_LOCAL_PARTS = new Set([
   'noreply', 'no-reply', 'donotreply', 'do-not-reply', 'mailer-daemon',
-  'postmaster', 'webmaster', 'wordpress', 'admin', 'support@stripe',
+  'postmaster', 'webmaster', 'wordpress', 'admin', 'root',
+  'newsletter', 'notification', 'notifications', 'noresponse',
+]);
+
+// Top-level domains we drop — image hosts, asset CDNs, free wildcard hosts.
+const REJECTED_DOMAINS = new Set([
+  'sentry.io', 'wixstudio.io', 'wordpress.com', 'wp.com',
+  'example.com', 'localhost', 'placeholder.com',
 ]);
 
 const EMAIL_RE = /\b([A-Za-z0-9](?:[A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)\b/g;
-// Catches "prenom [at] domaine [dot] fr" style anti-bot obfuscation.
+// Catches "prenom [at] domaine [dot] fr" anti-bot obfuscation.
 const OBFUSCATED_RE = /\b([A-Za-z0-9._%+-]+)\s*\[?\s*(?:at|chez|arobase)\s*\]?\s*([A-Za-z0-9-]+)\s*\[?\s*(?:dot|point|\.)\s*\]?\s*([A-Za-z]{2,})\b/gi;
+// Cloudflare email obfuscation: <a href="/cdn-cgi/l/email-protection#abcdef…">
+const CF_EMAIL_RE = /data-cfemail=["']([0-9a-fA-F]+)["']/g;
 
-const COMMON_CONTACT_PATHS = ['/contact', '/mentions-legales', '/legal', '/qui-sommes-nous', '/a-propos', '/about'];
+const COMMON_CONTACT_PATHS = [
+  '/contact', '/contact-us', '/nous-contacter', '/coordonnees', '/coordonnées',
+  '/mentions-legales', '/mentions-légales', '/legal',
+  '/qui-sommes-nous', '/a-propos', '/about', '/about-us',
+  '/equipe', '/notre-equipe', '/team', '/the-team',
+];
 
 type EnrichInput = {
   siret: string | null;
@@ -45,7 +60,9 @@ type EnrichInput = {
 export type EnrichmentResult = {
   email: string | null;
   website: string | null;
-  source: string;          // tag stored on enrichment_source
+  /** Diagnostic tag stored on enrichment_source — useful for the admin
+   *  to know why a row stayed empty. */
+  source: string;
 };
 
 /**
@@ -56,29 +73,35 @@ export type EnrichmentResult = {
 export async function enrichProspect(p: EnrichInput): Promise<EnrichmentResult> {
   let website: string | null = null;
   let email: string | null = null;
-  const sources: string[] = [];
+  const diag: string[] = [];
 
   // Step 1: lookup the company on recherche-entreprises (free, public).
   if (p.siret) {
     const re = await searchRechercheEntreprises(p.siret);
-    if (re?.website) { website = normaliseUrl(re.website); sources.push('rec-ent'); }
+    if (re?.website) { website = normaliseUrl(re.website); if (website) diag.push('rec-ent'); }
   }
   // Fallback: search by company name + city if no SIRET hit.
   if (!website && p.companyName) {
     const re = await searchRechercheEntreprisesByName(p.companyName, p.city);
-    if (re?.website) { website = normaliseUrl(re.website); sources.push('rec-ent-name'); }
+    if (re?.website) { website = normaliseUrl(re.website); if (website) diag.push('rec-ent-name'); }
   }
+  if (!website) diag.push('no_website');
 
   // Step 2: scrape the website if we have one.
   if (website) {
-    email = await scrapeEmailFromSite(website);
-    if (email) sources.push('site');
+    const scraped = await scrapeEmailFromSite(website);
+    if (scraped) {
+      email = scraped;
+      diag.push('site_email');
+    } else {
+      diag.push('no_email_on_site');
+    }
   }
 
   return {
     email,
     website,
-    source: sources.length ? sources.join('+') : 'none',
+    source: diag.join('+') || 'none',
   };
 }
 
@@ -156,8 +179,12 @@ async function scrapeEmailFromSite(url: string): Promise<string | null> {
       const norm = e.toLowerCase();
       if (seen.has(norm)) continue;
       seen.add(norm);
-      const local = norm.split('@')[0];
+      const [local, domain] = norm.split('@');
+      if (!local || !domain) continue;
       if (REJECTED_LOCAL_PARTS.has(local)) continue;
+      if (REJECTED_DOMAINS.has(domain)) continue;
+      // Drop image-asset false positives like `logo@2x.png`.
+      if (/\.(png|jpe?g|gif|svg|webp|ico|css|js|map)$/i.test(domain)) continue;
       if (GENERIC_LOCAL_PARTS.has(local)) generic.push(norm);
       else nominative.push(norm);
     }
@@ -171,34 +198,66 @@ async function scrapeEmailFromSite(url: string): Promise<string | null> {
 
 function extractEmails(html: string): string[] {
   const out: string[] = [];
+  // 1) Plain emails (mailto: + text).
   for (const m of html.matchAll(EMAIL_RE)) {
     out.push(`${m[1]}@${m[2]}`);
   }
+  // 2) Obfuscated "prenom [at] domaine [dot] fr".
   for (const m of html.matchAll(OBFUSCATED_RE)) {
     out.push(`${m[1]}@${m[2]}.${m[3]}`);
+  }
+  // 3) Cloudflare email obfuscation — data-cfemail="<hex>" where the first
+  //    byte is the XOR key and the rest is the ASCII email XOR'd with it.
+  for (const m of html.matchAll(CF_EMAIL_RE)) {
+    const decoded = decodeCloudflareEmail(m[1]);
+    if (decoded) out.push(decoded);
   }
   return out;
 }
 
-async function fetchHtml(url: string): Promise<string | null> {
+function decodeCloudflareEmail(hex: string): string | null {
+  if (hex.length < 4 || hex.length % 2 !== 0) return null;
   try {
-    const res = await fetchWithTimeout(url, {
-      headers: {
-        'user-agent': USER_AGENT,
-        accept: 'text/html,application/xhtml+xml',
-        'accept-language': 'fr-FR,fr;q=0.9,en;q=0.8',
-      },
-      redirect: 'follow',
-    });
-    if (!res.ok) return null;
-    const ct = res.headers.get('content-type') ?? '';
-    if (!ct.includes('text/html') && !ct.includes('application/xhtml')) return null;
-    const text = await res.text();
-    // Cap at 1 MB — anything longer is almost certainly an embedded asset blob.
-    return text.length > 1_048_576 ? text.slice(0, 1_048_576) : text;
+    const bytes: number[] = [];
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes.push(parseInt(hex.slice(i, i + 2), 16));
+    }
+    const key = bytes[0];
+    let out = '';
+    for (let i = 1; i < bytes.length; i++) {
+      out += String.fromCharCode(bytes[i] ^ key);
+    }
+    return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(out) ? out : null;
   } catch {
     return null;
   }
+}
+
+async function fetchHtml(url: string): Promise<string | null> {
+  // Try HTTPS first then fall back to HTTP — many tiny FR business sites
+  // still don't have a TLS cert. Browsers happily downgrade for them.
+  const urls = url.startsWith('http://') ? [url] : [url, url.replace(/^https:/, 'http:')];
+  for (const candidate of urls) {
+    try {
+      const res = await fetchWithTimeout(candidate, {
+        headers: {
+          'user-agent': USER_AGENT,
+          accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'accept-language': 'fr-FR,fr;q=0.9,en;q=0.8',
+          'accept-encoding': 'gzip, deflate, br',
+        },
+        redirect: 'follow',
+      });
+      if (!res.ok) continue;
+      const ct = res.headers.get('content-type') ?? '';
+      if (!ct.includes('text/html') && !ct.includes('application/xhtml')) continue;
+      const text = await res.text();
+      return text.length > 1_572_864 ? text.slice(0, 1_572_864) : text;
+    } catch {
+      // try next protocol
+    }
+  }
+  return null;
 }
 
 function normaliseUrl(raw: string): string | null {
@@ -207,8 +266,9 @@ function normaliseUrl(raw: string): string | null {
   if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
   try {
     const u = new URL(s);
-    // Drop obvious placeholder / parking-page domains.
-    if (/\.parkingcrew\.|\.dan\.com$|example\.com$/i.test(u.hostname)) return null;
+    // Drop obvious placeholder / parking-page / social-only "websites".
+    if (/\.parkingcrew\.|\.dan\.com$|example\.com$|sedoparking\.com$/i.test(u.hostname)) return null;
+    if (/^(www\.)?(facebook|instagram|linkedin|twitter|tiktok|youtube)\.com$/i.test(u.hostname)) return null;
     return `${u.protocol}//${u.host}`;
   } catch {
     return null;

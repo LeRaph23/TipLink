@@ -3,7 +3,16 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { scrapeSireneProspects, enrichProspectsBatch } from '@/actions/admin/cold-email';
-import { NAF_PRESETS, type ColdTargetProgram } from '@/lib/cold-email/programs';
+import {
+  AMBASSADOR_NAF,
+  COMMERCIAL_NAF_BY_VERTICAL,
+  COMMERCIAL_VERTICAL_LABEL,
+  DEFAULT_NAF_SELECTION,
+  SIZE_BUCKET_VALUES,
+  type ColdTargetProgram,
+  type CommercialVertical,
+  type SizeBucket,
+} from '@/lib/cold-email/programs';
 
 const inp: React.CSSProperties = {
   padding: '8px 10px', background: 'var(--surface-2)', color: 'var(--text)',
@@ -15,24 +24,29 @@ const lbl: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'block',
 };
 
-const PROGRAM_DEFAULTS: Record<ColdTargetProgram, Set<string>> = {
-  ambassador: new Set(['4791B', '7022Z']),
-  commercial: new Set(['4619A', '4619B', '7022Z']),
-};
-
 const PROGRAM_LABEL: Record<ColdTargetProgram, { name: string; tag: string }> = {
   ambassador: { name: 'Ambassadeurs', tag: 'Resend · ambassadeur@digitip.app' },
   commercial: { name: 'Commerciaux Pros', tag: 'Brevo · raphael@partenaires.digitip.app' },
 };
 
+const SIZE_OPTIONS: { value: SizeBucket; label: string; sub: string }[] = [
+  { value: 'indé', label: 'À leur compte',  sub: '≤ 5 salariés · indé / TPE solo' },
+  { value: 'tpe',  label: 'Petite TPE',     sub: '≤ 20 salariés' },
+  { value: 'all',  label: 'Toutes tailles', sub: 'inclut PME / ETI / grands groupes' },
+];
+
 export function SireneScraperForm() {
   const router = useRouter();
-  const [program, setProgram] = useState<ColdTargetProgram>('ambassador');
-  const [selectedNaf, setSelectedNaf] = useState<Set<string>>(new Set(PROGRAM_DEFAULTS.ambassador));
-  const [monthsBack, setMonthsBack] = useState(12);
+  const [program, setProgram] = useState<ColdTargetProgram>('commercial');
+  const [vertical, setVertical] = useState<CommercialVertical>('restauration');
+  const [size, setSize] = useState<SizeBucket>('indé');
+  const [selectedNaf, setSelectedNaf] = useState<Set<string>>(
+    new Set(DEFAULT_NAF_SELECTION.commercial.restauration),
+  );
+  const [monthsBack, setMonthsBack] = useState(24);
   const [postalPrefix, setPostalPrefix] = useState('');
   const [maxPages, setMaxPages] = useState(2);
-  const [youngOnly, setYoungOnly] = useState(true);
+  const [youngOnly, setYoungOnly] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<
     | { ok: true; fetched: number; inserted: number; skippedYoung: number; skippedEmpty: number; skippedDuplicates: number; errors: string[] }
@@ -46,15 +60,28 @@ export function SireneScraperForm() {
     | { phase: 'error'; error: string }
   >({ phase: 'idle' });
 
-  const presets = useMemo(() => NAF_PRESETS[program], [program]);
+  const presets = useMemo(() => {
+    if (program === 'ambassador') return AMBASSADOR_NAF;
+    return COMMERCIAL_NAF_BY_VERTICAL[vertical];
+  }, [program, vertical]);
 
   function switchProgram(next: ColdTargetProgram) {
     setProgram(next);
-    setSelectedNaf(new Set(PROGRAM_DEFAULTS[next]));
-    // The "young only" filter is irrelevant for the commercial programme
-    // (targets established commerciaux pros, not new auto-entrepreneurs).
-    if (next === 'commercial') setYoungOnly(false);
-    else setYoungOnly(true);
+    if (next === 'commercial') {
+      setSelectedNaf(new Set(DEFAULT_NAF_SELECTION.commercial[vertical]));
+      setSize('indé');
+      setYoungOnly(false);
+    } else {
+      setSelectedNaf(new Set(DEFAULT_NAF_SELECTION.ambassador));
+      setSize('all');
+      setYoungOnly(true);
+    }
+    setResult(null);
+  }
+
+  function switchVertical(next: CommercialVertical) {
+    setVertical(next);
+    setSelectedNaf(new Set(DEFAULT_NAF_SELECTION.commercial[next]));
     setResult(null);
   }
 
@@ -80,13 +107,10 @@ export function SireneScraperForm() {
         maxPages,
         youngOnly,
         targetProgram: program,
+        trancheEffectifs: size === 'all' ? undefined : SIZE_BUCKET_VALUES[size],
       });
       setResult(r);
-      // Refresh the parent server component so the freshly-imported prospects
-      // appear in the tracker table without a manual reload.
       router.refresh();
-      // Then auto-enrich the new prospects (website + email) in 25-row
-      // batches until no un-enriched prospect remains for this programme.
       if (r.ok && r.inserted > 0) {
         await runEnrichmentLoop(program);
       }
@@ -100,7 +124,7 @@ export function SireneScraperForm() {
     let withEmail = 0;
     let withWebsite = 0;
     setEnrichStatus({ phase: 'running', processed, withEmail, withWebsite, remaining: 0 });
-    for (let i = 0; i < 40; i++) {                     // hard cap to bound runtime
+    for (let i = 0; i < 40; i++) {
       const r = await enrichProspectsBatch({ targetProgram, limit: 25 });
       if (!r.ok) {
         setEnrichStatus({ phase: 'error', error: r.error });
@@ -124,6 +148,7 @@ export function SireneScraperForm() {
 
   const estimatedCalls = maxPages;
   const programMeta = PROGRAM_LABEL[program];
+  const sizeMeta = SIZE_OPTIONS.find((o) => o.value === size)!;
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 20, marginBottom: 16 }}>
@@ -131,14 +156,14 @@ export function SireneScraperForm() {
         Scraper SIRENE INSEE
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16, lineHeight: 1.5 }}>
-        Récupère depuis la base publique SIRENE les structures (entreprises individuelles + sociétés)
-        sur des NAF cibles. Les emails ne sont pas inclus (SIRENE ne les expose pas) — il faudra enrichir
-        manuellement / Dropcontact / Hunter via SIRET avant que la séquence ne démarre. Requiert
-        <code> INSEE_API_KEY</code> dans Vercel.
+        Récupère depuis la base publique SIRENE des entreprises en lien avec ta cible.
+        Les emails et sites web ne sont pas dans SIRENE — ils sont enrichis automatiquement
+        après le scrape (api.gouv.fr Recherche d&apos;entreprises + scrape des pages contact).
+        Requiert <code>INSEE_API_KEY</code> dans Vercel.
       </div>
 
-      {/* Programme cible — pills */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Programme cible */}
+      <div style={{ marginBottom: 14 }}>
         <span style={lbl}>Programme cible</span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {(['ambassador', 'commercial'] as const).map((p) => {
@@ -169,8 +194,45 @@ export function SireneScraperForm() {
         </div>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <span style={lbl}>Codes NAF cibles ({selectedNaf.size} sélectionné{selectedNaf.size > 1 ? 's' : ''})</span>
+      {/* Vertical (commercial only) */}
+      {program === 'commercial' && (
+        <div style={{ marginBottom: 14 }}>
+          <span style={lbl}>Vertical cible</span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {(['restauration', 'beaute', 'general'] as const).map((v) => {
+              const active = vertical === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => switchVertical(v)}
+                  style={{
+                    padding: '6px 12px',
+                    background: active ? 'var(--text)' : 'var(--surface-2)',
+                    color: active ? 'var(--bg)' : 'var(--text-2)',
+                    border: `1px solid ${active ? 'var(--text)' : 'var(--border)'}`,
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: active ? 700 : 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {COMMERCIAL_VERTICAL_LABEL[v]}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.4 }}>
+            {vertical === 'restauration' && 'Cible des distributeurs alimentaires & boissons indé qui démarchent déjà les CHR.'}
+            {vertical === 'beaute' && 'Cible des grossistes parfumerie / produits de beauté qui démarchent déjà les salons & instituts.'}
+            {vertical === 'general' && 'Cible des apporteurs d\'affaires généralistes & agents commerciaux.'}
+          </div>
+        </div>
+      )}
+
+      {/* NAF codes */}
+      <div style={{ marginBottom: 14 }}>
+        <span style={lbl}>Codes APE ({selectedNaf.size} sélectionné{selectedNaf.size > 1 ? 's' : ''})</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {presets.map(({ code, label }) => {
             const active = selectedNaf.has(code);
@@ -199,6 +261,41 @@ export function SireneScraperForm() {
         </div>
       </div>
 
+      {/* Size filter (commercial only) */}
+      {program === 'commercial' && (
+        <div style={{ marginBottom: 14 }}>
+          <span style={lbl}>Taille d&apos;entreprise</span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {SIZE_OPTIONS.map((o) => {
+              const active = size === o.value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setSize(o.value)}
+                  title={o.sub}
+                  style={{
+                    padding: '6px 12px',
+                    background: active ? 'var(--accent-muted)' : 'var(--surface-2)',
+                    color: active ? 'var(--accent)' : 'var(--text-2)',
+                    border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: active ? 700 : 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>
+            {sizeMeta.sub} (filtre SIRENE sur trancheEffectifsUniteLegale)
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
         <div>
           <span style={lbl}>Créés il y a &lt;</span>
@@ -207,6 +304,7 @@ export function SireneScraperForm() {
             <option value={6}>6 mois</option>
             <option value={12}>12 mois</option>
             <option value={24}>24 mois</option>
+            <option value={36}>36 mois</option>
           </select>
         </div>
         <div>
@@ -230,13 +328,12 @@ export function SireneScraperForm() {
         </div>
       </div>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-2)', marginBottom: 16, cursor: 'pointer' }}>
-        <input type="checkbox" checked={youngOnly} onChange={e => setYoungOnly(e.target.checked)} />
-        <span>
-          Garder uniquement les prospects estimés <strong>&lt; 25 ans</strong> (via prénom INSEE)
-          {program === 'commercial' && <em style={{ color: 'var(--text-3)', fontWeight: 400 }}> — désactivé par défaut pour les commerciaux pros</em>}
-        </span>
-      </label>
+      {program === 'ambassador' && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-2)', marginBottom: 16, cursor: 'pointer' }}>
+          <input type="checkbox" checked={youngOnly} onChange={e => setYoungOnly(e.target.checked)} />
+          <span>Garder uniquement les prospects estimés <strong>&lt; 25 ans</strong> (via prénom INSEE)</span>
+        </label>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
