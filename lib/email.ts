@@ -484,6 +484,78 @@ export async function sendAmbassadorApplicationAdmin(opts: {
   });
 }
 
+// ─── Commercial Pros — contract invitation (admin → commercial) ─────────────
+
+export async function sendCommercialContractInvitation(opts: {
+  to: string;
+  firstName: string;
+  contractTitle: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, contractTitle, dashboardUrl } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Contrat d'apporteur d'affaires à signer — ${contractTitle}`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros · Contrat à signer</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">Bonjour ${firstName},</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.65">Votre contrat d'apporteur d'affaires est prêt à être signé. Vous pouvez le consulter intégralement et y apposer votre signature électronique depuis votre espace commercial sécurisé par code PIN. Aucune impression ni envoi postal n'est requis.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <p style="margin:0"><a href="${dashboardUrl}" style="display:inline-block;padding:13px 24px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Consulter &amp; signer le contrat →</a></p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">La signature électronique simple a, par accord entre les Parties, la même valeur juridique qu'une signature manuscrite (eIDAS, articles 1366 et 1367 du Code civil). Une copie horodatée du contrat signé vous sera transmise par email après signature.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Commercial Pros — signed contract copy (commercial + admin) ────────────
+
+export async function sendSignedCommercialContractCopy(opts: {
+  to: string;
+  firstName: string;
+  contractTitle: string;
+  signedAt: string;
+  contentHash: string;
+  downloadUrl: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, contractTitle, signedAt, contentHash, downloadUrl } = opts;
+  const shortHash = contentHash.slice(0, 16);
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Contrat signé — ${contractTitle}`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros · Contrat signé</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Signé électroniquement</div>
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">Bonjour ${firstName}, votre contrat est signé ✓</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">${contractTitle}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
+        ${infoRow('Signé le', new Date(signedAt).toLocaleString('fr-FR'))}
+        ${infoRow('Empreinte SHA-256', `<span style="font-family:monospace">${shortHash}…</span>`)}
+      </table>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="margin:0"><a href="${downloadUrl}" class="outline-btn" style="display:inline-block;padding:11px 20px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:700;border:1px solid #e5e7eb">Télécharger / imprimer →</a></p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">Conservez cet email comme preuve. Le contenu intégral du contrat reste consultable et téléchargeable depuis votre espace commercial. Toute modification ultérieure est techniquement impossible (immutabilité garantie en base).</p>
+    </td></tr>`),
+  });
+}
+
 // ─── Commercial Pros — application confirmation (candidate side) ─────────────
 
 const LEGAL_FORM_LABELS: Record<string, string> = {

@@ -4,6 +4,11 @@ import { Link } from '@/i18n/navigation';
 import { requireSuperAdmin } from '@/lib/auth/require-super-admin';
 import { createServiceClient } from '@/lib/supabase/service';
 import { CommercialActions } from './CommercialActions';
+import { CommercialContractsPanel } from './CommercialContractsPanel';
+import {
+  listCommercialContractTemplates,
+  listCommercialContractsFor,
+} from '@/actions/admin/commercial-contracts';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -55,7 +60,7 @@ export default async function CommercialDetailPage({
 
   if (!com) notFound();
 
-  const [{ data: sales }, { data: payouts }] = await Promise.all([
+  const [{ data: sales }, { data: payouts }, contractTemplates, commercialContracts] = await Promise.all([
     service
       .from('commercial_sales')
       .select('id, pack, commission_amount, salon_name_partial, created_at, voided_at, void_reason')
@@ -66,6 +71,8 @@ export default async function CommercialDetailPage({
       .select('id, amount_cents, status, stripe_transfer_id, failure_reason, requested_at, paid_at')
       .eq('commercial_id', id)
       .order('requested_at', { ascending: false }),
+    listCommercialContractTemplates(),
+    listCommercialContractsFor(id),
   ]);
 
   const liveSales = (sales ?? []).filter(s => !s.voided_at);
@@ -172,6 +179,15 @@ export default async function CommercialDetailPage({
           hasPin={!!com.pin_hash}
         />
       </div>
+
+      {/* Contracts */}
+      <CommercialContractsPanel
+        commercialId={com.id}
+        commercialEmail={com.email}
+        promoCode={code ?? null}
+        templates={contractTemplates}
+        initialContracts={commercialContracts}
+      />
 
       {/* Sales */}
       <div style={card}>

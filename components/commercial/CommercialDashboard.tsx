@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Icon } from '@/components/ambassadeur/icons';
+import { CommercialContracts } from './CommercialContracts';
 
 type AuthState = 'loading' | 'pin-required' | 'pin-setup' | 'pin-setup-invalid' | 'authenticated';
-type TabId = 'ventes' | 'gains' | 'compte';
+type TabId = 'ventes' | 'gains' | 'contrats' | 'compte';
 
 interface StatsData {
   name: string;
@@ -68,9 +69,10 @@ interface StatementEntry {
 }
 
 const TABS: Array<{ id: TabId; label: string }> = [
-  { id: 'ventes', label: 'Mes ventes' },
-  { id: 'gains',  label: 'Mes gains' },
-  { id: 'compte', label: 'Mon compte' },
+  { id: 'ventes',   label: 'Mes ventes' },
+  { id: 'gains',    label: 'Mes gains' },
+  { id: 'contrats', label: 'Contrats' },
+  { id: 'compte',   label: 'Mon compte' },
 ];
 
 const TOPBAR_H = 60;
@@ -587,8 +589,10 @@ export function CommercialDashboard({ code }: { code: string }) {
   const [tab, setTab] = useState<TabId>(() => {
     if (typeof window === 'undefined') return 'ventes';
     const t = new URL(window.location.href).searchParams.get('tab');
-    if (t === 'gains' || t === 'compte') return t;
+    if (t === 'gains' || t === 'compte' || t === 'contrats') return t;
     if (t === 'banking' || t === 'payout') return 'gains';
+    // ?download=<id> deep-link to a signed contract → open the contrats tab.
+    if (new URL(window.location.href).searchParams.has('download')) return 'contrats';
     // Stripe Connect returns here after the hosted onboarding flow.
     const stripeFlag = new URL(window.location.href).searchParams.get('stripe');
     if (stripeFlag === 'return' || stripeFlag === 'refresh') return 'gains';
@@ -1005,6 +1009,10 @@ export function CommercialDashboard({ code }: { code: string }) {
             )}
             <StatementPanel code={code} />
           </>
+        )}
+
+        {tab === 'contrats' && (
+          <CommercialContracts code={code} />
         )}
 
         {tab === 'compte' && banking && (

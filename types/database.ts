@@ -753,6 +753,158 @@ export type Database = {
         }
         Relationships: []
       }
+      commercial_contract_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string
+          contract_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_hash: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type: string
+          contract_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_hash?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string
+          contract_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_hash?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_contract_audit_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_contract_templates: {
+        Row: {
+          body_html: string
+          consent_text: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          body_html: string
+          consent_text: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          body_html?: string
+          consent_text?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      commercial_contracts: {
+        Row: {
+          commercial_id: string
+          consent_text: string
+          content_hash: string
+          content_snapshot: string
+          id: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          sent_at: string
+          sent_by: string
+          signature_image_path: string | null
+          signed_at: string | null
+          signer_ip_hash: string | null
+          signer_user_agent: string | null
+          status: string
+          template_id: string | null
+          title: string
+          viewed_at: string | null
+        }
+        Insert: {
+          commercial_id: string
+          consent_text: string
+          content_hash: string
+          content_snapshot: string
+          id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          sent_at?: string
+          sent_by: string
+          signature_image_path?: string | null
+          signed_at?: string | null
+          signer_ip_hash?: string | null
+          signer_user_agent?: string | null
+          status?: string
+          template_id?: string | null
+          title: string
+          viewed_at?: string | null
+        }
+        Update: {
+          commercial_id?: string
+          consent_text?: string
+          content_hash?: string
+          content_snapshot?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          sent_at?: string
+          sent_by?: string
+          signature_image_path?: string | null
+          signed_at?: string | null
+          signer_ip_hash?: string | null
+          signer_user_agent?: string | null
+          status?: string
+          template_id?: string | null
+          title?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_contracts_commercial_id_fkey"
+            columns: ["commercial_id"]
+            isOneToOne: false
+            referencedRelation: "commerciaux"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commercial_payouts: {
         Row: {
           amount_cents: number
