@@ -1522,11 +1522,19 @@ async function attributeAmbassadorSale(
   try {
     const { data: pc } = await supabase
       .from('promo_codes')
-      .select('id')
+      .select('id, seller_type')
       .eq('code', promoCodeStr.toUpperCase())
       .maybeSingle();
 
     if (!pc) return;
+
+    // Route to the commercial programme when the promo code is tagged as such.
+    // Codes with a NULL seller_type are treated as ambassador for backward
+    // compatibility with pre-migration codes.
+    if (pc.seller_type === 'commercial') {
+      await attributeCommercialSale(supabase, pc.id, orderId, pack, rawSalonName);
+      return;
+    }
 
     const { data: ambassador } = await supabase
       .from('ambassadors')
@@ -1565,6 +1573,47 @@ async function attributeAmbassadorSale(
       .catch(() => {});
   } catch {
     // Never break the webhook — ambassador attribution is best-effort
+  }
+}
+
+/**
+ * Records a sale against the Commerciaux Pros programme (50 € solo / 65 € duo).
+ * Mirrors `attributeAmbassadorSale` but writes to `commercial_sales` — no
+ * referral side-effects and no Telegram alert (that channel is ambassador-only).
+ */
+async function attributeCommercialSale(
+  supabase: ReturnType<typeof createServiceClient>,
+  promoCodeId: string,
+  orderId: string,
+  pack: 'solo' | 'duo',
+  rawSalonName: string,
+): Promise<void> {
+  try {
+    const { COMMERCIAL_COMMISSION_BY_PACK } = await import('@/lib/commercial-tiers');
+
+    const { data: commercial } = await supabase
+      .from('commerciaux')
+      .select('id, name')
+      .eq('promo_code_id', promoCodeId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!commercial) return;
+
+    const commissionAmount = COMMERCIAL_COMMISSION_BY_PACK[pack];
+    const trimmed = rawSalonName.trim();
+    const salonPartial = trimmed.length >= 3 ? `***${trimmed.slice(-3)}` : '***';
+
+    const { error: saleErr } = await supabase.from('commercial_sales').insert({
+      commercial_id: commercial.id,
+      smarttag_order_id: orderId,
+      pack,
+      commission_amount: commissionAmount,
+      salon_name_partial: salonPartial,
+    });
+    if (saleErr) return;
+  } catch {
+    // Best-effort attribution — never break the webhook on a downstream error.
   }
 }
 

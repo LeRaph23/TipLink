@@ -484,6 +484,181 @@ export async function sendAmbassadorApplicationAdmin(opts: {
   });
 }
 
+// ─── Commercial Pros — contract invitation (admin → commercial) ─────────────
+
+export async function sendCommercialContractInvitation(opts: {
+  to: string;
+  firstName: string;
+  contractTitle: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, contractTitle, dashboardUrl } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Contrat d'apporteur d'affaires à signer — ${contractTitle}`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros · Contrat à signer</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">Bonjour ${firstName},</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.65">Votre contrat d'apporteur d'affaires est prêt à être signé. Vous pouvez le consulter intégralement et y apposer votre signature électronique depuis votre espace commercial sécurisé par code PIN. Aucune impression ni envoi postal n'est requis.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <p style="margin:0"><a href="${dashboardUrl}" style="display:inline-block;padding:13px 24px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Consulter &amp; signer le contrat →</a></p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">La signature électronique simple a, par accord entre les Parties, la même valeur juridique qu'une signature manuscrite (eIDAS, articles 1366 et 1367 du Code civil). Une copie horodatée du contrat signé vous sera transmise par email après signature.</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Commercial Pros — signed contract copy (commercial + admin) ────────────
+
+export async function sendSignedCommercialContractCopy(opts: {
+  to: string;
+  firstName: string;
+  contractTitle: string;
+  signedAt: string;
+  contentHash: string;
+  downloadUrl: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, contractTitle, signedAt, contentHash, downloadUrl } = opts;
+  const shortHash = contentHash.slice(0, 16);
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Contrat signé — ${contractTitle}`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros · Contrat signé</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Signé électroniquement</div>
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">Bonjour ${firstName}, votre contrat est signé ✓</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">${contractTitle}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
+        ${infoRow('Signé le', new Date(signedAt).toLocaleString('fr-FR'))}
+        ${infoRow('Empreinte SHA-256', `<span style="font-family:monospace">${shortHash}…</span>`)}
+      </table>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p style="margin:0"><a href="${downloadUrl}" class="outline-btn" style="display:inline-block;padding:11px 20px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:700;border:1px solid #e5e7eb">Télécharger / imprimer →</a></p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">Conservez cet email comme preuve. Le contenu intégral du contrat reste consultable et téléchargeable depuis votre espace commercial. Toute modification ultérieure est techniquement impossible (immutabilité garantie en base).</p>
+    </td></tr>`),
+  });
+}
+
+// ─── Commercial Pros — application confirmation (candidate side) ─────────────
+
+const LEGAL_FORM_LABELS: Record<string, string> = {
+  sarl: 'SARL',
+  sas: 'SAS',
+  sasu: 'SASU',
+  ei: 'Entreprise individuelle',
+  auto_entrepreneur: 'Auto-entrepreneur',
+  eurl: 'EURL',
+  sa: 'SA',
+  autre: 'Autre',
+};
+
+const VRP_STATUS_LABELS: Record<string, string> = {
+  vrp_exclusif: 'VRP exclusif',
+  vrp_multicarte: 'VRP multicarte',
+  agent_commercial: 'Agent commercial',
+  independant: 'Commercial indépendant',
+  autre: 'Autre',
+};
+
+export async function sendCommercialApplicationConfirmation(opts: {
+  to: string;
+  firstName: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Candidature commerciale reçue — Digitip Partenaires`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Dossier reçu</div>
+      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">Bonjour ${firstName},</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.65">Votre dossier de candidature au programme partenaire B2B Digitip est bien arrivé. Notre direction commerciale l'examine et revient vers vous sous 48 h ouvrées pour, le cas échéant, la signature du contrat d'apporteur d'affaires et l'activation de votre code commercial.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">En cas de question urgente, vous pouvez répondre directement à cet email — il atterrit chez nos équipes partenaires.</p>
+    </td></tr>`),
+  });
+}
+
+export async function sendCommercialApplicationAdmin(opts: {
+  to: string[];
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  city: string;
+  sector: string | null;
+  companyName: string;
+  legalForm: string;
+  vatNumber: string | null;
+  siret: string;
+  vrpStatus: string;
+  notes?: string | null;
+}): Promise<void> {
+  const {
+    to, firstName, lastName, email, phone, city, sector,
+    companyName, legalForm, vatNumber, siret, vrpStatus, notes,
+  } = opts;
+  if (!resend || to.length === 0) return;
+
+  const legalLabel = LEGAL_FORM_LABELS[legalForm] ?? legalForm;
+  const vrpLabel = VRP_STATUS_LABELS[vrpStatus] ?? vrpStatus;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    replyTo: email,
+    subject: `Nouvelle candidature COMMERCIAL PRO — ${firstName} ${lastName} (${companyName})`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Nouvelle candidature Commerciaux Pros</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div class="text-primary" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${firstName} ${lastName}</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${companyName} · ${city}${sector ? ` · ${sector}` : ''}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
+        ${infoRow('Email', `<a href="mailto:${email}" style="color:#E57A97;text-decoration:none">${email}</a>`)}
+        ${infoRow('Téléphone', phone)}
+        ${infoRow('Statut commercial', vrpLabel)}
+        ${infoRow('Forme juridique', legalLabel)}
+        ${infoRow('SIRET', `<span style="font-family:monospace">${siret}</span>`)}
+        ${infoRow('N° TVA', vatNumber
+          ? `<span style="font-family:monospace">${vatNumber}</span>`
+          : '<span style="color:#9ca3af">Non renseigné — franchise probable</span>')}
+        ${sector ? infoRow('Secteur géographique', sector) : ''}
+        ${notes ? infoRow('Notes', notes) : ''}
+      </table>
+    </td></tr>`),
+  });
+}
+
 // ─── Ambassador banking — setup confirmation ──────────────────────────────────
 
 export async function sendAmbassadorBankingConfirmation(opts: {

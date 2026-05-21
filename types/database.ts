@@ -753,6 +753,417 @@ export type Database = {
         }
         Relationships: []
       }
+      commercial_contract_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string
+          contract_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_hash: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type: string
+          contract_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_hash?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string
+          contract_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_hash?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_contract_audit_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_contract_templates: {
+        Row: {
+          body_html: string
+          consent_text: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          body_html: string
+          consent_text: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          body_html?: string
+          consent_text?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      commercial_contracts: {
+        Row: {
+          commercial_id: string
+          consent_text: string
+          content_hash: string
+          content_snapshot: string
+          id: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          sent_at: string
+          sent_by: string
+          signature_image_path: string | null
+          signed_at: string | null
+          signer_ip_hash: string | null
+          signer_user_agent: string | null
+          status: string
+          template_id: string | null
+          title: string
+          viewed_at: string | null
+        }
+        Insert: {
+          commercial_id: string
+          consent_text: string
+          content_hash: string
+          content_snapshot: string
+          id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          sent_at?: string
+          sent_by: string
+          signature_image_path?: string | null
+          signed_at?: string | null
+          signer_ip_hash?: string | null
+          signer_user_agent?: string | null
+          status?: string
+          template_id?: string | null
+          title: string
+          viewed_at?: string | null
+        }
+        Update: {
+          commercial_id?: string
+          consent_text?: string
+          content_hash?: string
+          content_snapshot?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          sent_at?: string
+          sent_by?: string
+          signature_image_path?: string | null
+          signed_at?: string | null
+          signer_ip_hash?: string | null
+          signer_user_agent?: string | null
+          status?: string
+          template_id?: string | null
+          title?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_contracts_commercial_id_fkey"
+            columns: ["commercial_id"]
+            isOneToOne: false
+            referencedRelation: "commerciaux"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_payouts: {
+        Row: {
+          amount_cents: number
+          commercial_id: string
+          failure_reason: string | null
+          id: string
+          paid_at: string | null
+          requested_at: string
+          status: string
+          stripe_payout_id: string | null
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          commercial_id: string
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          requested_at?: string
+          status?: string
+          stripe_payout_id?: string | null
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          commercial_id?: string
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          requested_at?: string
+          status?: string
+          stripe_payout_id?: string | null
+          stripe_transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_payouts_commercial_id_fkey"
+            columns: ["commercial_id"]
+            isOneToOne: false
+            referencedRelation: "commerciaux"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_pin_attempts: {
+        Row: {
+          attempted_at: string
+          code: string
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          attempted_at?: string
+          code: string
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          attempted_at?: string
+          code?: string
+          id?: string
+          ip_hash?: string
+        }
+        Relationships: []
+      }
+      commercial_recruitment_applications: {
+        Row: {
+          city: string
+          company_name: string
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          ip_hash: string | null
+          last_name: string
+          legal_form: string
+          no_fraud_pledge: boolean
+          notes: string | null
+          phone: string
+          reviewed_at: string | null
+          sector: string | null
+          siret: string
+          status: string
+          vat_number: string | null
+          vrp_status: string
+        }
+        Insert: {
+          city: string
+          company_name: string
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          ip_hash?: string | null
+          last_name: string
+          legal_form: string
+          no_fraud_pledge: boolean
+          notes?: string | null
+          phone: string
+          reviewed_at?: string | null
+          sector?: string | null
+          siret: string
+          status?: string
+          vat_number?: string | null
+          vrp_status: string
+        }
+        Update: {
+          city?: string
+          company_name?: string
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          ip_hash?: string | null
+          last_name?: string
+          legal_form?: string
+          no_fraud_pledge?: boolean
+          notes?: string | null
+          phone?: string
+          reviewed_at?: string | null
+          sector?: string | null
+          siret?: string
+          status?: string
+          vat_number?: string | null
+          vrp_status?: string
+        }
+        Relationships: []
+      }
+      commercial_sales: {
+        Row: {
+          commercial_id: string
+          commission_amount: number
+          created_at: string
+          id: string
+          pack: string
+          salon_name_partial: string | null
+          smarttag_order_id: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          commercial_id: string
+          commission_amount: number
+          created_at?: string
+          id?: string
+          pack: string
+          salon_name_partial?: string | null
+          smarttag_order_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          commercial_id?: string
+          commission_amount?: number
+          created_at?: string
+          id?: string
+          pack?: string
+          salon_name_partial?: string | null
+          smarttag_order_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_sales_commercial_id_fkey"
+            columns: ["commercial_id"]
+            isOneToOne: false
+            referencedRelation: "commerciaux"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_sales_smarttag_order_id_fkey"
+            columns: ["smarttag_order_id"]
+            isOneToOne: true
+            referencedRelation: "smarttag_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commerciaux: {
+        Row: {
+          city: string
+          company_name: string
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          legal_form: string
+          name: string
+          onboarding_status: string
+          payouts_frozen: boolean
+          phone: string
+          pin_hash: string | null
+          pin_salt: string | null
+          pin_setup_expires_at: string | null
+          pin_setup_token: string | null
+          promo_code_id: string
+          sector: string | null
+          siret: string
+          stripe_account_id: string | null
+          vat_number: string | null
+          vrp_status: string
+        }
+        Insert: {
+          city: string
+          company_name: string
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          legal_form: string
+          name: string
+          onboarding_status?: string
+          payouts_frozen?: boolean
+          phone: string
+          pin_hash?: string | null
+          pin_salt?: string | null
+          pin_setup_expires_at?: string | null
+          pin_setup_token?: string | null
+          promo_code_id: string
+          sector?: string | null
+          siret: string
+          stripe_account_id?: string | null
+          vat_number?: string | null
+          vrp_status: string
+        }
+        Update: {
+          city?: string
+          company_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          legal_form?: string
+          name?: string
+          onboarding_status?: string
+          payouts_frozen?: boolean
+          phone?: string
+          pin_hash?: string | null
+          pin_salt?: string | null
+          pin_setup_expires_at?: string | null
+          pin_setup_token?: string | null
+          promo_code_id?: string
+          sector?: string | null
+          siret?: string
+          stripe_account_id?: string | null
+          vat_number?: string | null
+          vrp_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerciaux_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: true
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_requests: {
         Row: {
           company: string | null
@@ -947,6 +1358,66 @@ export type Database = {
         }
         Relationships: []
       }
+      import_jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_step: string | null
+          done: number
+          error: string | null
+          failed_count: number
+          finished_at: string | null
+          id: string
+          last_heartbeat_at: string | null
+          params: Json
+          result: Json
+          started_at: string | null
+          status: Database["public"]["Enums"]["import_job_status"]
+          succeeded: number
+          total: number
+          type: Database["public"]["Enums"]["import_job_type"]
+          worker_token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_step?: string | null
+          done?: number
+          error?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          params?: Json
+          result?: Json
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["import_job_status"]
+          succeeded?: number
+          total?: number
+          type: Database["public"]["Enums"]["import_job_type"]
+          worker_token?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_step?: string | null
+          done?: number
+          error?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          params?: Json
+          result?: Json
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["import_job_status"]
+          succeeded?: number
+          total?: number
+          type?: Database["public"]["Enums"]["import_job_type"]
+          worker_token?: string
+        }
+        Relationships: []
+      }
       lifecycle_email_log: {
         Row: {
           audience: string
@@ -1074,66 +1545,6 @@ export type Database = {
           },
         ]
       }
-      import_jobs: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          current_step: string | null
-          done: number
-          error: string | null
-          failed_count: number
-          finished_at: string | null
-          id: string
-          last_heartbeat_at: string | null
-          params: Json
-          result: Json
-          started_at: string | null
-          status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-          succeeded: number
-          total: number
-          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import' | 'import_france'
-          worker_token: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          current_step?: string | null
-          done?: number
-          error?: string | null
-          failed_count?: number
-          finished_at?: string | null
-          id?: string
-          last_heartbeat_at?: string | null
-          params?: Json
-          result?: Json
-          started_at?: string | null
-          status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-          succeeded?: number
-          total?: number
-          type: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import' | 'import_france'
-          worker_token?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          current_step?: string | null
-          done?: number
-          error?: string | null
-          failed_count?: number
-          finished_at?: string | null
-          id?: string
-          last_heartbeat_at?: string | null
-          params?: Json
-          result?: Json
-          started_at?: string | null
-          status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-          succeeded?: number
-          total?: number
-          type?: 'import_zones' | 'import_salons' | 'enrich_addresses' | 'enrich_google' | 'full_import' | 'import_france'
-          worker_token?: string
-        }
-        Relationships: []
-      }
       nfc_stickers: {
         Row: {
           batch_label: string | null
@@ -1184,6 +1595,7 @@ export type Database = {
           max_redemptions: number | null
           notes: string | null
           percentage_off: number
+          seller_type: string | null
           stripe_coupon_id: string
           stripe_promo_code_id: string
           times_redeemed: number
@@ -1199,6 +1611,7 @@ export type Database = {
           max_redemptions?: number | null
           notes?: string | null
           percentage_off: number
+          seller_type?: string | null
           stripe_coupon_id: string
           stripe_promo_code_id: string
           times_redeemed?: number
@@ -1214,6 +1627,7 @@ export type Database = {
           max_redemptions?: number | null
           notes?: string | null
           percentage_off?: number
+          seller_type?: string | null
           stripe_coupon_id?: string
           stripe_promo_code_id?: string
           times_redeemed?: number
@@ -1891,15 +2305,15 @@ export type Database = {
       ambassador_zone_counts: {
         Args: never
         Returns: {
-          zone_id: string
+          bbox_max_lat: number
+          bbox_max_lon: number
+          bbox_min_lat: number
+          bbox_min_lon: number
           city: string
           name: string
-          bbox_min_lat: number | null
-          bbox_min_lon: number | null
-          bbox_max_lat: number | null
-          bbox_max_lon: number | null
           salon_count: number
           todo_count: number
+          zone_id: string
         }[]
       }
       claim_nfc_stickers: {
@@ -1961,9 +2375,17 @@ export type Database = {
           total_quantity: number
         }[]
       }
+      release_advisory_lock_commercial_payout: {
+        Args: { p_commercial_id: string }
+        Returns: undefined
+      }
       release_advisory_lock_payout: {
         Args: { p_ambassador_id: string }
         Returns: undefined
+      }
+      try_advisory_lock_commercial_payout: {
+        Args: { p_commercial_id: string }
+        Returns: boolean
       }
       try_advisory_lock_payout: {
         Args: { p_ambassador_id: string }
@@ -1976,6 +2398,19 @@ export type Database = {
     }
     Enums: {
       business_type: "restaurant" | "beauty"
+      import_job_status:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      import_job_type:
+        | "import_zones"
+        | "import_salons"
+        | "enrich_addresses"
+        | "enrich_google"
+        | "full_import"
+        | "import_france"
       stripe_onboarding_status: "not_started" | "pending" | "complete"
       transaction_status:
         | "pending"
@@ -2114,6 +2549,21 @@ export const Constants = {
   public: {
     Enums: {
       business_type: ["restaurant", "beauty"],
+      import_job_status: [
+        "pending",
+        "running",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
+      import_job_type: [
+        "import_zones",
+        "import_salons",
+        "enrich_addresses",
+        "enrich_google",
+        "full_import",
+        "import_france",
+      ],
       stripe_onboarding_status: ["not_started", "pending", "complete"],
       transaction_status: [
         "pending",
