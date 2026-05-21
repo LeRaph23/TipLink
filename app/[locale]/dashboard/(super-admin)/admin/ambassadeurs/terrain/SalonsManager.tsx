@@ -12,6 +12,7 @@ import {
 import { startImportJob } from '@/actions/admin/import-jobs';
 import type { ImportJobParams } from '@/lib/admin/import-jobs';
 import { ImportJobsPanel } from '@/components/dashboard/admin/ImportJobsPanel';
+import { FranceImportModal } from '@/components/dashboard/admin/FranceImportModal';
 import type { AdminSalon, AdminZoneOverlay } from '@/components/salons/SalonsMap';
 
 const SalonsMap = dynamic(
@@ -74,6 +75,7 @@ export function SalonsManager({
   const router = useRouter();
   const [tab, setTab] = useState<'overview' | 'map' | 'zones' | 'salons' | 'visits'>('overview');
   const [importCity, setImportCity] = useState('');
+  const [franceModalOpen, setFranceModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   // Used only for the few remaining synchronous actions (zone CRUD, salon
   // toggle). Long imports go through background jobs and don't gate the UI.
@@ -221,6 +223,20 @@ export function SalonsManager({
           >
             Importer zones
           </button>
+          <button
+            onClick={() => setFranceModalOpen(true)}
+            title="Importer toutes les communes des régions sélectionnées en tâche de fond"
+            style={{
+              padding: '8px 14px',
+              background: 'linear-gradient(135deg, #0055a4 0%, #ffffff 50%, #ef4135 100%)',
+              color: '#000', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              textShadow: '0 0 2px rgba(255,255,255,0.8)',
+            }}
+          >
+            🇫🇷 Toute la France
+          </button>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
           Ville → arrondissements ou commune entière selon la taille. Département → toutes ses communes.
@@ -345,6 +361,17 @@ export function SalonsManager({
       {tab === 'visits' && (
         <VisitsTable visits={visits} />
       )}
+
+      <FranceImportModal
+        open={franceModalOpen}
+        onClose={() => setFranceModalOpen(false)}
+        onSubmit={(regions, enrich) =>
+          dispatchJob(
+            { type: 'import_france', regions, enrich },
+            `Import France lancé (${regions.length} région${regions.length > 1 ? 's' : ''}). Tu peux fermer cet onglet.`,
+          )
+        }
+      />
     </div>
   );
 }

@@ -38,7 +38,11 @@ export async function startImportJob(
     if (params.type === 'import_zones' && !params.city.trim()) {
       return { ok: false, error: 'Ville requise.' };
     }
-    if (params.type !== 'import_zones' && params.zoneIds.length === 0) {
+    if (params.type === 'import_france') {
+      if (params.regions.length === 0) {
+        return { ok: false, error: 'Sélectionne au moins une région.' };
+      }
+    } else if (params.type !== 'import_zones' && params.zoneIds.length === 0) {
       return { ok: false, error: 'Sélectionne au moins une zone.' };
     }
     const r = await createJob(params, user.id);

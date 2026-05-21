@@ -430,3 +430,141 @@ export async function reverseGeocodeBatch(
   }
   return results;
 }
+
+// ─── Reverse geocoding via BAN (Base Adresse Nationale) ─────────────────────
+// French government API, free, no strict rate limit. Accepts a CSV payload of
+// up to ~1000 rows and returns geocoded data per row. Massively faster than
+// Nominatim for French addresses (1 batch call ≈ 500 Nominatim calls ≈ 9 min).
+//
+// CSV input format:  id,longitude,latitude  (1 header line + N data lines)
+// CSV output format: id,longitude,latitude,result_label,result_postcode,
+//                    result_city,result_score,result_street,result_housenumber,…
+//
+// Docs: https://adresse.data.gouv.fr/api-doc/adresse  (section "API CSV")
+// Endpoint accepts multipart/form-data with `data` = the CSV file. Optional
+// `result_columns` to trim the response; we keep it defaulted for clarity.
+
+const BAN_REVERSE_CSV_ENDPOINT = 'https://api-adresse.data.gouv.fr/reverse/csv/';
+const BAN_MAX_BATCH = 500;          // BAN supports up to 1000; 500 keeps payloads <1MB
+const BAN_TIMEOUT_MS = 60_000;       // batch CSV can take 20-30s for 500 rows
+const BAN_MIN_SCORE = 0.35;          // below this the match is too rough to keep
+
+// Parse a single CSV line respecting double-quote escaping ("a,b" stays as one field).
+// BAN's response uses standard RFC 4180-ish quoting for fields that contain commas.
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') inQuotes = false;
+      else cur += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+/**
+ * Batch reverse-geocode coordinates via the French BAN CSV API.
+ *
+ * Returns a Map keyed by input id. Coordinates BAN cannot resolve (no match,
+ * or result_score < BAN_MIN_SCORE) are **absent** from the map — callers
+ * should fall back to {@link reverseGeocode} (Nominatim) for those.
+ *
+ * Network errors are propagated; the caller decides whether to retry or fall
+ * back to single-coord Nominatim.
+ */
+export async function reverseGeocodeBatchBan(
+  coords: Array<{ id: string; lat: number; lon: number }>
+): Promise<Map<string, ReverseGeocodeResult>> {
+  const results = new Map<string, ReverseGeocodeResult>();
+  if (coords.length === 0) return results;
+
+  for (let i = 0; i < coords.length; i += BAN_MAX_BATCH) {
+    const slice = coords.slice(i, i + BAN_MAX_BATCH);
+
+    // BAN's reverse/csv expects columns "longitude" and "latitude" by default.
+    // We pass id through so we can correlate rows back without ordering assumptions.
+    const csvLines = ['id,longitude,latitude'];
+    for (const c of slice) {
+      csvLines.push(`${c.id},${c.lon},${c.lat}`);
+    }
+    const csv = csvLines.join('\n');
+
+    const form = new FormData();
+    form.append('data', new Blob([csv], { type: 'text/csv' }), 'data.csv');
+
+    let res: Response;
+    try {
+      res = await fetch(BAN_REVERSE_CSV_ENDPOINT, {
+        method: 'POST',
+        headers: { 'User-Agent': USER_AGENT, Accept: 'text/csv' },
+        body: form,
+        signal: AbortSignal.timeout(BAN_TIMEOUT_MS),
+      });
+    } catch (e) {
+      throw e instanceof Error ? e : new Error(String(e));
+    }
+    if (!res.ok) {
+      throw new Error(`BAN HTTP ${res.status}`);
+    }
+
+    const text = await res.text();
+    const lines = text.split(/\r?\n/);
+    if (lines.length < 2) continue;
+
+    const header = parseCsvLine(lines[0]);
+    const idIdx       = header.indexOf('id');
+    const labelIdx    = header.indexOf('result_label');
+    const postcodeIdx = header.indexOf('result_postcode');
+    const cityIdx     = header.indexOf('result_city');
+    const scoreIdx    = header.indexOf('result_score');
+    const streetIdx   = header.indexOf('result_street');
+    const numIdx      = header.indexOf('result_housenumber');
+
+    if (idIdx === -1) continue; // malformed response
+
+    for (let li = 1; li < lines.length; li++) {
+      const raw = lines[li];
+      if (!raw) continue;
+      const cells = parseCsvLine(raw);
+      const id = cells[idIdx];
+      if (!id) continue;
+
+      const score = scoreIdx >= 0 ? parseFloat(cells[scoreIdx] ?? '') : 1;
+      if (!Number.isFinite(score) || score < BAN_MIN_SCORE) continue;
+
+      const street = streetIdx >= 0 ? cells[streetIdx] : '';
+      const num    = numIdx    >= 0 ? cells[numIdx]    : '';
+      const city   = cityIdx   >= 0 ? cells[cityIdx]   : '';
+      const label  = labelIdx  >= 0 ? cells[labelIdx]  : '';
+      const postal = postcodeIdx >= 0 ? cells[postcodeIdx] : '';
+
+      // Prefer reconstructed "<num> <street>, <city>" when both pieces exist;
+      // otherwise fall back to BAN's result_label which is always populated
+      // on a successful match.
+      let address: string | null = null;
+      if (street) {
+        const left = [num, street].filter(Boolean).join(' ').trim();
+        address = city ? `${left}, ${city}` : left;
+      } else if (label) {
+        address = label;
+      }
+
+      if (!address && !postal) continue;
+      results.set(id, {
+        address: address || null,
+        postal_code: postal || null,
+      });
+    }
+  }
+
+  return results;
+}

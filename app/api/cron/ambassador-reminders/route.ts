@@ -53,10 +53,20 @@ export async function GET(req: NextRequest) {
     console.error('monthly challenge settlement failed', e);
   }
 
+  // Piggyback: resume stalled OSM import jobs (Hobby plan has no minute-grain
+  // cron, so daily routes each take one recovery checkpoint).
+  let importResumed = 0;
+  try {
+    const { resumeStalledImportJobs } = await import('@/lib/admin/import-jobs');
+    const r = await resumeStalledImportJobs();
+    importResumed = r.resumed;
+  } catch { /* never break the reminders run */ }
+
   return NextResponse.json({
     ok: true,
     considered: candidates?.length ?? 0,
     sent,
     challengesSettled,
+    importResumed,
   });
 }

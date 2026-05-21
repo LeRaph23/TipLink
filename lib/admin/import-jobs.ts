@@ -18,7 +18,8 @@ export type ImportJobType =
   | 'import_salons'
   | 'enrich_addresses'
   | 'enrich_google'
-  | 'full_import';
+  | 'full_import'
+  | 'import_france';
 
 export type ImportJobStatus =
   | 'pending'
@@ -28,12 +29,18 @@ export type ImportJobStatus =
   | 'cancelled';
 
 // Discriminated union — the narrowest typing for `params` per job type.
+//
+// `import_france` is the fan-out job: it resolves zones for every département
+// of the picked regions, imports their salons, and (when `enrich`) reverse-
+// geocodes missing addresses via BAN. State across its 3 phases lives in
+// `result.cursor` — see import-jobs-worker.ts:runImportFrance.
 export type ImportJobParams =
   | { type: 'import_zones';     city: string }
   | { type: 'import_salons';    zoneIds: string[] }
   | { type: 'enrich_addresses'; zoneIds: string[]; force?: boolean }
   | { type: 'enrich_google';    zoneIds: string[]; force?: boolean }
-  | { type: 'full_import';      zoneIds: string[] };
+  | { type: 'full_import';      zoneIds: string[] }
+  | { type: 'import_france';    regions: string[]; enrich: boolean };
 
 // Shape returned to the UI by `listImportJobs`.
 export type ImportJobView = {
@@ -102,4 +109,45 @@ export async function pokeWorker(jobId: string, workerToken: string): Promise<vo
   } catch {
     /* let the auto-resume on next list-jobs poll pick this back up */
   }
+}
+
+// ─── Stalled-job recovery ────────────────────────────────────────────────────
+//
+// The worker chain is self-rescheduling: each chunk pokes the next. But a
+// crashed chunk (cold-start OOM, dropped fetch, function timeout overrun)
+// breaks that loop. Page polling re-pokes when the admin has the panel open,
+// but if the tab is closed there's no other driver.
+//
+// This helper finds all pending/running jobs whose heartbeat is older than
+// `staleAfterMs` and pokes them. Safe to call concurrently — the worker route
+// validates the token and refuses to double-process a job already in flight.
+//
+// On Vercel Hobby plan crons can only run daily, so the dedicated
+// `/api/cron/import-jobs-resume` route is scheduled at 03:00 UTC. The existing
+// daily crons (lifecycle-emails, ambassador-reminders, group-transfers) also
+// call this as a side-effect, giving us ~4 daily backstops without consuming
+// extra cron slots. On Pro+ the dedicated route can be re-scheduled hourly
+// or finer.
+export async function resumeStalledImportJobs(staleAfterMs = 90_000): Promise<{ resumed: number }> {
+  const service = createServiceClient();
+  const cutoff = new Date(Date.now() - staleAfterMs).toISOString();
+
+  const { data, error } = await service
+    .from('import_jobs')
+    .select('id, worker_token, last_heartbeat_at, status')
+    .in('status', ['pending', 'running'])
+    .or(`last_heartbeat_at.is.null,last_heartbeat_at.lt.${cutoff}`)
+    .limit(50);
+
+  if (error || !data || data.length === 0) return { resumed: 0 };
+
+  // Bump heartbeat first to dedupe concurrent recoveries.
+  const ids = data.map((j) => j.id);
+  await service
+    .from('import_jobs')
+    .update({ last_heartbeat_at: new Date().toISOString() })
+    .in('id', ids);
+
+  await Promise.all(data.map((j) => pokeWorker(j.id, j.worker_token)));
+  return { resumed: data.length };
 }
