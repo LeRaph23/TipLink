@@ -484,6 +484,109 @@ export async function sendAmbassadorApplicationAdmin(opts: {
   });
 }
 
+// ─── Commercial Pros — application confirmation (candidate side) ─────────────
+
+const LEGAL_FORM_LABELS: Record<string, string> = {
+  sarl: 'SARL',
+  sas: 'SAS',
+  sasu: 'SASU',
+  ei: 'Entreprise individuelle',
+  auto_entrepreneur: 'Auto-entrepreneur',
+  eurl: 'EURL',
+  sa: 'SA',
+  autre: 'Autre',
+};
+
+const VRP_STATUS_LABELS: Record<string, string> = {
+  vrp_exclusif: 'VRP exclusif',
+  vrp_multicarte: 'VRP multicarte',
+  agent_commercial: 'Agent commercial',
+  independant: 'Commercial indépendant',
+  autre: 'Autre',
+};
+
+export async function sendCommercialApplicationConfirmation(opts: {
+  to: string;
+  firstName: string;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName } = opts;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Candidature commerciale reçue — Digitip Partenaires`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Dossier reçu</div>
+      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">Bonjour ${firstName},</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.65">Votre dossier de candidature au programme partenaire B2B Digitip est bien arrivé. Notre direction commerciale l'examine et revient vers vous sous 48 h ouvrées pour, le cas échéant, la signature du contrat d'apporteur d'affaires et l'activation de votre code commercial.</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">En cas de question urgente, vous pouvez répondre directement à cet email — il atterrit chez nos équipes partenaires.</p>
+    </td></tr>`),
+  });
+}
+
+export async function sendCommercialApplicationAdmin(opts: {
+  to: string[];
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  city: string;
+  sector: string | null;
+  companyName: string;
+  legalForm: string;
+  vatNumber: string | null;
+  siret: string;
+  vrpStatus: string;
+  notes?: string | null;
+}): Promise<void> {
+  const {
+    to, firstName, lastName, email, phone, city, sector,
+    companyName, legalForm, vatNumber, siret, vrpStatus, notes,
+  } = opts;
+  if (!resend || to.length === 0) return;
+
+  const legalLabel = LEGAL_FORM_LABELS[legalForm] ?? legalForm;
+  const vrpLabel = VRP_STATUS_LABELS[vrpStatus] ?? vrpStatus;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    replyTo: email,
+    subject: `Nouvelle candidature COMMERCIAL PRO — ${firstName} ${lastName} (${companyName})`,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Nouvelle candidature Commerciaux Pros</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 20px">
+      <div class="text-primary" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${firstName} ${lastName}</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${companyName} · ${city}${sector ? ` · ${sector}` : ''}</div>
+    </td></tr>
+    <tr><td style="padding:0 32px 32px">
+      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
+        ${infoRow('Email', `<a href="mailto:${email}" style="color:#E57A97;text-decoration:none">${email}</a>`)}
+        ${infoRow('Téléphone', phone)}
+        ${infoRow('Statut commercial', vrpLabel)}
+        ${infoRow('Forme juridique', legalLabel)}
+        ${infoRow('SIRET', `<span style="font-family:monospace">${siret}</span>`)}
+        ${infoRow('N° TVA', vatNumber
+          ? `<span style="font-family:monospace">${vatNumber}</span>`
+          : '<span style="color:#9ca3af">Non renseigné — franchise probable</span>')}
+        ${sector ? infoRow('Secteur géographique', sector) : ''}
+        ${notes ? infoRow('Notes', notes) : ''}
+      </table>
+    </td></tr>`),
+  });
+}
+
 // ─── Ambassador banking — setup confirmation ──────────────────────────────────
 
 export async function sendAmbassadorBankingConfirmation(opts: {

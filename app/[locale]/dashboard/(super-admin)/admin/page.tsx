@@ -92,6 +92,7 @@ export default async function AdminOverviewPage({
     { count: pendingOrders },
     { count: activePromoCount },
     { count: ambassadeursCount },
+    { count: commerciauxCount },
     { data: recentGroupsData },
     { data: promoStats },
   ] = await Promise.all([
@@ -108,6 +109,7 @@ export default async function AdminOverviewPage({
     supabase.from('smarttag_orders').select('id', { count: 'exact', head: true }).in('status', ['pending_fulfillment', 'encoding']),
     supabase.from('promo_codes').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('is_active', true),
     supabase.from('ambassador_recruitment_applications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('commercial_recruitment_applications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('groups').select('id, name, created_at').is('deleted_at', null).gte('created_at', sevenDaysAgo).order('created_at', { ascending: false }).limit(5),
     supabase.from('promo_codes').select('times_redeemed').is('deleted_at', null),
   ]);
@@ -174,6 +176,9 @@ export default async function AdminOverviewPage({
         <KpiCard label="Codes promo actifs" value={String(activePromoCount ?? 0)} sub={`${totalRedemptions} utilisations`} href="/dashboard/admin/promo-codes" />
         {(ambassadeursCount ?? 0) > 0 && (
           <KpiCard label="Candidatures ambassadeurs" value={String(ambassadeursCount ?? 0)} sub="En attente de validation" href="/dashboard/admin/ambassadeurs" highlight />
+        )}
+        {(commerciauxCount ?? 0) > 0 && (
+          <KpiCard label="Candidatures commerciaux pros" value={String(commerciauxCount ?? 0)} sub="50€ Solo / 65€ Duo — en attente" href="/dashboard/admin/commerciaux/recrutement" highlight />
         )}
       </div>
 
@@ -271,7 +276,8 @@ export default async function AdminOverviewPage({
               <QuickAction href="/dashboard/admin/orders" label="Commandes" description="Voir les commandes en attente" />
               <QuickAction href="/dashboard/admin/smarttags" label="SmartTags" description="Gérer le stock NFC" />
               <QuickAction href="/dashboard/admin/users" label="Utilisateurs" description="Rôles et accès" />
-              <QuickAction href="/dashboard/admin/ambassadeurs" label="Ambassadeurs" description="Pilotage du programme ambassadeurs" />
+              <QuickAction href="/dashboard/admin/ambassadeurs" label="Ambassadeurs" description="Programme grand public · 35-45 € / vente" />
+              <QuickAction href="/dashboard/admin/commerciaux" label="Commerciaux Pros" description="Programme partenaire B2B · 50-65 € / vente" />
               <QuickAction href="/dashboard/admin/ambassadeurs/terrain" label="Terrain" description="Zones, établissements & visites" />
               <QuickAction href="/dashboard/admin/cold-email" label="Prospection" description="Scraper SIRENE & tableau de suivi" />
               <QuickAction href="/dashboard/admin/emails" label="Emails automatiques" description="Suivi des relances & onboarding" />
