@@ -177,6 +177,53 @@ const card: React.CSSProperties = {
   marginBottom: 18,
 };
 
+// Anchor target on the form section + reusable CTA used between sections so
+// the form is always one click away wherever the visitor is on the (long) page.
+const FORM_ANCHOR = '#candidature';
+
+function PrimaryCta() {
+  return (
+    <a
+      href={FORM_ANCHOR}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        padding: '13px 22px', borderRadius: 10,
+        background: 'var(--accent)', color: '#fff',
+        fontSize: 14, fontWeight: 700, letterSpacing: '0.01em',
+        textDecoration: 'none', whiteSpace: 'nowrap',
+      }}
+    >
+      Postuler maintenant
+      <span aria-hidden="true">→</span>
+    </a>
+  );
+}
+
+function InlineCtaRow({ label }: { label: string }) {
+  return (
+    <div style={{
+      marginTop: 16, display: 'flex', alignItems: 'center',
+      justifyContent: 'center', gap: 14, flexWrap: 'wrap',
+    }}>
+      <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>{label}</span>
+      <a
+        href={FORM_ANCHOR}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '8px 14px', borderRadius: 8,
+          background: 'transparent', color: 'var(--accent)',
+          border: '1px solid var(--accent-border)',
+          fontSize: 13, fontWeight: 700,
+          textDecoration: 'none', whiteSpace: 'nowrap',
+        }}
+      >
+        Aller au formulaire
+        <span aria-hidden="true">↓</span>
+      </a>
+    </div>
+  );
+}
+
 export default async function DevenirCommercialProPage({
   params,
 }: {
@@ -250,6 +297,16 @@ export default async function DevenirCommercialProPage({
               </div>
             ))}
           </div>
+
+          {/* Hero primary CTA — main scroll target so visitors landing on the
+              page can jump straight to the form without scrolling through six
+              sections of marketing copy first. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 22, flexWrap: 'wrap' }}>
+            <PrimaryCta />
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
+              ~2 minutes · Dossier étudié sous 48 h ouvrées
+            </span>
+          </div>
         </section>
 
         {/* Différentiation programme */}
@@ -284,6 +341,8 @@ export default async function DevenirCommercialProPage({
               </tbody>
             </table>
           </div>
+
+          <InlineCtaRow label="Vous correspondez au profil ?" />
         </section>
 
         {/* How it works */}
@@ -362,10 +421,12 @@ export default async function DevenirCommercialProPage({
               </div>
             ))}
           </div>
+
+          <InlineCtaRow label="Prêt à présenter votre candidature ?" />
         </section>
 
         {/* Candidature form */}
-        <section style={card} id="candidature">
+        <section style={{ ...card, scrollMarginTop: 24 }} id="candidature">
           <div style={sectionLabel}>Candidature</div>
           <h2 style={sectionTitle}>Dossier de candidature commerciale.</h2>
           <p style={sectionLead}>
