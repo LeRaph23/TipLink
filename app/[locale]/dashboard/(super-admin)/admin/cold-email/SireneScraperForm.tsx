@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { scrapeSireneProspects } from '@/actions/admin/cold-email';
+import { useRouter } from 'next/navigation';
+import { scrapeSireneProspects, enrichProspectsBatch } from '@/actions/admin/cold-email';
 import { NAF_PRESETS, type ColdTargetProgram } from '@/lib/cold-email/programs';
 
 const inp: React.CSSProperties = {
@@ -25,6 +26,7 @@ const PROGRAM_LABEL: Record<ColdTargetProgram, { name: string; tag: string }> = 
 };
 
 export function SireneScraperForm() {
+  const router = useRouter();
   const [program, setProgram] = useState<ColdTargetProgram>('ambassador');
   const [selectedNaf, setSelectedNaf] = useState<Set<string>>(new Set(PROGRAM_DEFAULTS.ambassador));
   const [monthsBack, setMonthsBack] = useState(12);
@@ -33,10 +35,16 @@ export function SireneScraperForm() {
   const [youngOnly, setYoungOnly] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<
-    | { ok: true; fetched: number; inserted: number; skippedYoung: number; skippedDuplicates: number; errors: string[] }
+    | { ok: true; fetched: number; inserted: number; skippedYoung: number; skippedEmpty: number; skippedDuplicates: number; errors: string[] }
     | { ok: false; error: string }
     | null
   >(null);
+  const [enrichStatus, setEnrichStatus] = useState<
+    | { phase: 'idle' }
+    | { phase: 'running'; processed: number; withEmail: number; withWebsite: number; remaining: number }
+    | { phase: 'done'; processed: number; withEmail: number; withWebsite: number }
+    | { phase: 'error'; error: string }
+  >({ phase: 'idle' });
 
   const presets = useMemo(() => NAF_PRESETS[program], [program]);
 
@@ -63,6 +71,7 @@ export function SireneScraperForm() {
     if (selectedNaf.size === 0) { setResult({ ok: false, error: 'Sélectionne au moins 1 code NAF.' }); return; }
     setBusy(true);
     setResult(null);
+    setEnrichStatus({ phase: 'idle' });
     try {
       const r = await scrapeSireneProspects({
         nafCodes: [...selectedNaf],
@@ -73,9 +82,44 @@ export function SireneScraperForm() {
         targetProgram: program,
       });
       setResult(r);
+      // Refresh the parent server component so the freshly-imported prospects
+      // appear in the tracker table without a manual reload.
+      router.refresh();
+      // Then auto-enrich the new prospects (website + email) in 25-row
+      // batches until no un-enriched prospect remains for this programme.
+      if (r.ok && r.inserted > 0) {
+        await runEnrichmentLoop(program);
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  async function runEnrichmentLoop(targetProgram: ColdTargetProgram) {
+    let processed = 0;
+    let withEmail = 0;
+    let withWebsite = 0;
+    setEnrichStatus({ phase: 'running', processed, withEmail, withWebsite, remaining: 0 });
+    for (let i = 0; i < 40; i++) {                     // hard cap to bound runtime
+      const r = await enrichProspectsBatch({ targetProgram, limit: 25 });
+      if (!r.ok) {
+        setEnrichStatus({ phase: 'error', error: r.error });
+        return;
+      }
+      processed += r.result.considered;
+      withEmail += r.result.withEmail;
+      withWebsite += r.result.withWebsite;
+      setEnrichStatus({
+        phase: 'running',
+        processed,
+        withEmail,
+        withWebsite,
+        remaining: r.result.remaining,
+      });
+      router.refresh();
+      if (r.result.considered === 0 || r.result.remaining === 0) break;
+    }
+    setEnrichStatus({ phase: 'done', processed, withEmail, withWebsite });
   }
 
   const estimatedCalls = maxPages;
@@ -209,13 +253,45 @@ export function SireneScraperForm() {
 
         {result && result.ok && (
           <div style={{ fontSize: 12, color: 'var(--success, #22c55e)' }}>
-            ✓ {result.fetched} récupérés · <strong>{result.inserted} ajoutés</strong> · {result.skippedYoung} hors-cible âge · {result.skippedDuplicates} doublons
+            ✓ {result.fetched} récupérés · <strong>{result.inserted} ajoutés</strong>
+            {result.skippedEmpty > 0 && ` · ${result.skippedEmpty} sans nom`}
+            {result.skippedYoung > 0 && ` · ${result.skippedYoung} hors-cible âge`}
+            {result.skippedDuplicates > 0 && ` · ${result.skippedDuplicates} doublons`}
           </div>
         )}
         {result && !result.ok && (
           <div style={{ fontSize: 12, color: 'var(--error, #ef4444)' }}>✗ {result.error}</div>
         )}
       </div>
+
+      {enrichStatus.phase !== 'idle' && (
+        <div style={{
+          marginTop: 12, padding: '10px 12px', borderRadius: 'var(--radius-sm)',
+          background: enrichStatus.phase === 'error' ? 'var(--error-bg, #fee2e2)' : 'var(--surface-2)',
+          fontSize: 12, color: 'var(--text-2)',
+        }}>
+          {enrichStatus.phase === 'running' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                width: 12, height: 12, borderRadius: '50%',
+                border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+              Enrichissement automatique en cours… {enrichStatus.processed} traités · <strong style={{ color: 'var(--success)' }}>{enrichStatus.withEmail} emails</strong> · <strong style={{ color: 'var(--accent)' }}>{enrichStatus.withWebsite} sites</strong> · {enrichStatus.remaining} restants
+            </div>
+          )}
+          {enrichStatus.phase === 'done' && (
+            <div style={{ color: 'var(--success)' }}>
+              ✓ Enrichissement terminé · {enrichStatus.processed} traités · <strong>{enrichStatus.withEmail} emails trouvés</strong> · <strong>{enrichStatus.withWebsite} sites trouvés</strong>
+            </div>
+          )}
+          {enrichStatus.phase === 'error' && (
+            <div style={{ color: 'var(--error)' }}>
+              ✗ Erreur enrichissement : {enrichStatus.error}
+            </div>
+          )}
+        </div>
+      )}
 
       {result && result.ok && result.errors.length > 0 && (
         <div style={{ marginTop: 12, padding: 10, background: 'var(--surface-2)', borderRadius: 'var(--radius-sm)', fontSize: 11, color: 'var(--text-3)' }}>

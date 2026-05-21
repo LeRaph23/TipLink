@@ -683,6 +683,8 @@ export type Database = {
           company_name: string | null
           creation_date: string | null
           email: string | null
+          enrichment_attempted_at: string | null
+          enrichment_source: string | null
           first_name: string | null
           id: string
           imported_at: string
@@ -696,6 +698,7 @@ export type Database = {
           status: string
           target_program: string
           unsubscribed_at: string | null
+          website: string | null
         }
         Insert: {
           birth_year_estimate?: number | null
@@ -704,6 +707,8 @@ export type Database = {
           company_name?: string | null
           creation_date?: string | null
           email?: string | null
+          enrichment_attempted_at?: string | null
+          enrichment_source?: string | null
           first_name?: string | null
           id?: string
           imported_at?: string
@@ -717,6 +722,7 @@ export type Database = {
           status?: string
           target_program?: string
           unsubscribed_at?: string | null
+          website?: string | null
         }
         Update: {
           birth_year_estimate?: number | null
@@ -725,6 +731,8 @@ export type Database = {
           company_name?: string | null
           creation_date?: string | null
           email?: string | null
+          enrichment_attempted_at?: string | null
+          enrichment_source?: string | null
           first_name?: string | null
           id?: string
           imported_at?: string
@@ -738,6 +746,7 @@ export type Database = {
           status?: string
           target_program?: string
           unsubscribed_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }

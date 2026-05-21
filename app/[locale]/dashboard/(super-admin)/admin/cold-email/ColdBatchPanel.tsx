@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   triggerColdEmailBatch,
+  enrichProspectsBatch,
   type ColdEmailProgramStats,
 } from '@/actions/admin/cold-email';
 import type { ColdTargetProgram } from '@/lib/cold-email/programs';
@@ -38,10 +40,13 @@ export function ColdBatchPanel({
   ambassadorStats: ColdEmailProgramStats | null;
   commercialStats: ColdEmailProgramStats | null;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [tallies, setTallies] = useState<TallyByProgram>({ ambassador: null, commercial: null });
   const [err, setErr] = useState<string | null>(null);
   const [activeProgram, setActiveProgram] = useState<ColdTargetProgram | null>(null);
+  const [enrichingProgram, setEnrichingProgram] = useState<ColdTargetProgram | null>(null);
+  const [enrichProgress, setEnrichProgress] = useState<{ processed: number; withEmail: number; withWebsite: number; remaining: number } | null>(null);
 
   function send(program: ColdTargetProgram) {
     setErr(null);
@@ -54,6 +59,26 @@ export function ColdBatchPanel({
       for (const t of r.tallies) next[t.program] = { considered: t.considered, sent: t.sent, skipped: t.skipped, failed: t.failed };
       setTallies(next);
     });
+  }
+
+  async function enrich(program: ColdTargetProgram) {
+    setErr(null);
+    setEnrichingProgram(program);
+    setEnrichProgress({ processed: 0, withEmail: 0, withWebsite: 0, remaining: 0 });
+    let processed = 0;
+    let withEmail = 0;
+    let withWebsite = 0;
+    for (let i = 0; i < 40; i++) {
+      const r = await enrichProspectsBatch({ targetProgram: program, limit: 25 });
+      if (!r.ok) { setErr(r.error); break; }
+      processed += r.result.considered;
+      withEmail += r.result.withEmail;
+      withWebsite += r.result.withWebsite;
+      setEnrichProgress({ processed, withEmail, withWebsite, remaining: r.result.remaining });
+      router.refresh();
+      if (r.result.considered === 0 || r.result.remaining === 0) break;
+    }
+    setEnrichingProgram(null);
   }
 
   return (
@@ -107,22 +132,50 @@ export function ColdBatchPanel({
                 </div>
               )}
 
-              <button
-                onClick={() => send(program)}
-                disabled={isPending}
-                style={{
-                  width: '100%', padding: '8px 14px', borderRadius: 6, border: 'none',
-                  background: meta.color, color: '#fff',
-                  fontSize: 12.5, fontWeight: 700, cursor: isPending ? 'wait' : 'pointer',
-                  opacity: isPending ? 0.7 : 1,
-                }}
-              >
-                {sending ? 'Envoi en cours…' : `Envoyer une vague (20) →`}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <button
+                  onClick={() => send(program)}
+                  disabled={isPending || enrichingProgram !== null}
+                  style={{
+                    width: '100%', padding: '8px 14px', borderRadius: 6, border: 'none',
+                    background: meta.color, color: '#fff',
+                    fontSize: 12.5, fontWeight: 700, cursor: (isPending || enrichingProgram !== null) ? 'wait' : 'pointer',
+                    opacity: (isPending || enrichingProgram !== null) ? 0.7 : 1,
+                  }}
+                >
+                  {sending ? 'Envoi en cours…' : `Envoyer une vague (20) →`}
+                </button>
+                <button
+                  onClick={() => enrich(program)}
+                  disabled={enrichingProgram !== null || isPending}
+                  style={{
+                    width: '100%', padding: '6px 12px', borderRadius: 6,
+                    border: `1px solid ${meta.color}`,
+                    background: 'transparent', color: meta.color,
+                    fontSize: 11.5, fontWeight: 600,
+                    cursor: (enrichingProgram || isPending) ? 'wait' : 'pointer',
+                    opacity: (enrichingProgram || isPending) ? 0.7 : 1,
+                  }}
+                >
+                  {enrichingProgram === program
+                    ? `Enrichissement… ${enrichProgress?.processed ?? 0} traités`
+                    : 'Enrichir auto. (site + email)'}
+                </button>
+              </div>
 
               {tally && (
                 <div style={{ marginTop: 8, fontSize: 11.5, color: meta.color, lineHeight: 1.45 }}>
                   ✓ {tally.sent} envoyé{tally.sent !== 1 ? 's' : ''} · {tally.skipped} ignoré{tally.skipped !== 1 ? 's' : ''} · {tally.failed} échec{tally.failed !== 1 ? 's' : ''} · {tally.considered} considérés
+                </div>
+              )}
+              {enrichingProgram === program && enrichProgress && (
+                <div style={{ marginTop: 8, fontSize: 11.5, color: meta.color, lineHeight: 1.45 }}>
+                  {enrichProgress.withEmail} emails · {enrichProgress.withWebsite} sites · {enrichProgress.remaining} restants
+                </div>
+              )}
+              {enrichingProgram === null && enrichProgress && enrichProgress.processed > 0 && (
+                <div style={{ marginTop: 8, fontSize: 11.5, color: meta.color, lineHeight: 1.45 }}>
+                  ✓ Enrichissement terminé · {enrichProgress.processed} prospects · {enrichProgress.withEmail} emails · {enrichProgress.withWebsite} sites
                 </div>
               )}
             </div>
