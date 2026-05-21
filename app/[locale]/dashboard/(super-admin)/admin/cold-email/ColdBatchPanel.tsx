@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react';
 import {
   triggerColdEmailBatch,
-  type ColdTargetProgram,
   type ColdEmailProgramStats,
 } from '@/actions/admin/cold-email';
+import type { ColdTargetProgram } from '@/lib/cold-email/programs';
 
 type TallyByProgram = Record<ColdTargetProgram, {
   considered: number;

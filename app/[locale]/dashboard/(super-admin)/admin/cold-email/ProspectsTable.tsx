@@ -4,11 +4,11 @@ import { useMemo, useState, useTransition } from 'react';
 import {
   type ProspectRow,
   type ProspectStatus,
-  type ColdTargetProgram,
   updateProspect,
   createManualProspect,
   deleteProspect,
 } from '@/actions/admin/cold-email';
+import type { ColdTargetProgram } from '@/lib/cold-email/programs';
 
 const PROGRAM_META: Record<ColdTargetProgram, { label: string; short: string; color: string; bg: string }> = {
   ambassador: { label: 'Ambassadeur',     short: 'AMB', color: '#15803d', bg: '#dcfce7' },
