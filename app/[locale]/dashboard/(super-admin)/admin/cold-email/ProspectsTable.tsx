@@ -36,6 +36,17 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
   const [filter, setFilter] = useState<Filter>('all');
   const [programFilter, setProgramFilter] = useState<ProgramFilter>('all');
   const [query, setQuery] = useState('');
+
+  // Server-side data refreshes (router.refresh after scrape / enrichment)
+  // hand us a new `initial` array reference. React's recommended pattern
+  // for deriving state from a prop is to compare and setState during
+  // render — no effect, no race with optimistic UI updates.
+  // https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  const [initialRef, setInitialRef] = useState(initial);
+  if (initialRef !== initial) {
+    setInitialRef(initial);
+    setRows(initial);
+  }
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -163,10 +174,10 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
               <Th>Entreprise</Th>
               <Th>Prénom</Th>
               <Th>Email</Th>
+              <Th>Site web</Th>
               <Th>LinkedIn</Th>
               <Th>Ville</Th>
               <Th>Séquence</Th>
-              <Th>Notes</Th>
               <Th>Statut</Th>
               <Th>—</Th>
             </tr>
@@ -191,17 +202,22 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
                   }}>{pm.short}</span>
                 </Td>
                 <Td>
-                  <InlineText value={r.company_name ?? ''} placeholder="—" onCommit={v => { patchRow(r.id, { company_name: v || null }); commit(r.id, { company_name: v || null }); }} />
+                  <InlineText value={r.company_name ?? ''} placeholder="—" wide onCommit={v => { patchRow(r.id, { company_name: v || null }); commit(r.id, { company_name: v || null }); }} />
                 </Td>
                 <Td>
                   <InlineText value={r.first_name ?? ''} placeholder="—" onCommit={v => { patchRow(r.id, { first_name: v || null }); commit(r.id, { first_name: v || null }); }} />
                 </Td>
                 <Td>
-                  <InlineText
+                  <EmailCell
                     value={r.email ?? ''}
-                    placeholder="email@…"
-                    type="email"
+                    enrichmentAttempted={!!r.enrichment_attempted_at}
                     onCommit={v => { patchRow(r.id, { email: v || null }); commit(r.id, { email: v || null }); }}
+                  />
+                </Td>
+                <Td>
+                  <WebsiteCell
+                    value={r.website ?? ''}
+                    onCommit={v => { patchRow(r.id, { website: v || null }); commit(r.id, { website: v || null }); }}
                   />
                 </Td>
                 <Td>
@@ -218,9 +234,6 @@ export function ProspectsTable({ initial }: { initial: ProspectRow[] }) {
                     style={{ fontSize: 11, color: r.unsubscribed_at ? 'var(--error)' : r.replied_at ? 'var(--success)' : 'var(--text-3)', fontWeight: 600 }}>
                     {seqLabel}
                   </span>
-                </Td>
-                <Td>
-                  <InlineText value={r.notes ?? ''} placeholder="…" wide onCommit={v => { patchRow(r.id, { notes: v || null }); commit(r.id, { notes: v || null }); }} />
                 </Td>
                 <Td>
                   <StatusToggle value={r.status} onChange={s => handleStatus(r.id, s)} />
@@ -339,6 +352,72 @@ function InlineText({
   );
 }
 
+function EmailCell({
+  value, enrichmentAttempted, onCommit,
+}: {
+  value: string;
+  enrichmentAttempted: boolean;
+  onCommit: (v: string) => void;
+}) {
+  // Visual cue when we already ran enrichment on a prospect and came back
+  // empty-handed — the admin knows manual research is the next step.
+  if (!value && enrichmentAttempted) {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <InlineText value="" placeholder="email@…" type="email" onCommit={onCommit} />
+        <span title="Auto-enrichissement tenté sans succès" style={{ fontSize: 10.5, color: 'var(--text-3)', fontStyle: 'italic' }}>
+          (auto: 0)
+        </span>
+      </span>
+    );
+  }
+  return <InlineText value={value} placeholder="email@…" type="email" onCommit={onCommit} />;
+}
+
+function WebsiteCell({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [local, setLocal] = useState(value);
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={local}
+        placeholder="https://exemple.fr"
+        onChange={e => setLocal(e.target.value)}
+        onBlur={() => { onCommit(local); setEditing(false); }}
+        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setLocal(value); setEditing(false); } }}
+        style={{
+          background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 6,
+          padding: '4px 6px', fontSize: 12.5, color: 'var(--text)', fontFamily: 'var(--font)',
+          width: 180, outline: 'none',
+        }}
+      />
+    );
+  }
+  if (value) {
+    const display = value.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '');
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <a href={value} target="_blank" rel="noreferrer"
+          style={{ color: 'var(--accent)', fontSize: 12.5, textDecoration: 'underline', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          title={value}>
+          {display}
+        </a>
+        <button onClick={() => setEditing(true)}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 11, padding: 2 }}
+          title="Modifier">✎</button>
+      </span>
+    );
+  }
+  return (
+    <button onClick={() => setEditing(true)}
+      style={{ background: 'transparent', border: '1px dashed var(--border-subtle)', borderRadius: 6, padding: '3px 8px', color: 'var(--text-3)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'var(--font)' }}>
+      + site web
+    </button>
+  );
+}
+
 function LinkedInCell({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState(value);
@@ -397,6 +476,7 @@ function AddProspectForm({ onAdded }: { onAdded: (r: ProspectRow) => void }) {
       first_name: form.first_name || null,
       email: form.email || null,
       linkedin_url: form.linkedin_url || null,
+      website: null,
       city: form.city || null,
       notes: form.notes || null,
       naf_code: null,
@@ -408,6 +488,8 @@ function AddProspectForm({ onAdded }: { onAdded: (r: ProspectRow) => void }) {
       last_sent_at: null,
       unsubscribed_at: null,
       replied_at: null,
+      enrichment_attempted_at: null,
+      enrichment_source: null,
     });
     setForm({ company_name: '', first_name: '', email: '', linkedin_url: '', city: '', notes: '' });
     setOpen(false);

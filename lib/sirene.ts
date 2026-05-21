@@ -94,21 +94,36 @@ function buildQueryForNaf(opts: SireneSearchOptions, nafCode: string | null): st
   return parts.join(' AND ');
 }
 
+// SIRENE returns "[ND]" (Non Disponible) for fields masked under the public
+// privacy mode — typically très recent personne-physique registrations.
+// Treat that placeholder + empty strings as null so downstream consumers
+// don't render literal "[ND]" labels in admin tables and emails.
+function cleanSireneValue(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  const trimmed = v.trim();
+  if (!trimmed) return null;
+  if (trimmed === '[ND]') return null;
+  return trimmed;
+}
+
 function mapEtablissement(raw: RawEtablissement): SireneEtablissement | null {
   if (!raw.siret) return null;
   const ul = raw.uniteLegale ?? {};
   const adr = raw.adresseEtablissement ?? {};
+  const denomination = cleanSireneValue(ul.denominationUniteLegale);
+  const firstName = cleanSireneValue(ul.prenomUsuelUniteLegale);
+  const lastName = cleanSireneValue(ul.nomUniteLegale);
+  const personFull = [firstName, lastName].filter(Boolean).join(' ').trim() || null;
   return {
     siret: raw.siret,
-    companyName: ul.denominationUniteLegale
-      ?? ([ul.prenomUsuelUniteLegale, ul.nomUniteLegale].filter(Boolean).join(' ') || null),
-    firstName: ul.prenomUsuelUniteLegale ?? null,
-    lastName: ul.nomUniteLegale ?? null,
-    city: adr.libelleCommuneEtablissement ?? null,
-    postalCode: adr.codePostalEtablissement ?? null,
-    nafCode: ul.activitePrincipaleUniteLegale ?? null,
-    creationDate: ul.dateCreationUniteLegale ?? null,
-    categorieJuridique: ul.categorieJuridiqueUniteLegale ?? null,
+    companyName: denomination ?? personFull,
+    firstName,
+    lastName,
+    city: cleanSireneValue(adr.libelleCommuneEtablissement),
+    postalCode: cleanSireneValue(adr.codePostalEtablissement),
+    nafCode: cleanSireneValue(ul.activitePrincipaleUniteLegale),
+    creationDate: cleanSireneValue(ul.dateCreationUniteLegale),
+    categorieJuridique: cleanSireneValue(ul.categorieJuridiqueUniteLegale),
   };
 }
 

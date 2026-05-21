@@ -184,7 +184,7 @@ export type SireneScrapeInput = {
 export async function scrapeSireneProspects(
   input: SireneScrapeInput
 ): Promise<
-  | { ok: true; fetched: number; inserted: number; skippedYoung: number; skippedDuplicates: number; errors: string[] }
+  | { ok: true; fetched: number; inserted: number; skippedYoung: number; skippedEmpty: number; skippedDuplicates: number; errors: string[] }
   | { ok: false; error: string }
 > {
   try {
@@ -203,7 +203,10 @@ export async function scrapeSireneProspects(
       nafCodes: input.nafCodes,
       createdAfter,
       postalCodePrefix: input.postalCodePrefix?.trim() || undefined,
-      personnePhysiqueOnly: true,
+      // Commercial pros are typically legal entities (SASU / SARL / SAS /
+      // EI) — restricting to personnes physiques would miss the bulk of
+      // the audience. Ambassadeurs keep the AE-only filter.
+      personnePhysiqueOnly: targetProgram === 'ambassador',
       pageSize: 100,
     };
 
@@ -211,6 +214,7 @@ export async function scrapeSireneProspects(
     let fetched = 0;
     let inserted = 0;
     let skippedYoung = 0;
+    let skippedEmpty = 0;
     let skippedDuplicates = 0;
 
     for (let page = 0; page < maxPages; page++) {
@@ -224,8 +228,21 @@ export async function scrapeSireneProspects(
       fetched += pageResult.results.length;
 
       for (const item of pageResult.results) {
+        // Drop rows where SIRENE masked everything ("[ND]" already cleaned
+        // to null in mapEtablissement) — no name + no company = unusable.
+        if (!item.companyName && !item.firstName && !item.lastName) {
+          skippedEmpty++;
+          continue;
+        }
+
         const birthYear = estimateBirthYear(item.firstName);
         if (input.youngOnly && birthYear === null) { skippedYoung++; continue; }
+
+        const notesParts = [
+          `Source: SIRENE INSEE`,
+          item.nafCode ? `NAF ${item.nafCode}` : null,
+          item.postalCode ? `CP ${item.postalCode}` : null,
+        ].filter(Boolean);
 
         const row = {
           siret: item.siret,
@@ -237,7 +254,7 @@ export async function scrapeSireneProspects(
           creation_date: item.creationDate,
           birth_year_estimate: birthYear,
           target_program: targetProgram,
-          notes: `Source: SIRENE INSEE · NAF ${item.nafCode ?? '?'} · ${item.postalCode ?? ''}`,
+          notes: notesParts.join(' · '),
         };
 
         // Composite UNIQUE on (siret, target_program) allows the same SIRET to
@@ -267,7 +284,7 @@ export async function scrapeSireneProspects(
       errorCount: errors.length,
     });
 
-    return { ok: true, fetched, inserted, skippedYoung, skippedDuplicates, errors: errors.slice(0, 10) };
+    return { ok: true, fetched, inserted, skippedYoung, skippedEmpty, skippedDuplicates, errors: errors.slice(0, 10) };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }
@@ -287,12 +304,15 @@ export type ProspectRow = {
   imported_at: string;
   notes: string | null;
   linkedin_url: string | null;
+  website: string | null;
   status: ProspectStatus;
   target_program: ColdTargetProgram;
   sequence_step: number;
   last_sent_at: string | null;
   unsubscribed_at: string | null;
   replied_at: string | null;
+  enrichment_attempted_at: string | null;
+  enrichment_source: string | null;
 };
 
 export async function listProspects(
@@ -303,7 +323,7 @@ export async function listProspects(
     const service = createServiceClient();
     let q = service
       .from('cold_email_prospects')
-      .select('id, siret, company_name, email, first_name, city, naf_code, creation_date, imported_at, notes, linkedin_url, status, target_program, sequence_step, last_sent_at, unsubscribed_at, replied_at')
+      .select('id, siret, company_name, email, first_name, city, naf_code, creation_date, imported_at, notes, linkedin_url, website, status, target_program, sequence_step, last_sent_at, unsubscribed_at, replied_at, enrichment_attempted_at, enrichment_source')
       .order('imported_at', { ascending: false })
       .limit(2000);
     if (filter?.targetProgram) q = q.eq('target_program', filter.targetProgram);
@@ -319,7 +339,7 @@ const ALLOWED_STATUSES: ProspectStatus[] = ['not_contacted', 'contacted', 'in_di
 
 export async function updateProspect(
   id: string,
-  patch: Partial<{ email: string | null; linkedin_url: string | null; notes: string | null; status: ProspectStatus; company_name: string | null; first_name: string | null }>
+  patch: Partial<{ email: string | null; linkedin_url: string | null; website: string | null; notes: string | null; status: ProspectStatus; company_name: string | null; first_name: string | null }>
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await requireSuperAdminUser();
@@ -335,6 +355,15 @@ export async function updateProspect(
       const v = patch.linkedin_url?.trim() || null;
       if (v && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(v)) return { ok: false, error: 'URL LinkedIn invalide' };
       update.linkedin_url = v;
+    }
+    if ('website' in patch) {
+      let v = patch.website?.trim() || null;
+      if (v) {
+        // Accept "exemple.fr" — auto-prepend https:// and validate.
+        if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+        try { new URL(v); } catch { return { ok: false, error: 'URL site web invalide' }; }
+      }
+      update.website = v;
     }
     if ('notes' in patch) update.notes = patch.notes?.trim() || null;
     if ('company_name' in patch) update.company_name = patch.company_name?.trim() || null;
@@ -409,6 +438,105 @@ export async function deleteProspect(id: string): Promise<{ ok: true } | { ok: f
     if (error) return { ok: false, error: error.message };
     await logAdminAction('cold_email.delete_prospect', { id });
     return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+  }
+}
+
+// ─── Enrichment ─────────────────────────────────────────────────────────────
+
+export type EnrichBatchResult = {
+  considered: number;
+  enriched: number;          // got either email or website
+  withEmail: number;
+  withWebsite: number;
+  remaining: number;         // prospects still un-enriched after this batch
+};
+
+/**
+ * Picks up to `limit` un-enriched prospects (no enrichment_attempted_at)
+ * for the given programme and tries to find their website + email via
+ * lib/cold-email/enrich. Each prospect's enrichment_attempted_at is set
+ * unconditionally so we don't retry the same prospect forever, even on
+ * failure. Concurrency capped at 5 to stay within Vercel function budget
+ * and remain polite with the public APIs we hit.
+ */
+export async function enrichProspectsBatch(input: {
+  targetProgram?: ColdTargetProgram;
+  limit?: number;
+}): Promise<{ ok: true; result: EnrichBatchResult } | { ok: false; error: string }> {
+  try {
+    await requireSuperAdminUser();
+    const { enrichProspect } = await import('@/lib/cold-email/enrich');
+    const service = createServiceClient();
+    const program = input.targetProgram;
+    const limit = Math.min(Math.max(1, input.limit ?? 25), 50);
+
+    let q = service
+      .from('cold_email_prospects')
+      .select('id, siret, company_name, city')
+      .is('enrichment_attempted_at', null)
+      .is('unsubscribed_at', null)
+      .is('replied_at', null)
+      .order('imported_at', { ascending: false })
+      .limit(limit);
+    if (program) q = q.eq('target_program', program);
+    const { data: rows, error: selErr } = await q;
+    if (selErr) return { ok: false, error: selErr.message };
+
+    let withEmail = 0;
+    let withWebsite = 0;
+
+    const CONCURRENCY = 5;
+    const queue = [...(rows ?? [])];
+    async function worker() {
+      while (queue.length) {
+        const row = queue.shift();
+        if (!row) return;
+        const r = await enrichProspect({
+          siret: row.siret,
+          companyName: row.company_name,
+          city: row.city,
+        }).catch(() => ({ email: null, website: null, source: 'error' }));
+        const patch: ProspectUpdate = {
+          enrichment_attempted_at: new Date().toISOString(),
+          enrichment_source: r.source,
+        };
+        if (r.website) { patch.website = r.website; withWebsite++; }
+        if (r.email) { patch.email = r.email; withEmail++; }
+        await service.from('cold_email_prospects').update(patch).eq('id', row.id);
+      }
+    }
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+    // Count remaining prospects so the UI can keep clicking until 0.
+    let remainingQ = service
+      .from('cold_email_prospects')
+      .select('id', { count: 'exact', head: true })
+      .is('enrichment_attempted_at', null)
+      .is('unsubscribed_at', null)
+      .is('replied_at', null);
+    if (program) remainingQ = remainingQ.eq('target_program', program);
+    const { count: remaining } = await remainingQ;
+
+    const considered = rows?.length ?? 0;
+    await logAdminAction('cold_email.enrich_batch', {
+      targetProgram: program ?? 'all',
+      considered,
+      withEmail,
+      withWebsite,
+      remaining: remaining ?? 0,
+    });
+    return {
+      ok: true,
+      result: {
+        considered,
+        enriched: withEmail + withWebsite - Math.min(withEmail, withWebsite), // distinct prospects touched
+        withEmail,
+        withWebsite,
+        remaining: remaining ?? 0,
+      },
+    };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
   }
