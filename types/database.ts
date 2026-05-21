@@ -797,6 +797,27 @@ export type Database = {
           },
         ]
       }
+      commercial_pin_attempts: {
+        Row: {
+          attempted_at: string
+          code: string
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          attempted_at?: string
+          code: string
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          attempted_at?: string
+          code?: string
+          id?: string
+          ip_hash?: string
+        }
+        Relationships: []
+      }
       commercial_recruitment_applications: {
         Row: {
           city: string
@@ -2202,9 +2223,17 @@ export type Database = {
           total_quantity: number
         }[]
       }
+      release_advisory_lock_commercial_payout: {
+        Args: { p_commercial_id: string }
+        Returns: undefined
+      }
       release_advisory_lock_payout: {
         Args: { p_ambassador_id: string }
         Returns: undefined
+      }
+      try_advisory_lock_commercial_payout: {
+        Args: { p_commercial_id: string }
+        Returns: boolean
       }
       try_advisory_lock_payout: {
         Args: { p_ambassador_id: string }
