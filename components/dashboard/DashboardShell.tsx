@@ -62,7 +62,7 @@ export function DashboardShell({ userRoles, userEmail, userName, hasStaffProfile
           </span>
         </div>
 
-        <div className="fade-up dash-main-pad" style={{ padding: '36px 40px', maxWidth: 1080 }}>
+        <div className="fade-up dash-main-pad" style={{ padding: '36px 40px', maxWidth: 1440 }}>
           {children}
         </div>
       </main>
