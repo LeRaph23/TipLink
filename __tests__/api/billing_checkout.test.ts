@@ -127,8 +127,8 @@ describe('POST /api/billing/checkout', () => {
     process.env.COLD_EMAIL_UNSUB_SECRET = 'cold-email-test-secret-must-be-16-chars';
     process.env.ONBOARDING_TOKEN_SECRET = 'onboarding-test-secret-must-be-at-least-32-chars-long';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-test-1234567890';
-    process.env.STRIPE_PRICE_PACK_SOLO_HARDWARE = 'price_solo_hw';
-    process.env.STRIPE_PRICE_PACK_DUO_HARDWARE  = 'price_duo_hw';
+    process.env.STRIPE_PRODUCT_PACK_SOLO = 'prod_solo_hw';
+    process.env.STRIPE_PRODUCT_PACK_DUO  = 'prod_duo_hw';
   });
 
   it('returns 400 on invalid pack', async () => {

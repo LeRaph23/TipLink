@@ -43,11 +43,12 @@ const serverSchema = z.object({
   LIFECYCLE_EMAIL_UNSUB_SECRET: z.string().min(16).optional(),
   // Onboarding express token signing secret. Used by lib/auth/onboarding-token.
   ONBOARDING_TOKEN_SECRET: z.string().min(32),
-  // Stripe Price IDs. Validated whenever serverEnv() is read (lazily). The
-  // pricing layer (lib/stripe/pricing.ts) reads these directly and logs an
-  // error if missing rather than silently falling back to a dev price.
-  STRIPE_PRICE_PACK_SOLO_HARDWARE: z.string().min(3),
-  STRIPE_PRICE_PACK_DUO_HARDWARE: z.string().min(3),
+  // Stripe Product IDs (prod_...). Validated whenever serverEnv() is read
+  // (lazily). The pricing layer (lib/stripe/pricing.ts) reads these directly
+  // and resolves each product's default_price, so changing the tariff in Stripe
+  // propagates without an env change. Logs an error if missing.
+  STRIPE_PRODUCT_PACK_SOLO: z.string().min(3),
+  STRIPE_PRODUCT_PACK_DUO: z.string().min(3),
   // Dev-only routes (seed-demo) gated by an explicit boolean rather than
   // NODE_ENV so a preview deployment with NODE_ENV=production can't be tricked
   // into exposing them.
@@ -76,8 +77,8 @@ export function serverEnv() {
     COLD_EMAIL_UNSUB_SECRET: process.env.COLD_EMAIL_UNSUB_SECRET,
     LIFECYCLE_EMAIL_UNSUB_SECRET: process.env.LIFECYCLE_EMAIL_UNSUB_SECRET,
     ONBOARDING_TOKEN_SECRET: process.env.ONBOARDING_TOKEN_SECRET,
-    STRIPE_PRICE_PACK_SOLO_HARDWARE: process.env.STRIPE_PRICE_PACK_SOLO_HARDWARE,
-    STRIPE_PRICE_PACK_DUO_HARDWARE: process.env.STRIPE_PRICE_PACK_DUO_HARDWARE,
+    STRIPE_PRODUCT_PACK_SOLO: process.env.STRIPE_PRODUCT_PACK_SOLO,
+    STRIPE_PRODUCT_PACK_DUO: process.env.STRIPE_PRODUCT_PACK_DUO,
     SEED_DEMO_ENABLED: process.env.SEED_DEMO_ENABLED,
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
     TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
@@ -121,17 +122,3 @@ export const PACKS: Record<PackId, PackDefinition> = {
 // Default platform commission applied to every tip, in basis points.
 // Mirrors the server-side default (groups.platform_fee_bps DEFAULT 500).
 export const DEFAULT_PLATFORM_FEE_BPS = 500;
-
-type StripePackPrices = {
-  hardware: string;
-};
-
-export function getPackPrices(pack: PackId): StripePackPrices {
-  const env = serverEnv();
-  return {
-    hardware:
-      pack === 'solo'
-        ? env.STRIPE_PRICE_PACK_SOLO_HARDWARE
-        : env.STRIPE_PRICE_PACK_DUO_HARDWARE,
-  };
-}

@@ -12,8 +12,8 @@ const defaults: Record<string, string> = {
   CRON_SECRET: 'cron-test-secret-must-be-16-chars-or-more',
   COLD_EMAIL_UNSUB_SECRET: 'cold-email-test-secret-must-be-16-chars',
   ONBOARDING_TOKEN_SECRET: 'onboarding-test-secret-must-be-at-least-32-chars-long',
-  STRIPE_PRICE_PACK_SOLO_HARDWARE: 'price_solo_test',
-  STRIPE_PRICE_PACK_DUO_HARDWARE: 'price_duo_test',
+  STRIPE_PRODUCT_PACK_SOLO: 'prod_solo_test',
+  STRIPE_PRODUCT_PACK_DUO: 'prod_duo_test',
 };
 
 for (const [k, v] of Object.entries(defaults)) {

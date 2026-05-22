@@ -10,8 +10,8 @@ beforeAll(() => {
   process.env.CRON_SECRET = 'cron-test-secret-1234567890';
   process.env.COLD_EMAIL_UNSUB_SECRET = 'cold-email-test-secret-1234567890';
   process.env.ONBOARDING_TOKEN_SECRET = 'onboarding-test-secret-must-be-at-least-32-chars-long';
-  process.env.STRIPE_PRICE_PACK_SOLO_HARDWARE = 'price_solo';
-  process.env.STRIPE_PRICE_PACK_DUO_HARDWARE = 'price_duo';
+  process.env.STRIPE_PRODUCT_PACK_SOLO = 'prod_solo';
+  process.env.STRIPE_PRODUCT_PACK_DUO = 'prod_duo';
 });
 
 describe('isAuthorizedCronRequest', () => {
