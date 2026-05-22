@@ -20,8 +20,8 @@ if (!key) {
 const stripe = new Stripe(key, { apiVersion: '2025-04-30' as any });
 
 const PACKS = [
-  { id: 'plaque_solo', name: 'Plaque époxy NFC — Solo (1 plaque)', amount: 6900, env: 'STRIPE_PRICE_PACK_SOLO_HARDWARE' },
-  { id: 'plaque_duo',  name: 'Plaque époxy NFC — Duo (2 plaques)', amount: 9900, env: 'STRIPE_PRICE_PACK_DUO_HARDWARE' },
+  { id: 'plaque_solo', name: 'Plaque époxy NFC — Solo (1 plaque)', amount: 6900, env: 'STRIPE_PRODUCT_PACK_SOLO' },
+  { id: 'plaque_duo',  name: 'Plaque époxy NFC — Duo (2 plaques)', amount: 9900, env: 'STRIPE_PRODUCT_PACK_DUO' },
 ] as const;
 
 async function main() {
@@ -42,7 +42,11 @@ async function main() {
       metadata: { tiplink_pack: pack.id },
     });
 
-    const line = `${pack.env}=${price.id}`;
+    // Make it the product's default price so the app (which reads
+    // default_price) picks it up, and future tariff changes propagate.
+    await stripe.products.update(product.id, { default_price: price.id });
+
+    const line = `${pack.env}=${product.id}`;
     console.log(`✅  ${line}`);
     lines.push(line);
   }

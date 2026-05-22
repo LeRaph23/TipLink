@@ -14,8 +14,8 @@ const required: { key: string; hint: string }[] = [
   { key: 'STRIPE_SECRET_KEY',                hint: 'Stripe secret key (sk_...)' },
   { key: 'STRIPE_WEBHOOK_SECRET',            hint: 'Stripe webhook secret (whsec_...)' },
   { key: 'NEXT_PUBLIC_BASE_URL',             hint: 'e.g. https://digitip.app' },
-  { key: 'STRIPE_PRICE_PACK_SOLO_HARDWARE', hint: 'Run: npm run setup:stripe' },
-  { key: 'STRIPE_PRICE_PACK_DUO_HARDWARE',  hint: 'Run: npm run setup:stripe' },
+  { key: 'STRIPE_PRODUCT_PACK_SOLO', hint: 'Run: npm run setup:stripe' },
+  { key: 'STRIPE_PRODUCT_PACK_DUO',  hint: 'Run: npm run setup:stripe' },
 ];
 
 const optional: { key: string; hint: string }[] = [
