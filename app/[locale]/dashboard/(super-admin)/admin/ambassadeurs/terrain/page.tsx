@@ -112,12 +112,11 @@ export default async function AdminSalonsPage({
       byCity.get(s.city)!.visitsTotal += 1;
     }
   }
-  for (const [, c] of byCity) {
-    for (const s of salons ?? []) {
-      if (s.city !== c.city) continue;
-      if (visitedSalonIds.has(s.id)) c.salonsVisited += 1;
-      if (hotSalonIds.has(s.id)) c.salonsHot += 1;
-    }
+  for (const s of salons ?? []) {
+    const c = byCity.get(s.city);
+    if (!c) continue;
+    if (visitedSalonIds.has(s.id)) c.salonsVisited += 1;
+    if (hotSalonIds.has(s.id)) c.salonsHot += 1;
   }
 
   const ambassadorById = new Map((ambassadors ?? []).map((a) => [a.id, a.name]));

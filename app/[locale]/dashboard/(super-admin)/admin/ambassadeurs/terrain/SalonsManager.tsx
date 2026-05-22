@@ -654,6 +654,11 @@ function SalonsTable({
   const [googleFilter, setGF]   = useState<'all' | 'enriched' | 'not_enriched'>('all');
   const [statusFilter, setSF]   = useState<'all' | 'active' | 'inactive' | 'closed'>('all');
 
+  // Cap rendered DOM rows so a full-France dataset doesn't freeze the tab.
+  // The filtered list can be huge; we only paint a slice and grow on demand.
+  const RENDER_STEP = 300;
+  const [renderLimit, setRenderLimit] = useState(RENDER_STEP);
+
   const allCities = useMemo(() => {
     const set = new Set<string>();
     for (const s of salons) set.add(s.city);
@@ -678,6 +683,15 @@ function SalonsTable({
       return true;
     });
   }, [salons, query, cityFilter, addrFilter, googleFilter, statusFilter]);
+
+  // Reset the render cap whenever the filtered set changes, so a new search
+  // always starts from the top instead of inheriting a large previous limit.
+  const [shownFor, setShownFor] = useState(visible);
+  if (shownFor !== visible) {
+    setShownFor(visible);
+    setRenderLimit(RENDER_STEP);
+  }
+  const shownSalons = visible.slice(0, renderLimit);
 
   const submit = () => {
     if (!form.name.trim() || !form.city.trim()) return;
@@ -773,7 +787,7 @@ function SalonsTable({
             <tr><Th>Ville</Th><Th>Zone</Th><Th>Nom</Th><Th>Adresse</Th><Th>Tél</Th><Th>Visites</Th><Th>Actif</Th></tr>
           </thead>
           <tbody>
-            {visible.map((s) => (
+            {shownSalons.map((s) => (
               <tr key={s.id} style={{ borderTop: '1px solid var(--border-subtle)' }}>
                 <Td>{s.city}</Td>
                 <Td>{s.zoneId ? zoneById.get(s.zoneId)?.name ?? '—' : <span style={{ color: 'var(--text-3)' }}>—</span>}</Td>
@@ -789,12 +803,25 @@ function SalonsTable({
             ))}
           </tbody>
         </table>
+        {visible.length > renderLimit && (
+          <div style={{ padding: 12, textAlign: 'center', borderTop: '1px solid var(--border-subtle)' }}>
+            <button
+              onClick={() => setRenderLimit((n) => n + RENDER_STEP)}
+              style={miniBtnStyle}
+            >
+              Afficher plus ({shownSalons.length} / {visible.length})
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 function VisitsTable({ visits }: { visits: Visit[] }) {
+  const RENDER_STEP = 300;
+  const [renderLimit, setRenderLimit] = useState(RENDER_STEP);
+  const shown = visits.slice(0, renderLimit);
   if (visits.length === 0) return <Empty>Aucune visite enregistrée pour le moment.</Empty>;
   return (
     <div style={{
@@ -807,7 +834,7 @@ function VisitsTable({ visits }: { visits: Visit[] }) {
             <tr><Th>Date</Th><Th>Ville</Th><Th>Établissement</Th><Th>Ambassadeur</Th><Th>GPS</Th><Th>Flyer</Th><Th>Convaincu</Th><Th>Note</Th><Th>Relance</Th><Th>Notes</Th></tr>
           </thead>
           <tbody>
-            {visits.map((v) => (
+            {shown.map((v) => (
               <tr key={v.id} style={{ borderTop: '1px solid var(--border-subtle)' }}>
                 <Td>{fmtDate(v.visitedAt)}</Td>
                 <Td>{v.salonCity}</Td>
@@ -835,6 +862,16 @@ function VisitsTable({ visits }: { visits: Visit[] }) {
             ))}
           </tbody>
         </table>
+        {visits.length > renderLimit && (
+          <div style={{ padding: 12, textAlign: 'center', borderTop: '1px solid var(--border-subtle)' }}>
+            <button
+              onClick={() => setRenderLimit((n) => n + RENDER_STEP)}
+              style={miniBtnStyle}
+            >
+              Afficher plus ({shown.length} / {visits.length})
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
