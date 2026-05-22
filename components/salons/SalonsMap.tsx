@@ -198,6 +198,51 @@ function clusterIcon(cluster: ClusterLike): L.DivIcon {
   });
 }
 
+// ─── Viewport-culled markers ─────────────────────────────────────────────────
+
+// Hard cap on simultaneously-mounted markers. react-leaflet builds a React
+// component per marker (+ its popup), so mounting tens of thousands at once
+// freezes the main thread even with clustering. We therefore only mount the
+// markers inside the current viewport (padded for smooth panning) and refresh
+// the set on every pan/zoom — same idea as Google Maps loading on demand.
+const MARKER_CAP = 2000;
+
+function ViewportMarkers<S extends { id: string; lat: number | null; lon: number | null }>({
+  salons, renderMarker,
+}: {
+  salons: S[];
+  renderMarker: (s: S) => React.ReactNode;
+}) {
+  const map = useMap();
+  const [bounds, setBounds] = useState<L.LatLngBounds | null>(null);
+
+  useEffect(() => {
+    const update = () => setBounds(map.getBounds().pad(0.25));
+    update();
+    map.on('moveend', update);
+    map.on('zoomend', update);
+    return () => {
+      map.off('moveend', update);
+      map.off('zoomend', update);
+    };
+  }, [map]);
+
+  const visible = useMemo(() => {
+    if (!bounds) return [] as S[];
+    const out: S[] = [];
+    for (const s of salons) {
+      if (s.lat == null || s.lon == null) continue;
+      if (bounds.contains([s.lat, s.lon])) {
+        out.push(s);
+        if (out.length >= MARKER_CAP) break;
+      }
+    }
+    return out;
+  }, [salons, bounds]);
+
+  return <>{visible.map(renderMarker)}</>;
+}
+
 // ─── Helpers for fitting/locating ────────────────────────────────────────────
 
 function FitToBbox({ bbox }: { bbox: CommonProps['initialBbox'] }) {
@@ -485,13 +530,16 @@ function AmbassadorMap({
           <FitToBbox bbox={initialBbox ?? null} />
           <UserLocation />
           <MarkerClusterGroup chunkedLoading iconCreateFunction={clusterIcon}>
-            {filtered.map((s) => (
-              <Marker key={s.id} position={[s.lat as number, s.lon as number]} icon={ambassadorIcon(s)}>
-                <Popup>
-                  <AmbassadorPopup salon={s} onLogVisit={onLogVisit} />
-                </Popup>
-              </Marker>
-            ))}
+            <ViewportMarkers
+              salons={filtered}
+              renderMarker={(s) => (
+                <Marker key={s.id} position={[s.lat as number, s.lon as number]} icon={ambassadorIcon(s)}>
+                  <Popup>
+                    <AmbassadorPopup salon={s} onLogVisit={onLogVisit} />
+                  </Popup>
+                </Marker>
+              )}
+            />
           </MarkerClusterGroup>
         </MapContainer>
       </div>
@@ -594,13 +642,16 @@ function AdminMap({
           ))}
 
           <MarkerClusterGroup chunkedLoading iconCreateFunction={clusterIcon}>
-            {f.filtered.map((s) => (
-              <Marker key={s.id} position={[s.lat as number, s.lon as number]} icon={adminIcon(s)}>
-                <Popup>
-                  <AdminPopup salon={s} />
-                </Popup>
-              </Marker>
-            ))}
+            <ViewportMarkers
+              salons={f.filtered}
+              renderMarker={(s) => (
+                <Marker key={s.id} position={[s.lat as number, s.lon as number]} icon={adminIcon(s)}>
+                  <Popup>
+                    <AdminPopup salon={s} />
+                  </Popup>
+                </Marker>
+              )}
+            />
           </MarkerClusterGroup>
         </MapContainer>
       </div>
