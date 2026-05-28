@@ -248,6 +248,13 @@ async function fetchHtml(url: string): Promise<string | null> {
         },
         redirect: 'follow',
       });
+      // A redirect could have landed us on an internal address even though the
+      // initial host passed the SSRF guard — re-validate the final URL.
+      try {
+        if (isBlockedHost(new URL(res.url).hostname)) continue;
+      } catch {
+        continue;
+      }
       if (!res.ok) continue;
       const ct = res.headers.get('content-type') ?? '';
       if (!ct.includes('text/html') && !ct.includes('application/xhtml')) continue;
@@ -260,12 +267,35 @@ async function fetchHtml(url: string): Promise<string | null> {
   return null;
 }
 
+// SSRF guard: the website value originates from a third-party (the public
+// company registry), so a malicious registrant could point it at an internal
+// address (cloud metadata, localhost, private ranges) to make our server fetch
+// it. Reject IP-literal hosts and known-internal hostnames outright — legit FR
+// businesses always use real domain names, never raw IPs.
+function isBlockedHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/\.$/, '');
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) {
+    return true;
+  }
+  // IPv6 literals (URL hostname strips the brackets) — block all of them.
+  if (h.includes(':')) return true;
+  // Block ALL IPv4 literals (loopback, private, link-local incl. the
+  // 169.254.169.254 cloud-metadata endpoint, CGNAT, etc.). A registered
+  // business website is always a domain name, never a raw IP.
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return true;
+  return false;
+}
+
 function normaliseUrl(raw: string): string | null {
   let s = raw.trim();
   if (!s) return null;
   if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
   try {
     const u = new URL(s);
+    // Only ever speak http(s) — block file:, gopher:, etc.
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    // SSRF: refuse internal / IP-literal targets.
+    if (isBlockedHost(u.hostname)) return null;
     // Drop obvious placeholder / parking-page / social-only "websites".
     if (/\.parkingcrew\.|\.dan\.com$|example\.com$|sedoparking\.com$/i.test(u.hostname)) return null;
     if (/^(www\.)?(facebook|instagram|linkedin|twitter|tiktok|youtube)\.com$/i.test(u.hostname)) return null;

@@ -145,7 +145,18 @@ function buildAddress(t: Record<string, string>): string | null {
  * the parent centroid (guard against ambiguous OSM names).
  */
 export async function fetchZonesForCity(city: string): Promise<OsmZone[]> {
-  const safeCity = city.replace(/["\\]/g, ' ').trim();
+  // The city name is interpolated into an Overpass QL string literal. Stripping
+  // quotes/backslashes already prevents breaking out of the "name"="..." literal;
+  // we additionally whitelist to the characters that legitimately appear in
+  // French place names (letters incl. accents, digits, spaces, hyphens,
+  // apostrophes, dots) so no Overpass operator can survive even if the literal
+  // framing ever changes. Cap the length to bound query cost.
+  const safeCity = city
+    .replace(/["\\]/g, ' ')
+    .replace(/[^\p{L}\p{N}\s.'’-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
   if (!safeCity) return [];
 
   function bboxCentre(b: { minlat: number; minlon: number; maxlat: number; maxlon: number }) {
