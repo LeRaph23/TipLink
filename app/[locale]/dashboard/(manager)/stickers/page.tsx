@@ -23,6 +23,25 @@ export default async function StickersPage({
     `)
     .order('created_at', { ascending: false });
 
+  // Establishments the caller manages — offered as re-assignment targets so a
+  // multi-salon admin can move a tag between their own establishments.
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: roleRows } = await supabase
+    .from('user_roles')
+    .select('group_id')
+    .eq('user_id', user!.id)
+    .in('role', ['group_admin', 'super_admin'])
+    .not('group_id', 'is', null);
+  const groupIds = [...new Set((roleRows ?? []).map((r) => r.group_id as string))];
+  const { data: establishments } = groupIds.length
+    ? await supabase
+        .from('establishments')
+        .select('id, name')
+        .in('group_id', groupIds)
+        .is('deleted_at', null)
+        .order('name')
+    : { data: [] };
+
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
@@ -49,7 +68,7 @@ export default async function StickersPage({
         </p>
       </div>
 
-      <StickerList stickers={stickers ?? []} baseUrl={getBaseUrl()} />
+      <StickerList stickers={stickers ?? []} establishments={establishments ?? []} baseUrl={getBaseUrl()} />
     </div>
   );
 }

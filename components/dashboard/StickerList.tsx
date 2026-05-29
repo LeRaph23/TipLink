@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
+import { assignTagToOwnEstablishment } from '@/actions/stickers';
 
 interface Sticker {
   id: string;
@@ -10,16 +11,39 @@ interface Sticker {
   establishments: { id: string; name: string } | null;
 }
 
+interface Establishment {
+  id: string;
+  name: string;
+}
+
 interface Props {
   stickers: Sticker[];
+  establishments?: Establishment[];
   baseUrl: string;
 }
 
-export function StickerList({ stickers, baseUrl }: Props) {
+export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
   const t = useTranslations('dashboard.stickers');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrShortId, setQrShortId] = useState<string | null>(null);
+  const [reassignError, setReassignError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Only worth offering a re-assignment selector when the admin has more than
+  // one establishment to move a tag between (the multi-salon case).
+  const canReassign = establishments.length > 1;
+
+  const handleReassign = (stickerId: string, establishmentId: string) => {
+    setReassignError(null);
+    setSavingId(stickerId);
+    startTransition(async () => {
+      const res = await assignTagToOwnEstablishment(stickerId, establishmentId);
+      if ('error' in res) setReassignError(res.error);
+      setSavingId(null);
+    });
+  };
 
   // Close modal on Escape
   useEffect(() => {
@@ -53,6 +77,14 @@ export function StickerList({ stickers, baseUrl }: Props) {
 
   return (
     <>
+      {reassignError && (
+        <div style={{
+          fontSize: 12.5, color: 'var(--error)', background: 'var(--error-bg)',
+          padding: '10px 14px', borderRadius: 'var(--radius-sm)', marginBottom: 12,
+        }}>
+          {reassignError}
+        </div>
+      )}
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius)', overflow: 'hidden',
@@ -90,7 +122,26 @@ export function StickerList({ stickers, baseUrl }: Props) {
                     }}>{s.short_id}</code>
                   </td>
                   <td style={{ padding: '11px 16px', color: 'var(--text-2)' }}>
-                    {s.establishments?.name ?? '—'}
+                    {canReassign ? (
+                      <select
+                        value={s.establishments?.id ?? ''}
+                        disabled={savingId === s.id || !s.establishments}
+                        onChange={(e) => handleReassign(s.id, e.target.value)}
+                        style={{
+                          fontSize: 12.5, padding: '5px 8px', borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border)', background: 'var(--surface)',
+                          color: 'var(--text-2)', fontFamily: 'var(--font)', maxWidth: 200,
+                          cursor: s.establishments ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        {!s.establishments && <option value="">—</option>}
+                        {establishments.map((e) => (
+                          <option key={e.id} value={e.id}>{e.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      s.establishments?.name ?? '—'
+                    )}
                   </td>
                   <td style={{ padding: '11px 16px' }}>
                     <a
