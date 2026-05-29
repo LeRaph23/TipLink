@@ -73,6 +73,34 @@ function makeSlug(name: string): string {
     .slice(0, 80);
 }
 
+// `establishments.slug` is UNIQUE. Two salons with the same name (or the same
+// salon retrying onboarding after the Stripe webhook already provisioned a
+// name-based slug) would otherwise violate `establishments_slug_key`. This
+// derives a base slug from the name and appends a short suffix until it's free,
+// ignoring the row being updated (excludeId) so re-saving the same name is a
+// no-op rather than a false collision.
+async function makeUniqueSlug(
+  service: ReturnType<typeof createServiceClient>,
+  name: string,
+  excludeId?: string
+): Promise<string> {
+  const base = makeSlug(name) || 'salon';
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const candidate =
+      attempt === 0 ? base : `${base.slice(0, 72)}-${Math.random().toString(36).slice(2, 8)}`;
+    let query = service
+      .from('establishments')
+      .select('id')
+      .eq('slug', candidate)
+      .limit(1);
+    if (excludeId) query = query.neq('id', excludeId);
+    const { data } = await query.maybeSingle();
+    if (!data) return candidate;
+  }
+  // Extremely unlikely fallback: guaranteed-unique slug.
+  return `${base.slice(0, 60)}-${Date.now().toString(36)}`;
+}
+
 
 // Validates a single NFC short_id and returns its DB id if it's unassigned.
 export async function validateSmartTagCode(
@@ -133,7 +161,7 @@ export async function completePostPurchaseOnboarding(
   if (!est) return { error: 'Aucun établissement trouvé.' };
 
   const { establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
-  const slug = makeSlug(establishmentName);
+  const slug = await makeUniqueSlug(service, establishmentName, est.id);
 
   // Update establishment
   const { error: estErr } = await service
@@ -259,7 +287,7 @@ export async function completeExpressOnboarding(
 
   if (!est) return { error: 'Établissement introuvable.' };
 
-  const slug = makeSlug(establishmentName);
+  const slug = await makeUniqueSlug(service, establishmentName, est.id);
 
   // Update establishment with wizard data
   const { error: estErr } = await service
@@ -347,7 +375,7 @@ export async function completeNfcOnboarding(
   if (userErr || !user) return { error: 'Utilisateur introuvable.' };
 
   const normalizedCodes = nfcCodes.map((c) => c.trim().toLowerCase());
-  const slug = makeSlug(establishmentName);
+  const slug = await makeUniqueSlug(service, establishmentName);
 
   // Create group
   const { data: group, error: groupErr } = await service
