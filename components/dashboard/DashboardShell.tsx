@@ -28,7 +28,7 @@ export function DashboardShell({ userRoles, userEmail, userName, hasStaffProfile
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--bg)' }}>
       {/* Mobile backdrop */}
       {open && (
         <div

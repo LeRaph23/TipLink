@@ -198,7 +198,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
 
   return (
     <aside style={{
-      width: 'var(--sidebar-w)', flexShrink: 0, height: '100vh',
+      width: 'var(--sidebar-w)', flexShrink: 0, height: '100dvh',
       background: 'var(--bg-subtle)', borderRight: '1px solid var(--border-subtle)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       position: 'sticky', top: 0,
@@ -235,8 +235,9 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
         )}
       </nav>
 
-      {/* User footer */}
-      <div style={{ padding: 8, borderTop: '1px solid var(--border-subtle)', position: 'relative' }} ref={menuRef}>
+      {/* User footer — extra bottom padding keeps the profile clear of the
+          iOS home indicator / Safari toolbar (safe-area inset). */}
+      <div style={{ padding: 8, paddingBottom: 'calc(8px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--border-subtle)', position: 'relative' }} ref={menuRef}>
         <button
           onClick={() => setMenuOpen(o => !o)}
           style={{
