@@ -9,6 +9,7 @@ import { createPackInvoiceForPaymentIntent } from '@/lib/stripe/pack-invoice';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
+import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -753,9 +754,7 @@ async function handleEvent(
         }
 
         // Auto-provision establishment for the express checkout group
-        const expressSlug = legalName.toLowerCase()
-          .normalize('NFD').replace(/[̀-ͯ]/g, '')
-          .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const expressSlug = await makeUniqueEstablishmentSlug(supabase, legalName);
         const expressCountry = (shipping?.address?.country ?? 'FR').toUpperCase();
         const expressLocale = session.locale?.startsWith('fr') ? 'fr' : 'en';
 
@@ -968,7 +967,7 @@ async function handleEvent(
           .single();
 
         const estName = grp?.legal_name ?? grp?.name ?? 'Mon établissement';
-        const slug = estName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const slug = await makeUniqueEstablishmentSlug(supabase, estName);
         const country = (shipping?.address?.country ?? 'FR').toUpperCase();
 
         await supabase.from('establishments').insert({
@@ -1189,17 +1188,14 @@ async function handlePackExpressPaid(
   }
 
   // Provision a starter establishment so the tip flow works immediately
-  const slug = legalName
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = await makeUniqueEstablishmentSlug(supabase, legalName);
   const country = (shipping?.address?.country ?? 'FR').toUpperCase();
 
   await supabase.from('establishments').insert({
     group_id: newGroup.id,
     name: legalName,
     business_type: 'beauty',
-    slug: slug || `group-${newGroup.id.slice(0, 8)}`,
+    slug,
     country,
     currency: 'eur',
     onboarding_status: 'not_started',
@@ -1368,15 +1364,13 @@ async function handlePackOrderPaid(
       .eq('id', groupId)
       .single();
     const estName = grp?.legal_name ?? grp?.name ?? 'Mon établissement';
-    const slug = estName.toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = await makeUniqueEstablishmentSlug(supabase, estName);
     const country = (shipping?.address?.country ?? 'FR').toUpperCase();
     await supabase.from('establishments').insert({
       group_id: groupId,
       name: estName,
       business_type: 'beauty',
-      slug: slug || `group-${groupId.slice(0, 8)}`,
+      slug,
       country,
       currency: 'eur',
       onboarding_status: 'not_started',

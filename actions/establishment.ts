@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
+import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 
 const EstSchema = z.object({
   name: z.string().min(1).max(200),
@@ -26,9 +27,9 @@ export async function createEstablishment(
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
 
   const { name, business_type, country, currency } = parsed.data;
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   const service = createServiceClient();
+  const slug = await makeUniqueEstablishmentSlug(service, name);
   const { data, error } = await service
     .from('establishments')
     .insert({
@@ -70,10 +71,14 @@ export async function updateEstablishment(
 
   if (Object.keys(input).length === 0) return { success: true };
 
+  const slug = input.name
+    ? await makeUniqueEstablishmentSlug(service, input.name, estId)
+    : undefined;
+
   const { error } = await service
     .from('establishments')
     .update({
-      ...(input.name ? { name: input.name, slug: input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') } : {}),
+      ...(input.name ? { name: input.name, slug } : {}),
       ...(input.business_type ? { business_type: input.business_type } : {}),
       ...(input.country ? { country: input.country.toUpperCase() } : {}),
       ...(input.currency ? { currency: input.currency.toLowerCase() } : {}),
