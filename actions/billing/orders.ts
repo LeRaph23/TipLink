@@ -110,7 +110,10 @@ export async function cancelMyOrder(
 }
 
 // Resolves the amount + currency + payment-method label for the customer
-// detail view. Pure read — fine to call from a server component.
+// detail view. Reads Stripe payment data (amount, receipt URL), so it MUST be
+// gated: the caller has to own the order's group (or be super_admin). Without
+// this check any user could enumerate orderIds and read other salons' payment
+// info / receipts.
 export async function getOrderPaymentSummary(
   orderId: string
 ): Promise<
@@ -120,13 +123,27 @@ export async function getOrderPaymentSummary(
     }
   | { ok: false; error: string }
 > {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Unauthorized' };
+
   const service = createServiceClient();
   const { data: order } = await service
     .from('smarttag_orders')
-    .select('stripe_payment_intent_id, stripe_checkout_session_id')
+    .select('group_id, stripe_payment_intent_id, stripe_checkout_session_id')
     .eq('id', orderId)
     .single();
   if (!order) return { ok: false, error: 'Order not found' };
+
+  // Caller must be group_admin (or super_admin) of the order's group.
+  const { data: roles } = await service
+    .from('user_roles')
+    .select('role, group_id')
+    .eq('user_id', user.id);
+  const canManage =
+    (roles ?? []).some((r) => r.role === 'super_admin') ||
+    (roles ?? []).some((r) => r.role === 'group_admin' && r.group_id === order.group_id);
+  if (!canManage) return { ok: false, error: 'Forbidden' };
 
   try {
     if (order.stripe_payment_intent_id) {
