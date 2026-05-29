@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import {
@@ -20,26 +19,30 @@ import {
 export async function getStripeOnboardingLink(): Promise<
   { ok: true; url: string } | { error: string }
 > {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
-
-  const service = createServiceClient();
-  let { data: profile } = await service
-    .from('staff_profiles')
-    .select('id, stripe_account_id, onboarding_status')
-    .eq('user_id', user.id)
-    .is('deleted_at', null)
-    .maybeSingle();
-
-  // A group admin who opted into receiving tips may not have a staff profile
-  // yet — bootstrap one against their first establishment.
-  if (!profile) {
-    profile = await bootstrapAdminStaffProfile(service, user.id, user.email, user.user_metadata);
-    if (!profile) return { error: 'Aucun profil staff trouvé.' };
-  }
-
+  // Everything is wrapped so a transient auth/DB hiccup returns a clean
+  // {error} the form can show inline — it must never throw to the route error
+  // boundary (the generic "Réessayer" screen) while the user waits for the
+  // slow Stripe call.
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized' };
+
+    const service = createServiceClient();
+    let { data: profile } = await service
+      .from('staff_profiles')
+      .select('id, stripe_account_id, onboarding_status')
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    // A group admin who opted into receiving tips may not have a staff profile
+    // yet — bootstrap one against their first establishment.
+    if (!profile) {
+      profile = await bootstrapAdminStaffProfile(service, user.id, user.email, user.user_metadata);
+      if (!profile) return { error: 'Aucun profil staff trouvé.' };
+    }
+
     let accountId = profile.stripe_account_id;
     if (!accountId) {
       accountId = await createStandardAccount({
@@ -58,7 +61,9 @@ export async function getStripeOnboardingLink(): Promise<
       staffBankingReturnUrls(),
       profile.onboarding_status === 'complete' ? 'account_update' : 'account_onboarding',
     );
-    revalidatePath('/dashboard/banking');
+    // No revalidatePath here: we immediately redirect the browser to Stripe
+    // (an external URL), so refreshing the page we're leaving is wasteful and
+    // can flash the route error boundary mid-redirect.
     return { ok: true, url };
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erreur Stripe';
