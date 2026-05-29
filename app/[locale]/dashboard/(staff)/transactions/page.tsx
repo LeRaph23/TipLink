@@ -33,9 +33,13 @@ export default async function StaffTransactionsPage({
   const { data: staffProfile } = await supabase
     .from('staff_profiles').select('id').eq('user_id', user!.id).is('deleted_at', null).maybeSingle();
 
-  const { data: transactions } = await supabase
-    .from('transactions').select('id, amount, currency, status, created_at')
-    .eq('staff_id', staffProfile?.id ?? '').order('created_at', { ascending: false }).limit(100);
+  // Without a staff profile there are no tips to show — and filtering on an
+  // empty staff_id would send '' to a UUID column (Postgres syntax error).
+  const { data: transactions } = staffProfile
+    ? await supabase
+        .from('transactions').select('id, amount, currency, status, created_at')
+        .eq('staff_id', staffProfile.id).order('created_at', { ascending: false }).limit(100)
+    : { data: null };
 
   const currency = transactions?.[0]?.currency ?? 'EUR';
   const fmt = new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 });

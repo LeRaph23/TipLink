@@ -46,30 +46,42 @@ export default async function DashboardPage({
 
   const isGroupAdmin = roles?.some((r) => r.role === 'group_admin' || r.role === 'super_admin') ?? false;
 
-  const { data: recentTransactions } = await supabase
-    .from('transactions')
-    .select('id, amount, currency, created_at, status')
-    .eq('staff_id', staffProfile?.id ?? '')
-    .order('created_at', { ascending: false })
-    .limit(5);
-
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const fourteenDaysAgoIso = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: trendWindow } = await supabase
-    .from('transactions')
-    .select('amount, created_at, status')
-    .eq('staff_id', staffProfile?.id ?? '')
-    .eq('status', 'succeeded')
-    .gte('created_at', fourteenDaysAgoIso);
+
+  // All tip queries below filter on the staff profile id. Without a profile
+  // there are no tips — and filtering on an empty staff_id would send '' to a
+  // UUID column (Postgres syntax error), so skip the queries entirely.
+  const staffId = staffProfile?.id ?? null;
+
+  const { data: recentTransactions } = staffId
+    ? await supabase
+        .from('transactions')
+        .select('id, amount, currency, created_at, status')
+        .eq('staff_id', staffId)
+        .order('created_at', { ascending: false })
+        .limit(5)
+    : { data: null };
+
+  const { data: trendWindow } = staffId
+    ? await supabase
+        .from('transactions')
+        .select('amount, created_at, status')
+        .eq('staff_id', staffId)
+        .eq('status', 'succeeded')
+        .gte('created_at', fourteenDaysAgoIso)
+    : { data: null };
 
   // All-time aggregate. A single SELECT sum() would be cleaner, but
   // staff dashboards only have O(1k) rows so we just fetch amounts.
-  const { data: allTimeRows } = await supabase
-    .from('transactions')
-    .select('amount, currency')
-    .eq('staff_id', staffProfile?.id ?? '')
-    .eq('status', 'succeeded');
+  const { data: allTimeRows } = staffId
+    ? await supabase
+        .from('transactions')
+        .select('amount, currency')
+        .eq('staff_id', staffId)
+        .eq('status', 'succeeded')
+    : { data: null };
   const weekMs = 7 * 24 * 60 * 60 * 1000;
   const thisWeekTxs = trendWindow?.filter((t) => now - new Date(t.created_at).getTime() < weekMs) ?? [];
   const thisWeekTotal = thisWeekTxs.reduce((sum, t) => sum + t.amount, 0);

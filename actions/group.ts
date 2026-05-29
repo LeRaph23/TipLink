@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
+import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 
 interface UpdateGroupInput {
   groupId: string;
@@ -126,7 +127,7 @@ export async function createSalon(input: {
 
   if (ge || !group) return { error: ge?.message ?? 'Failed to create group' };
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = await makeUniqueEstablishmentSlug(service, name);
 
   const { data: est, error: ee } = await service
     .from('establishments')
