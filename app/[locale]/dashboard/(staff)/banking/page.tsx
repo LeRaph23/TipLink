@@ -9,6 +9,29 @@ const card: React.CSSProperties = {
   borderRadius: 'var(--radius)', padding: '24px',
 };
 
+// Line-style icons matching the dashboard set (currentColor stroke).
+function UserIcon({ size = 26 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="5" r="3" /><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" />
+    </svg>
+  );
+}
+function CheckCircleIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6.5" /><path d="M5.3 8.2l1.8 1.8 3.6-3.8" />
+    </svg>
+  );
+}
+function ClockIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6.5" /><path d="M8 4.5V8l2.5 1.5" />
+    </svg>
+  );
+}
+
 export default async function BankingPage({
   params,
 }: {
@@ -65,7 +88,7 @@ export default async function BankingPage({
 
       {!canReceiveTips ? (
         <div style={{ ...card, textAlign: 'center', color: 'var(--text-3)', fontSize: 13.5, padding: '32px 24px' }}>
-          <div style={{ fontSize: 28, marginBottom: 12 }}>👤</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: 'var(--text-3)' }}><UserIcon /></div>
           <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Compte non rattaché</div>
           <div>
             Votre compte n&apos;est pas encore rattaché à un établissement.
@@ -95,7 +118,7 @@ export default async function BankingPage({
           <div style={card}>
             {isComplete ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-                <span style={{ fontSize: 16 }}>✓</span>
+                <span style={{ display: 'flex', color: 'var(--success)', flexShrink: 0 }}><CheckCircleIcon /></span>
                 <div>
                   <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--success)' }}>
                     Compte bancaire actif
@@ -107,7 +130,7 @@ export default async function BankingPage({
               </div>
             ) : hasAccount ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-                <span style={{ fontSize: 16 }}>⏳</span>
+                <span style={{ display: 'flex', color: 'var(--warning)', flexShrink: 0 }}><ClockIcon /></span>
                 <div>
                   <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--warning)' }}>
                     Vérification en cours

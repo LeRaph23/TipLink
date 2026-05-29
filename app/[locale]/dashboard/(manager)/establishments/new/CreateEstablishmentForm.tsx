@@ -63,7 +63,9 @@ export function CreateEstablishmentForm() {
         background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-sm, 8px)', padding: '12px 14px',
       }}>
-        <span aria-hidden style={{ fontSize: 16, flexShrink: 0, lineHeight: 1.4 }}>💡</span>
+        <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1, color: 'var(--text-3)' }}>
+          <circle cx="8" cy="8" r="6.5" /><path d="M8 7.5v3.5" /><path d="M8 5h.01" />
+        </svg>
         <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.55, margin: 0 }}>
           {t('createHint')}
         </p>

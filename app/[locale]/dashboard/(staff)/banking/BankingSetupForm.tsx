@@ -21,23 +21,39 @@ interface Props {
   mode: 'setup' | 'update';
 }
 
+// Line-style icons matching the dashboard nav set (16×16, currentColor stroke).
+const svgBase = {
+  width: 28, height: 28, viewBox: '0 0 16 16', fill: 'none',
+  stroke: 'currentColor', strokeWidth: 1.4,
+  strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+};
+function CardIcon() {
+  return <svg {...svgBase}><rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><path d="M3.5 10.5h2.5" /></svg>;
+}
+function LockIcon() {
+  return <svg {...svgBase}><rect x="3" y="7" width="10" height="6.5" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 015 0v2" /></svg>;
+}
+function CheckIcon() {
+  return <svg {...svgBase}><circle cx="8" cy="8" r="6.5" /><path d="M5.3 8.2l1.8 1.8 3.6-3.8" /></svg>;
+}
+
 // One idea per screen, mobile-first: instead of a single dense reassurance
 // paragraph, the setup walks through three light cards (what happens →
 // privacy → go) before handing off to Stripe's hosted onboarding. The update
 // mode skips the explainer since the user has already been through it once.
 const STEPS = [
   {
-    icon: '💸',
+    Icon: CardIcon,
     title: 'Vos pourboires sur votre compte',
     body: 'Configurez vos virements en 2 minutes avec Stripe, notre partenaire de paiement.',
   },
   {
-    icon: '🔒',
+    Icon: LockIcon,
     title: 'Vos données restent privées',
     body: 'C’est Stripe qui collecte et chiffre votre pièce d’identité et votre IBAN. Digitip ne les voit jamais.',
   },
   {
-    icon: '✅',
+    Icon: CheckIcon,
     title: 'Prêt à configurer',
     body: 'Vous allez être redirigé vers Stripe. Vous revenez ici dès que c’est terminé, et vos pourboires arrivent ensuite automatiquement.',
   },
@@ -97,7 +113,14 @@ export function BankingSetupForm({ mode }: Props) {
           animation: 'onbSlideIn 220ms ease-out',
         }}
       >
-        <span style={{ fontSize: 34, lineHeight: 1 }} aria-hidden>{step.icon}</span>
+        <span aria-hidden style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 52, height: 52, borderRadius: 14, marginBottom: 2,
+          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+          color: 'var(--accent)',
+        }}>
+          <step.Icon />
+        </span>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
           {step.title}
         </div>
