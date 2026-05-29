@@ -117,18 +117,67 @@ const TRUST: Trust[] = [
   },
 ];
 
-const FAQ: Array<{ q: string; a: string }> = [
+const faqList: React.CSSProperties = {
+  listStyle: 'none', padding: 0, margin: '8px 0 0',
+  display: 'flex', flexDirection: 'column', gap: 6,
+};
+const faqItem: React.CSSProperties = {
+  display: 'flex', alignItems: 'flex-start', gap: 8,
+};
+
+function FaqBullet({ children }: { children: React.ReactNode }) {
+  return (
+    <li style={faqItem}>
+      <Icon name="check" size={14} strokeWidth={2} style={{ color: 'var(--accent)', marginTop: 3 }} />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   {
     q: 'Quelle différence concrète avec le programme Ambassadeurs ?',
-    a: "Le programme Ambassadeurs s'adresse à un public large (étudiants, salariés, demandeurs d'emploi) avec un cadre micro-entreprise simplifié et 35-45 € par vente. Le programme Commerciaux Pros est réservé aux commerciaux professionnels disposant d'une structure juridique déclarée (auto-entreprise, EI, SARL, SAS…) avec contrat d'apporteur d'affaires formel et un barème supérieur de 50-65 € par vente.",
+    a: (
+      <>
+        Deux programmes, deux cadres :
+        <ul style={faqList}>
+          <FaqBullet>
+            <strong>Ambassadeurs</strong> — public large (étudiants, salariés, demandeurs d&apos;emploi),
+            cadre micro-entreprise simplifié, 35-45 € par vente.
+          </FaqBullet>
+          <FaqBullet>
+            <strong>Commerciaux Pros</strong> — réservé aux commerciaux professionnels avec structure
+            juridique déclarée (auto-entreprise, EI, SARL, SAS…), contrat d&apos;apporteur d&apos;affaires
+            formel, barème supérieur de 50-65 € par vente.
+          </FaqBullet>
+        </ul>
+      </>
+    ),
   },
   {
     q: 'Faut-il une carte de VRP ou une inscription RSAC ?',
-    a: "Pas obligatoirement. Le programme est ouvert à tout commercial exerçant sous un statut juridique déclaré : VRP statutaire, agent commercial inscrit au RSAC, auto-entrepreneur, EI, SARL, SAS. Le SIRET est en revanche obligatoire dès la candidature (contrairement au programme Ambassadeurs).",
+    a: (
+      <>
+        Pas obligatoirement. Le programme est ouvert à tout commercial exerçant sous un statut juridique
+        déclaré : VRP statutaire, agent commercial inscrit au RSAC, auto-entrepreneur, EI, SARL, SAS.
+        <ul style={faqList}>
+          <FaqBullet>Le SIRET est en revanche obligatoire dès la candidature (contrairement au programme Ambassadeurs).</FaqBullet>
+        </ul>
+      </>
+    ),
   },
   {
     q: 'Quelles sont les modalités de facturation ?',
-    a: "Vous nous adressez une facture mensuelle (ou trimestrielle, à convenir) reprenant l'ensemble de vos commissions de la période. Si vous êtes assujetti à la TVA, vous la mentionnez ; sinon, vous indiquez « TVA non applicable, article 293 B du CGI ». Un modèle de facture est fourni à la signature du contrat.",
+    a: (
+      <>
+        Vous nous adressez une facture reprenant vos commissions de la période :
+        <ul style={faqList}>
+          <FaqBullet>Rythme mensuel ou trimestriel, à convenir.</FaqBullet>
+          <FaqBullet>Assujetti à la TVA : vous la mentionnez. Sinon : « TVA non applicable, article 293 B du CGI ».</FaqBullet>
+          <FaqBullet>Un modèle de facture est fourni à la signature du contrat.</FaqBullet>
+        </ul>
+      </>
+    ),
   },
   {
     q: 'Comment se passe l\'attribution des ventes ?',
@@ -273,12 +322,21 @@ export default async function DevenirCommercialProPage({
           <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.035em', lineHeight: 1.15, margin: '0 0 14px', fontFamily: 'var(--font-display)' }}>
             Le programme partenaire pensé pour les commerciaux indépendants.
           </h1>
-          <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 24px' }}>
+          <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 18px' }}>
             Réservé aux <strong style={{ color: 'var(--text)' }}>VRP, agents commerciaux et indépendants B2B</strong> disposant
-            d&apos;une structure juridique déclarée. Vous représentez nos SmartTags NFC auprès des commerces de proximité, sous
-            contrat d&apos;apporteur d&apos;affaires formel. Barème supérieur :
-            <strong style={{ color: 'var(--accent)' }}> 50 € par pack Solo, 65 € par pack Duo.</strong>
+            d&apos;une structure juridique déclarée. Vous représentez nos SmartTags NFC auprès des commerces de proximité.
           </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              <>Sous <strong style={{ color: 'var(--text)' }}>contrat d&apos;apporteur d&apos;affaires</strong> formel.</>,
+              <>Barème supérieur : <strong style={{ color: 'var(--accent)' }}>50 € par pack Solo, 65 € par pack Duo.</strong></>,
+            ].map((t, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
+                <Icon name="check" size={15} strokeWidth={2} style={{ color: 'var(--accent)', marginTop: 2 }} />
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
             {PERKS.map(p => (

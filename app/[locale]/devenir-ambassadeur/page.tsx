@@ -119,18 +119,69 @@ const TRUST: Trust[] = [
   },
 ];
 
-const FAQ: Array<{ q: string; a: string }> = [
+const faqList: React.CSSProperties = {
+  listStyle: 'none', padding: 0, margin: '8px 0 0',
+  display: 'flex', flexDirection: 'column', gap: 6,
+};
+const faqItem: React.CSSProperties = {
+  display: 'flex', alignItems: 'flex-start', gap: 8,
+};
+
+function FaqBullet({ children }: { children: React.ReactNode }) {
+  return (
+    <li style={faqItem}>
+      <Icon name="check" size={14} strokeWidth={2} style={{ color: 'var(--accent)', marginTop: 3 }} />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   {
     q: "L'activité est-elle légale et déclarée ?",
-    a: "Oui. Vous exercez en tant que micro-entrepreneur (auto-entrepreneur). Vous nous facturez vos commissions, vous déclarez votre chiffre d'affaires à l'URSSAF et payez vos cotisations selon le régime micro. C'est le cadre légal standard utilisé par la majorité des programmes d'apporteurs d'affaires en France.",
+    a: (
+      <>
+        Oui. Vous exercez en tant que micro-entrepreneur (auto-entrepreneur) :
+        <ul style={faqList}>
+          <FaqBullet>Vous nous facturez vos commissions.</FaqBullet>
+          <FaqBullet>Vous déclarez votre chiffre d&apos;affaires à l&apos;URSSAF et payez vos cotisations selon le régime micro.</FaqBullet>
+          <FaqBullet>C&apos;est le cadre légal standard des programmes d&apos;apporteurs d&apos;affaires en France.</FaqBullet>
+        </ul>
+      </>
+    ),
   },
   {
     q: "Faut-il déjà avoir un SIRET pour postuler ?",
-    a: "Non. Vous pouvez candidater sans SIRET. En revanche, pour démarcher activement, vous devrez avoir déclaré votre statut d'auto-entrepreneur — démarche gratuite, en ligne, environ 10 minutes sur autoentrepreneur.urssaf.fr. Vous pouvez démarcher dès le jour de la déclaration ; le numéro SIRET vous parvient quelques jours plus tard et sert à émettre vos factures.",
+    a: (
+      <>
+        Non, vous pouvez candidater sans SIRET. Pour démarcher activement, vous devrez avoir déclaré
+        votre statut d&apos;auto-entrepreneur :
+        <ul style={faqList}>
+          <FaqBullet>Démarche gratuite et en ligne, environ 10 minutes sur autoentrepreneur.urssaf.fr.</FaqBullet>
+          <FaqBullet>Vous pouvez démarcher dès le jour de la déclaration.</FaqBullet>
+          <FaqBullet>Le numéro SIRET arrive quelques jours plus tard et sert à émettre vos factures.</FaqBullet>
+        </ul>
+      </>
+    ),
   },
   {
     q: "Est-ce compatible avec ma situation actuelle ?",
-    a: "Oui, dans la quasi-totalité des cas. Le statut de micro-entrepreneur est cumulable avec : statut étudiant, contrat salarié (CDI/CDD), bourse, allocation chômage (ARE — à déclarer mensuellement à France Travail), retraite, congé parental, ou une autre activité indépendante. Seules certaines professions réglementées (fonctionnaires, professions médicales libérales) ont des restrictions à vérifier. Vous gérez votre temps : nos ambassadeurs actifs y consacrent en moyenne 5 heures par semaine.",
+    a: (
+      <>
+        Oui, dans la quasi-totalité des cas. Le statut de micro-entrepreneur est cumulable avec :
+        <ul style={faqList}>
+          <FaqBullet>Statut étudiant, bourse, congé parental.</FaqBullet>
+          <FaqBullet>Contrat salarié (CDI/CDD) ou une autre activité indépendante.</FaqBullet>
+          <FaqBullet>Allocation chômage (ARE) — à déclarer mensuellement à France Travail.</FaqBullet>
+          <FaqBullet>Retraite.</FaqBullet>
+        </ul>
+        <p style={{ margin: '10px 0 0' }}>
+          Seules certaines professions réglementées (fonctionnaires, professions médicales libérales)
+          ont des restrictions à vérifier. Vous gérez votre temps : nos ambassadeurs actifs y consacrent
+          en moyenne 5 heures par semaine.
+        </p>
+      </>
+    ),
   },
   {
     q: "Comment et quand suis-je payé ?",
@@ -227,12 +278,23 @@ export default async function DevenirAmbassadeurPage({
           <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1.1, margin: '0 0 14px', fontFamily: 'var(--font-display)' }}>
             Rejoignez le programme officiel d&apos;ambassadeurs Digitip.
           </h1>
-          <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 24px' }}>
+          <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 18px' }}>
             Vous présentez nos SmartTags NFC — un dispositif de pourboire sans contact — à des
-            commerces de proximité (coiffeurs, instituts d&apos;esthétique, restauration). Chaque vente vous
-            rapporte 35 à 45 €. Activité exercée en micro-entreprise, sans stock, sans avance financière,
-            sans horaires imposés.
+            commerces de proximité (coiffeurs, instituts d&apos;esthétique, restauration), et touchez
+            35 à 45 € par vente.
           </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexWrap: 'wrap', gap: '8px 18px' }}>
+            {[
+              'Activité en micro-entreprise',
+              'Sans stock ni avance financière',
+              'Sans horaires imposés',
+            ].map((t) => (
+              <li key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-2)' }}>
+                <Icon name="check" size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                {t}
+              </li>
+            ))}
+          </ul>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
             {PERKS.map(p => (
@@ -433,18 +495,27 @@ export default async function DevenirAmbassadeurPage({
             Vous accompagnez un public en recherche d&apos;activité&nbsp;?
           </h2>
           <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 14px' }}>
-            Cette page peut être partagée telle quelle par mail, sur un intranet, dans un atelier d&apos;insertion ou
-            sur les canaux d&apos;un BDE, d&apos;un service emploi-stage, d&apos;une mission locale ou d&apos;une structure
-            d&apos;accompagnement. L&apos;activité est déclarée, sans avance financière et compatible avec la plupart
-            des situations (étudiants, salariés, demandeurs d&apos;emploi, retraités).
+            Cette page peut être partagée telle quelle : mail, intranet, atelier d&apos;insertion, canaux d&apos;un BDE,
+            d&apos;un service emploi-stage, d&apos;une mission locale ou d&apos;une structure d&apos;accompagnement.
           </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              'Activité déclarée, sans avance financière.',
+              'Compatible avec la plupart des situations : étudiants, salariés, demandeurs d’emploi, retraités.',
+              'Brief sur demande : présentation, conditions, vigilance anti-fraude, contact référent.',
+            ].map((t) => (
+              <li key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
+                <Icon name="check" size={15} strokeWidth={2} style={{ color: 'var(--accent)', marginTop: 2 }} />
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
           <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 16px' }}>
-            Pour un brief détaillé (présentation du programme, conditions, points de vigilance anti-fraude,
-            contact référent), écrivez-nous à{' '}
+            Pour le brief détaillé, écrivez-nous à{' '}
             <a href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20institutionnelle" style={{ color: 'var(--accent)', fontWeight: 600 }}>
               contact@digitip.app
             </a>
-            . Nous répondons sous 48 h ouvrées.
+            . Réponse sous 48 h ouvrées.
           </p>
           <a
             href="mailto:contact@digitip.app?subject=Programme%20Ambassadeurs%20%C2%B7%20Demande%20institutionnelle"
