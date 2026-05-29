@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -175,9 +176,9 @@ export default async function GroupTipPage({
                   width: 48, height: 48, borderRadius: '50%',
                   background: 'var(--accent)', color: '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, flexShrink: 0,
+                  flexShrink: 0,
                 }}>
-                  👥
+                  <Icon name="users" size={22} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: '-0.01em', display: 'block' }}>

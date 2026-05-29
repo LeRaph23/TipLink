@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { AmountSelector } from '@/components/payment/AmountSelector';
+import { Icon } from '@/components/ambassadeur/icons';
 
 // Edge-safe: uses raw PostgREST fetch against a SECURITY DEFINER RPC
 // that only exposes whitelisted columns. No Supabase SDK import here.
@@ -130,11 +131,11 @@ export default async function StaffTipPage({
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 16px',
-              fontSize: 28,
+              color: 'var(--warning, #f59e0b)',
             }}
             aria-hidden
           >
-            ⏳
+            <Icon name="hourglass" size={28} />
           </div>
           <h1
             style={{

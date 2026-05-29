@@ -10,6 +10,7 @@ import {
   setAmbassadorPayoutsFrozen,
   setAmbassadorReferrer,
 } from '@/actions/admin/ambassadors';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export interface RosterAmbassador {
   id: string;
@@ -379,7 +380,7 @@ export function RosterManager({
                             padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
                             background: 'var(--warning-bg)', color: 'var(--warning)',
                           }}>
-                            ❄ Gelé
+                            <Icon name="snowflake" size={12} /> Gelé
                           </span>
                         )}
                       </div>
@@ -401,7 +402,9 @@ export function RosterManager({
                           disabled={isPending}
                           title={a.payouts_frozen ? 'Réautorise les virements' : 'Bloque les virements sans désactiver le compte'}
                         >
-                          {a.payouts_frozen ? '☀ Dégeler' : '❄ Geler'}
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            {a.payouts_frozen ? <><Icon name="sun" size={13} /> Dégeler</> : <><Icon name="snowflake" size={13} /> Geler</>}
+                          </span>
                         </button>
                         <button
                           style={btnSecondary}
@@ -409,7 +412,9 @@ export function RosterManager({
                           disabled={isPending}
                           title="Génère un nouveau lien d'activation et réinitialise le PIN"
                         >
-                          🔗 Lien
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <Icon name="link" size={13} /> Lien
+                          </span>
                         </button>
                         <button style={btnDanger} onClick={() => { setDeleteTarget(a); setDeleteError(null); }}>
                           Supprimer
@@ -436,8 +441,8 @@ export function RosterManager({
               Supprimer <strong>{deleteTarget.name}</strong> (code <code>{deleteTarget.promoCode}</code>) ?
               Cette action est <strong>irréversible</strong> et efface aussi ses payouts, parrainages, contrats et logs email.
               {deleteTarget.salesCount > 0 && (
-                <span style={{ color: 'var(--warning)', display: 'block', marginTop: 8 }}>
-                  ⚠️ Cet ambassadeur a {deleteTarget.salesCount} vente(s). La suppression sera refusée — désactivez-le plutôt.
+                <span style={{ color: 'var(--warning)', display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
+                  <Icon name="alert" size={14} style={{ flexShrink: 0, marginTop: 1 }} /> Cet ambassadeur a {deleteTarget.salesCount} vente(s). La suppression sera refusée — désactivez-le plutôt.
                 </span>
               )}
             </p>
@@ -464,8 +469,8 @@ function SetupUrlBanner({ data, onDismiss }: { data: { name: string; url: string
     <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>
-            ✓ {data.name} créé. Envoyez-lui ce lien d&apos;activation :
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>
+            <Icon name="checkCircle" size={14} /> {data.name} créé. Envoyez-lui ce lien d&apos;activation :
           </div>
           <code style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', wordBreak: 'break-all', background: 'var(--surface-2)', padding: '6px 8px', borderRadius: 4, marginTop: 6 }}>
             {data.url}
@@ -477,7 +482,7 @@ function SetupUrlBanner({ data, onDismiss }: { data: { name: string; url: string
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <button onClick={copy} style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--success)', borderRadius: 6, background: 'transparent', color: 'var(--success)', cursor: 'pointer', fontWeight: 600 }}>
-            {copied ? '✓ Copié' : 'Copier'}
+            {copied ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon name="checkCircle" size={12} /> Copié</span> : 'Copier'}
           </button>
           <button onClick={onDismiss} style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'transparent', color: 'var(--text-3)', cursor: 'pointer' }}>
             Fermer
@@ -507,7 +512,7 @@ function SetupUrlModal({ data, onClose }: { data: { name: string; url: string; e
         </code>
         <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
           <button onClick={copy} style={{ padding: '8px 16px', fontSize: 13, border: 'none', borderRadius: 6, background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-            {copied ? '✓ Copié' : 'Copier le lien'}
+            {copied ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon name="checkCircle" size={12} /> Copié</span> : 'Copier le lien'}
           </button>
           <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, background: 'transparent', color: 'var(--text-3)', cursor: 'pointer' }}>
             Fermer

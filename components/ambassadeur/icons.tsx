@@ -119,6 +119,83 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   arrowRight: <path d="M5 12h14M13 5l7 7-7 7" />,
+  checkCircle: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.5 2.5 4.5-5" />
+    </>
+  ),
+  moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </>
+  ),
+  card: (
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20" />
+    </>
+  ),
+  pause: (
+    <>
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </>
+  ),
+  hourglass: (
+    <>
+      <path d="M6 2h12M6 22h12" />
+      <path d="M6 2c0 5 6 5 6 10s-6 5-6 10M18 2c0 5-6 5-6 10s6 5 6 10" />
+    </>
+  ),
+  target: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" />
+    </>
+  ),
+  handshake: (
+    <>
+      <path d="m11 17 2 2a1 1 0 0 0 1.4 0l5.6-5.6a1 1 0 0 0 0-1.4L16 7.7" />
+      <path d="m8 14-3-3a1 1 0 0 1 0-1.4l4.6-4.6a1 1 0 0 1 1.4 0L13 7" />
+      <path d="m13 7-3.1 3.1a2 2 0 0 0 0 2.8l.2.2a2 2 0 0 0 2.8 0L16 10" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+      <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
+    </>
+  ),
+  snowflake: (
+    <>
+      <path d="M12 2v20M4.2 7l15.6 10M19.8 7 4.2 17" />
+      <path d="M9 4l3 2 3-2M9 20l3-2 3 2M4 9l1 3-1 3M20 9l-1 3 1 3" />
+    </>
+  ),
+  truck: (
+    <>
+      <path d="M14 17V5a1 1 0 0 0-1-1H2v13" />
+      <path d="M14 8h4l3 3v6h-7" />
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="17" cy="18" r="2" />
+    </>
+  ),
+  receipt: (
+    <>
+      <path d="M5 3v18l2-1.5L9 21l2-1.5L13 21l2-1.5L17 21l2-1.5V3l-2 1.5L15 3l-2 1.5L11 3 9 4.5 7 3z" />
+      <path d="M8 8h8M8 12h6" />
+    </>
+  ),
+  mailOpen: (
+    <>
+      <path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="m3 9 9 6 9-6" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof ICONS;

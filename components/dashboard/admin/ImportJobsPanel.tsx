@@ -14,6 +14,7 @@ import {
   retryImportJob,
 } from '@/actions/admin/import-jobs';
 import type { ImportJobView, ImportJobType, ImportJobStatus } from '@/lib/admin/import-jobs';
+import { Icon } from '@/components/ambassadeur/icons';
 
 const POLL_MS_ACTIVE = 2000;
 const POLL_MS_IDLE   = 30000;
@@ -188,10 +189,11 @@ function JobRow({ job, now, onCancel, onRetry }: {
 
       {job.error && (
         <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 5,
           fontSize: 11, color: 'var(--error)', marginTop: 6,
           background: 'var(--error-bg)', borderRadius: 'var(--radius-sm)', padding: '4px 8px',
         }}>
-          ⚠ {job.error}
+          <Icon name="alert" size={12} style={{ flexShrink: 0, marginTop: 1 }} /> {job.error}
         </div>
       )}
     </div>

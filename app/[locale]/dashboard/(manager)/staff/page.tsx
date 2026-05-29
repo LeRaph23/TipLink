@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { getBaseUrl } from '@/lib/env';
 import { StaffInviteCopy } from './StaffInviteCopy';
 import { joinAsStaffMember } from '@/actions/staff';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export default async function StaffListPage({
   params,
@@ -140,7 +141,7 @@ export default async function StaffListPage({
           borderRadius: 'var(--radius)', padding: '18px 20px', marginBottom: 16,
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-            <div style={{ fontSize: 26, flexShrink: 0, marginTop: 2 }}>💸</div>
+            <div style={{ flexShrink: 0, marginTop: 2, color: '#E57A97' }}><Icon name="bank" size={26} /></div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
                 Vous aussi, recevez des pourboires directement

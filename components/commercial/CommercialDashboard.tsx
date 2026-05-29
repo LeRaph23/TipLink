@@ -862,7 +862,7 @@ export function CommercialDashboard({ code }: { code: string }) {
       {/* Frozen banner */}
       {stats.payoutsFrozen && (
         <div style={{ background: 'var(--warning-bg)', color: 'var(--warning)', padding: '10px 16px', fontSize: 12.5, textAlign: 'center', borderBottom: '1px solid var(--warning)' }}>
-          ⏸ Vos virements sont temporairement gelés. Contactez{' '}
+          <Icon name="pause" size={13} style={{ display: 'inline-block', verticalAlign: '-2px', marginRight: 4 }} /> Vos virements sont temporairement gelés. Contactez{' '}
           <a href="mailto:partenaires@digitip.app" style={{ color: 'var(--warning)', fontWeight: 700 }}>partenaires@digitip.app</a>.
         </div>
       )}

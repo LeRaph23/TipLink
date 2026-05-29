@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { Icon } from '@/components/ambassadeur/icons';
 
 interface UnclaimedProfile {
   id: string;
@@ -220,8 +221,8 @@ export function JoinForm({
           width: 56, height: 56, borderRadius: '50%',
           background: 'var(--surface-2)', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px', fontSize: 28,
-        }}>✉</div>
+          margin: '0 auto 20px', color: 'var(--accent)',
+        }}><Icon name="mail" size={26} /></div>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
           Vérifiez votre email
         </h2>
@@ -243,8 +244,8 @@ export function JoinForm({
           width: 64, height: 64, borderRadius: '50%',
           background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px', fontSize: 28,
-        }}>💸</div>
+          margin: '0 auto 20px', color: '#fff',
+        }}><Icon name="bank" size={28} /></div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
           Rejoignez {establishmentName}
         </h1>
@@ -432,8 +433,8 @@ export function JoinForm({
           width: 56, height: 56, borderRadius: '50%',
           background: 'var(--surface-2)', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px', fontSize: 26,
-        }}>🏦</div>
+          margin: '0 auto 20px', color: 'var(--accent)',
+        }}><Icon name="bank" size={26} /></div>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 12 }}>
           Recevoir vos pourboires
         </h1>

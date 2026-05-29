@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { stripe } from '@/lib/stripe/client';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -186,7 +187,7 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
           {!sp.payment_intent && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0' }}>
               <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Stripe</span>
-              <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>✓</span>
+              <span style={{ display: 'inline-flex', color: 'var(--success)' }}><Icon name="checkCircle" size={15} /></span>
             </div>
           )}
         </div>

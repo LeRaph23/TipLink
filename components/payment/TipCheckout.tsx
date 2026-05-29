@@ -10,6 +10,7 @@ import {
   useElements,
   useStripe,
 } from '@stripe/react-stripe-js';
+import { Icon } from '@/components/ambassadeur/icons';
 
 interface Props {
   staffId: string;
@@ -171,9 +172,10 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
             cursor: 'pointer', fontSize: 15, fontWeight: 700,
             fontFamily: 'var(--font)', letterSpacing: '-0.01em',
             transition: 'all 130ms',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
         >
-          💳 {t('payButton')}
+          <Icon name="card" size={18} /> {t('payButton')}
         </button>
       ) : (
         <>

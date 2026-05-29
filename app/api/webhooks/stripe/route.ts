@@ -1616,7 +1616,7 @@ async function notifyTelegram(ambassadorName: string, salon: string, pack: strin
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
   const packLabel = pack === 'duo' ? 'Pack Duo (+45€)' : 'Pack Solo (+35€)';
-  const text = `🔥 BOOM ! ${ambassadorName} vient de vendre un ${packLabel} à ${salon} !`;
+  const text = `BOOM ! ${ambassadorName} vient de vendre un ${packLabel} à ${salon} !`;
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

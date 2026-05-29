@@ -198,7 +198,7 @@ export async function sendOrderConfirmation(opts: {
     ? `<tr><td style="padding:0 32px 28px">
         <div class="highlight" style="background:#fde7ee;border:1px solid #f4c2d2;border-radius:12px;padding:20px 24px">
           <div class="text-strong" style="font-size:14px;font-weight:700;color:#0f0f12;margin-bottom:6px">
-            ${isFr ? '🎉 Configurez votre salon maintenant' : '🎉 Set up your salon now'}
+            ${isFr ? 'Configurez votre salon maintenant' : 'Set up your salon now'}
           </div>
           <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-bottom:16px;line-height:1.5">
             ${isFr
@@ -792,8 +792,8 @@ export async function sendOrderDelivered(opts: {
   const label = packLabel(pack, locale);
 
   const subject = isFr
-    ? `Vos SmartTags Digitip sont arrivés 🎉`
-    : `Your Digitip SmartTags have arrived 🎉`;
+    ? `Vos SmartTags Digitip sont arrivés`
+    : `Your Digitip SmartTags have arrived`;
 
   const headline = isFr ? 'Livraison confirmée' : 'Delivery confirmed';
   const subline = isFr
@@ -833,7 +833,7 @@ export async function sendOrderDelivered(opts: {
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${isFr ? 'Livré' : 'Delivered'}</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:6px">${headline} 🎉</div>
+      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:6px">${headline}</div>
       <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${subline}</div>
     </td></tr>
     <tr><td style="padding:0 32px 24px">
@@ -1088,8 +1088,8 @@ export async function sendAmbassadorApplicationReminder(opts: {
     ? `${firstName}, ta candidature ambassadeur Digitip nous attend`
     : `Dernière relance — ta candidature ambassadeur expire bientôt`;
   const headline = step === 1
-    ? `On a vu ta candidature, ${firstName} 👀`
-    : `Dernière chance, ${firstName} ⏳`;
+    ? `On a vu ta candidature, ${firstName}`
+    : `Dernière chance, ${firstName}`;
   const body = step === 1
     ? `Ton dossier est en cours d'examen. Pour accélérer, assure-toi que ton SIRET et ton RIB sont à jour. Tu n'as pas encore de SIRET ? <a href="https://autoentrepreneur.urssaf.fr" style="color:#E57A97">Crée-le gratuitement ici</a> (10 min, c'est instantané).`
     : `Sans nouvelle de ta part dans les prochains jours, on devra archiver ta candidature. Si tu es toujours motivé(e), réponds à cet email — un humain te recontactera dans la journée.`;
@@ -1193,7 +1193,7 @@ export async function sendReferralValidatedToParrain(
   await resend.emails.send({
     from: FROM,
     to: parrain.email,
-    subject: `🎉 Parrainage validé : +${euros}€ pour toi`,
+    subject: `Parrainage validé : +${euros}€ pour toi`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -1642,7 +1642,7 @@ export async function sendStaffBankingComplete(opts: {
   return lifecycleSend(to, `${firstName}, tout est prêt — vos pourboires arrivent`,
     lifecycleBody({
       badge: 'Compte activé', tone: 'green',
-      title: `${firstName}, votre compte est prêt 🎉`,
+      title: `${firstName}, votre compte est prêt`,
       intro: `Votre compte bancaire est relié et vérifié. À partir de maintenant, chaque pourboire laissé sur votre SmartTag <strong class="text-strong" style="color:#0f0f12">arrive directement sur votre compte</strong>. Il ne reste plus qu'à en parler à vos clients !`,
       note: 'Digitip ne conserve jamais vos fonds — tout passe directement par Stripe.',
     }));
@@ -1653,7 +1653,7 @@ export async function sendFirstTipCelebration(opts: {
   to: string; firstName: string; amount: number; currency: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
   const { to, firstName, amount, currency, establishmentName, dashboardUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `🎉 Premier pourboire encaissé chez ${establishmentName} !`,
+  return lifecycleSend(to, `Premier pourboire encaissé chez ${establishmentName} !`,
     lifecycleBody({
       badge: 'Premier pourboire', tone: 'green',
       title: `${firstName}, ${escapeHtml(establishmentName)} vient d'encaisser son 1er pourboire !`,
@@ -1672,7 +1672,7 @@ export async function sendEarningsMilestone(opts: {
   to: string; firstName: string; milestoneAmount: number; currency: string; dashboardUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
   const { to, firstName, milestoneAmount, currency, dashboardUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, vous avez dépassé ${money(milestoneAmount, currency)} de pourboires 🏆`,
+  return lifecycleSend(to, `${firstName}, vous avez dépassé ${money(milestoneAmount, currency)} de pourboires`,
     lifecycleBody({
       badge: 'Palier atteint', tone: 'green',
       title: `${firstName}, ${money(milestoneAmount, currency)} de pourboires — bravo !`,
@@ -1711,7 +1711,7 @@ export async function sendWeeklyTipRecap(opts: {
   return lifecycleSend(to, `${establishmentName} : ${money(weekTotal, currency)} de pourboires cette semaine`,
     lifecycleBody({
       badge: 'Récap de la semaine', tone: 'green',
-      title: `${firstName}, ${escapeHtml(establishmentName)} a encaissé ${money(weekTotal, currency)} 🎉`,
+      title: `${firstName}, ${escapeHtml(establishmentName)} a encaissé ${money(weekTotal, currency)}`,
       intro: `Cette semaine, vos clients ont laissé <strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${tipCount > 1 ? 's' : ''}</strong> via Digitip, pour un total de <strong class="text-strong" style="color:#0f0f12">${money(weekTotal, currency)}</strong>. Bel élan — gardez le SmartTag bien visible pour faire encore mieux.`,
       ctaLabel: 'Voir le détail →', ctaUrl: dashboardUrl,
       unsubscribeUrl,

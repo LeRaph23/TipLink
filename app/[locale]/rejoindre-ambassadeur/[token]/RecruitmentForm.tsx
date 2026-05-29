@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Icon } from '@/components/ambassadeur/icons';
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '10px 12px', borderRadius: 8,
@@ -71,7 +72,7 @@ export function RecruitmentForm({ token }: { token: string }) {
         background: 'var(--success-bg)', border: '1px solid var(--success)',
         borderRadius: 12, padding: '24px 20px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🎉</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, color: 'var(--success)' }}><Icon name="checkCircle" size={36} /></div>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--success)', marginBottom: 6 }}>
           Candidature envoyée !
         </div>
