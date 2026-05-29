@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export default function SetupPage() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function SetupPage() {
         boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>🎉</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: 'var(--success, #16a34a)' }}><Icon name="checkCircle" size={36} /></div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f1020', letterSpacing: '-0.02em', marginBottom: 8 }}>
             Bienvenue sur TipLink !
           </h1>

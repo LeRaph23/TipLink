@@ -1,4 +1,5 @@
 import { Link } from '@/i18n/navigation';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export interface CommercialRow {
   id: string;
@@ -78,8 +79,8 @@ export function CommerciauxOverview({ commerciaux }: { commerciaux: CommercialRo
                     {c.name}
                   </Link>
                   {c.payouts_frozen && (
-                    <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--warning)', fontWeight: 700 }}>
-                      ⏸ GELÉ
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, fontSize: 10, color: 'var(--warning)', fontWeight: 700 }}>
+                      <Icon name="pause" size={11} /> GELÉ
                     </span>
                   )}
                 </td>

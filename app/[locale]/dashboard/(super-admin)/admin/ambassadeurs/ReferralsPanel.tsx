@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { creditReferralPayout, voidReferralPayout } from '@/actions/admin/ambassadors';
 import { REFERRAL_VALIDATION_MIN_SALES } from '@/lib/ambassador-tiers';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export interface ReferralFilleulRow {
   filleulId: string;
@@ -110,8 +111,8 @@ export function ReferralsPanel({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 28 }}>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
-        <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
-          🤝 Parrainages — primes à valider
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
+          <Icon name="handshake" size={15} /> Parrainages — primes à valider
         </h2>
         <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 12px' }}>
           Une prime de 25 € est due au parrain dès que son filleul atteint {REFERRAL_VALIDATION_MIN_SALES} ventes
@@ -168,7 +169,7 @@ export function ReferralsPanel({
                           </button>
                         </div>
                       ) : r.payoutStatus === 'credited' ? (
-                        <span style={{ fontSize: 12, color: 'var(--success)' }}>✓ Versé au solde</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--success)' }}><Icon name="checkCircle" size={12} /> Versé au solde</span>
                       ) : (
                         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
                           {reached ? 'En cours…' : `${REFERRAL_VALIDATION_MIN_SALES - r.liveSales} vente(s) restante(s)`}
@@ -216,7 +217,7 @@ export function ReferralsPanel({
                         </button>
                       </div>
                     ) : r.payoutStatus === 'credited' ? (
-                      <span style={{ fontSize: 12, color: 'var(--success)' }}>✓ Versé au solde</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--success)' }}><Icon name="checkCircle" size={12} /> Versé au solde</span>
                     ) : (
                       <span style={{ fontSize: 11, color: 'var(--text-3)' }}>—</span>
                     )}

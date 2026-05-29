@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { createSalon } from '@/actions/group';
+import { Icon } from '@/components/ambassadeur/icons';
 
 const COUNTRIES = [
   { code: 'FR', label: 'France' },
@@ -53,7 +54,7 @@ export function CreateSalonForm({ baseUrl }: { baseUrl: string }) {
     const joinUrl = `${baseUrl}/join/${result.establishmentId}`;
     return (
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 24 }}>
-        <div style={{ fontSize: 22, marginBottom: 8 }}>✅</div>
+        <div style={{ marginBottom: 8, color: 'var(--success)' }}><Icon name="checkCircle" size={28} /></div>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Salon créé</h2>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 18 }}>
           Partagez ce lien avec le manager ou les coiffeurs pour qu&apos;ils puissent rejoindre :

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { creditBonus } from '@/actions/admin/ambassadors';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export interface BonusReviewRow {
   key: string;
@@ -52,8 +53,8 @@ export function BonusesPanel({ rows }: { rows: BonusReviewRow[] }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 28 }}>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-            🎁 Bonus à vérifier
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+            <Icon name="gift" size={15} /> Bonus à vérifier
           </h2>
           {toReview.length > 0 && (
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--warning)' }}>
@@ -95,10 +96,11 @@ export function BonusesPanel({ rows }: { rows: BonusReviewRow[] }) {
                   <td style={{ padding: '8px 10px' }}>
                     {r.credited ? (
                       <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
                         fontSize: 11, padding: '2px 8px', borderRadius: 99,
                         background: 'var(--success-bg)', color: 'var(--success)', fontWeight: 600,
                       }}>
-                        ✓ Crédité
+                        <Icon name="checkCircle" size={12} /> Crédité
                       </span>
                     ) : (
                       <button style={creditBtn} disabled={isPending} onClick={() => handleCredit(r)}>

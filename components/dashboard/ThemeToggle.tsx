@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { Icon } from '@/components/ambassadeur/icons';
+
 export function ThemeToggle() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
@@ -31,7 +33,7 @@ export function ThemeToggle() {
         color: 'var(--text-2)', fontSize: 14, transition: 'all 120ms',
       }}
     >
-      {theme === 'light' ? '🌙' : '☀️'}
+      <Icon name={theme === 'light' ? 'moon' : 'sun'} size={15} />
     </button>
   );
 }

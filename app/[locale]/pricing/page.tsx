@@ -8,6 +8,7 @@ import { htSuffix } from '@/lib/format-price';
 import { createClient } from '@/lib/supabase/server';
 import { getAllPackPricing } from '@/lib/stripe/pricing';
 import { pageAlternates } from '@/lib/seo';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export async function generateMetadata({
   params,
@@ -236,10 +237,10 @@ export default async function PricingPage({
           display: 'flex', gap: 32, justifyContent: 'center', flexWrap: 'wrap',
           fontSize: 13, color: '#74748a', fontWeight: 500,
         }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🔒 {t('trust1')}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🧾 {t('trust2')}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>✓ {t('trust3')}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>🚚 {isFr ? 'Livraison gratuite Europe' : 'Free EU shipping'}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="lock" size={15} /> {t('trust1')}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="receipt" size={15} /> {t('trust2')}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="checkCircle" size={15} /> {t('trust3')}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="truck" size={15} /> {isFr ? 'Livraison gratuite Europe' : 'Free EU shipping'}</span>
         </div>
       </section>
     </div>

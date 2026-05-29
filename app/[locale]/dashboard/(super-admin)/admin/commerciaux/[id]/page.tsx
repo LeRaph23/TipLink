@@ -9,6 +9,7 @@ import {
   listCommercialContractTemplates,
   listCommercialContractsFor,
 } from '@/actions/admin/commercial-contracts';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -120,7 +121,7 @@ export default async function CommercialDetailPage({
             {com.is_active
               ? <span style={{ padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: 'var(--success-bg)', color: 'var(--success)' }}>● Actif</span>
               : <span style={{ padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: 'var(--surface-2)', color: 'var(--text-3)' }}>○ Inactif</span>}
-            {com.payouts_frozen && <span style={{ padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: 'var(--warning-bg)', color: 'var(--warning)' }}>⏸ Virements gelés</span>}
+            {com.payouts_frozen && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: 'var(--warning-bg)', color: 'var(--warning)' }}><Icon name="pause" size={12} /> Virements gelés</span>}
             <span style={{ padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: ob.bg, color: ob.color }}>Stripe : {ob.label}</span>
           </div>
         </div>

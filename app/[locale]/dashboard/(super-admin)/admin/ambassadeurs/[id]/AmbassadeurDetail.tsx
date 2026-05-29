@@ -11,6 +11,7 @@ import {
   setAmbassadorPayoutsFrozen,
   regenerateAmbassadorSetupToken,
 } from '@/actions/admin/ambassadors';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export interface FicheData {
   id: string;
@@ -160,7 +161,7 @@ export function AmbassadeurDetail({ data }: { data: FicheData }) {
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
                 {data.isActive ? 'Actif' : 'Inactif'}
               </Badge>
-              {data.payoutsFrozen && <Badge tone="warning">❄ Virements gelés</Badge>}
+              {data.payoutsFrozen && <Badge tone="warning"><Icon name="snowflake" size={12} /> Virements gelés</Badge>}
               {k.weeklyTier && <Badge tone="accent">{k.weeklyTier.emoji} Palier {k.weeklyTier.label}</Badge>}
             </div>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8, fontSize: 12, color: 'var(--text-3)' }}>
@@ -176,8 +177,16 @@ export function AmbassadeurDetail({ data }: { data: FicheData }) {
                   </Link>
                 </span>
               )}
-              <span>{data.pinSet ? '🔒 PIN défini' : '⚠ PIN non défini'}</span>
-              <span>{data.hasStripe ? '✓ Stripe connecté' : 'Stripe non configuré'}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {data.pinSet
+                  ? <><Icon name="lock" size={12} /> PIN défini</>
+                  : <><Icon name="alert" size={12} style={{ color: 'var(--warning)' }} /> PIN non défini</>}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {data.hasStripe
+                  ? <><Icon name="checkCircle" size={12} style={{ color: 'var(--success)' }} /> Stripe connecté</>
+                  : 'Stripe non configuré'}
+              </span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
@@ -194,11 +203,13 @@ export function AmbassadeurDetail({ data }: { data: FicheData }) {
             <button style={actionBtn} disabled={isPending} onClick={() => run(() => toggleAmbassador(data.id, !data.isActive))}>
               {data.isActive ? 'Désactiver' : 'Activer'}
             </button>
-            <button style={actionBtn} disabled={isPending} onClick={() => run(() => setAmbassadorPayoutsFrozen(data.id, !data.payoutsFrozen))}>
-              {data.payoutsFrozen ? '☀ Dégeler' : '❄ Geler'}
+            <button style={{ ...actionBtn, display: 'inline-flex', alignItems: 'center', gap: 5 }} disabled={isPending} onClick={() => run(() => setAmbassadorPayoutsFrozen(data.id, !data.payoutsFrozen))}>
+              {data.payoutsFrozen
+                ? <><Icon name="sun" size={13} /> Dégeler</>
+                : <><Icon name="snowflake" size={13} /> Geler</>}
             </button>
-            <button style={actionBtn} disabled={isPending} onClick={handleRegen}>
-              🔗 Nouveau lien
+            <button style={{ ...actionBtn, display: 'inline-flex', alignItems: 'center', gap: 5 }} disabled={isPending} onClick={handleRegen}>
+              <Icon name="link" size={13} /> Nouveau lien
             </button>
           </div>
         </div>
@@ -345,13 +356,13 @@ function TerrainSection({ data }: { data: FicheData }) {
                   <tr key={v.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={tdStyle}>{fmtDate(v.visitedAt)}</td>
                     <td style={tdStyle}><strong>{v.salonName}</strong><span style={{ color: 'var(--text-3)' }}> · {v.salonCity}</span></td>
-                    <td style={tdStyle}>{v.convinced === 'yes' ? '✓ Oui' : v.convinced === 'maybe' ? '~ Peut-être' : 'Non'}</td>
+                    <td style={tdStyle}>{v.convinced === 'yes' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon name="checkCircle" size={12} style={{ color: 'var(--success)' }} /> Oui</span> : v.convinced === 'maybe' ? '~ Peut-être' : 'Non'}</td>
                     <td style={tdStyle}>{v.rating}/3</td>
                     <td style={tdStyle}>
                       {v.locationVerified
-                        ? <Badge tone="success">📍 {v.distanceM != null ? `${v.distanceM} m` : 'Vérifié'}</Badge>
+                        ? <Badge tone="success"><Icon name="location" size={12} /> {v.distanceM != null ? `${v.distanceM} m` : 'Vérifié'}</Badge>
                         : v.distanceM != null
-                          ? <Badge tone="warning">⚠ {v.distanceM} m</Badge>
+                          ? <Badge tone="warning"><Icon name="alert" size={12} /> {v.distanceM} m</Badge>
                           : <span style={{ color: 'var(--text-3)' }}>—</span>}
                     </td>
                     <td style={{ ...tdStyle, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={v.notes ?? ''}>

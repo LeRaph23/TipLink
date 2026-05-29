@@ -8,6 +8,7 @@ import {
   setMonthlyChallengeActive,
 } from '@/actions/admin/ambassadors';
 import { MONTHLY_CHALLENGE } from '@/lib/ambassador-tiers';
+import { Icon } from '@/components/ambassadeur/icons';
 
 export interface AmbassadorOverviewRow {
   id: string;
@@ -146,7 +147,8 @@ export function AmbassadeursOverview({
       {/* Pending payouts */}
       <div id="payouts" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18, scrollMarginTop: 20 }}>
         <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 12px' }}>
-          💸 Virements en attente
+          <span style={{ display: 'inline-flex', verticalAlign: '-2px', marginRight: 6 }}><Icon name="card" size={15} /></span>
+          Virements en attente
         </h2>
         {error && (
           <div style={{ fontSize: 12.5, color: 'var(--error)', padding: '8px 12px', background: 'var(--error-bg)', borderRadius: 8, marginBottom: 10 }}>
@@ -205,7 +207,8 @@ export function AmbassadeursOverview({
       {/* Tiers overview — who is at what tier this week */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
         <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 12px' }}>
-          🎯 Paliers de la semaine en cours
+          <span style={{ display: 'inline-flex', verticalAlign: '-2px', marginRight: 6 }}><Icon name="target" size={15} /></span>
+          Paliers de la semaine en cours
         </h2>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
@@ -238,8 +241,8 @@ export function AmbassadeursOverview({
                 <td style={{ padding: '8px 10px', color: 'var(--text-3)' }}>{fmtEur(r.paidOrPendingCents)}</td>
                 <td style={{ padding: '8px 10px' }}>
                   {r.hasStripeAccount ? (
-                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--success-bg)', color: 'var(--success)', fontWeight: 600 }}>
-                      ✓ {r.siret ? 'SIRET' : 'OK'}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--success-bg)', color: 'var(--success)', fontWeight: 600 }}>
+                      <Icon name="checkCircle" size={12} /> {r.siret ? 'SIRET' : 'OK'}
                     </span>
                   ) : (
                     <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--neutral-bg)', color: 'var(--neutral)' }}>
