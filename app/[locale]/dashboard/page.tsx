@@ -119,7 +119,7 @@ export default async function DashboardPage({
               {t('home.adminReceiveTipsBody')}
             </div>
           </div>
-          <Link href="/dashboard/staff" style={{
+          <Link href="/dashboard/banking" style={{
             padding: '9px 16px', borderRadius: 10, border: 'none',
             background: 'var(--accent)', color: '#fff',
             fontSize: 13, fontWeight: 600, textDecoration: 'none',

@@ -25,7 +25,7 @@ export async function POST(
   };
 
   if (!consentChecked) {
-    return NextResponse.json({ error: 'Tu dois accepter la clause de consentement.' }, { status: 400 });
+    return NextResponse.json({ error: 'Vous devez accepter la clause de consentement.' }, { status: 400 });
   }
   if (typeof signatureDataUrl !== 'string' || !signatureDataUrl) {
     return NextResponse.json({ error: 'Signature manquante.' }, { status: 400 });

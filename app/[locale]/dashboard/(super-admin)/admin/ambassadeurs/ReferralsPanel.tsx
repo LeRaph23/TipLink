@@ -115,7 +115,7 @@ export function ReferralsPanel({
         </h2>
         <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 12px' }}>
           Une prime de 25 € est due au parrain dès que son filleul atteint {REFERRAL_VALIDATION_MIN_SALES} ventes
-          valides. Tu déclenches le crédit au solde du parrain avec « Créditer ».
+          valides. Vous déclenchez le crédit au solde du parrain avec « Créditer ».
         </p>
 
         {error && (
@@ -126,7 +126,7 @@ export function ReferralsPanel({
 
         {filleulRows.length === 0 ? (
           <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-            Aucun filleul pour le moment. Lie un parrain à la création d&apos;un ambassadeur.
+            Aucun filleul pour le moment. Liez un parrain à la création d&apos;un ambassadeur.
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

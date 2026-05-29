@@ -438,13 +438,13 @@ export function JoinForm({
           Recevoir vos pourboires
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 12 }}>
-          Après avoir créé ton compte, tu seras redirigé vers <strong>Stripe</strong>, notre
-          partenaire de paiement, pour configurer tes virements en quelques clics.
+          Après avoir créé votre compte, vous serez redirigé vers <strong>Stripe</strong>, notre
+          partenaire de paiement, pour configurer vos virements en quelques clics.
         </p>
         <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-          C&apos;est Stripe — leader mondial du paiement — qui collecte et chiffre ta pièce
-          d&apos;identité et ton IBAN. Digitip ne voit jamais ces informations, et ton IBAN
-          n&apos;est jamais visible par ton employeur.
+          C&apos;est Stripe — leader mondial du paiement — qui collecte et chiffre votre pièce
+          d&apos;identité et votre IBAN. Digitip ne voit jamais ces informations, et votre IBAN
+          n&apos;est jamais visible par votre employeur.
         </p>
         {error && (
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>

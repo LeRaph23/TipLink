@@ -306,7 +306,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
         setAuthState('authenticated');
       }
     } catch {
-      setPinError('Erreur réseau. Réessaie.');
+      setPinError('Erreur réseau. Réessayez.');
     } finally {
       setPinLoading(false);
     }
@@ -336,7 +336,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
       });
       const data = await res.json();
       if (res.status === 429) {
-        setPinError(data.error ?? 'Trop de tentatives. Réessaie dans 15 min.');
+        setPinError(data.error ?? 'Trop de tentatives. Réessayez dans 15 min.');
       } else if (!res.ok) {
         setPinError(data.error ?? 'PIN incorrect.');
       } else {
@@ -344,7 +344,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
         setAuthState('authenticated');
       }
     } catch {
-      setPinError('Erreur réseau. Réessaie.');
+      setPinError('Erreur réseau. Réessayez.');
     } finally {
       setPinLoading(false);
     }
@@ -387,7 +387,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
                 Bienvenue {ambassadorName}
               </div>
               <div style={{ fontSize: FONT.body, color: 'var(--text-3)', lineHeight: 1.5 }}>
-                Choisis ton <strong>PIN à 4 chiffres</strong>. Tu l&apos;utiliseras à chaque connexion — note-le quelque part.
+                Choisissez votre <strong>PIN à 4 chiffres</strong>. Vous l&apos;utiliserez à chaque connexion — notez-le quelque part.
               </div>
             </div>
             <PinInput onSubmit={handleSetupPin} error={pinError} loading={pinLoading} />
@@ -408,7 +408,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             Lien d&apos;activation invalide
           </div>
           <div style={{ fontSize: FONT.body, color: 'var(--text-3)', lineHeight: 1.5 }}>
-            {setupError ?? 'Ce lien n\'est plus valable.'} Contacte Digitip pour en recevoir un nouveau.
+            {setupError ?? 'Ce lien n\'est plus valable.'} Contactez Digitip pour en recevoir un nouveau.
           </div>
         </div>
       </div>
@@ -443,10 +443,10 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
           }}>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: FONT.bodyLg + 1, fontWeight: WEIGHT.bold, color: 'var(--text)', marginBottom: 4 }}>
-                Ton PIN à 4 chiffres
+                Votre PIN à 4 chiffres
               </div>
               <div style={{ fontSize: FONT.body, color: 'var(--text-3)' }}>
-                Pour accéder à ton dashboard
+                Pour accéder à votre dashboard
               </div>
             </div>
 
@@ -586,7 +586,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
                 <SectionHeader title="Dernières ventes" />
               </div>
               {recentSales.length === 0 ? (
-                <EmptyState>Aucune vente pour l&apos;instant. Continue !</EmptyState>
+                <EmptyState>Aucune vente pour l&apos;instant. Continuez !</EmptyState>
               ) : (
                 recentSales.map((sale, idx) => (
                   <div key={sale.id} style={{
@@ -719,7 +719,7 @@ function MonthlyChallenge({ stats, monthCount }: { stats: StatsData; monthCount:
 
       <div style={{ fontSize: FONT.body - 1, color: 'var(--text-3)' }}>
         {isLeader
-          ? `Tu es en tête (${monthCount} ventes) !`
+          ? `Vous êtes en tête (${monthCount} ventes) !`
           : gapToLeader === 0
             ? `Égalité avec le leader (${monthCount} ventes)`
             : `${gapToLeader} vente${gapToLeader !== 1 ? 's' : ''} de retard sur le #1`}

@@ -95,7 +95,7 @@ export function SireneScraperForm() {
   }
 
   async function handleScrape() {
-    if (selectedNaf.size === 0) { setResult({ ok: false, error: 'Sélectionne au moins 1 code NAF.' }); return; }
+    if (selectedNaf.size === 0) { setResult({ ok: false, error: 'Sélectionnez au moins 1 code NAF.' }); return; }
     setBusy(true);
     setResult(null);
     setEnrichStatus({ phase: 'idle' });
@@ -156,7 +156,7 @@ export function SireneScraperForm() {
         Scraper SIRENE INSEE
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16, lineHeight: 1.5 }}>
-        Récupère depuis la base publique SIRENE des entreprises en lien avec ta cible.
+        Récupère depuis la base publique SIRENE des entreprises en lien avec votre cible.
         Les emails et sites web ne sont pas dans SIRENE — ils sont enrichis automatiquement
         après le scrape (api.gouv.fr Recherche d&apos;entreprises + scrape des pages contact).
         Requiert <code>INSEE_API_KEY</code> dans Vercel.

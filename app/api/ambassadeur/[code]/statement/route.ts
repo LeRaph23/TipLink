@@ -120,7 +120,7 @@ export async function GET(
     entries.push({
       id: `payout:${p.id}`,
       kind: 'payout',
-      label: 'Virement sur ton IBAN',
+      label: 'Virement sur votre IBAN',
       amountCents: -p.amount_cents,
       date: p.paid_at ?? p.requested_at,
       status: p.status as 'pending' | 'paid' | 'failed',

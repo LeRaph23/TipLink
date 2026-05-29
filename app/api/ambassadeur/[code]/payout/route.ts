@@ -146,19 +146,19 @@ export async function POST(
   // spotting fraud) must still block any in-flight withdrawal.
   if (!amb.is_active) {
     return NextResponse.json(
-      { error: 'Compte désactivé. Contacte Digitip.' },
+      { error: 'Compte désactivé. Contactez Digitip.' },
       { status: 403 }
     );
   }
   if (amb.payouts_frozen) {
     return NextResponse.json(
-      { error: 'Tes virements sont temporairement gelés. Contacte Digitip.' },
+      { error: 'Vos virements sont temporairement gelés. Contactez Digitip.' },
       { status: 403 }
     );
   }
   if (!amb.stripe_account_id) {
     return NextResponse.json(
-      { error: 'Configure d\'abord ton compte bancaire (RIB + SIRET).' },
+      { error: 'Configurez d\'abord votre compte bancaire (RIB + SIRET).' },
       { status: 400 }
     );
   }
@@ -173,7 +173,7 @@ export async function POST(
     p_ambassador_id: ambassadorId,
   });
   if (!lockAcquired) {
-    return NextResponse.json({ error: 'Demande déjà en cours, réessaye dans un instant.' }, { status: 409 });
+    return NextResponse.json({ error: 'Demande déjà en cours, réessayez dans un instant.' }, { status: 409 });
   }
 
   try {

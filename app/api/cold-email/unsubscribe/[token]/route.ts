@@ -56,7 +56,7 @@ export async function GET(
   const ip = getClientIp(new Headers(req.headers));
   const rl = await rateLimit(`cold-email-unsub:${ip}`, { limit: 10, windowMs: 60_000 });
   if (!rl.ok) {
-    return new NextResponse(html('Trop de requêtes. Réessaye dans une minute.', 'err'), {
+    return new NextResponse(html('Trop de requêtes. Réessayez dans une minute.', 'err'), {
       status: 429,
       headers: { 'content-type': 'text/html; charset=utf-8' },
     });
@@ -84,7 +84,7 @@ export async function GET(
   }).upsert({ siret: verified.siret }, { onConflict: 'siret' });
 
   return new NextResponse(
-    html('Tu es désinscrit(e). On ne te recontactera plus. Si c\'était une erreur, écris-nous à privacy@digitip.app.', 'ok'),
+    html('Vous êtes désinscrit(e). On ne vous recontactera plus. Si c\'était une erreur, écrivez-nous à privacy@digitip.app.', 'ok'),
     { headers: { 'content-type': 'text/html; charset=utf-8' } }
   );
 }

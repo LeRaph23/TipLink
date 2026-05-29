@@ -46,12 +46,12 @@ export function BankingSetupForm({ mode }: Props) {
       }}>
         <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
         <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6 }}>
-          Tu vas être redirigé vers <strong style={{ color: 'var(--text)' }}>Stripe</strong>, notre
+          Vous allez être redirigé vers <strong style={{ color: 'var(--text)' }}>Stripe</strong>, notre
           partenaire de paiement (leader mondial, utilisé par des millions d&apos;entreprises).
           C&apos;est <strong style={{ color: 'var(--text)' }}>Stripe</strong> qui collecte et chiffre
-          ta pièce d&apos;identité et ton IBAN — <strong style={{ color: 'var(--text)' }}>Digitip ne
-          voit jamais ces informations</strong>. Tu reviens ici dès que c&apos;est terminé, et tes
-          pourboires arrivent ensuite automatiquement sur ton compte.
+          votre pièce d&apos;identité et votre IBAN — <strong style={{ color: 'var(--text)' }}>Digitip ne
+          voit jamais ces informations</strong>. Vous revenez ici dès que c&apos;est terminé, et vos
+          pourboires arrivent ensuite automatiquement sur votre compte.
         </div>
       </div>
 

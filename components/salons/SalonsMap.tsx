@@ -407,7 +407,7 @@ function AmbassadorPopup({ salon, onLogVisit }: { salon: AmbassadorSalon; onLogV
       )}
       {v && (
         <div className="salon-popup__visit">
-          {v.visitedByMe ? 'Visité par toi' : 'Visité par un autre'} · {fmtDate(v.lastVisitAt)} · ⭐ {v.bestRating}/3
+          {v.visitedByMe ? 'Visité par vous' : 'Visité par un autre'} · {fmtDate(v.lastVisitAt)} · ⭐ {v.bestRating}/3
           {v.flyerLeft ? ' · 🪧 flyer' : ''}
         </div>
       )}
