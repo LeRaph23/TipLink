@@ -764,7 +764,8 @@
       "back": "← Retour",
       "tipLink": "Page de pourboire client",
       "copyLink": "Copier le lien",
-      "linkCopied": "Copié !"
+      "linkCopied": "Copié !",
+      "createHint": "Créez un établissement supplémentaire seulement si vous gérez plusieurs salons. Pensez ensuite à y affecter un SmartTag depuis l'onglet SmartTags — sans tag, l'établissement ne peut pas recevoir de pourboires."
     },
     "stickers": {
       "title": "SmartTags",

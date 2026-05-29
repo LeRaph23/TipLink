@@ -58,6 +58,17 @@ export function CreateEstablishmentForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div style={{
+        display: 'flex', gap: 10, alignItems: 'flex-start',
+        background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-sm, 8px)', padding: '12px 14px',
+      }}>
+        <span aria-hidden style={{ fontSize: 16, flexShrink: 0, lineHeight: 1.4 }}>💡</span>
+        <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.55, margin: 0 }}>
+          {t('createHint')}
+        </p>
+      </div>
+
       <div>
         <label style={labelStyle}>{t('name')}</label>
         <input
