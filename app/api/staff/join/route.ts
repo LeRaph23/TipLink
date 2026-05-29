@@ -123,6 +123,7 @@ export async function POST(req: Request) {
   try {
     const accountId = await createStandardAccount({
       email: user.email ?? undefined,
+      businessType: 'individual',
       metadata: { staff_profile_id: staffProfileId },
     });
     await service
