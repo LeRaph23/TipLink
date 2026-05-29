@@ -764,7 +764,8 @@
       "back": "← Back",
       "tipLink": "Customer tip page",
       "copyLink": "Copy link",
-      "linkCopied": "Copied!"
+      "linkCopied": "Copied!",
+      "createHint": "Only create an extra establishment if you run several salons. Then remember to assign a SmartTag to it from the SmartTags tab — without a tag, the establishment can't receive tips."
     },
     "stickers": {
       "title": "SmartTags",
