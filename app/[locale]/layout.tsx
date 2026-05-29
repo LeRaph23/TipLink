@@ -32,6 +32,9 @@ export const viewport: Viewport = {
   themeColor: '#E57A97',
   width: 'device-width',
   initialScale: 1,
+  // Required for env(safe-area-inset-*) to resolve to non-zero on iOS, so the
+  // dashboard sidebar footer clears the Safari toolbar / home indicator.
+  viewportFit: 'cover',
 };
 
 export async function generateMetadata({

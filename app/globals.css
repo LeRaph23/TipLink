@@ -241,7 +241,7 @@ input, select, textarea, button { font-family: var(--font); }
   .dash-sidebar {
     position: fixed;
     top: 0; left: 0;
-    height: 100vh;
+    height: 100dvh;
     z-index: 95;
     transform: translateX(-100%);
     transition: transform 300ms cubic-bezier(.32,0,.67,0);
