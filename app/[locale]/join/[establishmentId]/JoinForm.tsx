@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Icon } from '@/components/ambassadeur/icons';
+import { Icon, type IconName } from '@/components/ambassadeur/icons';
 
 interface UnclaimedProfile {
   id: string;
@@ -53,6 +53,26 @@ const btnSecondary: React.CSSProperties = {
   textAlign: 'center' as const,
   width: '100%',
 };
+
+// Light reassurance bullet: a line-style icon + one short sentence. Replaces the
+// dense reassurance paragraphs on the welcome / payment-intro steps.
+function Bullet({ icon, children }: { icon: IconName; children: React.ReactNode }) {
+  return (
+    <li style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+      <span style={{
+        flexShrink: 0, width: 28, height: 28, borderRadius: 8,
+        background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--accent)',
+      }}>
+        <Icon name={icon} size={15} />
+      </span>
+      <span style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.5, paddingTop: 4 }}>
+        {children}
+      </span>
+    </li>
+  );
+}
 
 export function JoinForm({
   establishmentId,
@@ -246,15 +266,19 @@ export function JoinForm({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px', color: '#fff',
         }}><Icon name="bank" size={28} /></div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
           Rejoignez {establishmentName}
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 8 }}>
-          DigiTip permet à vos clients de vous laisser un pourboire directement depuis leur téléphone — sans espèces, sans appli.
+        <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
+          Vos pourboires, directement sur votre compte.
         </p>
-        <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 32 }}>
-          En 2 minutes, vous serez prêt(e) à recevoir vos premiers pourboires sur votre compte bancaire.
-        </p>
+
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
+          <Bullet icon="phone">Vos clients vous laissent un pourboire depuis leur téléphone — sans espèces, sans appli.</Bullet>
+          <Bullet icon="bank">Vous recevez l&apos;argent sur votre compte bancaire.</Bullet>
+          <Bullet icon="clock">Prêt(e) en 2 minutes.</Bullet>
+        </ul>
+
         <button
           type="button"
           onClick={() => setStep(unclaimedProfiles.length > 0 ? 'identity' : 'name-photo')}
@@ -435,18 +459,18 @@ export function JoinForm({
           alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px', color: 'var(--accent)',
         }}><Icon name="bank" size={26} /></div>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 12 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
           Recevoir vos pourboires
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 12 }}>
-          Après avoir créé votre compte, vous serez redirigé vers <strong>Stripe</strong>, notre
-          partenaire de paiement, pour configurer vos virements en quelques clics.
+        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 20 }}>
+          Dernière étape : connecter votre compte bancaire via <strong>Stripe</strong>.
         </p>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-          C&apos;est Stripe — leader mondial du paiement — qui collecte et chiffre votre pièce
-          d&apos;identité et votre IBAN. Digitip ne voit jamais ces informations, et votre IBAN
-          n&apos;est jamais visible par votre employeur.
-        </p>
+
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
+          <Bullet icon="bank">Après la création de votre compte, Stripe vous guide pour configurer vos virements en quelques clics.</Bullet>
+          <Bullet icon="lock">C&apos;est Stripe qui collecte et chiffre votre pièce d&apos;identité et votre IBAN. Digitip ne les voit jamais.</Bullet>
+          <Bullet icon="checkCircle">Votre IBAN n&apos;est jamais visible par votre employeur.</Bullet>
+        </ul>
         {error && (
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>
             {error}
