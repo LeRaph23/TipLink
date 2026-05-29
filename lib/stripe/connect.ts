@@ -20,14 +20,22 @@ export function staffBankingReturnUrls(): AccountLinkUrls {
 
 // Creates a Standard connected account and returns its id. The account holder
 // fills in everything else through the hosted onboarding.
+//
+// `businessType: 'individual'` pre-sets the account as a private individual, so
+// Stripe's hosted onboarding skips the "business type" question and the whole
+// company section — used for salon staff, who receive tips as individuals and
+// are not businesses. Ambassadors/commercials omit it (they pick their own
+// status, e.g. micro-entreprise, since they're paid commissions).
 export async function createStandardAccount(opts: {
   email?: string;
   metadata?: Record<string, string>;
+  businessType?: 'individual' | 'company' | 'non_profit';
 }): Promise<string> {
   const account = await stripe.accounts.create({
     type: 'standard',
     country: 'FR',
     ...(opts.email ? { email: opts.email } : {}),
+    ...(opts.businessType ? { business_type: opts.businessType } : {}),
     business_profile: { ...CONNECT_BUSINESS_PROFILE },
     ...(opts.metadata ? { metadata: opts.metadata } : {}),
   });

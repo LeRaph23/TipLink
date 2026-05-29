@@ -44,6 +44,7 @@ export async function getStripeOnboardingLink(): Promise<
     if (!accountId) {
       accountId = await createStandardAccount({
         email: user.email ?? undefined,
+        businessType: 'individual',
         metadata: { staff_profile_id: profile.id },
       });
       const { error: dbErr } = await service
