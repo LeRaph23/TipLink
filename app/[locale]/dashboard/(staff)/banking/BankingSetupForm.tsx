@@ -84,7 +84,7 @@ export function BankingSetupForm({ mode }: Props) {
           </div>
         )}
         <button type="button" style={primaryBtn} disabled={pending} onClick={handleStart}>
-          {pending ? 'Redirection…' : 'Modifier mes coordonnées bancaires →'}
+          {pending ? 'Ouverture de Stripe…' : 'Modifier mes coordonnées bancaires →'}
         </button>
       </div>
     );
@@ -152,7 +152,7 @@ export function BankingSetupForm({ mode }: Props) {
         )}
         {isLast ? (
           <button type="button" style={{ ...primaryBtn, flex: 1 }} disabled={pending} onClick={handleStart}>
-            {pending ? 'Redirection…' : 'Configurer avec Stripe →'}
+            {pending ? 'Ouverture de Stripe…' : 'Configurer avec Stripe →'}
           </button>
         ) : (
           <button type="button" style={{ ...primaryBtn, flex: 1 }} onClick={() => setStepIdx((i) => i + 1)}>
