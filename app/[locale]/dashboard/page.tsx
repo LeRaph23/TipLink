@@ -4,6 +4,15 @@ import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
 import { StatCard } from '@/components/dashboard/StatCard';
 
+// Line-style card icon for the banking prompts, matching the dashboard set.
+function CardIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><path d="M3.5 10.5h2.5" />
+    </svg>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
     succeeded: ['var(--success-bg)', 'var(--success)'],
@@ -122,7 +131,7 @@ export default async function DashboardPage({
           border: '1px solid rgba(229,122,151,0.25)',
           borderRadius: 'var(--radius)', padding: '16px 18px', marginBottom: 20,
         }}>
-          <div style={{ fontSize: 24, flexShrink: 0 }}>💸</div>
+          <div style={{ display: 'flex', flexShrink: 0, color: 'var(--accent)' }}><CardIcon size={24} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
               {t('home.adminReceiveTipsTitle')}
@@ -150,7 +159,7 @@ export default async function DashboardPage({
           border: '1px solid rgba(229,122,151,0.25)',
           borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 20,
         }}>
-          <div style={{ fontSize: 22, flexShrink: 0 }}>💳</div>
+          <div style={{ display: 'flex', flexShrink: 0, color: 'var(--accent)' }}><CardIcon size={22} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
               {isGroupAdmin ? t('home.bankingSetupTitleAdmin') : t('home.bankingSetupTitleStaff')}
