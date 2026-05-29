@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       // 23505 = unique (user_id, establishment_id) — this user already has a
       // profile in this establishment.
       if ((patchErr as { code?: string }).code === '23505') {
-        return NextResponse.json({ error: 'Tu fais déjà partie de cet établissement.' }, { status: 409 });
+        return NextResponse.json({ error: 'Vous faites déjà partie de cet établissement.' }, { status: 409 });
       }
       return NextResponse.json({ error: patchErr.message }, { status: 500 });
     }

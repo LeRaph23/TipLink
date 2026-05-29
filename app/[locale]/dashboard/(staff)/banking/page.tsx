@@ -21,12 +21,27 @@ export default async function BankingPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
 
-  const { data: staffProfile } = await supabase
-    .from('staff_profiles')
-    .select('id, full_name, stripe_account_id, onboarding_status')
-    .eq('user_id', user.id)
-    .is('deleted_at', null)
-    .maybeSingle();
+  const [{ data: staffProfile }, { data: roles }] = await Promise.all([
+    supabase
+      .from('staff_profiles')
+      .select('id, full_name, stripe_account_id, onboarding_status')
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .maybeSingle(),
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id),
+  ]);
+
+  // A group/super admin can receive tips too: the onboarding action bootstraps
+  // a staff profile for them on first setup. So the page must let them start
+  // even before that profile exists — they should never hit the "no profile,
+  // contact your administrator" dead end (they ARE the administrator).
+  const isAdmin = (roles ?? []).some(
+    (r) => r.role === 'group_admin' || r.role === 'super_admin',
+  );
+  const canReceiveTips = !!staffProfile || isAdmin;
 
   const hasAccount = !!staffProfile?.stripe_account_id;
   const isComplete = staffProfile?.onboarding_status === 'complete';
@@ -44,16 +59,16 @@ export default async function BankingPage({
           Virements
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          Reçois tes pourboires directement sur ton compte bancaire.
+          Recevez vos pourboires directement sur votre compte bancaire.
         </p>
       </div>
 
-      {!staffProfile ? (
+      {!canReceiveTips ? (
         <div style={{ ...card, textAlign: 'center', color: 'var(--text-3)', fontSize: 13.5, padding: '32px 24px' }}>
           <div style={{ fontSize: 28, marginBottom: 12 }}>👤</div>
-          <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Aucun profil staff</div>
+          <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Compte non rattaché</div>
           <div>
-            Votre compte n&apos;est pas encore associé à un profil staff.
+            Votre compte n&apos;est pas encore rattaché à un établissement.
             Contactez votre administrateur pour accéder à cette fonctionnalité.
           </div>
         </div>
@@ -70,7 +85,7 @@ export default async function BankingPage({
               </div>
               {isComplete && (
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8 }}>
-                  Tes pourboires sont versés <strong>automatiquement</strong> sur ton compte bancaire par Stripe.
+                  Vos pourboires sont versés <strong>automatiquement</strong> sur votre compte bancaire par Stripe.
                 </div>
               )}
             </div>
@@ -86,7 +101,7 @@ export default async function BankingPage({
                     Compte bancaire actif
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 1 }}>
-                    Tu reçois tes pourboires. Tu peux modifier tes coordonnées si besoin.
+                    Vous recevez vos pourboires. Vous pouvez modifier vos coordonnées si besoin.
                   </div>
                 </div>
               </div>
@@ -98,7 +113,7 @@ export default async function BankingPage({
                     Vérification en cours
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 1 }}>
-                    Termine la configuration sur Stripe pour pouvoir recevoir tes pourboires.
+                    Terminez la configuration sur Stripe pour pouvoir recevoir vos pourboires.
                   </div>
                 </div>
               </div>

@@ -134,7 +134,7 @@ export function SalonsManager({
   ) => {
     const ids = Array.from(selectedZoneIds);
     if (ids.length === 0) {
-      setFeedback({ type: 'err', msg: 'Sélectionne au moins une zone.' });
+      setFeedback({ type: 'err', msg: 'Sélectionnez au moins une zone.' });
       return;
     }
     const params: ImportJobParams =
@@ -240,7 +240,7 @@ export function SalonsManager({
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
           Ville → arrondissements ou commune entière selon la taille. Département → toutes ses communes.
-          Le job tourne côté serveur — tu peux fermer cet onglet, il continue.
+          Le job tourne côté serveur — vous pouvez fermer cet onglet, il continue.
         </div>
 
         {/* Zone-selection bulk-actions bar. Visible when zones exist; bulk
@@ -368,7 +368,7 @@ export function SalonsManager({
         onSubmit={(regions, enrich) =>
           dispatchJob(
             { type: 'import_france', regions, enrich },
-            `Import France lancé (${regions.length} région${regions.length > 1 ? 's' : ''}). Tu peux fermer cet onglet.`,
+            `Import France lancé (${regions.length} région${regions.length > 1 ? 's' : ''}). Vous pouvez fermer cet onglet.`,
           )
         }
       />
@@ -381,7 +381,7 @@ function CityOverview({
 }: { cityStats: CityStats[]; onBulk: (city: string, kind: 'salons' | 'google' | 'addresses' | 'full') => void }) {
   if (cityStats.length === 0) {
     return (
-      <Empty>Aucune ville importée. Démarre avec le formulaire ci-dessus.</Empty>
+      <Empty>Aucune ville importée. Démarrez avec le formulaire ci-dessus.</Empty>
     );
   }
   return (
@@ -499,8 +499,8 @@ function ZonesTable({
   if (zones.length === 0 && !creating) {
     return (
       <Empty>
-        Aucune zone. Importe une ville ci-dessus ou{' '}
-        <button onClick={() => setCreating(true)} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>crée une zone manuellement</button>.
+        Aucune zone. Importez une ville ci-dessus ou{' '}
+        <button onClick={() => setCreating(true)} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>créez une zone manuellement</button>.
       </Empty>
     );
   }
@@ -715,8 +715,8 @@ function SalonsTable({
   if (salons.length === 0 && !creating) {
     return (
       <Empty>
-        Aucun établissement. Importe une zone depuis OSM ou{' '}
-        <button onClick={() => setCreating(true)} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>ajoute-en un manuellement</button>.
+        Aucun établissement. Importez une zone depuis OSM ou{' '}
+        <button onClick={() => setCreating(true)} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>ajoutez-en un manuellement</button>.
       </Empty>
     );
   }

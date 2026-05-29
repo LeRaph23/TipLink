@@ -135,7 +135,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
             <Icon name="location" size={13} /> {salons.length} établissements
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <Icon name="check" size={13} /> {visitedByMe.length} faits par toi
+            <Icon name="check" size={13} /> {visitedByMe.length} faits par vous
           </span>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
 
       {salons.length === 0 ? (
         <EmptyState>
-          Aucun établissement à démarcher pour le moment. Reviens plus tard ou préviens l&apos;admin.
+          Aucun établissement à démarcher pour le moment. Revenez plus tard ou prévenez l&apos;admin.
         </EmptyState>
       ) : (
         <>
@@ -173,7 +173,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
                 <SalonRow key={s.id} salon={s} onLogVisit={() => setActiveVisitFor(s)} />
               ))}
 
-              {visitedByMe.length > 0 && <SubHeading>Tes visites ({visitedByMe.length})</SubHeading>}
+              {visitedByMe.length > 0 && <SubHeading>Vos visites ({visitedByMe.length})</SubHeading>}
               {visitedByMe.map((s) => (
                 <SalonRow key={s.id} salon={s} onLogVisit={() => setActiveVisitFor(s)} />
               ))}
@@ -402,7 +402,7 @@ function VisitModal({
           {salon.name}
         </div>
         <div style={{ fontSize: FONT.body - 1, color: 'var(--text-3)', marginBottom: SPACE.md }}>
-          {salon.address ?? 'Enregistrer ta visite'}
+          {salon.address ?? 'Enregistrer votre visite'}
         </div>
 
         <div style={{
@@ -413,9 +413,9 @@ function VisitModal({
         }}>
           <Icon name={geoIcon} size={15} style={{ marginTop: 1 }} />
           <span>
-            {geoStatus === 'locating' && 'Localisation en cours… reste sur place.'}
+            {geoStatus === 'locating' && 'Localisation en cours… restez sur place.'}
             {geoStatus === 'ok' && geo &&
-              `Position détectée (±${Math.round(geo.accuracy)} m) — ta visite sera vérifiée.`}
+              `Position détectée (±${Math.round(geo.accuracy)} m) — votre visite sera vérifiée.`}
             {geoStatus === 'denied' &&
               'Localisation refusée — la visite sera enregistrée mais marquée non vérifiée.'}
             {geoStatus === 'unavailable' &&
@@ -423,7 +423,7 @@ function VisitModal({
           </span>
         </div>
 
-        <Field label="Tu as laissé un flyer ?">
+        <Field label="Avez-vous laissé un flyer ?">
           <div style={{ display: 'flex', gap: SPACE.sm }}>
             <Toggle active={!flyerLeft} onClick={() => setFlyerLeft(false)}>Non</Toggle>
             <Toggle active={flyerLeft} onClick={() => setFlyerLeft(true)}>Oui</Toggle>

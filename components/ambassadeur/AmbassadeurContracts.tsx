@@ -287,8 +287,8 @@ function SignatureFooter({
 
   const submit = async () => {
     setError(null);
-    if (!consent) { setError('Coche la case de consentement.'); return; }
-    if (!hasDrawn) { setError('Trace ta signature dans le cadre.'); return; }
+    if (!consent) { setError('Cochez la case de consentement.'); return; }
+    if (!hasDrawn) { setError('Tracez votre signature dans le cadre.'); return; }
     const canvas = canvasRef.current;
     if (!canvas) return;
     setSigning(true);
@@ -307,7 +307,7 @@ function SignatureFooter({
       }
       onSigned();
     } catch {
-      setError('Erreur réseau, réessaie.');
+      setError('Erreur réseau, réessayez.');
     } finally {
       setSigning(false);
     }

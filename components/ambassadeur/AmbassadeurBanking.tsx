@@ -22,11 +22,11 @@ export function AmbassadeurBankingForm({ code, defaults }: FormProps) {
   async function submit() {
     setError(null);
     if (!/^\d{14}$/.test(siret.replace(/\s+/g, ''))) {
-      setError("SIRET invalide. Pas encore de SIRET ? Crée-le gratuitement sur autoentrepreneur.urssaf.fr.");
+      setError("SIRET invalide. Pas encore de SIRET ? Créez-le gratuitement sur autoentrepreneur.urssaf.fr.");
       return;
     }
     if (!email.trim()) { setError('Email requis.'); return; }
-    if (!pledge) { setError("Tu dois accepter l'engagement de non-fraude."); return; }
+    if (!pledge) { setError("Vous devez accepter l'engagement de non-fraude."); return; }
 
     setSubmitting(true);
     try {
@@ -64,15 +64,15 @@ export function AmbassadeurBankingForm({ code, defaults }: FormProps) {
       }}>
         <Icon name="lock" size={15} style={{ marginTop: 1 }} />
         <span>
-          <strong>Paiements sécurisés par Stripe.</strong> Tu vas être redirigé vers
-          Stripe, notre partenaire de paiement, pour saisir ton IBAN et vérifier ton
-          identité. Digitip ne voit jamais tes informations bancaires.
+          <strong>Paiements sécurisés par Stripe.</strong> Vous allez être redirigé vers
+          Stripe, notre partenaire de paiement, pour saisir votre IBAN et vérifier votre
+          identité. Digitip ne voit jamais vos informations bancaires.
         </span>
       </div>
 
       <div style={{ ...noteBox, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-        <strong>SIRET obligatoire</strong> pour recevoir tes virements.{' '}
-        Pas encore de SIRET ? Crée-le gratuitement sur{' '}
+        <strong>SIRET obligatoire</strong> pour recevoir vos virements.{' '}
+        Pas encore de SIRET ? Créez-le gratuitement sur{' '}
         <a href="https://autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
           autoentrepreneur.urssaf.fr
         </a>.
@@ -89,7 +89,7 @@ export function AmbassadeurBankingForm({ code, defaults }: FormProps) {
       </Field>
 
       <Field label="Email" style={{ marginBottom: 0 }}>
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="toi@email.com" />
+        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@email.com" />
       </Field>
 
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
@@ -162,8 +162,8 @@ export function AmbassadeurPayoutPanel({
           <>
             <div style={{ fontSize: FONT.body, color: 'var(--text-2)', marginBottom: SPACE.md, lineHeight: 1.5 }}>
               {pending
-                ? "Ta configuration Stripe n'est pas encore terminée. Reprends-la pour pouvoir recevoir tes commissions."
-                : 'Configure ton compte pour recevoir tes commissions par virement bancaire.'}
+                ? "Votre configuration Stripe n'est pas encore terminée. Reprenez-la pour pouvoir recevoir vos commissions."
+                : 'Configurez votre compte pour recevoir vos commissions par virement bancaire.'}
             </div>
             <Button onClick={() => setSetupOpen(true)}>
               {pending ? 'Reprendre la configuration' : 'Configurer mon compte bancaire'}
@@ -210,7 +210,7 @@ export function AmbassadeurPayoutPanel({
 
       {!canPayout && (
         <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: SPACE.sm, textAlign: 'center' }}>
-          Minimum {fmt(minCents)} — il te manque {fmt(minCents - available)}.
+          Minimum {fmt(minCents)} — il vous manque {fmt(minCents - available)}.
         </div>
       )}
 

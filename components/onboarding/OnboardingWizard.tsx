@@ -763,12 +763,12 @@ export function OnboardingWizard(props: Props) {
           }}>
             <span style={{ fontSize: 22, flexShrink: 0 }}>🔒</span>
             <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
-              Parfait — tu pourras recevoir des pourboires personnellement. La
-              configuration de tes virements se fait en quelques clics depuis ton
+              Parfait — vous pourrez recevoir des pourboires personnellement. La
+              configuration de vos virements se fait en quelques clics depuis votre
               tableau de bord (rubrique <strong style={{ color: 'var(--text)' }}>Virements</strong>),
               via <strong style={{ color: 'var(--text)' }}>Stripe</strong>, notre partenaire de
-              paiement sécurisé. C&apos;est Stripe qui collecte et chiffre tes coordonnées —
-              tes informations bancaires ne transitent jamais par Digitip.
+              paiement sécurisé. C&apos;est Stripe qui collecte et chiffre vos coordonnées —
+              vos informations bancaires ne transitent jamais par Digitip.
             </div>
           </div>
         );

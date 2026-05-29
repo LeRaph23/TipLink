@@ -119,7 +119,7 @@ export function RosterManager({
     setFormError(null);
     setCreatedSetupUrl(null);
     if (!name.trim()) { setFormError('Nom requis.'); return; }
-    if (!promoCodeId) { setFormError('Sélectionne un code promo.'); return; }
+    if (!promoCodeId) { setFormError('Sélectionnez un code promo.'); return; }
 
     const ambName = name.trim();
     const refId = referrerAmbassadorId || null;
@@ -271,8 +271,8 @@ export function RosterManager({
               ))}
             </select>
             <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '4px 0 0' }}>
-              Si ce candidat a été recruté via un code de parrainage, sélectionne le parrain :
-              il touchera 25 € une fois que ce filleul aura fait 3 ventes (crédit à valider par toi).
+              Si ce candidat a été recruté via un code de parrainage, sélectionnez le parrain :
+              il touchera 25 € une fois que ce filleul aura fait 3 ventes (crédit à valider par vous).
             </p>
           </div>
           <div style={{ marginTop: 10 }}>
@@ -437,7 +437,7 @@ export function RosterManager({
               Cette action est <strong>irréversible</strong> et efface aussi ses payouts, parrainages, contrats et logs email.
               {deleteTarget.salesCount > 0 && (
                 <span style={{ color: 'var(--warning)', display: 'block', marginTop: 8 }}>
-                  ⚠️ Cet ambassadeur a {deleteTarget.salesCount} vente(s). La suppression sera refusée — désactive-le plutôt.
+                  ⚠️ Cet ambassadeur a {deleteTarget.salesCount} vente(s). La suppression sera refusée — désactivez-le plutôt.
                 </span>
               )}
             </p>
@@ -465,7 +465,7 @@ function SetupUrlBanner({ data, onDismiss }: { data: { name: string; url: string
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>
-            ✓ {data.name} créé. Envoie-lui ce lien d&apos;activation :
+            ✓ {data.name} créé. Envoyez-lui ce lien d&apos;activation :
           </div>
           <code style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', wordBreak: 'break-all', background: 'var(--surface-2)', padding: '6px 8px', borderRadius: 4, marginTop: 6 }}>
             {data.url}
@@ -500,7 +500,7 @@ function SetupUrlModal({ data, onClose }: { data: { name: string; url: string; e
           Nouveau lien d&apos;activation pour {data.name}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>
-          L&apos;ancien lien et le PIN sont invalidés. Envoie ce nouveau lien à l&apos;ambassadeur (expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}) — il définira lui-même son nouveau PIN :
+          L&apos;ancien lien et le PIN sont invalidés. Envoyez ce nouveau lien à l&apos;ambassadeur (expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}) — il définira lui-même son nouveau PIN :
         </p>
         <code style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', wordBreak: 'break-all', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: 6 }}>
           {data.url}
