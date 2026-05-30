@@ -9,8 +9,9 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' https://js.stripe.com https://connect.stripe.com",
   // Stripe Elements / Connect iframes
   "frame-src https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com",
-  // Supabase REST/Realtime + Stripe API calls (from browser SDK)
-  "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co",
+  // Supabase REST/Realtime + Stripe API calls (from browser SDK) +
+  // the IGN Géoplateforme geocoder that powers the address autocomplete.
+  "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co https://data.geopf.fr",
   // Avatars and logos live in Supabase Storage (public-media bucket).
   // Carto tiles power the salon map.
   "img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com",
