@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -346,20 +346,45 @@ export function OnboardingWizard(props: Props) {
     [router, locale, searchParams]
   );
 
-  const canAdvance = (): boolean => {
-    switch (currentStep) {
-      case 'codes': return state.nfcCodes.length > 0;
-      case 'salon': return state.establishmentName.trim().length > 0;
-      case 'address': return state.address.trim().length > 0;
-      case 'admin-name': return state.adminFullName.trim().length > 0;
-      case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
-      case 'password': return state.password.length >= 8;
-      case 'team': return true;
-      case 'tips-opt-in': return wantsTips !== null;
-      case 'banking': return true;
-      default: return true;
+  const isStepComplete = useCallback(
+    (step: string): boolean => {
+      switch (step) {
+        // Every code must be a non-empty string — the server schema rejects ''.
+        case 'codes': return state.nfcCodes.length > 0 && state.nfcCodes.every((c) => c.trim().length > 0);
+        case 'salon': return state.establishmentName.trim().length > 0;
+        case 'address': return state.address.trim().length > 0;
+        case 'admin-name': return state.adminFullName.trim().length > 0;
+        case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
+        case 'password': return state.password.length >= 8;
+        case 'team': return true;
+        case 'tips-opt-in': return wantsTips !== null;
+        case 'banking': return true;
+        default: return true;
+      }
+    },
+    [state, wantsTips]
+  );
+
+  const canAdvance = (): boolean => isStepComplete(currentStep);
+
+  // Guard against landing on a step past unfilled prerequisites. The current
+  // step is persisted in the URL (?step=…) but the collected data lives only in
+  // in-memory state, so a page reload or browser back/forward can restore a late
+  // step (e.g. "banking") with empty fields. Submitting from there would send
+  // blank values to the server action and surface a raw Zod
+  // "Too small: expected string to have >=1 characters" error. Instead, bounce
+  // the user back to the first incomplete step so they re-enter their details.
+  useEffect(() => {
+    if (done || needsEmailVerification) return;
+    const firstIncomplete = steps.findIndex((s) => !isStepComplete(s));
+    if (firstIncomplete !== -1 && stepIndex > firstIncomplete) {
+      // Redirect via the router directly (not goTo) so we only sync the URL —
+      // an external system — without a synchronous setState inside the effect.
+      const p = new URLSearchParams(searchParams.toString());
+      p.set('step', steps[firstIncomplete]);
+      router.replace(`/${locale}/onboarding?${p.toString()}`, { scroll: false });
     }
-  };
+  }, [stepIndex, steps, isStepComplete, done, needsEmailVerification, router, locale, searchParams]);
 
   // In postpurchase mode, skip banking step if admin said no
   const next = () => {
