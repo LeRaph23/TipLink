@@ -435,6 +435,7 @@
     "errorTooManyRequests": "Too many attempts. Please try again in a few minutes.",
     "errorNetwork": "Network error. Check your connection.",
     "errorEmailInUse": "An account already exists with this email.",
+    "errorGeneric": "Something went wrong. Please try again.",
     "business": {
       "stepTitle": "Business details",
       "stepSubtitle": "Required for invoicing. You can edit later.",

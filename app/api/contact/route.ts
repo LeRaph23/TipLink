@@ -96,8 +96,10 @@ export async function POST(request: NextRequest) {
           text,
         }),
       });
-    } catch {
-      // ignore
+    } catch (err) {
+      // Best-effort notification: the lead is already persisted, so we don't
+      // fail the request — but log so a silently-dropped email is observable.
+      console.error('[contact] lead notification email failed', err);
     }
   }
 

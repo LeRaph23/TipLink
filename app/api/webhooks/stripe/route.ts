@@ -1555,7 +1555,9 @@ async function attributeAmbassadorSale(
     });
     if (saleErr) return;
 
-    void notifyTelegram(ambassador.name, salonPartial, pack).catch(() => {});
+    void notifyTelegram(ambassador.name, salonPartial, pack).catch((err) => {
+      console.error('[webhook] Telegram sale notification failed', err);
+    });
 
     const { checkAndValidateReferral } = await import('@/lib/referrals');
     void checkAndValidateReferral(supabase, ambassador.id)
@@ -1611,6 +1613,8 @@ async function attributeCommercialSale(
   }
 }
 
+// Server-only notification — runs in the webhook handler, so the browser CSP
+// (connect-src) does not apply to this api.telegram.org call.
 async function notifyTelegram(ambassadorName: string, salon: string, pack: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;

@@ -68,9 +68,15 @@ export function EditEstablishmentForm({ establishment }: { establishment: Establ
 
   const handleDelete = async () => {
     if (!confirm(t('deleteConfirm'))) return;
+    setSaveStatus('saving');
+    setErrorMsg('');
     const result = await deleteEstablishment(establishment.id);
     if ('success' in result) {
       router.push('/dashboard/establishments');
+    } else {
+      // Surface the failure instead of leaving the user on a dead button.
+      setSaveStatus('error');
+      setErrorMsg(result.error);
     }
   };
 
