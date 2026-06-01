@@ -1071,6 +1071,59 @@
       }
     }
   },
+  "join": {
+    "back": "← Retour",
+    "continue": "Continuer →",
+    "creatingAccount": "Création du compte…",
+    "verifyEmail": {
+      "title": "Vérifiez votre email",
+      "body": "Un lien de confirmation a été envoyé à <b>{email}</b>. Cliquez dessus pour activer votre compte et rejoindre <b>{name}</b>."
+    },
+    "welcome": {
+      "title": "Rejoignez {name}",
+      "subtitle": "Vos pourboires, directement sur votre compte.",
+      "bullet1": "Vos clients vous laissent un pourboire depuis leur téléphone — sans espèces, sans appli.",
+      "bullet2": "Vous recevez l'argent sur votre compte bancaire.",
+      "bullet3": "Prêt(e) en 2 minutes.",
+      "start": "Commencer →"
+    },
+    "identity": {
+      "title": "Qui êtes-vous ?",
+      "subtitle": "Sélectionnez votre prénom pour rejoindre l'équipe.",
+      "notListed": "Mon prénom n'est pas dans la liste →"
+    },
+    "namePhoto": {
+      "title": "Votre prénom et photo",
+      "subtitle": "C'est ainsi que vous apparaîtrez sur la page de paiement de vos clients.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "optional": "(facultatif)",
+      "firstNamePlaceholder": "ex : Océane",
+      "lastNamePlaceholder": "ex : Dupont",
+      "photoTip": "Les profils avec photo reçoivent en moyenne <b>3× plus de pourboires</b>.",
+      "uploading": "Envoi…",
+      "photo": "Photo",
+      "photoHint": "JPG, PNG ou WebP · 2 Mo max"
+    },
+    "payment": {
+      "title": "Recevoir vos pourboires",
+      "subtitle": "Dernière étape : connecter votre compte bancaire via <b>Stripe</b>.",
+      "bullet1": "Après la création de votre compte, Stripe vous guide pour configurer vos virements en quelques clics.",
+      "bullet2": "C'est Stripe qui collecte et chiffre votre pièce d'identité et votre IBAN. Digitip ne les voit jamais.",
+      "bullet3": "Votre IBAN n'est jamais visible par votre employeur."
+    },
+    "email": {
+      "title": "Votre email",
+      "subtitle": "Utilisé pour vous connecter à votre compte DigiTip.",
+      "prefilled": "Votre responsable a pré-renseigné votre email. Vous pouvez le modifier si nécessaire."
+    },
+    "password": {
+      "title": "Mot de passe",
+      "subtitle": "Choisissez un mot de passe pour sécuriser votre compte.",
+      "hint": "8 caractères minimum",
+      "join": "Rejoindre {name} →"
+    }
+  },
   "onboarding": {
     "stepOf": "Étape {current} sur {total}",
     "continue": "Continuer →",

@@ -1071,6 +1071,59 @@
       }
     }
   },
+  "join": {
+    "back": "← Back",
+    "continue": "Continue →",
+    "creatingAccount": "Creating account…",
+    "verifyEmail": {
+      "title": "Check your email",
+      "body": "A confirmation link has been sent to <b>{email}</b>. Click it to activate your account and join <b>{name}</b>."
+    },
+    "welcome": {
+      "title": "Join {name}",
+      "subtitle": "Your tips, straight to your account.",
+      "bullet1": "Your clients tip you from their phone — no cash, no app.",
+      "bullet2": "You receive the money in your bank account.",
+      "bullet3": "Ready in 2 minutes.",
+      "start": "Get started →"
+    },
+    "identity": {
+      "title": "Who are you?",
+      "subtitle": "Select your first name to join the team.",
+      "notListed": "My name isn't in the list →"
+    },
+    "namePhoto": {
+      "title": "Your first name and photo",
+      "subtitle": "This is how you'll appear on your clients' payment page.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "optional": "(optional)",
+      "firstNamePlaceholder": "e.g. Océane",
+      "lastNamePlaceholder": "e.g. Dupont",
+      "photoTip": "Profiles with a photo receive on average <b>3× more tips</b>.",
+      "uploading": "Uploading…",
+      "photo": "Photo",
+      "photoHint": "JPG, PNG or WebP · 2 MB max"
+    },
+    "payment": {
+      "title": "Receive your tips",
+      "subtitle": "Last step: connect your bank account via <b>Stripe</b>.",
+      "bullet1": "After creating your account, Stripe guides you to set up your payouts in a few clicks.",
+      "bullet2": "Stripe collects and encrypts your ID and IBAN. Digitip never sees them.",
+      "bullet3": "Your IBAN is never visible to your employer."
+    },
+    "email": {
+      "title": "Your email",
+      "subtitle": "Used to sign in to your DigiTip account.",
+      "prefilled": "Your manager pre-filled your email. You can change it if needed."
+    },
+    "password": {
+      "title": "Password",
+      "subtitle": "Choose a password to secure your account.",
+      "hint": "At least 8 characters",
+      "join": "Join {name} →"
+    }
+  },
   "onboarding": {
     "stepOf": "Step {current} of {total}",
     "continue": "Continue →",

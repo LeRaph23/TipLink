@@ -86,6 +86,7 @@ export function JoinForm({
   unclaimedProfiles: UnclaimedProfile[];
 }) {
   const locale = useLocale();
+  const t = useTranslations('join');
   const tAuth = useTranslations('auth');
   const tUpload = useTranslations('imageUpload');
   const [step, setStep] = useState<Step>('welcome');
@@ -253,12 +254,14 @@ export function JoinForm({
           margin: '0 auto 20px', color: 'var(--accent)',
         }}><Icon name="mail" size={26} /></div>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
-          Vérifiez votre email
+          {t('verifyEmail.title')}
         </h2>
         <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.7 }}>
-          Un lien de confirmation a été envoyé à <strong>{email}</strong>.
-          <br />
-          Cliquez dessus pour activer votre compte et rejoindre <strong>{establishmentName}</strong>.
+          {t.rich('verifyEmail.body', {
+            email,
+            name: establishmentName,
+            b: (c) => <strong>{c}</strong>,
+          })}
         </p>
       </div>
     );
@@ -276,16 +279,16 @@ export function JoinForm({
           margin: '0 auto 20px', color: '#fff',
         }}><Icon name="bank" size={28} /></div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          Rejoignez {establishmentName}
+          {t('welcome.title', { name: establishmentName })}
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-          Vos pourboires, directement sur votre compte.
+          {t('welcome.subtitle')}
         </p>
 
         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
-          <Bullet icon="phone">Vos clients vous laissent un pourboire depuis leur téléphone — sans espèces, sans appli.</Bullet>
-          <Bullet icon="bank">Vous recevez l&apos;argent sur votre compte bancaire.</Bullet>
-          <Bullet icon="clock">Prêt(e) en 2 minutes.</Bullet>
+          <Bullet icon="phone">{t('welcome.bullet1')}</Bullet>
+          <Bullet icon="bank">{t('welcome.bullet2')}</Bullet>
+          <Bullet icon="clock">{t('welcome.bullet3')}</Bullet>
         </ul>
 
         <button
@@ -293,7 +296,7 @@ export function JoinForm({
           onClick={() => setStep(unclaimedProfiles.length > 0 ? 'identity' : 'name-photo')}
           style={btnPrimary}
         >
-          Commencer →
+          {t('welcome.start')}
         </button>
       </div>
     );
@@ -305,10 +308,10 @@ export function JoinForm({
     return (
       <div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          Qui êtes-vous ?
+          {t('identity.title')}
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-          Sélectionnez votre prénom pour rejoindre l&apos;équipe.
+          {t('identity.subtitle')}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -360,12 +363,12 @@ export function JoinForm({
               fontSize: 13.5, fontWeight: 500,
             }}
           >
-            Mon prénom n&apos;est pas dans la liste →
+            {t('identity.notListed')}
           </button>
         </div>
 
         <button type="button" onClick={() => setStep('welcome')} style={{ ...btnSecondary, marginTop: 16 }}>
-          ← Retour
+          {t('back')}
         </button>
       </div>
     );
@@ -377,20 +380,20 @@ export function JoinForm({
     return (
       <div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          Votre prénom et photo
+          {t('namePhoto.title')}
         </h1>
         <p style={{ fontSize: 13.5, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 20 }}>
-          C&apos;est ainsi que vous apparaîtrez sur la page de paiement de vos clients.
+          {t('namePhoto.subtitle')}
         </p>
 
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
-            Prénom <span style={{ color: 'var(--accent)' }}>*</span>
+            {t('namePhoto.firstName')} <span style={{ color: 'var(--accent)' }}>*</span>
           </label>
           <input
             autoFocus
             type="text"
-            placeholder="ex : Océane"
+            placeholder={t('namePhoto.firstNamePlaceholder')}
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             style={inp}
@@ -398,11 +401,11 @@ export function JoinForm({
         </div>
         <div style={{ marginBottom: 24 }}>
           <label style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>
-            Nom <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(facultatif)</span>
+            {t('namePhoto.lastName')} <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>{t('namePhoto.optional')}</span>
           </label>
           <input
             type="text"
-            placeholder="ex : Dupont"
+            placeholder={t('namePhoto.lastNamePlaceholder')}
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             style={inp}
@@ -411,7 +414,7 @@ export function JoinForm({
 
         <div style={{ marginBottom: 8 }}>
           <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>
-            Les profils avec photo reçoivent en moyenne <strong>3× plus de pourboires</strong>.
+            {t.rich('namePhoto.photoTip', { b: (c) => <strong>{c}</strong> })}
           </p>
           <div
             onClick={() => fileRef.current?.click()}
@@ -430,13 +433,13 @@ export function JoinForm({
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 26, color: 'var(--text-3)', marginBottom: 4 }}>+</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>
-                  {avatarUploading ? 'Envoi…' : 'Photo'}
+                  {avatarUploading ? t('namePhoto.uploading') : t('namePhoto.photo')}
                 </div>
               </div>
             )}
           </div>
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFileChange} style={{ display: 'none' }} />
-          <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-3)' }}>JPG, PNG ou WebP · 2 Mo max</p>
+          <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-3)' }}>{t('namePhoto.photoHint')}</p>
           {avatarError && <p style={{ fontSize: 12.5, color: 'var(--error)', textAlign: 'center', marginTop: 6 }}>{avatarError}</p>}
         </div>
 
@@ -447,10 +450,10 @@ export function JoinForm({
             disabled={!firstNameFilled}
             style={{ ...btnPrimary, opacity: firstNameFilled ? 1 : 0.4 }}
           >
-            Continuer →
+            {t('continue')}
           </button>
           <button type="button" onClick={() => setStep(unclaimedProfiles.length > 0 ? 'identity' : 'welcome')} style={btnSecondary}>
-            ← Retour
+            {t('back')}
           </button>
         </div>
       </div>
@@ -469,16 +472,16 @@ export function JoinForm({
           margin: '0 auto 20px', color: 'var(--accent)',
         }}><Icon name="bank" size={26} /></div>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          Recevoir vos pourboires
+          {t('payment.title')}
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 20 }}>
-          Dernière étape : connecter votre compte bancaire via <strong>Stripe</strong>.
+          {t.rich('payment.subtitle', { b: (c) => <strong>{c}</strong> })}
         </p>
 
         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
-          <Bullet icon="bank">Après la création de votre compte, Stripe vous guide pour configurer vos virements en quelques clics.</Bullet>
-          <Bullet icon="lock">C&apos;est Stripe qui collecte et chiffre votre pièce d&apos;identité et votre IBAN. Digitip ne les voit jamais.</Bullet>
-          <Bullet icon="checkCircle">Votre IBAN n&apos;est jamais visible par votre employeur.</Bullet>
+          <Bullet icon="bank">{t('payment.bullet1')}</Bullet>
+          <Bullet icon="lock">{t('payment.bullet2')}</Bullet>
+          <Bullet icon="checkCircle">{t('payment.bullet3')}</Bullet>
         </ul>
         {error && (
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>
@@ -500,10 +503,10 @@ export function JoinForm({
             }}
             style={{ ...btnPrimary, opacity: loading ? 0.4 : 1 }}
           >
-            {loading ? 'Création du compte…' : 'Continuer →'}
+            {loading ? t('creatingAccount') : t('continue')}
           </button>
           <button type="button" onClick={() => setStep('name-photo')} style={btnSecondary}>
-            ← Retour
+            {t('back')}
           </button>
         </div>
       </div>
@@ -517,10 +520,10 @@ export function JoinForm({
     return (
       <div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          Votre email
+          {t('email.title')}
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-          Utilisé pour vous connecter à votre compte DigiTip.
+          {t('email.subtitle')}
         </p>
 
         {prefilledEmail && (
@@ -529,7 +532,7 @@ export function JoinForm({
             background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
             fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12,
           }}>
-            Votre responsable a pré-renseigné votre email. Vous pouvez le modifier si nécessaire.
+            {t('email.prefilled')}
           </div>
         )}
 
@@ -555,10 +558,10 @@ export function JoinForm({
             disabled={!emailValid}
             style={{ ...btnPrimary, opacity: emailValid ? 1 : 0.4 }}
           >
-            Continuer →
+            {t('continue')}
           </button>
           <button type="button" onClick={() => setStep('payment-intro')} style={btnSecondary}>
-            ← Retour
+            {t('back')}
           </button>
         </div>
       </div>
@@ -570,10 +573,10 @@ export function JoinForm({
   return (
     <form onSubmit={handleSubmit}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-        Mot de passe
+        {t('password.title')}
       </h1>
       <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-        Choisissez un mot de passe pour sécuriser votre compte.
+        {t('password.subtitle')}
       </p>
 
       {error && (
@@ -590,7 +593,7 @@ export function JoinForm({
         minLength={8}
         style={{ ...inp, marginBottom: 8 }}
       />
-      <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 24 }}>8 caractères minimum</p>
+      <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 24 }}>{t('password.hint')}</p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button
@@ -598,14 +601,14 @@ export function JoinForm({
           disabled={loading || password.length < 8}
           style={{ ...btnPrimary, opacity: loading || password.length < 8 ? 0.5 : 1 }}
         >
-          {loading ? 'Création du compte…' : `Rejoindre ${establishmentName} →`}
+          {loading ? t('creatingAccount') : t('password.join', { name: establishmentName })}
         </button>
         <button
           type="button"
           onClick={() => { setError(null); setStep('email'); }}
           style={btnSecondary}
         >
-          ← Retour
+          {t('back')}
         </button>
       </div>
     </form>
