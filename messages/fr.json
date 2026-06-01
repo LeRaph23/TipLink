@@ -35,7 +35,8 @@
     "uploading": "Téléversement…",
     "hint": "PNG, JPG ou WebP · 2 Mo max",
     "notAuthenticated": "Non authentifié",
-    "uploadFailed": "Échec du téléversement"
+    "uploadFailed": "Échec du téléversement",
+    "photoFailed": "Échec de l'envoi de la photo. Réessayez ou continuez sans photo."
   },
   "notFound": {
     "title": "Page introuvable",

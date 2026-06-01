@@ -35,7 +35,8 @@
     "uploading": "Uploading…",
     "hint": "PNG, JPG or WebP · max 2 MB",
     "notAuthenticated": "Not authenticated",
-    "uploadFailed": "Upload failed"
+    "uploadFailed": "Upload failed",
+    "photoFailed": "Photo upload failed. Try again or continue without a photo."
   },
   "notFound": {
     "title": "Page not found",

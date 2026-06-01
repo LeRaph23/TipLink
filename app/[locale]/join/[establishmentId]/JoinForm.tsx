@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Icon, type IconName } from '@/components/ambassadeur/icons';
 
 interface UnclaimedProfile {
@@ -83,6 +85,9 @@ export function JoinForm({
   establishmentName: string;
   unclaimedProfiles: UnclaimedProfile[];
 }) {
+  const locale = useLocale();
+  const tAuth = useTranslations('auth');
+  const tUpload = useTranslations('imageUpload');
   const [step, setStep] = useState<Step>('welcome');
   const [selectedProfile, setSelectedProfile] = useState<UnclaimedProfile | null>(null);
 
@@ -154,10 +159,11 @@ export function JoinForm({
       const json = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !json.url) throw new Error(json.error ?? 'Upload failed');
       setAvatarUrl(json.url);
-    } catch {
+    } catch (err) {
+      console.error('[join] avatar upload failed', err);
       setAvatarUrl(null);
       setAvatarPreview(null);
-      setAvatarError('Échec de l\'envoi de la photo. Réessayez ou continuez sans photo.');
+      setAvatarError(tUpload('photoFailed'));
     }
     setAvatarUploading(false);
   }
@@ -171,19 +177,21 @@ export function JoinForm({
         fullName: effectiveName,
         selectedProfileId: selectedProfile?.id ?? null,
         avatarUrl,
+        locale,
       }),
     });
 
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(body.error ?? 'Erreur lors de la création du profil.');
+      console.error('[join] profile creation failed', res.status, body.error);
+      setError(tAuth('errorGeneric'));
       setLoading(false);
       return;
     }
 
     // Hand off to Stripe's hosted onboarding (Standard connected account).
     const body = (await res.json().catch(() => ({}))) as { onboardingUrl?: string };
-    window.location.href = body.onboardingUrl ?? '/dashboard';
+    window.location.href = body.onboardingUrl ?? `/${locale}/dashboard`;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -206,7 +214,8 @@ export function JoinForm({
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      console.error('[join] signup failed', signUpError.message);
+      setError(mapAuthError(signUpError.message, tAuth));
       setLoading(false);
       return;
     }
@@ -214,7 +223,7 @@ export function JoinForm({
     if (data.user && data.user.identities?.length === 0) {
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError || !signInData.session) {
-        setError('Un compte existe déjà avec cet email. Vérifiez votre mot de passe ou utilisez un autre email.');
+        setError(tAuth('errorEmailInUse'));
         setLoading(false);
         return;
       }
