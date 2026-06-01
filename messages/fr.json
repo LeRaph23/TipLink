@@ -1079,15 +1079,24 @@
     "back": "← Retour",
     "done": {
       "title": "Votre espace est prêt !",
-      "body": "est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
-      "cta": "Accéder au dashboard →"
+      "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
+      "cta": "Accéder au dashboard →",
+      "payoutTitle": "Finalisez vos virements",
+      "payoutBody": "Après avoir confirmé votre email, rendez-vous dans <b>Dashboard → Virements</b> pour configurer vos virements avec Stripe et commencer à recevoir des pourboires."
+    },
+    "emailVerification": {
+      "title": "Vérifiez votre email",
+      "sent": "Un lien de confirmation a été envoyé à <strong>{email}</strong>.",
+      "activate": "Cliquez dessus pour activer votre compte et accéder à votre espace <strong>{name}</strong>."
     },
     "codes": {
       "title": "Vos SmartTags",
       "subtitle": "Votre SmartTag est prêt à être configuré. Avez-vous d'autres tags à associer maintenant ?",
       "add": "Ajouter",
       "validating": "…",
+      "placeholder": "ex: a3f2b9c1",
       "invalidCode": "Code invalide ou déjà utilisé",
+      "networkError": "Erreur réseau, vérifiez votre connexion et réessayez.",
       "hint": "Les codes se trouvent sous le QR code imprimé sur chaque SmartTag."
     },
     "salon": {
@@ -1114,8 +1123,22 @@
     "team": {
       "title": "Votre équipe",
       "subtitle": "Invitez vos collègues pour qu'ils puissent eux aussi recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard.",
+      "intro": "Vos collègues recevront un email pour créer leur compte et commencer à recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard depuis votre dashboard.",
+      "namePlaceholder": "Prénom du collègue",
+      "emailPlaceholder": "Email du collègue",
       "add": "+ Ajouter un collègue",
       "remove": "Retirer"
+    },
+    "tipsOptIn": {
+      "title": "Et vous ?",
+      "subtitle": "Souhaitez-vous aussi recevoir des pourboires personnellement ?",
+      "yes": "Oui, je veux recevoir des pourboires",
+      "no": "Non, je gère uniquement mon équipe"
+    },
+    "banking": {
+      "title": "Recevoir vos pourboires",
+      "subtitle": "Vos virements se configurent ensuite depuis votre tableau de bord, via Stripe.",
+      "body": "Parfait — vous pourrez recevoir des pourboires personnellement. La configuration de vos virements se fait en quelques clics depuis votre tableau de bord (rubrique <b>Virements</b>), via <b>Stripe</b>, notre partenaire de paiement sécurisé. C'est Stripe qui collecte et chiffre vos coordonnées — vos informations bancaires ne transitent jamais par Digitip."
     }
   }
 }
