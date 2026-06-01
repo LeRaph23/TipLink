@@ -35,7 +35,8 @@
     "uploading": "Uploading…",
     "hint": "PNG, JPG or WebP · max 2 MB",
     "notAuthenticated": "Not authenticated",
-    "uploadFailed": "Upload failed"
+    "uploadFailed": "Upload failed",
+    "photoFailed": "Photo upload failed. Try again or continue without a photo."
   },
   "notFound": {
     "title": "Page not found",
@@ -49,6 +50,16 @@
     "retry": "Try again",
     "home": "Back to home",
     "ref": "Reference:"
+  },
+  "errors": {
+    "validation": "Some information is invalid. Please check your entries.",
+    "duplicate": "This item already exists.",
+    "notFound": "Not found.",
+    "forbidden": "You don't have permission to perform this action.",
+    "unknown": "Something went wrong. Please try again.",
+    "network": "Network error. Check your connection and try again.",
+    "initFailed": "Couldn't start the payment. Please try again.",
+    "staffPendingTips": "This member has pending payments. Try again once they're settled."
   },
   "legal": {
     "lastUpdated": "Last updated",
@@ -425,6 +436,7 @@
     "errorTooManyRequests": "Too many attempts. Please try again in a few minutes.",
     "errorNetwork": "Network error. Check your connection.",
     "errorEmailInUse": "An account already exists with this email.",
+    "errorGeneric": "Something went wrong. Please try again.",
     "business": {
       "stepTitle": "Business details",
       "stepSubtitle": "Required for invoicing. You can edit later.",
@@ -523,8 +535,8 @@
       "full_name_required": "Please enter your name.",
       "email_invalid": "Invalid email address.",
       "password_too_short": "Password too short (8 characters minimum).",
-      "signup_failed": "Account creation failed: {message}",
-      "checkout_failed": "Checkout failed: {message}",
+      "signup_failed": "Account creation failed. Check your details and try again.",
+      "checkout_failed": "The payment couldn't be completed. Please try again in a moment.",
       "email_in_use": "An account already exists for this email. Please sign in first — we'll resume your order.",
       "email_confirmation_required": "We sent you a confirmation email. Confirm it then sign in to finish your order."
     }
@@ -779,6 +791,29 @@
       "linkCopied": "Copied"
     },
     "payouts": "Payouts",
+    "banking": {
+      "title": "Payouts",
+      "subtitle": "Receive your tips directly in your bank account.",
+      "notLinkedTitle": "Account not linked",
+      "notLinkedBody": "Your account isn't linked to an establishment yet. Contact your administrator to access this feature.",
+      "totalReceived": "Total received",
+      "autoPayout": "Your tips are paid out <b>automatically</b> to your bank account by Stripe.",
+      "activeTitle": "Bank account active",
+      "activeBody": "You're receiving your tips. You can update your details if needed.",
+      "pendingTitle": "Verification in progress",
+      "pendingBody": "Finish the setup on Stripe to start receiving your tips.",
+      "step1Title": "Your tips in your account",
+      "step1Body": "Set up your payouts in 2 minutes with Stripe, our payment partner.",
+      "step2Title": "Your data stays private",
+      "step2Body": "Stripe collects and encrypts your ID and IBAN. Digitip never sees them.",
+      "step3Title": "Ready to set up",
+      "step3Body": "You'll be redirected to Stripe. You come back here as soon as it's done, and your tips then arrive automatically.",
+      "back": "← Back",
+      "continue": "Continue →",
+      "openingStripe": "Opening Stripe…",
+      "setupCta": "Set up with Stripe →",
+      "updateCta": "Update my bank details →"
+    },
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenue and top performers over the last 30 days.",
@@ -1036,6 +1071,59 @@
       }
     }
   },
+  "join": {
+    "back": "← Back",
+    "continue": "Continue →",
+    "creatingAccount": "Creating account…",
+    "verifyEmail": {
+      "title": "Check your email",
+      "body": "A confirmation link has been sent to <b>{email}</b>. Click it to activate your account and join <b>{name}</b>."
+    },
+    "welcome": {
+      "title": "Join {name}",
+      "subtitle": "Your tips, straight to your account.",
+      "bullet1": "Your clients tip you from their phone — no cash, no app.",
+      "bullet2": "You receive the money in your bank account.",
+      "bullet3": "Ready in 2 minutes.",
+      "start": "Get started →"
+    },
+    "identity": {
+      "title": "Who are you?",
+      "subtitle": "Select your first name to join the team.",
+      "notListed": "My name isn't in the list →"
+    },
+    "namePhoto": {
+      "title": "Your first name and photo",
+      "subtitle": "This is how you'll appear on your clients' payment page.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "optional": "(optional)",
+      "firstNamePlaceholder": "e.g. Océane",
+      "lastNamePlaceholder": "e.g. Dupont",
+      "photoTip": "Profiles with a photo receive on average <b>3× more tips</b>.",
+      "uploading": "Uploading…",
+      "photo": "Photo",
+      "photoHint": "JPG, PNG or WebP · 2 MB max"
+    },
+    "payment": {
+      "title": "Receive your tips",
+      "subtitle": "Last step: connect your bank account via <b>Stripe</b>.",
+      "bullet1": "After creating your account, Stripe guides you to set up your payouts in a few clicks.",
+      "bullet2": "Stripe collects and encrypts your ID and IBAN. Digitip never sees them.",
+      "bullet3": "Your IBAN is never visible to your employer."
+    },
+    "email": {
+      "title": "Your email",
+      "subtitle": "Used to sign in to your DigiTip account.",
+      "prefilled": "Your manager pre-filled your email. You can change it if needed."
+    },
+    "password": {
+      "title": "Password",
+      "subtitle": "Choose a password to secure your account.",
+      "hint": "At least 8 characters",
+      "join": "Join {name} →"
+    }
+  },
   "onboarding": {
     "stepOf": "Step {current} of {total}",
     "continue": "Continue →",
@@ -1043,17 +1131,27 @@
     "finish": "Finish setup →",
     "finishing": "Finalizing…",
     "back": "← Back",
+    "fillField": "Fill in this field to continue.",
     "done": {
       "title": "Your space is ready!",
-      "body": "is set up. You can now manage your team and track your tips.",
-      "cta": "Go to dashboard →"
+      "body": "{name} is set up. You can now manage your team and track your tips.",
+      "cta": "Go to dashboard →",
+      "payoutTitle": "Finish your payouts",
+      "payoutBody": "After confirming your email, go to <b>Dashboard → Payouts</b> to set up your payouts with Stripe and start receiving tips."
+    },
+    "emailVerification": {
+      "title": "Check your email",
+      "sent": "A confirmation link has been sent to <strong>{email}</strong>.",
+      "activate": "Click it to activate your account and access your <strong>{name}</strong> space."
     },
     "codes": {
       "title": "Your SmartTags",
       "subtitle": "Your SmartTag is ready to be set up. Do you have other tags to configure at the same time?",
       "add": "Add",
       "validating": "…",
+      "placeholder": "e.g. a3f2b9c1",
       "invalidCode": "Invalid or already assigned code",
+      "networkError": "Network error, check your connection and try again.",
       "hint": "Codes are printed under the QR code on each SmartTag."
     },
     "salon": {
@@ -1062,7 +1160,9 @@
     },
     "address": {
       "title": "Address",
-      "subtitle": "Where is your establishment located?"
+      "subtitle": "Where is your establishment located?",
+      "searching": "Searching…",
+      "manualHint": "No suggestions? Enter your address manually."
     },
     "adminName": {
       "title": "Your name",
@@ -1080,8 +1180,22 @@
     "team": {
       "title": "Your team",
       "subtitle": "Invite your colleagues so they can also receive tips. You can skip this step and invite them later from your dashboard.",
+      "intro": "Your colleagues will receive an email to create their account and start receiving tips. You can skip this step and invite them later from your dashboard.",
+      "namePlaceholder": "Colleague's first name",
+      "emailPlaceholder": "Colleague's email",
       "add": "+ Add a colleague",
       "remove": "Remove"
+    },
+    "tipsOptIn": {
+      "title": "And you?",
+      "subtitle": "Would you also like to receive tips personally?",
+      "yes": "Yes, I want to receive tips",
+      "no": "No, I only manage my team"
+    },
+    "banking": {
+      "title": "Receiving your tips",
+      "subtitle": "Your payouts are set up afterwards from your dashboard, via Stripe.",
+      "body": "Perfect — you'll be able to receive tips personally. Setting up your payouts takes a few clicks from your dashboard (the <b>Payouts</b> section), via <b>Stripe</b>, our secure payment partner. Stripe collects and encrypts your details — your banking information never passes through Digitip."
     }
   }
 }

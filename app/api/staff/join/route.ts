@@ -18,8 +18,10 @@ export async function POST(req: Request) {
     fullName?: string;
     selectedProfileId?: string | null;
     avatarUrl?: string | null;
+    locale?: string;
   };
   const { establishmentId, fullName, selectedProfileId, avatarUrl } = body;
+  const locale = body.locale === 'en' ? 'en' : 'fr';
 
   if (!establishmentId) return NextResponse.json({ error: 'Missing establishmentId' }, { status: 400 });
 
@@ -130,7 +132,7 @@ export async function POST(req: Request) {
       .from('staff_profiles')
       .update({ stripe_account_id: accountId, onboarding_status: 'pending' })
       .eq('id', staffProfileId);
-    const url = await createOnboardingLink(accountId, staffBankingReturnUrls());
+    const url = await createOnboardingLink(accountId, staffBankingReturnUrls(locale));
     return NextResponse.json({ ok: true, onboardingUrl: url });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Création du compte Stripe échouée';

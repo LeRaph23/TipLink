@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { mapAuthError } from '@/lib/auth/map-auth-error';
 
 const inputStyle = (focused: boolean): React.CSSProperties => ({
   width: '100%',
@@ -44,7 +45,8 @@ export function ForgotPasswordForm({ locale }: { locale: string }) {
     });
     setIsLoading(false);
     if (resetError) {
-      setError(resetError.message);
+      console.error('[forgot-password] reset failed', resetError.message);
+      setError(mapAuthError(resetError.message, t));
       return;
     }
     setSent(true);

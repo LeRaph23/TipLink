@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { sendStaffInviteLink } from '@/lib/staff-invite';
 import { verifyOnboardingToken } from '@/lib/auth/onboarding-token';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
+import { actionError, classifyDbError } from '@/lib/errors/action-error';
 
 const ColleagueSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -91,11 +92,11 @@ export async function completePostPurchaseOnboarding(
   input: z.infer<typeof PostPurchaseSchema>
 ): Promise<{ success: true } | { error: string }> {
   const parsed = PostPurchaseSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  if (!parsed.success) return actionError('validation', parsed.error, 'completePostPurchaseOnboarding');
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
+  if (!user) return actionError('forbidden');
 
   const service = createServiceClient();
 
@@ -109,7 +110,7 @@ export async function completePostPurchaseOnboarding(
     .limit(1)
     .maybeSingle();
 
-  if (!roleRow?.group_id) return { error: 'Aucun groupe trouvé pour cet utilisateur.' };
+  if (!roleRow?.group_id) return actionError('notFound');
 
   // Get the first establishment for this group
   const { data: est } = await service
@@ -120,7 +121,7 @@ export async function completePostPurchaseOnboarding(
     .limit(1)
     .single();
 
-  if (!est) return { error: 'Aucun établissement trouvé.' };
+  if (!est) return actionError('notFound');
 
   const { establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
   const slug = await makeUniqueEstablishmentSlug(service, establishmentName, est.id);
@@ -131,7 +132,7 @@ export async function completePostPurchaseOnboarding(
     .update({ name: establishmentName, address, slug })
     .eq('id', est.id);
 
-  if (estErr) return { error: estErr.message };
+  if (estErr) return actionError(classifyDbError(estErr), estErr, 'completePostPurchaseOnboarding.est');
 
   // Update group name to match
   const { error: groupNameErr } = await service
@@ -139,7 +140,7 @@ export async function completePostPurchaseOnboarding(
     .update({ name: establishmentName })
     .eq('id', roleRow.group_id);
 
-  if (groupNameErr) return { error: groupNameErr.message };
+  if (groupNameErr) return actionError(classifyDbError(groupNameErr), groupNameErr, 'completePostPurchaseOnboarding.group');
 
   // Update auth user display name
   await supabase.auth.updateUser({ data: { full_name: adminFullName } });
@@ -180,7 +181,7 @@ export async function completePostPurchaseOnboarding(
     .update({ onboarding_completed_at: new Date().toISOString() })
     .eq('id', roleRow.group_id);
 
-  if (doneErr) return { error: doneErr.message };
+  if (doneErr) return actionError(classifyDbError(doneErr), doneErr, 'completePostPurchaseOnboarding.done');
 
   revalidatePath('/dashboard');
   return { success: true };
@@ -208,14 +209,14 @@ export async function completeExpressOnboarding(
   input: z.infer<typeof ExpressOnboardingSchema>
 ): Promise<{ success: true } | { error: string }> {
   const parsed = ExpressOnboardingSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  if (!parsed.success) return actionError('validation', parsed.error, 'completeExpressOnboarding');
 
   const service = createServiceClient();
   const { groupId, token, establishmentName, address, adminFullName, colleagues, locale, userId } = parsed.data;
 
   const verified = verifyOnboardingToken(token, groupId);
   if (!verified.valid) {
-    return { error: 'Lien d\'activation invalide ou expiré.' };
+    return actionError('forbidden');
   }
 
   const supabase = await createClient();
@@ -226,7 +227,7 @@ export async function completeExpressOnboarding(
     const { data: adminLookup } = await service.auth.admin.getUserById(userId);
     user = adminLookup.user ?? null;
   }
-  if (!user) return { error: 'Non authentifié — créez votre compte en premier.' };
+  if (!user) return actionError('forbidden');
 
   // Verify the group exists and hasn't been onboarded yet
   const { data: group } = await service
@@ -235,8 +236,8 @@ export async function completeExpressOnboarding(
     .eq('id', groupId)
     .maybeSingle();
 
-  if (!group) return { error: 'Groupe introuvable.' };
-  if (group.onboarding_completed_at) return { error: 'Ce salon a déjà été configuré.' };
+  if (!group) return actionError('notFound');
+  if (group.onboarding_completed_at) return actionError('duplicate');
 
   // Get the establishment created by the webhook
   const { data: est } = await service
@@ -247,7 +248,7 @@ export async function completeExpressOnboarding(
     .limit(1)
     .maybeSingle();
 
-  if (!est) return { error: 'Établissement introuvable.' };
+  if (!est) return actionError('notFound');
 
   const slug = await makeUniqueEstablishmentSlug(service, establishmentName, est.id);
 
@@ -257,7 +258,7 @@ export async function completeExpressOnboarding(
     .update({ name: establishmentName, address, slug })
     .eq('id', est.id);
 
-  if (estErr) return { error: estErr.message };
+  if (estErr) return actionError(classifyDbError(estErr), estErr, 'completeExpressOnboarding.est');
 
   // Update group name
   await service.from('groups')
@@ -314,7 +315,7 @@ export async function completeExpressOnboarding(
     .update({ onboarding_completed_at: new Date().toISOString() })
     .eq('id', groupId);
 
-  if (doneErr) return { error: doneErr.message };
+  if (doneErr) return actionError(classifyDbError(doneErr), doneErr, 'completeExpressOnboarding.done');
 
   revalidatePath('/dashboard');
   return { success: true };
@@ -327,14 +328,14 @@ export async function completeNfcOnboarding(
   input: z.infer<typeof NfcOnboardingSchema>
 ): Promise<{ success: true } | { error: string }> {
   const parsed = NfcOnboardingSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  if (!parsed.success) return actionError('validation', parsed.error, 'completeNfcOnboarding');
 
   const service = createServiceClient();
   const { userId, nfcCodes, establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
 
   // Verify the user exists in Supabase auth (works even before email confirmation)
   const { data: { user }, error: userErr } = await service.auth.admin.getUserById(userId);
-  if (userErr || !user) return { error: 'Utilisateur introuvable.' };
+  if (userErr || !user) return actionError('notFound', userErr, 'completeNfcOnboarding.user');
 
   const normalizedCodes = nfcCodes.map((c) => c.trim().toLowerCase());
   const slug = await makeUniqueEstablishmentSlug(service, establishmentName);
@@ -350,7 +351,7 @@ export async function completeNfcOnboarding(
     .select('id')
     .single();
 
-  if (groupErr || !group) return { error: groupErr?.message ?? 'Erreur lors de la création du groupe.' };
+  if (groupErr || !group) return actionError(classifyDbError(groupErr), groupErr, 'completeNfcOnboarding.group');
 
   // Create establishment
   const { data: est, error: estErr } = await service
@@ -371,7 +372,7 @@ export async function completeNfcOnboarding(
   if (estErr || !est) {
     // Rollback: soft-delete the group we just created
     await service.from('groups').update({ deleted_at: new Date().toISOString() }).eq('id', group.id);
-    return { error: estErr?.message ?? 'Erreur lors de la création de l\'établissement.' };
+    return actionError(classifyDbError(estErr), estErr, 'completeNfcOnboarding.est');
   }
 
   // Atomically claim the stickers via the SECURITY DEFINER RPC. Two parallel
@@ -389,7 +390,7 @@ export async function completeNfcOnboarding(
   if (claimErr) {
     await service.from('establishments').update({ deleted_at: new Date().toISOString() }).eq('id', est.id);
     await service.from('groups').update({ deleted_at: new Date().toISOString() }).eq('id', group.id);
-    return { error: claimErr.message };
+    return actionError(classifyDbError(claimErr), claimErr, 'completeNfcOnboarding.claim');
   }
 
   const claimedCodes = new Set((claimed ?? []).map((r) => r.short_id.toLowerCase()));
@@ -398,7 +399,7 @@ export async function completeNfcOnboarding(
     // Roll back everything — the user must restart with valid codes.
     await service.from('establishments').update({ deleted_at: new Date().toISOString() }).eq('id', est.id);
     await service.from('groups').update({ deleted_at: new Date().toISOString() }).eq('id', group.id);
-    return { error: `Codes invalides ou déjà assignés : ${missing.join(', ')}` };
+    return actionError('validation', `invalid/duplicate codes: ${missing.join(', ')}`, 'completeNfcOnboarding.codes');
   }
 
   // Create group_admin role for the new user

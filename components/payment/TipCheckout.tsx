@@ -79,25 +79,32 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
   });
 
   async function createIntent(): Promise<string | null> {
-    const res = await fetch('/api/stripe/create-intent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        staffId,
-        amount,
-        tipAmount,
-        currency,
-        nonce,
-        customerEmail: customerEmail.trim() || undefined,
-        ...(expectedEstablishmentId ? { expectedEstablishmentId } : {}),
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.clientSecret) {
-      setError(data.error ?? t('errors.initFailed'));
+    try {
+      const res = await fetch('/api/stripe/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          staffId,
+          amount,
+          tipAmount,
+          currency,
+          nonce,
+          customerEmail: customerEmail.trim() || undefined,
+          ...(expectedEstablishmentId ? { expectedEstablishmentId } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({} as { clientSecret?: string }));
+      if (!res.ok || !data.clientSecret) {
+        setError(t('errors.initFailed'));
+        return null;
+      }
+      return data.clientSecret as string;
+    } catch (e) {
+      // Network failure / non-JSON response — never leave the button spinning.
+      console.error('[pay] create-intent failed', e);
+      setError(t('errors.initFailed'));
       return null;
     }
-    return data.clientSecret as string;
   }
 
   async function confirm(clientSecret: string) {

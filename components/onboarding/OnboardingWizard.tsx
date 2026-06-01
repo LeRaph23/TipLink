@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import {
   completePostPurchaseOnboarding,
@@ -10,6 +11,7 @@ import {
 } from '@/actions/onboarding';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { getBaseUrl } from '@/lib/env';
+import { mapAuthError } from '@/lib/auth/map-auth-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -114,6 +116,7 @@ function StepCodesContent({
   codes: string[];
   onChange: (codes: string[]) => void;
 }) {
+  const t = useTranslations('onboarding.codes');
   const [inputVal, setInputVal] = useState('');
   const [validating, setValidating] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
@@ -131,14 +134,17 @@ function StepCodesContent({
       const res = await fetch(`/api/onboarding/validate-code?code=${encodeURIComponent(c)}`);
       const { valid } = (await res.json()) as { valid: boolean };
       if (!valid) {
-        setCodeError('Code invalide ou déjà utilisé');
+        setCodeError(t('invalidCode'));
         setValidating(false);
         return;
       }
       onChange([...codes, c]);
       setInputVal('');
-    } catch {
-      setCodeError('Erreur de validation, réessayez.');
+    } catch (err) {
+      // Distinguish a network failure from a genuinely invalid code so the
+      // user doesn't think a valid tag was rejected.
+      console.error('[onboarding] code validation failed', err);
+      setCodeError(t('networkError'));
     }
     setValidating(false);
   }
@@ -190,7 +196,7 @@ function StepCodesContent({
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value.toLowerCase())}
           onKeyDown={(e) => e.key === 'Enter' && addCode()}
-          placeholder="ex: a3f2b9c1"
+          placeholder={t('placeholder')}
           maxLength={32}
           style={{ ...inp, flex: 1 }}
         />
@@ -204,7 +210,7 @@ function StepCodesContent({
             opacity: !inputVal.trim() || validating ? 0.5 : 1,
           }}
         >
-          {validating ? '…' : 'Ajouter'}
+          {validating ? t('validating') : t('add')}
         </button>
       </div>
 
@@ -213,7 +219,7 @@ function StepCodesContent({
       )}
 
       <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 14, lineHeight: 1.6 }}>
-        Les codes se trouvent sous le QR code imprimé sur chaque SmartTag.
+        {t('hint')}
       </p>
     </div>
   );
@@ -226,6 +232,7 @@ function StepTeamContent({
   colleagues: Colleague[];
   onChange: (c: Colleague[]) => void;
 }) {
+  const t = useTranslations('onboarding.team');
   const add = () => onChange([...colleagues, { fullName: '', email: '' }]);
   const remove = (i: number) => onChange(colleagues.filter((_, j) => j !== i));
   const update = (i: number, patch: Partial<Colleague>) =>
@@ -234,8 +241,7 @@ function StepTeamContent({
   return (
     <div>
       <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20, lineHeight: 1.6 }}>
-        Vos collègues recevront un email pour créer leur compte et commencer à recevoir des pourboires.
-        Vous pouvez passer cette étape et les inviter plus tard depuis votre dashboard.
+        {t('intro')}
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -243,14 +249,14 @@ function StepTeamContent({
           <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input
-                placeholder="Prénom du collègue"
+                placeholder={t('namePlaceholder')}
                 value={c.fullName}
                 onChange={(e) => update(i, { fullName: e.target.value })}
                 style={{ ...inp, fontSize: 14, padding: '11px 14px' }}
               />
               <input
                 type="email"
-                placeholder="Email du collègue"
+                placeholder={t('emailPlaceholder')}
                 value={c.email}
                 onChange={(e) => update(i, { email: e.target.value })}
                 style={{ ...inp, fontSize: 14, padding: '11px 14px' }}
@@ -271,7 +277,7 @@ function StepTeamContent({
                 fontFamily: 'var(--font)',
               }}
             >
-              Retirer
+              {t('remove')}
             </button>
           </div>
         ))}
@@ -294,7 +300,7 @@ function StepTeamContent({
           width: '100%',
         }}
       >
-        + Ajouter un collègue
+        {t('add')}
       </button>
     </div>
   );
@@ -304,6 +310,8 @@ function StepTeamContent({
 
 export function OnboardingWizard(props: Props) {
   const { mode, locale } = props;
+  const t = useTranslations('onboarding');
+  const tAuth = useTranslations('auth');
   const steps = mode === 'scan' ? SCAN_STEPS : mode === 'express' ? EXPRESS_STEPS : AUTH_STEPS;
 
   const router = useRouter();
@@ -432,7 +440,7 @@ export function OnboardingWizard(props: Props) {
       });
 
       if (signUpErr || !signUpData.user) {
-        setError(signUpErr?.message ?? 'Erreur lors de la création du compte.');
+        setError(signUpErr ? mapAuthError(signUpErr.message, tAuth) : tAuth('errorGeneric'));
         setSubmitting(false);
         return;
       }
@@ -470,11 +478,7 @@ export function OnboardingWizard(props: Props) {
       });
 
       if (signUpErr) {
-        if (signUpErr.message.toLowerCase().includes('already') || signUpErr.status === 400) {
-          setError('Un compte existe déjà avec cet email. Connectez-vous sur digitip.app/login pour accéder à votre espace.');
-        } else {
-          setError(signUpErr.message);
-        }
+        setError(mapAuthError(signUpErr.message, tAuth));
         setSubmitting(false);
         return;
       }
@@ -524,7 +528,7 @@ export function OnboardingWizard(props: Props) {
       // Without this, a thrown error (server action 500, network failure)
       // would leave the button stuck on "Finalisation…" forever.
       console.error('onboarding submit failed', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue. Réessayez.');
+      setError(tAuth('errorGeneric'));
       setSubmitting(false);
     }
   }
@@ -557,13 +561,19 @@ export function OnboardingWizard(props: Props) {
             ✉
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
-            Vérifiez votre email
+            {t('emailVerification.title')}
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 12 }}>
-            Un lien de confirmation a été envoyé à <strong style={{ color: 'var(--text)' }}>{state.adminEmail}</strong>.
+            {t.rich('emailVerification.sent', {
+              email: state.adminEmail,
+              strong: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong>,
+            })}
           </p>
           <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.7 }}>
-            Cliquez dessus pour activer votre compte et accéder à votre espace <strong style={{ color: 'var(--text)' }}>{state.establishmentName}</strong>.
+            {t.rich('emailVerification.activate', {
+              name: state.establishmentName,
+              strong: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong>,
+            })}
           </p>
         </div>
       );
@@ -594,10 +604,10 @@ export function OnboardingWizard(props: Props) {
           </svg>
         </div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
-          Votre espace est prêt !
+          {t('done.title')}
         </h1>
         <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 24 }}>
-          {state.establishmentName} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.
+          {t('done.body', { name: state.establishmentName })}
         </p>
         {wantsTips && (
           <div style={{
@@ -605,12 +615,10 @@ export function OnboardingWizard(props: Props) {
             borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'left',
           }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
-              💳 Finalisez vos virements
+              {t('done.payoutTitle')}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
-              Après avoir confirmé votre email, rendez-vous dans{' '}
-              <strong style={{ color: 'var(--text)' }}>Dashboard → Virements</strong>{' '}
-              pour configurer vos virements avec Stripe et commencer à recevoir des pourboires.
+              {t.rich('done.payoutBody', { b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong> })}
             </div>
           </div>
         )}
@@ -618,7 +626,7 @@ export function OnboardingWizard(props: Props) {
           onClick={() => router.push(`/${locale}/dashboard`)}
           style={{ ...btnPrimary, maxWidth: 320, margin: '0 auto', display: 'block' }}
         >
-          Accéder au dashboard →
+          {t('done.cta')}
         </button>
       </div>
     );
@@ -626,46 +634,17 @@ export function OnboardingWizard(props: Props) {
 
   // ─── Step content ──────────────────────────────────────────────────────────
 
-  const stepConfig: Record<string, { title: string; subtitle: string }> = {
-    codes: {
-      title: 'Vos SmartTags',
-      subtitle: 'Votre SmartTag est prêt à être configuré. Avez-vous d\'autres tags à associer maintenant ?',
-    },
-    salon: {
-      title: 'Nom du salon',
-      subtitle: 'Comment s\'appelle votre salon ou établissement ?',
-    },
-    address: {
-      title: 'Adresse',
-      subtitle: 'À quelle adresse se trouve votre établissement ?',
-    },
-    'admin-name': {
-      title: 'Votre nom',
-      subtitle: 'Comment vous appelez-vous ?',
-    },
-    email: {
-      title: 'Votre email',
-      subtitle: 'Vous recevrez vos notifications et votre lien de connexion ici.',
-    },
-    password: {
-      title: 'Mot de passe',
-      subtitle: 'Choisissez un mot de passe sécurisé.',
-    },
-    team: {
-      title: 'Votre équipe',
-      subtitle: 'Invitez vos collègues pour qu\'ils puissent eux aussi recevoir des pourboires.',
-    },
-    'tips-opt-in': {
-      title: 'Et vous ?',
-      subtitle: 'Souhaitez-vous aussi recevoir des pourboires personnellement ?',
-    },
-    banking: {
-      title: 'Recevoir vos pourboires',
-      subtitle: 'Vos virements se configurent ensuite depuis votre tableau de bord, via Stripe.',
-    },
+  // Maps a step id to its i18n key prefix in the `onboarding` namespace
+  // (the dashed step ids differ from the camelCase message keys).
+  const STEP_I18N: Record<string, string> = {
+    codes: 'codes', salon: 'salon', address: 'address',
+    'admin-name': 'adminName', email: 'email', password: 'password',
+    team: 'team', 'tips-opt-in': 'tipsOptIn', banking: 'banking',
   };
-
-  const config = stepConfig[currentStep] ?? { title: '', subtitle: '' };
+  const i18nKey = STEP_I18N[currentStep];
+  const config = i18nKey
+    ? { title: t(`${i18nKey}.title`), subtitle: t(`${i18nKey}.subtitle`) }
+    : { title: '', subtitle: '' };
   // If admin declined tips, last real step is tips-opt-in (skip banking)
   const effectiveLastIdx = (wantsTips === false)
     ? steps.indexOf('tips-opt-in' as never)
@@ -740,7 +719,7 @@ export function OnboardingWizard(props: Props) {
               onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleSubmit() : next())}
               style={inp}
             />
-            <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8 }}>8 caractères minimum</p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8 }}>{t('password.hint')}</p>
           </div>
         );
 
@@ -756,8 +735,8 @@ export function OnboardingWizard(props: Props) {
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
-              { value: true, label: 'Oui, je veux recevoir des pourboires', icon: '💸' },
-              { value: false, label: 'Non, je gère uniquement mon équipe', icon: '👔' },
+              { value: true, label: t('tipsOptIn.yes'), icon: '💸' },
+              { value: false, label: t('tipsOptIn.no'), icon: '👔' },
             ].map(({ value, label, icon }) => (
               <button
                 key={String(value)}
@@ -788,12 +767,7 @@ export function OnboardingWizard(props: Props) {
           }}>
             <span style={{ fontSize: 22, flexShrink: 0 }}>🔒</span>
             <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
-              Parfait — vous pourrez recevoir des pourboires personnellement. La
-              configuration de vos virements se fait en quelques clics depuis votre
-              tableau de bord (rubrique <strong style={{ color: 'var(--text)' }}>Virements</strong>),
-              via <strong style={{ color: 'var(--text)' }}>Stripe</strong>, notre partenaire de
-              paiement sécurisé. C&apos;est Stripe qui collecte et chiffre vos coordonnées —
-              vos informations bancaires ne transitent jamais par Digitip.
+              {t.rich('banking.body', { b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong> })}
             </div>
           </div>
         );
@@ -831,7 +805,7 @@ export function OnboardingWizard(props: Props) {
 
       {/* Step label */}
       <p style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 500, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        Étape {stepIndex + 1} sur {totalSteps}
+        {t('stepOf', { current: stepIndex + 1, total: totalSteps })}
       </p>
 
       {/* Step header + body */}
@@ -882,7 +856,7 @@ export function OnboardingWizard(props: Props) {
             disabled={submitting || !canAdvance()}
             style={{ ...btnPrimary, opacity: (submitting || !canAdvance()) ? 0.5 : 1 }}
           >
-            {submitting ? 'Finalisation…' : 'Terminer la configuration →'}
+            {submitting ? t('finishing') : t('finish')}
           </button>
         ) : (
           <button
@@ -891,8 +865,16 @@ export function OnboardingWizard(props: Props) {
             disabled={!canAdvance()}
             style={{ ...btnPrimary, opacity: canAdvance() ? 1 : 0.4 }}
           >
-            Continuer →
+            {t('continue')}
           </button>
+        )}
+
+        {/* Explain why the action button is greyed out instead of leaving the
+            user guessing. Not shown on steps with no required field. */}
+        {!canAdvance() && !submitting && currentStep !== 'tips-opt-in' && (
+          <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
+            {t('fillField')}
+          </p>
         )}
 
         {/* "Skip" for team step (not last) */}
@@ -906,7 +888,7 @@ export function OnboardingWizard(props: Props) {
               textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
             }}
           >
-            Passer cette étape
+            {t('skip')}
           </button>
         )}
 
@@ -920,7 +902,7 @@ export function OnboardingWizard(props: Props) {
               textAlign: 'center',
             }}
           >
-            ← Retour
+            {t('back')}
           </button>
         )}
       </div>

@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { getTranslations } from 'next-intl/server';
 import { sendStaffInviteLink } from '@/lib/staff-invite';
+import { actionError, classifyDbError } from '@/lib/errors/action-error';
 
 interface CreateStaffInput {
   fullName: string;
@@ -16,7 +18,7 @@ export async function createStaffMember(
 ): Promise<{ id: string } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
+  if (!user) return actionError('forbidden');
 
   const { data, error } = await supabase
     .from('staff_profiles')
@@ -29,7 +31,7 @@ export async function createStaffMember(
     .select('id')
     .single();
 
-  if (error) return { error: error.message };
+  if (error) return actionError(classifyDbError(error), error, 'createStaffMember');
 
   revalidatePath(`/dashboard/establishments/${input.establishmentId}`);
   return { id: data.id };
@@ -48,13 +50,13 @@ export async function inviteStaffMember(
 ): Promise<{ id: string; invited: boolean } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
+  if (!user) return actionError('forbidden');
 
   const normalizedEmail = input.email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-    return { error: 'Invalid email' };
+    return actionError('validation');
   }
-  if (!input.fullName.trim()) return { error: 'Full name required' };
+  if (!input.fullName.trim()) return actionError('validation');
 
   // Create the staff_profile through the user client so RLS verifies
   // the caller has permission on this establishment.
@@ -70,7 +72,7 @@ export async function inviteStaffMember(
     .single();
 
   if (staffErr || !staff) {
-    return { error: staffErr?.message ?? 'Failed to create staff profile' };
+    return actionError(classifyDbError(staffErr), staffErr, 'inviteStaffMember');
   }
 
   // Send the invite via service role (admin API).
@@ -101,7 +103,7 @@ export async function updateStaffMember(
 ): Promise<{ success: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
+  if (!user) return actionError('forbidden');
 
   const patch: Record<string, unknown> = {};
   if (input.fullName !== undefined) patch.full_name = input.fullName;
@@ -115,8 +117,8 @@ export async function updateStaffMember(
     .eq('id', staffId)
     .select('id');
 
-  if (error) return { error: error.message };
-  if (!updated || updated.length === 0) return { error: 'Forbidden' };
+  if (error) return actionError(classifyDbError(error), error, 'updateStaffMember');
+  if (!updated || updated.length === 0) return actionError('forbidden');
 
   revalidatePath('/dashboard/staff');
   revalidatePath(`/dashboard/staff/${staffId}`);
@@ -126,7 +128,7 @@ export async function updateStaffMember(
 export async function joinAsStaffMember(): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
+  if (!user) return actionError('forbidden');
 
   // Verify group_admin role and get group_id
   const { data: roleRow } = await supabase
@@ -138,7 +140,7 @@ export async function joinAsStaffMember(): Promise<{ ok: true } | { error: strin
     .limit(1)
     .maybeSingle();
 
-  if (!roleRow?.group_id) return { error: 'Not a group admin' };
+  if (!roleRow?.group_id) return actionError('forbidden');
 
   const service = createServiceClient();
 
@@ -150,7 +152,7 @@ export async function joinAsStaffMember(): Promise<{ ok: true } | { error: strin
     .is('deleted_at', null)
     .maybeSingle();
 
-  if (existing) return { error: 'Already a staff member' };
+  if (existing) return actionError('duplicate');
 
   const { data: est } = await service
     .from('establishments')
@@ -160,7 +162,7 @@ export async function joinAsStaffMember(): Promise<{ ok: true } | { error: strin
     .limit(1)
     .maybeSingle();
 
-  if (!est) return { error: 'No establishment found' };
+  if (!est) return actionError('notFound');
 
   const fullName =
     (user.user_metadata?.full_name as string | undefined)?.trim() ||
@@ -175,7 +177,7 @@ export async function joinAsStaffMember(): Promise<{ ok: true } | { error: strin
     onboarding_status: 'not_started',
   });
 
-  if (error) return { error: error.message };
+  if (error) return actionError(classifyDbError(error), error, 'joinAsStaffMember');
 
   revalidatePath('/dashboard/staff');
   return { ok: true };
@@ -186,7 +188,7 @@ export async function deactivateStaffMember(
 ): Promise<{ success: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
+  if (!user) return actionError('forbidden');
 
   // Block soft-delete when there are pending tips: the FK is ON DELETE RESTRICT
   // and the UI would silently get an opaque error from the DB layer.
@@ -197,7 +199,8 @@ export async function deactivateStaffMember(
     .eq('status', 'pending');
 
   if ((pendingCount ?? 0) > 0) {
-    return { error: 'Ce membre a des paiements en attente. Réessaie une fois qu\'ils sont réglés.' };
+    const t = await getTranslations('errors');
+    return { error: t('staffPendingTips') };
   }
 
   const { data: updated, error } = await supabase
@@ -206,8 +209,8 @@ export async function deactivateStaffMember(
     .eq('id', staffId)
     .select('id');
 
-  if (error) return { error: error.message };
-  if (!updated || updated.length === 0) return { error: 'Forbidden' };
+  if (error) return actionError(classifyDbError(error), error, 'deactivateStaffMember');
+  if (!updated || updated.length === 0) return actionError('forbidden');
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/staff');

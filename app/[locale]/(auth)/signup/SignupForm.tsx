@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { mapAuthError } from '@/lib/auth/map-auth-error';
 
 const inputStyle = (focused: boolean): React.CSSProperties => ({
   width: '100%',
@@ -20,20 +21,6 @@ const inputStyle = (focused: boolean): React.CSSProperties => ({
 const labelStyle: React.CSSProperties = {
   fontSize: 12.5, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 5,
 };
-
-function mapSignupError(msg: string, t: (key: string) => string): string {
-  const lower = msg.toLowerCase();
-  if (lower.includes('already registered') || lower.includes('already in use') || lower.includes('email_address_invalid')) {
-    return t('errorEmailInUse');
-  }
-  if (lower.includes('too many requests') || lower.includes('rate limit')) {
-    return t('errorTooManyRequests');
-  }
-  if (lower.includes('network') || lower.includes('fetch')) {
-    return t('errorNetwork');
-  }
-  return msg;
-}
 
 export function SignupForm() {
   const t = useTranslations('auth');
@@ -62,7 +49,7 @@ export function SignupForm() {
     });
     setIsLoading(false);
     if (signUpError) {
-      setError(mapSignupError(signUpError.message, t));
+      setError(mapAuthError(signUpError.message, t));
       return;
     }
     setEmailConfirm(true);

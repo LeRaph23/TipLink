@@ -108,8 +108,9 @@ export async function POST(request: NextRequest) {
       promoCode: promo?.code ?? null,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Stripe error';
-    console.error('[create-pack-intent]', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Log the raw Stripe/runtime error server-side; never echo it to the
+    // client (it can carry API keys, rate-limit details, internal hints).
+    console.error('[create-pack-intent]', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'payment_failed' }, { status: 500 });
   }
 }

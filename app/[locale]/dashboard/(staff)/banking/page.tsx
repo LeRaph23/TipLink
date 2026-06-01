@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getStaffEarnings } from '@/actions/stripe';
@@ -39,6 +39,7 @@ export default async function BankingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('dashboard.banking');
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,21 +80,18 @@ export default async function BankingPage({
     <div style={{ maxWidth: 520 }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          Virements
+          {t('title')}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          Recevez vos pourboires directement sur votre compte bancaire.
+          {t('subtitle')}
         </p>
       </div>
 
       {!canReceiveTips ? (
         <div style={{ ...card, textAlign: 'center', color: 'var(--text-3)', fontSize: 13.5, padding: '32px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: 'var(--text-3)' }}><UserIcon /></div>
-          <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Compte non rattaché</div>
-          <div>
-            Votre compte n&apos;est pas encore rattaché à un établissement.
-            Contactez votre administrateur pour accéder à cette fonctionnalité.
-          </div>
+          <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{t('notLinkedTitle')}</div>
+          <div>{t('notLinkedBody')}</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -101,14 +99,14 @@ export default async function BankingPage({
           {hasAccount && lifetimeNet !== null && (
             <div style={card}>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-                Total reçu
+                {t('totalReceived')}
               </div>
               <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1 }}>
                 {fmt.format(lifetimeNet / 100)}
               </div>
               {isComplete && (
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8 }}>
-                  Vos pourboires sont versés <strong>automatiquement</strong> sur votre compte bancaire par Stripe.
+                  {t.rich('autoPayout', { b: (c) => <strong>{c}</strong> })}
                 </div>
               )}
             </div>
@@ -121,10 +119,10 @@ export default async function BankingPage({
                 <span style={{ display: 'flex', color: 'var(--success)', flexShrink: 0 }}><CheckCircleIcon /></span>
                 <div>
                   <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--success)' }}>
-                    Compte bancaire actif
+                    {t('activeTitle')}
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 1 }}>
-                    Vous recevez vos pourboires. Vous pouvez modifier vos coordonnées si besoin.
+                    {t('activeBody')}
                   </div>
                 </div>
               </div>
@@ -133,10 +131,10 @@ export default async function BankingPage({
                 <span style={{ display: 'flex', color: 'var(--warning)', flexShrink: 0 }}><ClockIcon /></span>
                 <div>
                   <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--warning)' }}>
-                    Vérification en cours
+                    {t('pendingTitle')}
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 1 }}>
-                    Terminez la configuration sur Stripe pour pouvoir recevoir vos pourboires.
+                    {t('pendingBody')}
                   </div>
                 </div>
               </div>

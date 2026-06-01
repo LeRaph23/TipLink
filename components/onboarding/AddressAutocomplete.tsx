@@ -1,12 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
-
-interface BanFeature {
-  properties: {
-    label: string;
-    score: number;
-  };
-}
+import { useTranslations } from 'next-intl';
 
 interface Props {
   value: string;
@@ -16,10 +10,14 @@ interface Props {
 }
 
 export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props) {
-  const [suggestions, setSuggestions] = useState<BanFeature[]>([]);
+  const t = useTranslations('onboarding.address');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
+  // True once a lookup fails (network / upstream down) so we can invite the
+  // user to type their address manually instead of silently showing nothing.
+  const [lookupFailed, setLookupFailed] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -42,25 +40,32 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
       abortRef.current = ctrl;
       setLoading(true);
       try {
-        // Géoplateforme (IGN) geocoder — the old api-adresse.data.gouv.fr host
-        // was decommissioned on 2026-04-14. Same BAN data, same GeoJSON shape.
+        // Same-origin proxy to the IGN geocoder (see app/api/onboarding/geocode).
+        // Calling our own API keeps this request under connect-src 'self', so it
+        // doesn't depend on the geocoder host being allow-listed or CORS-enabled.
         const res = await fetch(
-          `https://data.geopf.fr/geocodage/search/?q=${encodeURIComponent(q)}&limit=5`,
+          `/api/onboarding/geocode?q=${encodeURIComponent(q)}`,
           { signal: ctrl.signal }
         );
-        const data = await res.json();
-        setSuggestions(data.features ?? []);
+        const data = (await res.json()) as { labels?: string[] };
+        setSuggestions(data.labels ?? []);
         setOpen(true);
-      } catch {
-        // AbortError or network error — silently ignore
+        setLookupFailed(false);
+      } catch (err) {
+        // Ignore deliberate aborts; for real failures flag the field so the
+        // user knows they can still type the address by hand.
+        if ((err as Error)?.name !== 'AbortError') {
+          console.error('[address] geocoder lookup failed', err);
+          setLookupFailed(true);
+        }
       } finally {
         setLoading(false);
       }
     }, 300);
   }
 
-  function selectSuggestion(feat: BanFeature) {
-    onChange(feat.properties.label);
+  function selectSuggestion(label: string) {
+    onChange(label);
     setSuggestions([]);
     setOpen(false);
     setActiveIndex(-1);
@@ -122,10 +127,10 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
       />
       {open && suggestions.length > 0 && (
         <ul style={dropdownStyle}>
-          {suggestions.map((feat, i) => (
+          {suggestions.map((label, i) => (
             <li
-              key={feat.properties.label}
-              onMouseDown={() => selectSuggestion(feat)}
+              key={label}
+              onMouseDown={() => selectSuggestion(label)}
               onMouseEnter={() => setActiveIndex(i)}
               style={{
                 padding: '10px 12px',
@@ -138,24 +143,31 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
                 transition: 'background 80ms',
               }}
             >
-              {feat.properties.label}
+              {label}
             </li>
           ))}
         </ul>
       )}
       {loading && (
-        <div
+        <span
           style={{
             position: 'absolute',
             right: 14,
             top: '50%',
             transform: 'translateY(-50%)',
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: 'var(--text-3)',
+            fontSize: 12,
+            color: 'var(--text-3)',
+            fontFamily: 'var(--font)',
+            pointerEvents: 'none',
           }}
-        />
+        >
+          {t('searching')}
+        </span>
+      )}
+      {lookupFailed && !loading && (
+        <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>
+          {t('manualHint')}
+        </p>
       )}
     </div>
   );

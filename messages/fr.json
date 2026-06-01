@@ -35,7 +35,8 @@
     "uploading": "Téléversement…",
     "hint": "PNG, JPG ou WebP · 2 Mo max",
     "notAuthenticated": "Non authentifié",
-    "uploadFailed": "Échec du téléversement"
+    "uploadFailed": "Échec du téléversement",
+    "photoFailed": "Échec de l'envoi de la photo. Réessayez ou continuez sans photo."
   },
   "notFound": {
     "title": "Page introuvable",
@@ -49,6 +50,16 @@
     "retry": "Réessayer",
     "home": "Retour à l'accueil",
     "ref": "Référence :"
+  },
+  "errors": {
+    "validation": "Certaines informations sont invalides. Vérifiez votre saisie.",
+    "duplicate": "Cet élément existe déjà.",
+    "notFound": "Élément introuvable.",
+    "forbidden": "Vous n'avez pas l'autorisation d'effectuer cette action.",
+    "unknown": "Une erreur est survenue. Réessayez.",
+    "network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+    "initFailed": "Impossible de démarrer le paiement. Réessayez.",
+    "staffPendingTips": "Ce membre a des paiements en attente. Réessayez une fois qu'ils sont réglés."
   },
   "legal": {
     "lastUpdated": "Dernière mise à jour",
@@ -425,6 +436,7 @@
     "errorTooManyRequests": "Trop de tentatives. Réessayez dans quelques minutes.",
     "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
     "errorEmailInUse": "Un compte existe déjà avec cet email.",
+    "errorGeneric": "Une erreur est survenue. Réessayez.",
     "business": {
       "stepTitle": "Informations entreprise",
       "stepSubtitle": "Nécessaire pour la facturation. Modifiable plus tard.",
@@ -523,8 +535,8 @@
       "full_name_required": "Merci d'indiquer votre nom.",
       "email_invalid": "Adresse email invalide.",
       "password_too_short": "Mot de passe trop court (8 caractères minimum).",
-      "signup_failed": "Création du compte impossible : {message}",
-      "checkout_failed": "Échec du paiement : {message}",
+      "signup_failed": "La création du compte a échoué. Vérifiez vos informations et réessayez.",
+      "checkout_failed": "Le paiement n'a pas pu aboutir. Réessayez dans un instant.",
       "email_in_use": "Un compte existe déjà pour cet email. Connectez-vous d'abord — nous reprendrons votre commande.",
       "email_confirmation_required": "Un email de confirmation vous a été envoyé. Confirmez-le puis connectez-vous pour finaliser la commande."
     }
@@ -779,6 +791,29 @@
       "linkCopied": "Copié"
     },
     "payouts": "Virements",
+    "banking": {
+      "title": "Virements",
+      "subtitle": "Recevez vos pourboires directement sur votre compte bancaire.",
+      "notLinkedTitle": "Compte non rattaché",
+      "notLinkedBody": "Votre compte n'est pas encore rattaché à un établissement. Contactez votre administrateur pour accéder à cette fonctionnalité.",
+      "totalReceived": "Total reçu",
+      "autoPayout": "Vos pourboires sont versés <b>automatiquement</b> sur votre compte bancaire par Stripe.",
+      "activeTitle": "Compte bancaire actif",
+      "activeBody": "Vous recevez vos pourboires. Vous pouvez modifier vos coordonnées si besoin.",
+      "pendingTitle": "Vérification en cours",
+      "pendingBody": "Terminez la configuration sur Stripe pour pouvoir recevoir vos pourboires.",
+      "step1Title": "Vos pourboires sur votre compte",
+      "step1Body": "Configurez vos virements en 2 minutes avec Stripe, notre partenaire de paiement.",
+      "step2Title": "Vos données restent privées",
+      "step2Body": "C'est Stripe qui collecte et chiffre votre pièce d'identité et votre IBAN. Digitip ne les voit jamais.",
+      "step3Title": "Prêt à configurer",
+      "step3Body": "Vous allez être redirigé vers Stripe. Vous revenez ici dès que c'est terminé, et vos pourboires arrivent ensuite automatiquement.",
+      "back": "← Retour",
+      "continue": "Continuer →",
+      "openingStripe": "Ouverture de Stripe…",
+      "setupCta": "Configurer avec Stripe →",
+      "updateCta": "Modifier mes coordonnées bancaires →"
+    },
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenus et top équipe sur les 30 derniers jours.",
@@ -1036,6 +1071,59 @@
       }
     }
   },
+  "join": {
+    "back": "← Retour",
+    "continue": "Continuer →",
+    "creatingAccount": "Création du compte…",
+    "verifyEmail": {
+      "title": "Vérifiez votre email",
+      "body": "Un lien de confirmation a été envoyé à <b>{email}</b>. Cliquez dessus pour activer votre compte et rejoindre <b>{name}</b>."
+    },
+    "welcome": {
+      "title": "Rejoignez {name}",
+      "subtitle": "Vos pourboires, directement sur votre compte.",
+      "bullet1": "Vos clients vous laissent un pourboire depuis leur téléphone — sans espèces, sans appli.",
+      "bullet2": "Vous recevez l'argent sur votre compte bancaire.",
+      "bullet3": "Prêt(e) en 2 minutes.",
+      "start": "Commencer →"
+    },
+    "identity": {
+      "title": "Qui êtes-vous ?",
+      "subtitle": "Sélectionnez votre prénom pour rejoindre l'équipe.",
+      "notListed": "Mon prénom n'est pas dans la liste →"
+    },
+    "namePhoto": {
+      "title": "Votre prénom et photo",
+      "subtitle": "C'est ainsi que vous apparaîtrez sur la page de paiement de vos clients.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "optional": "(facultatif)",
+      "firstNamePlaceholder": "ex : Océane",
+      "lastNamePlaceholder": "ex : Dupont",
+      "photoTip": "Les profils avec photo reçoivent en moyenne <b>3× plus de pourboires</b>.",
+      "uploading": "Envoi…",
+      "photo": "Photo",
+      "photoHint": "JPG, PNG ou WebP · 2 Mo max"
+    },
+    "payment": {
+      "title": "Recevoir vos pourboires",
+      "subtitle": "Dernière étape : connecter votre compte bancaire via <b>Stripe</b>.",
+      "bullet1": "Après la création de votre compte, Stripe vous guide pour configurer vos virements en quelques clics.",
+      "bullet2": "C'est Stripe qui collecte et chiffre votre pièce d'identité et votre IBAN. Digitip ne les voit jamais.",
+      "bullet3": "Votre IBAN n'est jamais visible par votre employeur."
+    },
+    "email": {
+      "title": "Votre email",
+      "subtitle": "Utilisé pour vous connecter à votre compte DigiTip.",
+      "prefilled": "Votre responsable a pré-renseigné votre email. Vous pouvez le modifier si nécessaire."
+    },
+    "password": {
+      "title": "Mot de passe",
+      "subtitle": "Choisissez un mot de passe pour sécuriser votre compte.",
+      "hint": "8 caractères minimum",
+      "join": "Rejoindre {name} →"
+    }
+  },
   "onboarding": {
     "stepOf": "Étape {current} sur {total}",
     "continue": "Continuer →",
@@ -1043,17 +1131,27 @@
     "finish": "Terminer la configuration →",
     "finishing": "Finalisation…",
     "back": "← Retour",
+    "fillField": "Renseignez ce champ pour continuer.",
     "done": {
       "title": "Votre espace est prêt !",
-      "body": "est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
-      "cta": "Accéder au dashboard →"
+      "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
+      "cta": "Accéder au dashboard →",
+      "payoutTitle": "Finalisez vos virements",
+      "payoutBody": "Après avoir confirmé votre email, rendez-vous dans <b>Dashboard → Virements</b> pour configurer vos virements avec Stripe et commencer à recevoir des pourboires."
+    },
+    "emailVerification": {
+      "title": "Vérifiez votre email",
+      "sent": "Un lien de confirmation a été envoyé à <strong>{email}</strong>.",
+      "activate": "Cliquez dessus pour activer votre compte et accéder à votre espace <strong>{name}</strong>."
     },
     "codes": {
       "title": "Vos SmartTags",
       "subtitle": "Votre SmartTag est prêt à être configuré. Avez-vous d'autres tags à associer maintenant ?",
       "add": "Ajouter",
       "validating": "…",
+      "placeholder": "ex: a3f2b9c1",
       "invalidCode": "Code invalide ou déjà utilisé",
+      "networkError": "Erreur réseau, vérifiez votre connexion et réessayez.",
       "hint": "Les codes se trouvent sous le QR code imprimé sur chaque SmartTag."
     },
     "salon": {
@@ -1062,7 +1160,9 @@
     },
     "address": {
       "title": "Adresse",
-      "subtitle": "À quelle adresse se trouve votre établissement ?"
+      "subtitle": "À quelle adresse se trouve votre établissement ?",
+      "searching": "Recherche…",
+      "manualHint": "Aucune suggestion ? Saisissez votre adresse manuellement."
     },
     "adminName": {
       "title": "Votre nom",
@@ -1080,8 +1180,22 @@
     "team": {
       "title": "Votre équipe",
       "subtitle": "Invitez vos collègues pour qu'ils puissent eux aussi recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard.",
+      "intro": "Vos collègues recevront un email pour créer leur compte et commencer à recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard depuis votre dashboard.",
+      "namePlaceholder": "Prénom du collègue",
+      "emailPlaceholder": "Email du collègue",
       "add": "+ Ajouter un collègue",
       "remove": "Retirer"
+    },
+    "tipsOptIn": {
+      "title": "Et vous ?",
+      "subtitle": "Souhaitez-vous aussi recevoir des pourboires personnellement ?",
+      "yes": "Oui, je veux recevoir des pourboires",
+      "no": "Non, je gère uniquement mon équipe"
+    },
+    "banking": {
+      "title": "Recevoir vos pourboires",
+      "subtitle": "Vos virements se configurent ensuite depuis votre tableau de bord, via Stripe.",
+      "body": "Parfait — vous pourrez recevoir des pourboires personnellement. La configuration de vos virements se fait en quelques clics depuis votre tableau de bord (rubrique <b>Virements</b>), via <b>Stripe</b>, notre partenaire de paiement sécurisé. C'est Stripe qui collecte et chiffre vos coordonnées — vos informations bancaires ne transitent jamais par Digitip."
     }
   }
 }

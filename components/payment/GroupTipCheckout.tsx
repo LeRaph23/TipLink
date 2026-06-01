@@ -75,20 +75,27 @@ function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency, staf
   const fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: 2 });
 
   async function createIntent(): Promise<string | null> {
-    const res = await fetch('/api/stripe/create-group-intent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        establishmentId, amount, tipAmount, currency, nonce,
-        customerEmail: customerEmail.trim() || undefined,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.clientSecret) {
-      setError(data.error ?? t('errors.initFailed'));
+    try {
+      const res = await fetch('/api/stripe/create-group-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          establishmentId, amount, tipAmount, currency, nonce,
+          customerEmail: customerEmail.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({} as { clientSecret?: string }));
+      if (!res.ok || !data.clientSecret) {
+        setError(t('errors.initFailed'));
+        return null;
+      }
+      return data.clientSecret as string;
+    } catch (e) {
+      // Network failure / non-JSON response — never leave the button spinning.
+      console.error('[pay] create-group-intent failed', e);
+      setError(t('errors.initFailed'));
       return null;
     }
-    return data.clientSecret as string;
   }
 
   async function confirm(clientSecret: string) {

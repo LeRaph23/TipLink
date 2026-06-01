@@ -230,7 +230,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         });
 
         if (signUpError) {
-          setError(`signup_failed::${signUpError.message}`);
+          console.error('[order] signup failed', signUpError.message);
+          setError('signup_failed');
           setSubmitting(false);
           goToStep('account');
           return;
@@ -271,7 +272,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
 
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(`checkout_failed::${data.error ?? 'unknown'}`);
+        console.error('[order] checkout failed', res.status, data.error);
+        setError('checkout_failed');
         setSubmitting(false);
         return;
       }
@@ -299,8 +301,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       });
       setSubmitting(false);
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Unknown error';
-      setError(`checkout_failed::${message}`);
+      console.error('[order] checkout request failed', e);
+      setError('checkout_failed');
       setSubmitting(false);
     }
   };

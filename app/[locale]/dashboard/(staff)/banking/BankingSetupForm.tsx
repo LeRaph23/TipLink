@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { getStripeOnboardingLink } from '@/actions/stripe';
 
 const primaryBtn: React.CSSProperties = {
@@ -42,24 +43,13 @@ function CheckIcon() {
 // privacy → go) before handing off to Stripe's hosted onboarding. The update
 // mode skips the explainer since the user has already been through it once.
 const STEPS = [
-  {
-    Icon: CardIcon,
-    title: 'Vos pourboires sur votre compte',
-    body: 'Configurez vos virements en 2 minutes avec Stripe, notre partenaire de paiement.',
-  },
-  {
-    Icon: LockIcon,
-    title: 'Vos données restent privées',
-    body: 'C’est Stripe qui collecte et chiffre votre pièce d’identité et votre IBAN. Digitip ne les voit jamais.',
-  },
-  {
-    Icon: CheckIcon,
-    title: 'Prêt à configurer',
-    body: 'Vous allez être redirigé vers Stripe. Vous revenez ici dès que c’est terminé, et vos pourboires arrivent ensuite automatiquement.',
-  },
+  { Icon: CardIcon, key: 'step1' },
+  { Icon: LockIcon, key: 'step2' },
+  { Icon: CheckIcon, key: 'step3' },
 ] as const;
 
 export function BankingSetupForm({ mode }: Props) {
+  const t = useTranslations('dashboard.banking');
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
@@ -84,7 +74,7 @@ export function BankingSetupForm({ mode }: Props) {
           </div>
         )}
         <button type="button" style={primaryBtn} disabled={pending} onClick={handleStart}>
-          {pending ? 'Ouverture de Stripe…' : 'Modifier mes coordonnées bancaires →'}
+          {pending ? t('openingStripe') : t('updateCta')}
         </button>
       </div>
     );
@@ -122,10 +112,10 @@ export function BankingSetupForm({ mode }: Props) {
           <step.Icon />
         </span>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-          {step.title}
+          {t(`${step.key}Title`)}
         </div>
         <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6, margin: 0, maxWidth: 320 }}>
-          {step.body}
+          {t(`${step.key}Body`)}
         </p>
       </div>
 
@@ -147,16 +137,16 @@ export function BankingSetupForm({ mode }: Props) {
       <div style={{ display: 'flex', gap: 10 }}>
         {stepIdx > 0 && (
           <button type="button" style={ghostBtn} onClick={() => setStepIdx((i) => i - 1)} disabled={pending}>
-            ← Retour
+            {t('back')}
           </button>
         )}
         {isLast ? (
           <button type="button" style={{ ...primaryBtn, flex: 1 }} disabled={pending} onClick={handleStart}>
-            {pending ? 'Ouverture de Stripe…' : 'Configurer avec Stripe →'}
+            {pending ? t('openingStripe') : t('setupCta')}
           </button>
         ) : (
           <button type="button" style={{ ...primaryBtn, flex: 1 }} onClick={() => setStepIdx((i) => i + 1)}>
-            Continuer →
+            {t('continue')}
           </button>
         )}
       </div>

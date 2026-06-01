@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
+import { actionError, classifyDbError } from '@/lib/errors/action-error';
 
 const EstSchema = z.object({
   name: z.string().min(1).max(200),
@@ -17,14 +18,14 @@ export async function createEstablishment(
   input: z.infer<typeof EstSchema>
 ): Promise<{ id: string } | { error: string }> {
   const scope = await getManageScope();
-  if (!scope) return { error: 'Unauthorized' };
+  if (!scope) return actionError('forbidden');
 
   // The new establishment is created under a group the caller administers.
   const groupId = scope.groupIds[0];
-  if (!groupId) return { error: 'Unauthorized' };
+  if (!groupId) return actionError('forbidden');
 
   const parsed = EstSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  if (!parsed.success) return actionError('validation', parsed.error, 'createEstablishment');
 
   const { name, business_type, country, currency } = parsed.data;
 
@@ -44,7 +45,7 @@ export async function createEstablishment(
     .select('id')
     .single();
 
-  if (error) return { error: error.message };
+  if (error) return actionError(classifyDbError(error), error, 'createEstablishment');
 
   revalidatePath('/dashboard/establishments');
   return { id: data.id };
@@ -55,7 +56,7 @@ export async function updateEstablishment(
   input: Partial<z.infer<typeof EstSchema>>
 ): Promise<{ success: true } | { error: string }> {
   const scope = await getManageScope();
-  if (!scope) return { error: 'Unauthorized' };
+  if (!scope) return actionError('forbidden');
 
   const service = createServiceClient();
 
@@ -67,7 +68,7 @@ export async function updateEstablishment(
     .single();
 
   // Service client bypasses RLS — ownership must be checked here.
-  if (!est || !canManageGroup(scope, est.group_id)) return { error: 'Not found' };
+  if (!est || !canManageGroup(scope, est.group_id)) return actionError('notFound');
 
   if (Object.keys(input).length === 0) return { success: true };
 
@@ -85,7 +86,7 @@ export async function updateEstablishment(
     })
     .eq('id', estId);
 
-  if (error) return { error: error.message };
+  if (error) return actionError(classifyDbError(error), error, 'updateEstablishment');
 
   revalidatePath('/dashboard/establishments');
   return { success: true };
@@ -95,7 +96,7 @@ export async function deleteEstablishment(
   estId: string
 ): Promise<{ success: true } | { error: string }> {
   const scope = await getManageScope();
-  if (!scope) return { error: 'Unauthorized' };
+  if (!scope) return actionError('forbidden');
 
   const service = createServiceClient();
 
@@ -107,14 +108,14 @@ export async function deleteEstablishment(
     .single();
 
   // Service client bypasses RLS — ownership must be checked here.
-  if (!est || !canManageGroup(scope, est.group_id)) return { error: 'Not found' };
+  if (!est || !canManageGroup(scope, est.group_id)) return actionError('notFound');
 
   const { error } = await service
     .from('establishments')
     .update({ deleted_at: new Date().toISOString(), slug: `__deleted__${estId}` } as never)
     .eq('id', estId);
 
-  if (error) return { error: error.message };
+  if (error) return actionError(classifyDbError(error), error, 'deleteEstablishment');
 
   revalidatePath('/dashboard/establishments');
   return { success: true };

@@ -72,8 +72,15 @@ export function StaffDetailForm({
   const onDeactivate = async () => {
     if (!confirm(labels.deactivateConfirm)) return;
     setSaving(true);
-    await deactivateStaffMember(staffId);
+    setError(null);
+    const res = await deactivateStaffMember(staffId);
     setSaving(false);
+    // Deactivation is blocked when the member still has pending tips — surface
+    // that instead of silently redirecting as if it succeeded.
+    if ('error' in res) {
+      setError(res.error);
+      return;
+    }
     router.push('/dashboard/staff');
   };
 
