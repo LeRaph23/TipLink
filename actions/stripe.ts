@@ -1,7 +1,9 @@
 'use server';
 
+import { getLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { actionError, classifyDbError } from '@/lib/errors/action-error';
 import {
   createStandardAccount,
   createOnboardingLink,
@@ -26,7 +28,7 @@ export async function getStripeOnboardingLink(): Promise<
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'Unauthorized' };
+    if (!user) return actionError('forbidden');
 
     const service = createServiceClient();
     let { data: profile } = await service
@@ -40,7 +42,7 @@ export async function getStripeOnboardingLink(): Promise<
     // yet — bootstrap one against their first establishment.
     if (!profile) {
       profile = await bootstrapAdminStaffProfile(service, user.id, user.email, user.user_metadata);
-      if (!profile) return { error: 'Aucun profil staff trouvé.' };
+      if (!profile) return actionError('notFound');
     }
 
     let accountId = profile.stripe_account_id;
@@ -54,11 +56,11 @@ export async function getStripeOnboardingLink(): Promise<
         .from('staff_profiles')
         .update({ stripe_account_id: accountId, onboarding_status: 'pending' })
         .eq('id', profile.id);
-      if (dbErr) return { error: dbErr.message };
+      if (dbErr) return actionError(classifyDbError(dbErr), dbErr, 'getStripeOnboardingLink.db');
     }
     const url = await createOnboardingLink(
       accountId,
-      staffBankingReturnUrls(),
+      staffBankingReturnUrls(await getLocale()),
       profile.onboarding_status === 'complete' ? 'account_update' : 'account_onboarding',
     );
     // No revalidatePath here: we immediately redirect the browser to Stripe
@@ -66,9 +68,7 @@ export async function getStripeOnboardingLink(): Promise<
     // can flash the route error boundary mid-redirect.
     return { ok: true, url };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Erreur Stripe';
-    console.error('getStripeOnboardingLink:', err);
-    return { error: msg };
+    return actionError('unknown', err, 'getStripeOnboardingLink');
   }
 }
 

@@ -10,11 +10,12 @@ import { getBaseUrl } from '@/lib/env';
 export type AccountLinkUrls = { refresh_url: string; return_url: string };
 
 // Where Stripe sends the staff member back after the hosted onboarding.
-export function staffBankingReturnUrls(): AccountLinkUrls {
+// Pass the caller's locale so a non-French user lands on their own dashboard.
+export function staffBankingReturnUrls(locale: string = 'fr'): AccountLinkUrls {
   const base = getBaseUrl();
   return {
-    refresh_url: `${base}/fr/dashboard/banking?stripe=refresh`,
-    return_url: `${base}/fr/dashboard/banking?stripe=return`,
+    refresh_url: `${base}/${locale}/dashboard/banking?stripe=refresh`,
+    return_url: `${base}/${locale}/dashboard/banking?stripe=return`,
   };
 }
 
