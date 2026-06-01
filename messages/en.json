@@ -50,6 +50,16 @@
     "home": "Back to home",
     "ref": "Reference:"
   },
+  "errors": {
+    "validation": "Some information is invalid. Please check your entries.",
+    "duplicate": "This item already exists.",
+    "notFound": "Not found.",
+    "forbidden": "You don't have permission to perform this action.",
+    "unknown": "Something went wrong. Please try again.",
+    "network": "Network error. Check your connection and try again.",
+    "initFailed": "Couldn't start the payment. Please try again.",
+    "staffPendingTips": "This member has pending payments. Try again once they're settled."
+  },
   "legal": {
     "lastUpdated": "Last updated",
     "updatedDate": "May 5, 2026",
@@ -523,8 +533,8 @@
       "full_name_required": "Please enter your name.",
       "email_invalid": "Invalid email address.",
       "password_too_short": "Password too short (8 characters minimum).",
-      "signup_failed": "Account creation failed: {message}",
-      "checkout_failed": "Checkout failed: {message}",
+      "signup_failed": "Account creation failed. Check your details and try again.",
+      "checkout_failed": "The payment couldn't be completed. Please try again in a moment.",
       "email_in_use": "An account already exists for this email. Please sign in first — we'll resume your order.",
       "email_confirmation_required": "We sent you a confirmation email. Confirm it then sign in to finish your order."
     }

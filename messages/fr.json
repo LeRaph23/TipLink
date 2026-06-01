@@ -50,6 +50,16 @@
     "home": "Retour à l'accueil",
     "ref": "Référence :"
   },
+  "errors": {
+    "validation": "Certaines informations sont invalides. Vérifiez votre saisie.",
+    "duplicate": "Cet élément existe déjà.",
+    "notFound": "Élément introuvable.",
+    "forbidden": "Vous n'avez pas l'autorisation d'effectuer cette action.",
+    "unknown": "Une erreur est survenue. Réessayez.",
+    "network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+    "initFailed": "Impossible de démarrer le paiement. Réessayez.",
+    "staffPendingTips": "Ce membre a des paiements en attente. Réessayez une fois qu'ils sont réglés."
+  },
   "legal": {
     "lastUpdated": "Dernière mise à jour",
     "updatedDate": "5 mai 2026",
@@ -523,8 +533,8 @@
       "full_name_required": "Merci d'indiquer votre nom.",
       "email_invalid": "Adresse email invalide.",
       "password_too_short": "Mot de passe trop court (8 caractères minimum).",
-      "signup_failed": "Création du compte impossible : {message}",
-      "checkout_failed": "Échec du paiement : {message}",
+      "signup_failed": "La création du compte a échoué. Vérifiez vos informations et réessayez.",
+      "checkout_failed": "Le paiement n'a pas pu aboutir. Réessayez dans un instant.",
       "email_in_use": "Un compte existe déjà pour cet email. Connectez-vous d'abord — nous reprendrons votre commande.",
       "email_confirmation_required": "Un email de confirmation vous a été envoyé. Confirmez-le puis connectez-vous pour finaliser la commande."
     }
