@@ -1078,6 +1078,7 @@
     "finish": "Terminer la configuration →",
     "finishing": "Finalisation…",
     "back": "← Retour",
+    "fillField": "Renseignez ce champ pour continuer.",
     "done": {
       "title": "Votre espace est prêt !",
       "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
@@ -1106,7 +1107,9 @@
     },
     "address": {
       "title": "Adresse",
-      "subtitle": "À quelle adresse se trouve votre établissement ?"
+      "subtitle": "À quelle adresse se trouve votre établissement ?",
+      "searching": "Recherche…",
+      "manualHint": "Aucune suggestion ? Saisissez votre adresse manuellement."
     },
     "adminName": {
       "title": "Votre nom",

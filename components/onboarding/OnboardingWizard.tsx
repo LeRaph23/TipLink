@@ -869,6 +869,14 @@ export function OnboardingWizard(props: Props) {
           </button>
         )}
 
+        {/* Explain why the action button is greyed out instead of leaving the
+            user guessing. Not shown on steps with no required field. */}
+        {!canAdvance() && !submitting && currentStep !== 'tips-opt-in' && (
+          <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
+            {t('fillField')}
+          </p>
+        )}
+
         {/* "Skip" for team step (not last) */}
         {currentStep === 'team' && !isLastStep && (
           <button

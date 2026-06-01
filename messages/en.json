@@ -1078,6 +1078,7 @@
     "finish": "Finish setup →",
     "finishing": "Finalizing…",
     "back": "← Back",
+    "fillField": "Fill in this field to continue.",
     "done": {
       "title": "Your space is ready!",
       "body": "{name} is set up. You can now manage your team and track your tips.",
@@ -1106,7 +1107,9 @@
     },
     "address": {
       "title": "Address",
-      "subtitle": "Where is your establishment located?"
+      "subtitle": "Where is your establishment located?",
+      "searching": "Searching…",
+      "manualHint": "No suggestions? Enter your address manually."
     },
     "adminName": {
       "title": "Your name",
