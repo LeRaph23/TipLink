@@ -2,13 +2,6 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-interface BanFeature {
-  properties: {
-    label: string;
-    score: number;
-  };
-}
-
 interface Props {
   value: string;
   onChange: (value: string) => void;
@@ -18,12 +11,12 @@ interface Props {
 
 export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props) {
   const t = useTranslations('onboarding.address');
-  const [suggestions, setSuggestions] = useState<BanFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
-  // True once a lookup fails (network / CSP block) so we can invite the user to
-  // type their address manually instead of silently showing nothing.
+  // True once a lookup fails (network / upstream down) so we can invite the
+  // user to type their address manually instead of silently showing nothing.
   const [lookupFailed, setLookupFailed] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -47,19 +40,20 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
       abortRef.current = ctrl;
       setLoading(true);
       try {
-        // Géoplateforme (IGN) geocoder — the old api-adresse.data.gouv.fr host
-        // was decommissioned on 2026-04-14. Same BAN data, same GeoJSON shape.
+        // Same-origin proxy to the IGN geocoder (see app/api/onboarding/geocode).
+        // Calling our own API keeps this request under connect-src 'self', so it
+        // doesn't depend on the geocoder host being allow-listed or CORS-enabled.
         const res = await fetch(
-          `https://data.geopf.fr/geocodage/search/?q=${encodeURIComponent(q)}&limit=5`,
+          `/api/onboarding/geocode?q=${encodeURIComponent(q)}`,
           { signal: ctrl.signal }
         );
-        const data = await res.json();
-        setSuggestions(data.features ?? []);
+        const data = (await res.json()) as { labels?: string[] };
+        setSuggestions(data.labels ?? []);
         setOpen(true);
         setLookupFailed(false);
       } catch (err) {
-        // Ignore deliberate aborts; for real failures (network / CSP) flag the
-        // field so the user knows they can still type the address by hand.
+        // Ignore deliberate aborts; for real failures flag the field so the
+        // user knows they can still type the address by hand.
         if ((err as Error)?.name !== 'AbortError') {
           console.error('[address] geocoder lookup failed', err);
           setLookupFailed(true);
@@ -70,8 +64,8 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
     }, 300);
   }
 
-  function selectSuggestion(feat: BanFeature) {
-    onChange(feat.properties.label);
+  function selectSuggestion(label: string) {
+    onChange(label);
     setSuggestions([]);
     setOpen(false);
     setActiveIndex(-1);
@@ -133,10 +127,10 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
       />
       {open && suggestions.length > 0 && (
         <ul style={dropdownStyle}>
-          {suggestions.map((feat, i) => (
+          {suggestions.map((label, i) => (
             <li
-              key={feat.properties.label}
-              onMouseDown={() => selectSuggestion(feat)}
+              key={label}
+              onMouseDown={() => selectSuggestion(label)}
               onMouseEnter={() => setActiveIndex(i)}
               style={{
                 padding: '10px 12px',
@@ -149,7 +143,7 @@ export function AddressAutocomplete({ value, onChange, onConfirm, style }: Props
                 transition: 'background 80ms',
               }}
             >
-              {feat.properties.label}
+              {label}
             </li>
           ))}
         </ul>
