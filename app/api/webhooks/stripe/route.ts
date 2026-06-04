@@ -201,7 +201,7 @@ async function handleEvent(
               status: 'pending',
             }));
 
-            await supabase.from('tip_transfers').insert(rows as never);
+            await supabase.from('group_tip_transfers').insert(rows as never);
           }
         }
       }
@@ -228,7 +228,7 @@ async function handleEvent(
           // The new `status` column is not in generated types yet — query w/o
           // .eq('status'…), filter in JS, and resolve staff accounts separately.
           const { data: rowsRaw } = await supabase
-            .from('tip_transfers')
+            .from('group_tip_transfers')
             .select('id, staff_id, amount')
             .eq('transaction_id', transactionId);
 
@@ -259,7 +259,7 @@ async function handleEvent(
                 { idempotencyKey: `gtt:${row.id}` }
               );
               await supabase
-                .from('tip_transfers')
+                .from('group_tip_transfers')
                 .update({
                   status: 'succeeded',
                   stripe_transfer_id: transfer.id,
@@ -270,7 +270,7 @@ async function handleEvent(
               const msg = err instanceof Error ? err.message : 'unknown';
               console.error('group transfer create failed', { rowId: row.id, err });
               await supabase
-                .from('tip_transfers')
+                .from('group_tip_transfers')
                 .update({ status: 'failed', error: msg, attempts: 1 } as never)
                 .eq('id', row.id);
             }
@@ -566,7 +566,7 @@ async function handleEvent(
         .is('reversed_at', null);
 
       await supabase
-        .from('tip_transfers')
+        .from('group_tip_transfers')
         .update({ reversed_at: now } as never)
         .eq('stripe_transfer_id', transfer.id)
         .is('reversed_at', null);

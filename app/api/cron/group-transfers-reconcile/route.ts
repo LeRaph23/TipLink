@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 const MAX_ATTEMPTS = 5;
 const RETRY_DELAY_MS = 5 * 60 * 1000; // wait 5 min before first retry
 
-// Picks up tip_transfers rows left in `pending` (webhook crashed during
+// Picks up group_tip_transfers rows left in `pending` (webhook crashed during
 // the per-staff Stripe loop) or `failed` (transient Stripe error) and replays
 // the transfer. Idempotency key `gtt:<row.id>` makes Stripe deduplicate.
 export async function POST(req: Request) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const cutoff = new Date(Date.now() - RETRY_DELAY_MS).toISOString();
 
   const { data: rows } = await service
-    .from('tip_transfers')
+    .from('group_tip_transfers')
     .select(`
       id, transaction_id, staff_id, amount, attempts, status,
       staff_profiles(stripe_account_id),
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     if (!staffAccount || !chargeId || !transferGroup || !currency) {
       // Cannot retry without these — leave the row alone for manual triage.
       await service
-        .from('tip_transfers')
+        .from('group_tip_transfers')
         .update({ attempts: r.attempts + 1, error: 'missing context' } as never)
         .eq('id', r.id);
       failed++;
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         { idempotencyKey: `gtt:${r.id}` }
       );
       await service
-        .from('tip_transfers')
+        .from('group_tip_transfers')
         .update({
           status: 'succeeded',
           stripe_transfer_id: transfer.id,
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
       await service
-        .from('tip_transfers')
+        .from('group_tip_transfers')
         .update({
           status: 'failed',
           error: msg,
