@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Icon, type IconName } from '@/components/ambassadeur/icons';
+import { StripeOnboardingPrimer } from '@/components/payment/StripeOnboardingPrimer';
 
 interface UnclaimedProfile {
   id: string;
@@ -12,7 +13,7 @@ interface UnclaimedProfile {
   email?: string;
 }
 
-type Step = 'welcome' | 'identity' | 'name-photo' | 'payment-intro' | 'email' | 'password';
+type Step = 'welcome' | 'identity' | 'name-photo' | 'payment-intro' | 'email' | 'password' | 'pre-stripe';
 
 const inp: React.CSSProperties = {
   width: '100%',
@@ -107,6 +108,7 @@ export function JoinForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [onboardingUrl, setOnboardingUrl] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -190,9 +192,16 @@ export function JoinForm({
       return;
     }
 
-    // Hand off to Stripe's hosted onboarding (Standard connected account).
+    // Before handing off to Stripe's hosted onboarding, walk the staff member
+    // through the same pre-onboarding primer as the dashboard banking setup.
     const body = (await res.json().catch(() => ({}))) as { onboardingUrl?: string };
-    window.location.href = body.onboardingUrl ?? `/${locale}/dashboard`;
+    if (body.onboardingUrl) {
+      setOnboardingUrl(body.onboardingUrl);
+      setStep('pre-stripe');
+      setLoading(false);
+    } else {
+      window.location.href = `/${locale}/dashboard`;
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -457,6 +466,17 @@ export function JoinForm({
           </button>
         </div>
       </div>
+    );
+  }
+
+  // ─── Step: pre-stripe (the shared pre-onboarding primer before Stripe) ─────
+
+  if (step === 'pre-stripe') {
+    return (
+      <StripeOnboardingPrimer
+        onContinue={() => { window.location.href = onboardingUrl ?? `/${locale}/dashboard`; }}
+        error={error}
+      />
     );
   }
 

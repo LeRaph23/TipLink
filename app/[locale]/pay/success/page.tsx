@@ -1,7 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { stripe } from '@/lib/stripe/client';
-import { Icon } from '@/components/ambassadeur/icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +59,25 @@ function StatusIcon({ status }: { status: RedirectStatus }) {
   );
 }
 
+async function fetchStaffName(staffId: string): Promise<string | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) return null;
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/get_public_staff`, {
+      method: 'POST',
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ p_staff_id: staffId }),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const rows = (await res.json()) as Array<{ full_name?: string }>;
+    return rows[0]?.full_name ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function PaySuccessPage({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -106,6 +124,8 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
     }
   }
 
+  const staffName = staffId ? await fetchStaffName(staffId) : null;
+
   const heading =
     status === 'succeeded'
       ? t('success')
@@ -115,17 +135,10 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
 
   const subheading =
     status === 'succeeded'
-      ? t('successBody')
+      ? (staffName ? t('successBodyNamed', { name: staffName }) : t('successBody'))
       : status === 'processing'
         ? t('processingBody')
         : t('failedBody');
-
-  const statusBadge =
-    status === 'succeeded'
-      ? { label: t('success'), fg: 'var(--success)', bg: 'var(--success-bg)' }
-      : status === 'processing'
-        ? { label: t('processing'), fg: 'var(--text-2)', bg: 'var(--surface-2)' }
-        : { label: t('failed'), fg: 'var(--error)', bg: 'var(--error-bg)' };
 
   const glowColor =
     status === 'succeeded' ? 'rgba(34,197,94,0.08)' :
@@ -158,36 +171,16 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
           borderRadius: 'var(--radius-lg)', padding: 20, textAlign: 'left', marginBottom: 20,
           boxShadow: 'var(--shadow)',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successStatus')}</span>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '2px 8px', borderRadius: 100,
-              fontSize: 11, fontWeight: 600,
-              background: statusBadge.bg, color: statusBadge.fg,
-            }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', flexShrink: 0, display: 'inline-block' }} />
-              {statusBadge.label}
-            </span>
-          </div>
           {fmtAmount && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: staffName ? '1px solid var(--border-subtle)' : undefined }}>
               <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successAmount')}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmtAmount}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmtAmount}</span>
             </div>
           )}
-          {sp.payment_intent && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: fmtAmount ? undefined : '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successReference')}</span>
-              <span style={{ fontSize: 12, color: 'var(--text)', fontFamily: 'monospace' }}>
-                {sp.payment_intent.slice(0, 12)}…
-              </span>
-            </div>
-          )}
-          {!sp.payment_intent && (
+          {staffName && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Stripe</span>
-              <span style={{ display: 'inline-flex', color: 'var(--success)' }}><Icon name="checkCircle" size={15} /></span>
+              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('sentTo')}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{staffName}</span>
             </div>
           )}
         </div>

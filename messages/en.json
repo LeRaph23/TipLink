@@ -600,7 +600,9 @@
     "receiptByEmail": "Get a receipt by email",
     "tipHeadline": "Want to say thanks?",
     "tipSubhead": "Leave a tip in a tap",
-    "feeInfo": "These few cents only cover part of the bank transaction fees we pay on every tip. We do our best to keep them as low as possible."
+    "feeInfo": "These few cents only cover part of the bank transaction fees we pay on every tip. We do our best to keep them as low as possible.",
+    "successBodyNamed": "Your tip is on its way — {name} has been notified.",
+    "sentTo": "Sent to"
   },
   "dashboard": {
     "welcome": "Welcome back,",

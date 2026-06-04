@@ -600,7 +600,9 @@
     "receiptByEmail": "Recevoir un reçu par email",
     "tipHeadline": "Envie de dire merci ?",
     "tipSubhead": "Laissez un pourboire en un clin d’œil",
-    "feeInfo": "Ces quelques centimes ne couvrent qu’une partie des frais de transaction bancaire que nous payons sur chaque pourboire. On fait notre maximum pour les limiter."
+    "feeInfo": "Ces quelques centimes ne couvrent qu’une partie des frais de transaction bancaire que nous payons sur chaque pourboire. On fait notre maximum pour les limiter.",
+    "successBodyNamed": "Votre pourboire est bien parti — {name} en a été informé·e.",
+    "sentTo": "Envoyé à"
   },
   "dashboard": {
     "welcome": "Bon retour,",
