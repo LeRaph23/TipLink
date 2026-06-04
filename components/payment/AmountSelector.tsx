@@ -107,9 +107,10 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
         </p>
       )}
 
-      {/* Checkout card — only shown once a valid amount is chosen.
-          Remounting via `key={tipAmount}` forces Stripe Elements to
-          recompute payment methods for the new total charge amount. */}
+      {/* Checkout — only shown once a valid amount is chosen. We deliberately
+          do NOT remount on amount change (a `key={tipAmount}` made the wallet
+          button flicker): Stripe Elements updates the amount in place via the
+          changing `options.amount`. */}
       {hasAmount && tipAmount && (
         <CheckoutErrorBoundary
           fallback={
@@ -123,7 +124,6 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
           }
         >
           <TipCheckout
-            key={tipAmount}
             staffId={staffId}
             tipAmount={tipAmount}
             amount={tipAmount + SERVICE_FEE_CENTS}
