@@ -555,7 +555,7 @@
     "paying": "Paying…",
     "pay": "Pay",
     "notReady": "This staff member isn't ready to receive tips yet.",
-    "secured": "Secured by Stripe. Your payment never touches Digitip.",
+    "secured": "Payment secured by Stripe.",
     "success": "Thanks for the tip!",
     "successBody": "Your payment went through. The staff member has been notified.",
     "processing": "Processing…",
@@ -596,7 +596,9 @@
     "yourEmail": "Your email (optional)",
     "emailPlaceholder": "email@example.com",
     "receiptNote": "A receipt will be sent to this address",
-    "receiptByEmail": "Get a receipt by email"
+    "receiptByEmail": "Get a receipt by email",
+    "tipHeadline": "Want to say thanks?",
+    "tipSubhead": "Leave a tip in a tap"
   },
   "dashboard": {
     "welcome": "Welcome back,",

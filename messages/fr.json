@@ -555,7 +555,7 @@
     "paying": "Paiement…",
     "pay": "Payer",
     "notReady": "Ce membre de l'équipe n'est pas encore prêt à recevoir des pourboires.",
-    "secured": "Sécurisé par Stripe. Votre paiement ne transite jamais par Digitip.",
+    "secured": "Paiement 100 % sécurisé par Stripe.",
     "success": "Merci pour le pourboire !",
     "successBody": "Votre paiement est passé. Le serveur a été notifié.",
     "processing": "En cours de traitement…",
@@ -596,7 +596,9 @@
     "yourEmail": "Votre email (optionnel)",
     "emailPlaceholder": "email@exemple.com",
     "receiptNote": "Un reçu sera envoyé à cette adresse",
-    "receiptByEmail": "Recevoir un reçu par email"
+    "receiptByEmail": "Recevoir un reçu par email",
+    "tipHeadline": "Envie de dire merci ?",
+    "tipSubhead": "Laissez un pourboire en un clin d’œil"
   },
   "dashboard": {
     "welcome": "Bon retour,",
