@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { getStaffEarnings } from '@/actions/stripe';
 import { BankingSetupForm } from './BankingSetupForm';
 
@@ -70,6 +71,20 @@ export default async function BankingPage({
   const hasAccount = !!staffProfile?.stripe_account_id;
   const isComplete = staffProfile?.onboarding_status === 'complete';
 
+  // Deferred onboarding: tips captured while a staff member hasn't finished
+  // onboarding are held on the platform. Surface that balance to motivate them
+  // to verify their identity and collect it.
+  let pendingBalance = 0;
+  if (staffProfile?.id) {
+    const service = createServiceClient();
+    const { data: held } = await service
+      .from('group_tip_transfers')
+      .select('amount')
+      .eq('staff_id', staffProfile.id)
+      .eq('status', 'pending');
+    pendingBalance = (held ?? []).reduce((s, r) => s + (r.amount ?? 0), 0);
+  }
+
   const earnings = hasAccount ? await getStaffEarnings() : null;
   const lifetimeNet = earnings && 'ok' in earnings ? earnings.lifetimeNet : null;
   const fmt = new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
@@ -95,6 +110,26 @@ export default async function BankingPage({
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Held tips waiting to be collected */}
+          {pendingBalance > 0 && (
+            <div style={{ ...card, borderColor: 'var(--warning)', background: 'var(--warning-bg, #fff8e6)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ display: 'flex', color: 'var(--warning)', flexShrink: 0 }}><ClockIcon /></span>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                  {t('pendingBalanceTitle')}
+                </div>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1 }}>
+                {fmt.format(pendingBalance / 100)}
+              </div>
+              {!isComplete && (
+                <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 8 }}>
+                  {t('pendingBalanceBody')}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Earnings */}
           {hasAccount && lifetimeNet !== null && (
             <div style={card}>

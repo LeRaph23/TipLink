@@ -155,6 +155,7 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
     { href: '/dashboard/banking',       label: tn('payouts'),      icon: <PayoutIcon />, roles: ['staff', 'group_admin'] as UserRole['role'][], staffProfile: true },
     { href: '/dashboard/billing',       label: tn('billing'),      icon: <InvoiceIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/statements',    label: tn('statements'),   icon: <InvoiceIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/establishments', label: tn('establishments'), icon: <EstIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/stickers',      label: tn('stickers'),     icon: <NfcIcon />,    roles: ['manager', 'group_admin'] as UserRole['role'][] },
     { href: '/dashboard/analytics',     label: td('analytics.nav'),icon: <TxIcon />,     roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },

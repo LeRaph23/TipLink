@@ -622,7 +622,8 @@
       "roleStaff": "Staff member",
       "roleAdmin": "Admin",
       "roleManager": "Manager",
-      "roleSuperAdmin": "Super admin"
+      "roleSuperAdmin": "Super admin",
+      "statements": "Statements"
     },
     "billing": {
       "title": "Billing & commission",
@@ -812,7 +813,9 @@
       "continue": "Continue →",
       "openingStripe": "Opening Stripe…",
       "setupCta": "Set up with Stripe →",
-      "updateCta": "Update my bank details →"
+      "updateCta": "Update my bank details →",
+      "pendingBalanceTitle": "Pending tips",
+      "pendingBalanceBody": "Finish your verification (2 min) to receive these tips in your account."
     },
     "analytics": {
       "title": "Analytics",
@@ -1069,6 +1072,21 @@
         "colCurrency": "Currency",
         "colStripe": "Stripe"
       }
+    },
+    "statements": {
+      "title": "Monthly statements",
+      "subtitle": "Tips received per employee — to hand to your accountant for payroll.",
+      "month": "Month",
+      "colEmployee": "Employee",
+      "colCount": "Tips",
+      "colNet": "Net received",
+      "colPaid": "Paid out",
+      "colPending": "Pending",
+      "total": "Total",
+      "empty": "No tips this month.",
+      "export": "Export as CSV",
+      "disclaimerTitle": "For your accountant",
+      "disclaimerBody": "Tips paid to customer-facing employees are exempt from social contributions and income tax (scheme extended to 2028). This statement helps with payroll reporting. Confirm the exact treatment with your accountant."
     }
   },
   "join": {
