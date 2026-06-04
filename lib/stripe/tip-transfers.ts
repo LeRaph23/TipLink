@@ -65,7 +65,7 @@ export async function releaseStaffPendingTransfers(
       );
       await supabase
         .from('group_tip_transfers')
-        .update({ status: 'succeeded', stripe_transfer_id: transfer.id, error: null } as never)
+        .update({ status: 'succeeded', stripe_transfer_id: transfer.id, error: null, transferred_at: new Date().toISOString() } as never)
         .eq('id', row.id);
       released++;
     } catch (err) {

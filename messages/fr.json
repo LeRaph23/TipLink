@@ -1075,18 +1075,15 @@
     },
     "statements": {
       "title": "Relevés mensuels",
-      "subtitle": "Pourboires reçus par employé — à transmettre à votre comptable pour la paie (DSN).",
+      "subtitle": "Pourboires versés à chaque employé, par mois. À transmettre à votre comptable.",
       "month": "Mois",
       "colEmployee": "Employé",
       "colCount": "Pourboires",
-      "colNet": "Net reçu",
-      "colPaid": "Déjà versé",
-      "colPending": "En attente",
+      "colAmount": "Montant versé",
       "total": "Total",
-      "empty": "Aucun pourboire ce mois-ci.",
+      "empty": "Aucun versement ce mois-ci.",
       "export": "Exporter en CSV",
-      "disclaimerTitle": "Pour votre comptable",
-      "disclaimerBody": "Les pourboires versés aux salariés en contact avec la clientèle sont exonérés de cotisations sociales et d'impôt (dispositif prolongé jusqu'en 2028). Ce relevé facilite la déclaration (DSN). Validez les modalités exactes avec votre expert-comptable."
+      "heldNote": "{amount} en attente de retrait par vos employés — non encore versé, hors relevé."
     }
   },
   "join": {

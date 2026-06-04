@@ -244,7 +244,7 @@ async function handleEvent(
               );
               await supabase
                 .from('group_tip_transfers')
-                .update({ status: 'succeeded', stripe_transfer_id: transfer.id, attempts: 1, error: null } as never)
+                .update({ status: 'succeeded', stripe_transfer_id: transfer.id, attempts: 1, error: null, transferred_at: new Date().toISOString() } as never)
                 .eq('id', row.id);
             } catch (err) {
               const msg = err instanceof Error ? err.message : 'unknown';

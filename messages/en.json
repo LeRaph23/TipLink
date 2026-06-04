@@ -1075,18 +1075,15 @@
     },
     "statements": {
       "title": "Monthly statements",
-      "subtitle": "Tips received per employee — to hand to your accountant for payroll.",
+      "subtitle": "Tips paid out to each employee, by month. To hand to your accountant.",
       "month": "Month",
       "colEmployee": "Employee",
       "colCount": "Tips",
-      "colNet": "Net received",
-      "colPaid": "Paid out",
-      "colPending": "Pending",
+      "colAmount": "Amount paid",
       "total": "Total",
-      "empty": "No tips this month.",
+      "empty": "No payout this month.",
       "export": "Export as CSV",
-      "disclaimerTitle": "For your accountant",
-      "disclaimerBody": "Tips paid to customer-facing employees are exempt from social contributions and income tax (scheme extended to 2028). This statement helps with payroll reporting. Confirm the exact treatment with your accountant."
+      "heldNote": "{amount} awaiting withdrawal by your employees — not yet paid, excluded from the statement."
     }
   },
   "join": {

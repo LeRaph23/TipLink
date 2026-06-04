@@ -87,6 +87,7 @@ export async function POST(req: Request) {
           stripe_transfer_id: transfer.id,
           attempts: r.attempts + 1,
           error: null,
+          transferred_at: new Date().toISOString(),
         } as never)
         .eq('id', r.id);
       succeeded++;

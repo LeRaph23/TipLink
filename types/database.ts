@@ -1277,6 +1277,7 @@ export type Database = {
           status: string
           stripe_transfer_id: string | null
           transaction_id: string
+          transferred_at: string | null
         }
         Insert: {
           amount: number
@@ -1289,6 +1290,7 @@ export type Database = {
           status?: string
           stripe_transfer_id?: string | null
           transaction_id: string
+          transferred_at?: string | null
         }
         Update: {
           amount?: number
@@ -1301,6 +1303,7 @@ export type Database = {
           status?: string
           stripe_transfer_id?: string | null
           transaction_id?: string
+          transferred_at?: string | null
         }
         Relationships: [
           {
