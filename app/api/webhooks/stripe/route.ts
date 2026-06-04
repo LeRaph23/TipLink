@@ -23,16 +23,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 });
   }
 
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: `Webhook signature verification failed: ${message}` }, { status: 400 });
+  // A single URL backs TWO Stripe endpoints with different signing secrets:
+  //  - the platform ("your account") endpoint → payment_intent.*, charge.*,
+  //    checkout.session.* (tips are charged on the platform);
+  //  - the Connect ("connected accounts") endpoint → account.updated, payout.*,
+  //    transfer.* (events on staff/connected accounts).
+  // Try each configured secret so both kinds of event verify on the same route.
+  const secrets = [
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET_CONNECT,
+  ].filter((s): s is string => !!s);
+
+  let event: Stripe.Event | null = null;
+  let lastErr = 'no signing secret configured';
+  for (const secret of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(body, sig, secret);
+      break;
+    } catch (err) {
+      lastErr = err instanceof Error ? err.message : 'Unknown error';
+    }
+  }
+  if (!event) {
+    return NextResponse.json({ error: `Webhook signature verification failed: ${lastErr}` }, { status: 400 });
   }
 
   const supabase = createServiceClient();
