@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
 import { onTipSucceeded, onStaffBankingComplete, onPayoutFailed } from '@/lib/email/lifecycle-events';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
+import { releaseStaffPendingTransfers } from '@/lib/stripe/tip-transfers';
 import { createPackInvoiceForPaymentIntent } from '@/lib/stripe/pack-invoice';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
@@ -115,97 +116,34 @@ async function handleEvent(
         ? intent.latest_charge
         : (intent.latest_charge as Stripe.Charge | null)?.id ?? null;
 
-      // For solo tips, the destination charge has a single transfer we need
-      // to know about in order to reverse it on refund/dispute. Retrieve it
-      // from the charge so we can store the transfer ID for later. The charge
-      // is also the authoritative source for the platform fee actually taken.
-      let soloTransferId: string | null = null;
-      let chargeApplicationFee: number | null = null;
-      if (chargeId && intent.metadata?.group_tip !== 'true') {
-        try {
-          const ch = await stripe.charges.retrieve(chargeId);
-          soloTransferId = typeof ch.transfer === 'string'
-            ? ch.transfer
-            : (ch.transfer as Stripe.Transfer | null)?.id ?? null;
-          chargeApplicationFee = typeof ch.application_fee_amount === 'number'
-            ? ch.application_fee_amount
-            : null;
-        } catch (err) {
-          console.error('failed to retrieve charge for transfer_id', { chargeId, err });
-        }
-      }
+      const isGroup = intent.metadata?.group_tip === 'true';
+      const transferGroup = intent.metadata?.transfer_group ?? null;
 
-      // Defense-in-depth: trust the Stripe charge over the (mutable) intent
-      // metadata for the stored fee. Metadata is set by our own backend today,
-      // but the webhook must not depend on that to record an accurate amount.
-      const metadataFee = intent.metadata?.application_fee_amount
-        ? parseInt(intent.metadata.application_fee_amount, 10)
+      // Defense-in-depth: read the distributable amount and the kept fee from
+      // our own transaction record (written server-side at intent creation),
+      // never from the mutable PaymentIntent metadata.
+      const { data: curTxn } = await supabase
+        .from('transactions')
+        .select('staff_id, establishment_id, metadata')
+        .eq('id', transactionId)
+        .single();
+      const curMeta = (curTxn?.metadata ?? {}) as Record<string, unknown>;
+      const dbTip = Number(curMeta.tip_amount);
+      const dbPlatformFee = Number(curMeta.platform_fee);
+      const dbServiceFee = Number(curMeta.service_fee);
+      const netForStaff = Number.isFinite(dbTip) && Number.isFinite(dbPlatformFee)
+        ? Math.max(0, dbTip - dbPlatformFee)
+        : 0;
+      // The platform keeps the commission + the fixed service fee; everything
+      // else is owed to staff. With separate charges there is no Stripe
+      // application fee object — what we keep is simply what we don't transfer.
+      const keptFee = Number.isFinite(dbPlatformFee)
+        ? dbPlatformFee + (Number.isFinite(dbServiceFee) ? dbServiceFee : 0)
         : null;
-      if (chargeApplicationFee != null && metadataFee != null && chargeApplicationFee !== metadataFee) {
-        console.error('application_fee_amount mismatch — storing charge value', {
-          intent: intent.id, chargeApplicationFee, metadataFee,
-        });
-      }
-      const applicationFeeAmount = chargeApplicationFee ?? metadataFee;
 
-      // For group tips: insert per-staff rows BEFORE marking the transaction
-      // succeeded, so a crash during the Stripe loop leaves recoverable state
-      // (the reconciliation cron picks up `pending` rows >5 min old).
-      // The rounding remainder is given to the first staff member so the full
-      // net amount is always distributed (no centimes left on the platform).
-      if (intent.metadata?.group_tip === 'true') {
-        // Defense-in-depth: recompute the staff-distributable amount from our
-        // own transaction record (written server-side at intent creation),
-        // never from the PaymentIntent metadata. A tampered `net_for_staff`
-        // must not be able to redirect funds.
-        const { data: txnRow } = await supabase
-          .from('transactions')
-          .select('metadata')
-          .eq('id', transactionId)
-          .single();
-        const txnMeta = (txnRow?.metadata ?? {}) as Record<string, unknown>;
-        const dbTipAmount = Number(txnMeta.tip_amount);
-        const dbPlatformFee = Number(txnMeta.platform_fee);
-        const metaNet = parseInt(intent.metadata.net_for_staff ?? '0', 10);
-        const netForStaff = Number.isFinite(dbTipAmount) && Number.isFinite(dbPlatformFee)
-          ? Math.max(0, dbTipAmount - dbPlatformFee)
-          : metaNet;
-        if (netForStaff !== metaNet) {
-          console.error('group net_for_staff mismatch — using DB value', {
-            intent: intent.id, netForStaff, metaNet,
-          });
-        }
-        const transferGroup = intent.metadata.transfer_group;
-        const establishmentId = intent.metadata.establishment_id;
-
-        if (netForStaff > 0 && transferGroup && establishmentId && chargeId) {
-          const { data: staffMembers } = await supabase
-            .from('staff_profiles')
-            .select('id, stripe_account_id')
-            .eq('establishment_id', establishmentId)
-            .eq('is_active', true)
-            .eq('onboarding_status', 'complete')
-            .is('deleted_at', null)
-            .not('stripe_account_id', 'is', null)
-            .order('id'); // deterministic remainder recipient
-
-          if (staffMembers && staffMembers.length > 0) {
-            const n = staffMembers.length;
-            const baseShare = Math.floor(netForStaff / n);
-            const remainder = netForStaff - baseShare * n;
-
-            const rows = staffMembers.map((s, i) => ({
-              transaction_id: transactionId,
-              staff_id: s.id,
-              amount: baseShare + (i === 0 ? remainder : 0),
-              status: 'pending',
-            }));
-
-            await supabase.from('group_tip_transfers').insert(rows as never);
-          }
-        }
-      }
-
+      // Mark the transaction succeeded. Persist transfer_group into metadata so
+      // the reconcile cron can replay held transfers later. Idempotent: the
+      // `status='pending'` guard makes a duplicate delivery a no-op.
       await supabase
         .from('transactions')
         .update({
@@ -213,62 +151,104 @@ async function handleEvent(
           stripe_payment_intent_id: intent.id,
           succeeded_at: new Date().toISOString(),
           stripe_charge_id: chargeId,
-          stripe_transfer_id: soloTransferId,
-          application_fee_amount: applicationFeeAmount,
+          application_fee_amount: keptFee,
+          metadata: { ...curMeta, ...(transferGroup ? { transfer_group: transferGroup } : {}) },
         } as never)
         .eq('id', transactionId)
         .eq('status', 'pending');
 
-      // Now drive the per-staff Stripe transfers. Each row already exists with
-      // status='pending'; on success we mark succeeded + transfer_id, on failure
-      // we mark failed + error so the cron can retry.
-      if (intent.metadata?.group_tip === 'true') {
-        const transferGroup = intent.metadata.transfer_group;
-        if (transferGroup && chargeId) {
-          // The new `status` column is not in generated types yet — query w/o
-          // .eq('status'…), filter in JS, and resolve staff accounts separately.
-          const { data: rowsRaw } = await supabase
-            .from('group_tip_transfers')
-            .select('id, staff_id, amount')
-            .eq('transaction_id', transactionId);
-
-          const pendingRows = ((rowsRaw ?? []) as Array<{ id: string; staff_id: string; amount: number; status?: string }>)
-            .filter((r) => (r.status ?? 'pending') === 'pending');
-
-          const staffAccountById = new Map<string, string | null>();
-          if (pendingRows.length > 0) {
-            const { data: staffAccts } = await supabase
+      // ── Held allocations: one group_tip_transfers row per staff member ──
+      // Solo = a single recipient; group = split across EVERY active staff
+      // member (onboarded or not). Each row starts `pending` and is transferred
+      // once that staff member's Stripe account is ready — here if already
+      // onboarded, otherwise on account.updated or via the reconcile cron.
+      // The rounding remainder goes to the first staff member so the whole net
+      // is always distributed (no centimes stranded on the platform).
+      if (chargeId && netForStaff > 0) {
+        let recipients: Array<{ staff_id: string; amount: number }> = [];
+        if (isGroup) {
+          const establishmentId = curTxn?.establishment_id ?? intent.metadata?.establishment_id ?? null;
+          if (establishmentId) {
+            const { data: staffMembers } = await supabase
               .from('staff_profiles')
-              .select('id, stripe_account_id')
-              .in('id', pendingRows.map((r) => r.staff_id));
-            for (const s of staffAccts ?? []) staffAccountById.set(s.id, s.stripe_account_id);
+              .select('id')
+              .eq('establishment_id', establishmentId)
+              .eq('is_active', true)
+              .is('deleted_at', null)
+              .order('id'); // deterministic remainder recipient
+            if (staffMembers && staffMembers.length > 0) {
+              const n = staffMembers.length;
+              const baseShare = Math.floor(netForStaff / n);
+              const remainder = netForStaff - baseShare * n;
+              recipients = staffMembers.map((s, i) => ({
+                staff_id: s.id,
+                amount: baseShare + (i === 0 ? remainder : 0),
+              }));
+            }
+          }
+        } else if (curTxn?.staff_id) {
+          recipients = [{ staff_id: curTxn.staff_id, amount: netForStaff }];
+        }
+
+        // Idempotency: create the allocation rows only the first time.
+        const { data: existingRows } = await supabase
+          .from('group_tip_transfers')
+          .select('id')
+          .eq('transaction_id', transactionId)
+          .limit(1);
+
+        if ((existingRows?.length ?? 0) === 0 && recipients.length > 0) {
+          await supabase.from('group_tip_transfers').insert(
+            recipients.map((r) => ({
+              transaction_id: transactionId,
+              staff_id: r.staff_id,
+              amount: r.amount,
+              status: 'pending',
+            })) as never
+          );
+        }
+
+        // Transfer to staff who are already onboarded; the rest stays held.
+        const { data: rowsRaw } = await supabase
+          .from('group_tip_transfers')
+          .select('id, staff_id, amount, status')
+          .eq('transaction_id', transactionId);
+        const pendingRows = ((rowsRaw ?? []) as Array<{ id: string; staff_id: string; amount: number; status?: string }>)
+          .filter((r) => (r.status ?? 'pending') === 'pending');
+
+        if (pendingRows.length > 0) {
+          const { data: staffAccts } = await supabase
+            .from('staff_profiles')
+            .select('id, stripe_account_id, onboarding_status')
+            .in('id', pendingRows.map((r) => r.staff_id));
+          const readyAccountById = new Map<string, string>();
+          for (const s of staffAccts ?? []) {
+            if (s.stripe_account_id && s.onboarding_status === 'complete') {
+              readyAccountById.set(s.id, s.stripe_account_id);
+            }
           }
 
           for (const row of pendingRows) {
-            const staffAccount = staffAccountById.get(row.staff_id);
-            if (!staffAccount) continue;
+            const account = readyAccountById.get(row.staff_id);
+            if (!account) continue; // held until this staff member finishes onboarding
             try {
               const transfer = await stripe.transfers.create(
                 {
                   amount: row.amount,
                   currency: intent.currency,
-                  destination: staffAccount,
-                  transfer_group: transferGroup,
+                  destination: account,
+                  ...(transferGroup ? { transfer_group: transferGroup } : {}),
                   source_transaction: chargeId,
                 },
                 { idempotencyKey: `gtt:${row.id}` }
               );
               await supabase
                 .from('group_tip_transfers')
-                .update({
-                  status: 'succeeded',
-                  stripe_transfer_id: transfer.id,
-                  attempts: 1,
-                } as never)
+                .update({ status: 'succeeded', stripe_transfer_id: transfer.id, attempts: 1, error: null } as never)
                 .eq('id', row.id);
             } catch (err) {
               const msg = err instanceof Error ? err.message : 'unknown';
-              console.error('group transfer create failed', { rowId: row.id, err });
+              console.error('tip transfer create failed', { rowId: row.id, err });
               await supabase
                 .from('group_tip_transfers')
                 .update({ status: 'failed', error: msg, attempts: 1 } as never)
@@ -651,6 +631,10 @@ async function handleEvent(
             .eq('id', staffRow.id);
           await onStaffBankingComplete(supabase, staffRow.id).catch((err) =>
             console.error('[lifecycle] onStaffBankingComplete failed', err));
+          // Deferred onboarding: pay out every tip that accumulated (held) while
+          // this staff member was completing their Stripe onboarding.
+          await releaseStaffPendingTransfers(supabase, staffRow.id).catch((err) =>
+            console.error('[release] releaseStaffPendingTransfers failed', err));
         }
       }
       break;

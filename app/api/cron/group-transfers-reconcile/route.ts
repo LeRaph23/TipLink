@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     .from('group_tip_transfers')
     .select(`
       id, transaction_id, staff_id, amount, attempts, status,
-      staff_profiles(stripe_account_id),
+      staff_profiles(stripe_account_id, onboarding_status),
       transactions(stripe_charge_id, currency, metadata)
     `)
     .in('status', ['pending', 'failed'])
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
   let processed = 0;
   let succeeded = 0;
   let failed = 0;
+  let held = 0;
 
   for (const row of rows ?? []) {
     processed++;
@@ -41,16 +42,25 @@ export async function POST(req: Request) {
       id: string;
       amount: number;
       attempts: number;
-      staff_profiles: { stripe_account_id: string | null } | null;
+      staff_profiles: { stripe_account_id: string | null; onboarding_status: string } | null;
       transactions: { stripe_charge_id: string | null; currency: string; metadata: { transfer_group?: string } | null } | null;
     };
-    const staffAccount = r.staff_profiles?.stripe_account_id;
+    const staffReady =
+      !!r.staff_profiles?.stripe_account_id && r.staff_profiles.onboarding_status === 'complete';
+    const staffAccount = staffReady ? r.staff_profiles!.stripe_account_id! : null;
     const chargeId = r.transactions?.stripe_charge_id;
     const transferGroup = r.transactions?.metadata?.transfer_group;
     const currency = r.transactions?.currency?.toLowerCase();
 
-    if (!staffAccount || !chargeId || !transferGroup || !currency) {
-      // Cannot retry without these — leave the row alone for manual triage.
+    // Staff member hasn't finished onboarding yet → the allocation is
+    // legitimately held, not failed. Skip it without touching attempts.
+    if (!staffAccount) {
+      held++;
+      continue;
+    }
+
+    if (!chargeId || !currency) {
+      // Cannot retry without these — leave the row for manual triage.
       await service
         .from('group_tip_transfers')
         .update({ attempts: r.attempts + 1, error: 'missing context' } as never)
@@ -65,7 +75,7 @@ export async function POST(req: Request) {
           amount: r.amount,
           currency,
           destination: staffAccount,
-          transfer_group: transferGroup,
+          ...(transferGroup ? { transfer_group: transferGroup } : {}),
           source_transaction: chargeId,
         },
         { idempotencyKey: `gtt:${r.id}` }
@@ -94,7 +104,7 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed, succeeded, failed });
+  return NextResponse.json({ ok: true, processed, succeeded, failed, held });
 }
 
 // Vercel cron uses GET with the same auth header.

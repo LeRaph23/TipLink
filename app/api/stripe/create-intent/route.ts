@@ -65,11 +65,12 @@ export async function POST(request: NextRequest) {
     .is('deleted_at', null)
     .single();
 
-  if (!staff?.stripe_account_id || staff.onboarding_status !== 'complete') {
-    return NextResponse.json(
-      { error: 'Staff account not found or not ready for payments' },
-      { status: 404 }
-    );
+  // Deferred onboarding: we no longer require the staff member to have a ready
+  // Stripe account before accepting a tip. The tip is captured on the platform
+  // and held; it is transferred once they finish onboarding (see webhook +
+  // reconcile cron). Only the staff member having to exist & be active remains.
+  if (!staff) {
+    return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
   }
 
   // Cross-tenant guard: when the page provides the scanned establishment id,
@@ -100,7 +101,11 @@ export async function POST(request: NextRequest) {
       }
     }
   }
-  const applicationFeeAmount = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000)) + SERVICE_FEE;
+  // Platform keeps the commission + the fixed service fee; the staff member
+  // receives the remainder. With deferred onboarding we capture on the platform
+  // (separate charge) and transfer this net amount later.
+  const platformFee = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000));
+  const netForStaff = tipAmount - platformFee;
 
   const idempotencyKey = generateIdempotencyKey({ staffId, amount, nonce });
 
@@ -113,7 +118,14 @@ export async function POST(request: NextRequest) {
       establishment_id: staff.establishment_id,
       status: 'pending',
       idempotency_key: idempotencyKey,
-      metadata: { source: 'nfc', tip_amount: tipAmount, service_fee: SERVICE_FEE },
+      metadata: {
+        source: 'nfc',
+        tip_amount: tipAmount,
+        service_fee: SERVICE_FEE,
+        platform_fee_bps: platformFeeBps,
+        platform_fee: platformFee,
+        net_for_staff: netForStaff,
+      },
     })
     .select('id')
     .single();
@@ -138,13 +150,18 @@ export async function POST(request: NextRequest) {
     transactionId = txn!.id;
   }
 
+  const transferGroup = `tip_${transactionId}`;
+
   const intent = await stripe.paymentIntents.create(
     {
       amount,
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true },
-      transfer_data: { destination: staff.stripe_account_id },
-      ...(applicationFeeAmount > 0 ? { application_fee_amount: applicationFeeAmount } : {}),
+      // Separate charge: funds land on the platform and are held until the
+      // staff member finishes onboarding, then transferred (webhook /
+      // reconcile cron) via source_transaction. No transfer_data /
+      // application_fee here — the "fee" is simply what we don't transfer.
+      transfer_group: transferGroup,
       ...(customerEmail ? { receipt_email: customerEmail } : {}),
       payment_method_options: {
         card: { request_three_d_secure: 'automatic' },
@@ -155,7 +172,9 @@ export async function POST(request: NextRequest) {
         tip_amount: String(tipAmount),
         service_fee: String(SERVICE_FEE),
         platform_fee_bps: String(platformFeeBps),
-        application_fee_amount: String(applicationFeeAmount),
+        platform_fee: String(platformFee),
+        net_for_staff: String(netForStaff),
+        transfer_group: transferGroup,
       },
     },
     { idempotencyKey }
