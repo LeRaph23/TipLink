@@ -24,6 +24,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
   });
   const [custom, setCustom] = useState('');
   const [customFocus, setCustomFocus] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
   const [showFeeInfo, setShowFeeInfo] = useState(false);
 
   const tipAmount = custom
@@ -47,10 +48,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
         padding: 20, borderRadius: 20, marginBottom: 12,
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
       }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.09em', textAlign: 'center', marginBottom: 12 }}>
-          {t('selectAmount')}
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(thresholds.length, 4)}, 1fr)`, gap: 8, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(thresholds.length, 4)}, 1fr)`, gap: 8 }}>
           {thresholds.map(amt => {
             const cents = amt * 100;
             const active = !custom && selectedAmount === cents;
@@ -58,9 +56,9 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             return (
               <button
                 key={amt}
-                onClick={() => { setSelectedAmount(cents); setCustom(''); }}
+                onClick={() => { setSelectedAmount(cents); setCustom(''); setShowCustom(false); }}
                 style={{
-                  padding: '14px 6px', borderRadius: 12,
+                  padding: '16px 6px', borderRadius: 12,
                   border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
                   background: active ? 'var(--accent-muted)' : 'var(--surface-2)',
                   color: active ? 'var(--accent)' : 'var(--text)',
@@ -68,7 +66,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
                   letterSpacing: '-0.03em',
                   boxShadow: active ? '0 0 0 3px var(--accent-muted)' : 'none',
                   transition: 'all 130ms cubic-bezier(.34,1.3,.64,1)',
-                  transform: active ? 'scale(1.05)' : 'scale(1)',
+                  transform: active ? 'scale(1.04)' : 'scale(1)',
                 }}
               >
                 {fmt.format(amt)}
@@ -76,25 +74,40 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             );
           })}
         </div>
-        {/* Custom amount */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <span style={{ position: 'absolute', left: 11, fontSize: 14, color: 'var(--text-3)', pointerEvents: 'none', zIndex: 1 }}>
-            {currencySymbol}
-          </span>
-          <input
-            type="number" placeholder={t('customAmount')} value={custom}
-            onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
-            onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
+
+        {/* Custom amount — a small link that reveals the input on click. */}
+        {!showCustom ? (
+          <button
+            type="button"
+            onClick={() => { setShowCustom(true); setSelectedAmount(null); }}
             style={{
-              width: '100%', background: 'var(--surface-2)',
-              border: `1.5px solid ${customFocus ? 'var(--accent)' : 'var(--border)'}`,
-              borderRadius: 'var(--radius-sm)', padding: '9px 12px 9px 28px',
-              color: 'var(--text)', fontSize: 13.5, outline: 'none',
-              boxShadow: customFocus ? '0 0 0 3px var(--accent-muted)' : 'none',
-              fontFamily: 'var(--font)',
+              display: 'block', margin: '12px auto 0', background: 'none', border: 'none',
+              color: 'var(--text-3)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'var(--font)',
+              textDecoration: 'underline', textUnderlineOffset: 3,
             }}
-          />
-        </div>
+          >
+            {t('customAmount')}
+          </button>
+        ) : (
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginTop: 12 }}>
+            <span style={{ position: 'absolute', left: 11, fontSize: 14, color: 'var(--text-3)', pointerEvents: 'none', zIndex: 1 }}>
+              {currencySymbol}
+            </span>
+            <input
+              type="number" inputMode="decimal" placeholder={t('customAmount')} value={custom} autoFocus
+              onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
+              onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
+              style={{
+                width: '100%', background: 'var(--surface-2)',
+                border: `1.5px solid ${customFocus ? 'var(--accent)' : 'var(--border)'}`,
+                borderRadius: 'var(--radius-sm)', padding: '11px 12px 11px 28px',
+                color: 'var(--text)', fontSize: 14, outline: 'none',
+                boxShadow: customFocus ? '0 0 0 3px var(--accent-muted)' : 'none',
+                fontFamily: 'var(--font)',
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Service fee — single line + a clickable "i" that explains it. */}

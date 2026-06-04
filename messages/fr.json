@@ -567,7 +567,7 @@
     "notReadyTipGroup": "Laisser un pourboire à l'équipe →",
     "group": {
       "pickStaffTitle": "Choisissez votre praticien·ne",
-      "pickStaffSubtitle": "Sélectionnez la personne qui vous a servi·e pour lui laisser un pourboire.",
+      "pickStaffSubtitle": "Sélectionnez la personne de votre choix pour lui laisser un pourboire.",
       "noStaff": "Aucun membre de l'équipe n'est encore prêt à recevoir des pourboires.",
       "poweredBy": "Propulsé par Digitip",
       "wholeTeam": "Toute l'équipe",
@@ -600,7 +600,6 @@
     "receiptByEmail": "Recevoir un reçu par email",
     "tipHeadline": "Envie de dire merci ?",
     "tipSubhead": "Laissez un pourboire en un clin d’œil",
-    "pickStaffSubtitle": "Sélectionnez la personne de votre choix pour lui laisser un pourboire.",
     "feeInfo": "Ces quelques centimes ne couvrent qu’une partie des frais de transaction bancaire que nous payons sur chaque pourboire. On fait notre maximum pour les limiter."
   },
   "dashboard": {

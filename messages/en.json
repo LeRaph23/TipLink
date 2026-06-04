@@ -567,7 +567,7 @@
     "notReadyTipGroup": "Tip the team instead →",
     "group": {
       "pickStaffTitle": "Choose your stylist",
-      "pickStaffSubtitle": "Select the person who served you to leave them a tip.",
+      "pickStaffSubtitle": "Pick whoever you like to leave a tip.",
       "noStaff": "No team members are ready to receive tips yet.",
       "poweredBy": "Powered by Digitip",
       "wholeTeam": "The whole team",
@@ -600,7 +600,6 @@
     "receiptByEmail": "Get a receipt by email",
     "tipHeadline": "Want to say thanks?",
     "tipSubhead": "Leave a tip in a tap",
-    "pickStaffSubtitle": "Pick whoever you like to leave a tip.",
     "feeInfo": "These few cents only cover part of the bank transaction fees we pay on every tip. We do our best to keep them as low as possible."
   },
   "dashboard": {

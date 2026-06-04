@@ -161,28 +161,19 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
         }}
       />
 
-      {/* Divider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-        <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>ou</span>
-        <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-      </div>
-
-      {/* Card section */}
+      {/* Card — a small text link instead of a big second button. */}
       {!showCard ? (
         <button
           type="button"
           onClick={() => setShowCard(true)}
           style={{
-            width: '100%', padding: '16px', borderRadius: 14, border: '1.5px solid var(--border)',
-            background: 'var(--surface-2)', color: 'var(--text)',
-            cursor: 'pointer', fontSize: 15, fontWeight: 700,
-            fontFamily: 'var(--font)', letterSpacing: '-0.01em',
-            transition: 'all 130ms',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            margin: '2px auto', padding: 6, background: 'none', border: 'none',
+            color: 'var(--text-3)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+            textDecoration: 'underline', textUnderlineOffset: 3,
           }}
         >
-          <Icon name="card" size={18} /> {t('payButton')}
+          <Icon name="card" size={15} /> {t('payButton')}
         </button>
       ) : (
         <>

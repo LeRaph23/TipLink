@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { Icon } from '@/components/ambassadeur/icons';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -114,46 +113,6 @@ export default async function GroupTipPage({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* "Whole team" option — always offered on an establishment tag so
-                customers can split across the team. */}
-            {payableStaff.length >= 1 && (
-              <Link
-                href={`/pay/group/${establishmentId}/team`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  padding: '16px 18px',
-                  borderRadius: 16,
-                  background: 'linear-gradient(135deg, rgba(229,122,151,0.12), rgba(236,151,176,0.06))',
-                  border: '1.5px solid rgba(229,122,151,0.3)',
-                  textDecoration: 'none',
-                  color: 'var(--text)',
-                  minHeight: 72,
-                  transition: 'transform 120ms, border-color 120ms',
-                }}
-              >
-                <div style={{
-                  width: 48, height: 48, borderRadius: '50%',
-                  background: 'var(--accent)', color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <Icon name="users" size={22} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: '-0.01em', display: 'block' }}>
-                    {t('group.wholeTeam')}
-                  </span>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-                    {payableStaff.length > 1
-                      ? t('group.splitEqually', { count: payableStaff.length })
-                      : t('group.wholeTeamOne')}
-                  </span>
-                </div>
-                <span aria-hidden style={{ fontSize: 18, color: 'var(--accent)', opacity: 0.8 }}>→</span>
-              </Link>
-            )}
             {payableStaff.map((s) => (
               <Link
                 key={s.staff_id!}
@@ -193,7 +152,7 @@ export default async function GroupTipPage({
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6" /></svg>
                   </div>
                 )}
-                <span style={{ flex: 1, fontWeight: 600, fontSize: 16, letterSpacing: '-0.01em' }}>
+                <span style={{ flex: 1, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {s.full_name}
                 </span>
                 <span aria-hidden style={{ fontSize: 18, color: 'var(--text-3)', opacity: 0.6 }}>
@@ -201,6 +160,28 @@ export default async function GroupTipPage({
                 </span>
               </Link>
             ))}
+
+            {/* Whole-team split — only when 2+ members, shown last; neutral card,
+                heart icon, no subtitle. */}
+            {payableStaff.length > 1 && (
+              <Link
+                href={`/pay/group/${establishmentId}/team`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '16px 18px', borderRadius: 16,
+                  background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+                  textDecoration: 'none', color: 'var(--text)', minHeight: 76,
+                }}
+              >
+                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} aria-hidden>
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="#E57A97" stroke="none"><path d="M12 21s-7.5-4.6-10-9.2C.6 9 1.7 5.5 4.8 4.7 6.7 4.2 8.6 5 9.6 6.4L12 9l2.4-2.6c1-1.4 2.9-2.2 4.8-1.7 3.1.8 4.2 4.3 2.8 7.1C19.5 16.4 12 21 12 21z" /></svg>
+                </div>
+                <span style={{ flex: 1, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em' }}>
+                  {t('group.wholeTeam')}
+                </span>
+                <span aria-hidden style={{ fontSize: 18, color: 'var(--text-3)', opacity: 0.6, flexShrink: 0 }}>→</span>
+              </Link>
+            )}
           </div>
         )}
 
