@@ -136,13 +136,10 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
 
   return (
     <div style={{
-      padding: 20,
-      borderRadius: 20,
-      background: 'var(--surface)',
-      border: '1px solid var(--border-subtle)',
       display: 'flex',
       flexDirection: 'column',
-      gap: 10,
+      gap: 12,
+      marginTop: 18,
     }}>
       {error && (
         <p style={{ fontSize: 12, color: 'var(--error)', textAlign: 'center', margin: 0 }}>
@@ -210,9 +207,9 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
           onChange={e => setCustomerEmail(e.target.value)}
           placeholder={t('emailPlaceholder')}
           style={{
-            width: '100%', padding: '11px 12px', borderRadius: 10,
+            width: '100%', padding: '12px', borderRadius: 10,
             border: '1px solid var(--border)', background: 'var(--surface-2)',
-            color: 'var(--text)', fontSize: 14, fontFamily: 'inherit',
+            color: 'var(--text)', fontSize: 16, fontFamily: 'inherit',
             outline: 'none', boxSizing: 'border-box',
           }}
         />

@@ -101,7 +101,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
                 width: '100%', background: 'var(--surface-2)',
                 border: `1.5px solid ${customFocus ? 'var(--accent)' : 'var(--border)'}`,
                 borderRadius: 'var(--radius-sm)', padding: '11px 12px 11px 28px',
-                color: 'var(--text)', fontSize: 14, outline: 'none',
+                color: 'var(--text)', fontSize: 16, outline: 'none',
                 boxShadow: customFocus ? '0 0 0 3px var(--accent-muted)' : 'none',
                 fontFamily: 'var(--font)',
               }}
