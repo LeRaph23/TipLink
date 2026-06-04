@@ -24,6 +24,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
   });
   const [custom, setCustom] = useState('');
   const [customFocus, setCustomFocus] = useState(false);
+  const [showFeeInfo, setShowFeeInfo] = useState(false);
 
   const tipAmount = custom
     ? Math.round((parseFloat(custom) || 0) * 100)
@@ -96,15 +97,49 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
         </div>
       </div>
 
-      {/* Service fee — clean single line, no box */}
+      {/* Service fee — single line + a clickable "i" that explains it. */}
       {hasAmount && tipAmount && (
-        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-3)', margin: '-4px 0 0', lineHeight: 1.5 }}>
-          {fmt.format(tipAmount / 100)} pourboire&nbsp;+&nbsp;{fmtCents.format(SERVICE_FEE_CENTS / 100)} frais de service
-          {' = '}
-          <strong style={{ color: 'var(--text-2)', fontWeight: 700 }}>
-            {fmtCents.format((tipAmount + SERVICE_FEE_CENTS) / 100)} débités
-          </strong>
-        </p>
+        <div style={{ textAlign: 'center', margin: '-4px 0 0' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: 0 }}>
+            {fmt.format(tipAmount / 100)} pourboire&nbsp;+&nbsp;{fmtCents.format(SERVICE_FEE_CENTS / 100)} frais de service{' '}
+            <button
+              type="button"
+              onClick={() => setShowFeeInfo((v) => !v)}
+              aria-expanded={showFeeInfo}
+              aria-label={t('feeInfo')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 16, height: 16, borderRadius: '50%', verticalAlign: 'middle',
+                border: '1px solid var(--border)', background: showFeeInfo ? 'var(--accent-muted)' : 'var(--surface-2)',
+                color: showFeeInfo ? 'var(--accent)' : 'var(--text-3)', fontSize: 11, fontWeight: 700,
+                fontStyle: 'italic', fontFamily: 'Georgia, serif', cursor: 'pointer', lineHeight: 1, padding: 0,
+              }}
+            >
+              i
+            </button>
+            {' = '}
+            <strong style={{ color: 'var(--text-2)', fontWeight: 700 }}>
+              {fmtCents.format((tipAmount + SERVICE_FEE_CENTS) / 100)} débités
+            </strong>
+          </p>
+          {showFeeInfo && (
+            <p
+              className="fade-up"
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 7,
+                fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.55,
+                margin: '8px auto 0', maxWidth: 320, textAlign: 'left',
+                background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+                padding: '9px 12px', borderRadius: 10,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#E57A97" stroke="none" style={{ flexShrink: 0, marginTop: 1 }} aria-hidden>
+                <path d="M12 21s-7.5-4.6-10-9.2C.6 9 1.7 5.5 4.8 4.7 6.7 4.2 8.6 5 9.6 6.4L12 9l2.4-2.6c1-1.4 2.9-2.2 4.8-1.7 3.1.8 4.2 4.3 2.8 7.1C19.5 16.4 12 21 12 21z" />
+              </svg>
+              <span>{t('feeInfo')}</span>
+            </p>
+          )}
+        </div>
       )}
 
       {/* Checkout — only shown once a valid amount is chosen. We deliberately

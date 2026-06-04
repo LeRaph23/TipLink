@@ -114,8 +114,9 @@ export default async function GroupTipPage({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* "Whole team" option */}
-            {payableStaff.length > 1 && (
+            {/* "Whole team" option — always offered on an establishment tag so
+                customers can split across the team. */}
+            {payableStaff.length >= 1 && (
               <Link
                 href={`/pay/group/${establishmentId}/team`}
                 style={{
@@ -145,7 +146,9 @@ export default async function GroupTipPage({
                     {t('group.wholeTeam')}
                   </span>
                   <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-                    {t('group.splitEqually', { count: payableStaff.length })}
+                    {payableStaff.length > 1
+                      ? t('group.splitEqually', { count: payableStaff.length })
+                      : t('group.wholeTeamOne')}
                   </span>
                 </div>
                 <span aria-hidden style={{ fontSize: 18, color: 'var(--accent)', opacity: 0.8 }}>→</span>
