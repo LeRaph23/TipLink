@@ -31,21 +31,30 @@ const svgBase = {
 function CardIcon() {
   return <svg {...svgBase}><rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><path d="M3.5 10.5h2.5" /></svg>;
 }
-function LockIcon() {
-  return <svg {...svgBase}><rect x="3" y="7" width="10" height="6.5" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 015 0v2" /></svg>;
-}
 function CheckIcon() {
   return <svg {...svgBase}><circle cx="8" cy="8" r="6.5" /><path d="M5.3 8.2l1.8 1.8 3.6-3.8" /></svg>;
 }
+function UserIcon() {
+  return <svg {...svgBase}><circle cx="8" cy="5.5" r="2.6" /><path d="M3 13.5c0-2.8 2.2-4.3 5-4.3s5 1.5 5 4.3" /></svg>;
+}
+function IdIcon() {
+  return <svg {...svgBase}><rect x="1.5" y="3.5" width="13" height="9" rx="1.5" /><circle cx="5" cy="7.3" r="1.4" /><path d="M3.3 11c0-1.1 .8-1.8 1.7-1.8s1.7 .7 1.7 1.8" /><path d="M9 6.6h3.4M9 9h2.8" /></svg>;
+}
+function SkipIcon() {
+  return <svg {...svgBase}><circle cx="8" cy="8" r="6.3" /><path d="M4 4l8 8" /></svg>;
+}
 
 // One idea per screen, mobile-first: instead of a single dense reassurance
-// paragraph, the setup walks through three light cards (what happens →
-// privacy → go) before handing off to Stripe's hosted onboarding. The update
-// mode skips the explainer since the user has already been through it once.
+// paragraph, the setup walks the staff member through light cards that prepare
+// them for exactly what Stripe's hosted onboarding will show (pick "Individual",
+// have ID + IBAN ready, skip the Tax/Climate upsells) before handing off. The
+// update mode skips the explainer since they've already been through it once.
 const STEPS = [
   { Icon: CardIcon, key: 'step1' },
-  { Icon: LockIcon, key: 'step2' },
-  { Icon: CheckIcon, key: 'step3' },
+  { Icon: UserIcon, key: 'step2' },
+  { Icon: IdIcon, key: 'step3' },
+  { Icon: SkipIcon, key: 'step4' },
+  { Icon: CheckIcon, key: 'step5' },
 ] as const;
 
 export function BankingSetupForm({ mode }: Props) {
