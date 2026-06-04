@@ -464,7 +464,7 @@ export function JoinForm({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
           <button
             type="button"
-            onClick={() => setStep('payment-intro')}
+            onClick={() => setStep(isAuthenticated ? 'password' : 'email')}
             disabled={!firstNameFilled}
             style={{ ...btnPrimary, opacity: firstNameFilled ? 1 : 0.4 }}
           >
@@ -583,7 +583,7 @@ export function JoinForm({
           >
             {t('continue')}
           </button>
-          <button type="button" onClick={() => setStep('payment-intro')} style={btnSecondary}>
+          <button type="button" onClick={() => setStep('name-photo')} style={btnSecondary}>
             {t('back')}
           </button>
         </div>
@@ -628,7 +628,7 @@ export function JoinForm({
         </button>
         <button
           type="button"
-          onClick={() => { setError(null); setStep(isAuthenticated ? 'payment-intro' : 'email'); }}
+          onClick={() => { setError(null); setStep(isAuthenticated ? 'name-photo' : 'email'); }}
           style={btnSecondary}
         >
           {t('back')}
