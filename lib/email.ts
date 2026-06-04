@@ -1634,6 +1634,33 @@ export async function sendStaffBankingNudge(opts: {
     }));
 }
 
+/** Staff — tips captured but HELD because identity/banking isn't set up yet.
+ *  Escalates J+7 (1) / J+30 (2) / J+60 (3); step 3 warns before the 90-day
+ *  auto-refund. `amount` is a pre-formatted currency string. */
+export async function sendUnclaimedTipsReminder(opts: {
+  to: string; firstName: string; amount: string; bankingUrl: string; step: 1 | 2 | 3; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, amount, bankingUrl, step, unsubscribeUrl } = opts;
+  const subject = step === 3
+    ? `${firstName}, vos ${amount} de pourboires expirent bientôt`
+    : `${firstName}, vous avez ${amount} de pourboires à récupérer`;
+  return lifecycleSend(to, subject,
+    lifecycleBody({
+      badge: 'Pourboires en attente', tone: step === 1 ? 'pink' : 'amber',
+      title: step === 3
+        ? `${firstName}, dernière étape avant expiration`
+        : `${firstName}, vos pourboires vous attendent`,
+      intro: step === 3
+        ? `Vous avez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires en attente. Sans vérification d'identité, ils seront <strong class="text-strong" style="color:#0f0f12">remboursés au client après 90 jours</strong>. Récupérez-les maintenant — 2 minutes, sécurisé par Stripe.`
+        : `Vous avez déjà <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires sur Digitip. Pour les recevoir sur votre compte, confirmez votre identité — 2 minutes, sécurisé par Stripe, à faire une seule fois.`,
+      ctaLabel: 'Récupérer mes pourboires →', ctaUrl: bankingUrl,
+      note: step === 3
+        ? 'Après 90 jours, les pourboires non réclamés sont automatiquement remboursés au client.'
+        : 'Vos coordonnées bancaires sont gérées par Stripe — Digitip n\'y a jamais accès.',
+      unsubscribeUrl,
+    }));
+}
+
 /** Staff — Stripe banking just completed (transactional). */
 export async function sendStaffBankingComplete(opts: {
   to: string; firstName: string;

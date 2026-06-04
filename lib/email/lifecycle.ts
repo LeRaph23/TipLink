@@ -30,6 +30,7 @@ export const LIFECYCLE: Record<string, LifecycleEmailDef> = {
   activation_no_tips:     { key: 'activation_no_tips',     audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   staff_invite_reminder:  { key: 'staff_invite_reminder',  audience: 'staff',       recurrence: 'one_shot',  transactional: false },
   staff_banking_nudge:    { key: 'staff_banking_nudge',    audience: 'staff',       recurrence: 'one_shot',  transactional: false },
+  staff_unclaimed_tips:   { key: 'staff_unclaimed_tips',   audience: 'staff',       recurrence: 'one_shot',  transactional: false },
   staff_banking_complete: { key: 'staff_banking_complete', audience: 'staff',       recurrence: 'one_shot',  transactional: true },
   first_tip_celebration:  { key: 'first_tip_celebration',  audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   earnings_milestone:     { key: 'earnings_milestone',     audience: 'staff',       recurrence: 'one_shot',  transactional: false },

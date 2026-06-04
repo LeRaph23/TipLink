@@ -91,15 +91,15 @@
       "title": "Terms of Service",
       "intro": "These terms govern your use of Digitip. By creating an account or placing an order, you accept them in full.",
       "s1Title": "1. The service",
-      "s1Body": "Digitip provides NFC SmartTags and a software platform enabling customers to leave cashless tips to staff members. Tips are processed via Stripe Connect and paid out directly to staff bank accounts.",
+      "s1Body": "Digitip provides NFC SmartTags and software that lets customers leave contactless tips to staff. Tips are collected via Stripe and then paid out to the designated recipient's bank account, after their identity is verified. Digitip acts as a technical facilitator and is not the recipients' employer.",
       "s2Title": "2. Eligibility",
       "s2Body": "You must be at least 18, have the authority to bind your business, and operate a lawful hospitality or service activity in a country where Stripe Connect is available.",
       "s3Title": "3. Subscription & orders",
       "s3Body": "SmartTag packs are sold as a one-time hardware purchase plus a monthly software subscription. Hardware is non-refundable once shipped. The subscription can be cancelled at any time from the billing portal; cancellation takes effect at the end of the current period.",
       "s4Title": "4. Payments",
       "s4Body": "All payments are processed by Stripe. VAT is applied automatically according to your country. Failed subscription payments may suspend service after 7 days. A 30-day grace period applies to SmartTags before full deactivation.",
-      "s5Title": "5. Tips & payouts",
-      "s5Body": "Digitip acts as a technical facilitator. Tips belong to the staff member who received them and are paid directly to their Stripe-connected bank account, typically within 48 hours. Digitip charges a 5% commission on each tip collected to cover infrastructure and payment processing costs. Digitip never retains funds beyond the payment transit.",
+      "s5Title": "5. Tips, collection and payout",
+      "s5Body": "Digitip acts as a technical payment facilitator. Each tip is attributed to the staff member chosen by the customer. Funds are first collected via Stripe, then paid out to the recipient's connected bank account as soon as they complete the identity verification required by anti-money-laundering rules. Until that verification is complete, the tip is held securely and paid out automatically once the recipient is verified. Digitip charges a 5% commission plus a fixed per-transaction service fee to cover infrastructure and payment costs; the balance goes to the recipient. Digitip only holds funds for as long as needed to pay them out.",
       "s6Title": "6. Your responsibilities",
       "s6Body": "You must provide accurate information, keep credentials safe, use the service lawfully, inform your staff and customers appropriately, and comply with applicable tax and employment laws regarding tips.",
       "s7Title": "7. Acceptable use",
@@ -111,7 +111,13 @@
       "s10Title": "10. Governing law",
       "s10Body": "These terms are governed by French law. Disputes are subject to the exclusive jurisdiction of the competent courts of Paris, France, unless mandatory consumer law provides otherwise.",
       "s11Title": "11. Changes",
-      "s11Body": "We may update these terms. Material changes will be notified by email at least 30 days before they apply."
+      "s11Body": "We may update these terms. Material changes will be notified by email at least 30 days before they apply.",
+      "s12Title": "12. Identity verification",
+      "s12Body": "To receive tips, each recipient must confirm their identity and provide an IBAN through Stripe's secure flow. This step, required by EU regulation (KYC / AML), is kept to the strict minimum and is only requested when the recipient wishes to collect the amounts attributed to them.",
+      "s13Title": "13. Unclaimed tips",
+      "s13Body": "If a recipient does not complete identity verification, the tips attributed to them are held for them. If they remain unclaimed for 90 days, they are automatically refunded to the customer who made the payment. Digitip holds no unclaimed funds beyond that period.",
+      "s14Title": "14. Tax and social obligations",
+      "s14Body": "Digitip is not the recipients' employer and is not involved in the employment relationship or payroll. Tips paid directly to employees may qualify for an exemption from social contributions and income tax under applicable rules, subject to conditions. It is the establishment's and/or the recipient's responsibility to meet their reporting obligations (in particular in payroll). To help, Digitip provides the administrator with a monthly statement of amounts paid to each recipient. Digitip does not provide legal or tax advice."
     }
   },
   "mentions": {
