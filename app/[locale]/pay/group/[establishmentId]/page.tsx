@@ -78,62 +78,22 @@ export default async function GroupTipPage({
     >
       <div className="fade-up" style={{ width: '100%', maxWidth: 400 }}>
 
-        {/* Brand mark */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <span
-            style={{
-              fontFamily: 'Poppins, var(--font-display), sans-serif',
-              fontSize: 15,
-              fontWeight: 800,
-              color: 'var(--accent)',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            DigiTip
-          </span>
-        </div>
-
-        {/* Salon identity */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, marginBottom: 36 }}>
-          {header.group_logo_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={header.group_logo_url}
-              alt={salonName}
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 20,
-                objectFit: 'cover',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-              }}
-            />
-          )}
-          <div style={{ textAlign: 'center' }}>
-            <h1
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 32,
-                fontWeight: 800,
-                color: 'var(--text)',
-                letterSpacing: '-0.03em',
-                lineHeight: 1.15,
-                marginBottom: 10,
-              }}
-            >
-              {salonName}
-            </h1>
-            <p
-              style={{
-                fontSize: 15,
-                color: 'var(--text-3)',
-                lineHeight: 1.5,
-                maxWidth: 280,
-                margin: '0 auto',
-              }}
-            >
-              {t('group.pickStaffSubtitle')}
-            </p>
+        {/* Branded "say thanks" hero — same look as the tip page / plaque. */}
+        <div style={{ borderRadius: 24, overflow: 'hidden', marginBottom: 18, boxShadow: '0 18px 50px rgba(124,58,237,0.28)' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #F2A8B7 0%, #C96CC1 52%, #7C3AED 100%)',
+            padding: '30px 24px 26px', textAlign: 'center', color: '#fff',
+          }}>
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 12px', display: 'block' }} aria-hidden>
+              <path d="M12 20.4l-1.45-1.32C5.4 14.36 2.5 11.72 2.5 8.5 2.5 5.9 4.54 3.9 7.1 3.9c1.45 0 2.84.67 3.74 1.74L12 6.9l1.16-1.26A4.97 4.97 0 0 1 16.9 3.9c2.56 0 4.6 2 4.6 4.6 0 3.22-2.9 5.86-8.05 10.6L12 20.4z" />
+            </svg>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 23, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              {t('tipHeadline')}
+            </div>
+            <div style={{ fontSize: 15, opacity: 0.95, marginTop: 5, fontWeight: 600 }}>{salonName}</div>
+          </div>
+          <div style={{ background: 'var(--surface)', padding: '14px 20px', textAlign: 'center' }}>
+            <p style={{ fontSize: 13.5, color: 'var(--text-2)', margin: 0, lineHeight: 1.5 }}>{t('group.pickStaffSubtitle')}</p>
           </div>
         </div>
 
@@ -219,20 +179,15 @@ export default async function GroupTipPage({
                 ) : (
                   <div
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      background: 'var(--accent)',
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: 20,
+                      width: 48, height: 48, borderRadius: '50%',
+                      background: 'var(--surface-2)', color: 'var(--text-3)',
+                      border: '1px solid var(--border)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0,
                     }}
+                    aria-hidden
                   >
-                    {(s.full_name ?? '?').charAt(0).toUpperCase()}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6" /></svg>
                   </div>
                 )}
                 <span style={{ flex: 1, fontWeight: 600, fontSize: 16, letterSpacing: '-0.01em' }}>

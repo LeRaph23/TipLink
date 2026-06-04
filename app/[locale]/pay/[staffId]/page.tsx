@@ -192,70 +192,62 @@ export default async function StaffTipPage({
     );
   }
 
-  const tipThresholds: number[] = Array.isArray(staff.tip_thresholds)
+  const tipThresholds: number[] = Array.isArray(staff.tip_thresholds) && staff.tip_thresholds.length > 0
     ? staff.tip_thresholds
-    : [1, 2, 5, 10];
+    : [5, 10, 20];
 
-  const currency = staff.establishment_currency ?? 'EUR';
+  const currency = (staff.establishment_currency ?? 'EUR').toUpperCase();
 
   return (
     <main style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)', padding: '24px', position: 'relative', overflow: 'hidden',
+      background: 'var(--bg)', padding: '20px',
     }}>
-      {/* Glow */}
-      <div style={{ position: 'fixed', top: '-15%', left: '50%', transform: 'translateX(-50%)', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(99,102,241,0.1) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
-
-      <div className="fade-up" style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1 }}>
-        {/* Logo or wordmark */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
-          {staff.group_logo_url ? (
-            <img
-              src={staff.group_logo_url}
-              alt=""
-              style={{ height: 36, maxWidth: 140, objectFit: 'contain' }}
-            />
-          ) : (
-            <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
-          )}
-        </div>
-
-        {/* Staff card */}
-        <div style={{
-          padding: '26px', borderRadius: 20, textAlign: 'center', marginBottom: 12,
-          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-        }}>
-          {staff.avatar_url ? (
-            <img
-              src={staff.avatar_url}
-              alt={staff.full_name}
-              style={{ width: 68, height: 68, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 12px', display: 'block' }}
-            />
-          ) : (
-            <div style={{
-              width: 68, height: 68, borderRadius: '50%', margin: '0 auto 12px',
-              background: 'var(--accent)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 26, fontWeight: 800, color: '#fff',
-              position: 'relative',
-            }}>
-              {staff.full_name.charAt(0).toUpperCase()}
-              <div style={{ position: 'absolute', bottom: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--success)', border: '2.5px solid var(--surface)' }} />
+      <div className="fade-up" style={{ width: '100%', maxWidth: 400 }}>
+        {/* Branded "say thanks" hero — echoes the physical NFC plaque: a
+            pink→purple gradient with a white heart and a clear "leave a tip"
+            message, so the customer instantly understands what this is for. */}
+        <div style={{ borderRadius: 24, overflow: 'hidden', marginBottom: 14, boxShadow: '0 18px 50px rgba(124,58,237,0.28)' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #F2A8B7 0%, #C96CC1 52%, #7C3AED 100%)',
+            padding: '30px 24px 28px', textAlign: 'center', color: '#fff',
+          }}>
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 12px', display: 'block' }} aria-hidden>
+              <path d="M12 20.4l-1.45-1.32C5.4 14.36 2.5 11.72 2.5 8.5 2.5 5.9 4.54 3.9 7.1 3.9c1.45 0 2.84.67 3.74 1.74L12 6.9l1.16-1.26A4.97 4.97 0 0 1 16.9 3.9c2.56 0 4.6 2 4.6 4.6 0 3.22-2.9 5.86-8.05 10.6L12 20.4z" />
+            </svg>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 23, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              {t('tipHeadline')}
             </div>
-          )}
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 3 }}>{staff.full_name}</h2>
-          {staff.establishment_name && (
-            <p style={{ fontSize: 13, color: 'var(--text-3)' }}>{staff.establishment_name}</p>
-          )}
+            <div style={{ fontSize: 14, opacity: 0.95, marginTop: 5 }}>
+              {t('tipSubhead')}
+            </div>
+          </div>
+          {/* Who you're tipping, on white */}
+          <div style={{ background: 'var(--surface)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 13 }}>
+            {staff.avatar_url ? (
+              <img src={staff.avatar_url} alt={staff.full_name} style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 52, height: 52, borderRadius: '50%', flexShrink: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6" /></svg>
+              </div>
+            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{t('tipFor')}</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{staff.full_name}</div>
+              {staff.establishment_name && (
+                <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>{staff.establishment_name}</div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Amount selector + payment */}
         <Suspense
           fallback={
-            <div style={{ padding: 20, borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border-subtle)', marginBottom: 12 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {[1, 2, 3, 4].map(i => <div key={i} className="shimmer" style={{ height: 64, borderRadius: 12 }} />)}
+            <div style={{ padding: 20, borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {[1, 2, 3].map(i => <div key={i} className="shimmer" style={{ height: 64, borderRadius: 12 }} />)}
               </div>
             </div>
           }
@@ -268,9 +260,14 @@ export default async function StaffTipPage({
           />
         </Suspense>
 
-        <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-3)', marginTop: 12, lineHeight: 1.65 }}>
-          {t('secured')}
-        </p>
+        <div style={{ textAlign: 'center', marginTop: 14 }}>
+          <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6, margin: '0 0 8px' }}>{t('secured')}</p>
+          {staff.group_logo_url ? (
+            <img src={staff.group_logo_url} alt="" style={{ height: 24, maxWidth: 110, objectFit: 'contain', opacity: 0.75 }} />
+          ) : (
+            <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
+          )}
+        </div>
       </div>
     </main>
   );

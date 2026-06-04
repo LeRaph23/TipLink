@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { TipCheckout } from './TipCheckout';
+import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
 
 const SERVICE_FEE_CENTS = 25;
 
@@ -15,7 +16,12 @@ interface Props {
 
 export function AmountSelector({ staffId, currency, thresholds, expectedEstablishmentId }: Props) {
   const t = useTranslations('pay');
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const cur = (currency || 'EUR').toUpperCase();
+  // 5 is pre-selected by default (falls back to the first preset).
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(() => {
+    const pref = thresholds.includes(5) ? 5 : thresholds[0];
+    return pref ? pref * 100 : null;
+  });
   const [custom, setCustom] = useState('');
   const [customFocus, setCustomFocus] = useState(false);
 
@@ -25,11 +31,12 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
 
   const hasAmount = tipAmount !== null && tipAmount >= 50;
 
+  const currencySymbol = cur === 'EUR' ? '€' : cur === 'GBP' ? '£' : cur === 'USD' ? '$' : '';
   const fmt = new Intl.NumberFormat(undefined, {
-    style: 'currency', currency, minimumFractionDigits: 0,
+    style: 'currency', currency: cur, minimumFractionDigits: 0,
   });
   const fmtCents = new Intl.NumberFormat(undefined, {
-    style: 'currency', currency, minimumFractionDigits: 2,
+    style: 'currency', currency: cur, minimumFractionDigits: 2,
   });
 
   return (
@@ -42,7 +49,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
         <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.09em', textAlign: 'center', marginBottom: 12 }}>
           {t('selectAmount')}
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(thresholds.length, 4)}, 1fr)`, gap: 8, marginBottom: 12 }}>
           {thresholds.map(amt => {
             const cents = amt * 100;
             const active = !custom && selectedAmount === cents;
@@ -71,7 +78,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
         {/* Custom amount */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <span style={{ position: 'absolute', left: 11, fontSize: 14, color: 'var(--text-3)', pointerEvents: 'none', zIndex: 1 }}>
-            {currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '$'}
+            {currencySymbol}
           </span>
           <input
             type="number" placeholder={t('customAmount')} value={custom}
@@ -104,14 +111,26 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
           Remounting via `key={tipAmount}` forces Stripe Elements to
           recompute payment methods for the new total charge amount. */}
       {hasAmount && tipAmount && (
-        <TipCheckout
-          key={tipAmount}
-          staffId={staffId}
-          tipAmount={tipAmount}
-          amount={tipAmount + SERVICE_FEE_CENTS}
-          currency={currency}
-          expectedEstablishmentId={expectedEstablishmentId}
-        />
+        <CheckoutErrorBoundary
+          fallback={
+            <div style={{
+              padding: 20, borderRadius: 20, background: 'var(--surface)',
+              border: '1px solid var(--border-subtle)', textAlign: 'center',
+              color: 'var(--error)', fontSize: 13,
+            }}>
+              {t('errors.initFailed')}
+            </div>
+          }
+        >
+          <TipCheckout
+            key={tipAmount}
+            staffId={staffId}
+            tipAmount={tipAmount}
+            amount={tipAmount + SERVICE_FEE_CENTS}
+            currency={currency}
+            expectedEstablishmentId={expectedEstablishmentId}
+          />
+        </CheckoutErrorBoundary>
       )}
 
       {!hasAmount && (
