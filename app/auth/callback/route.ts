@@ -47,7 +47,24 @@ function withLocale(target: string, locale: string): string {
   return `/${locale}${target}`;
 }
 
-export async function GET(request: NextRequest) {
+// True when the sanitized `next` points at the staff join/onboarding flow,
+// either bare (`/join/…`) or locale-prefixed (`/fr/join/…`).
+function isJoinNext(safeNext: string): boolean {
+  if (safeNext === '/join' || safeNext.startsWith('/join/') || safeNext.startsWith('/join?')) {
+    return true;
+  }
+  return routing.locales.some((loc) => {
+    const p = `/${loc}/join`;
+    return safeNext === p || safeNext.startsWith(`${p}/`) || safeNext.startsWith(`${p}?`);
+  });
+}
+
+// Verification runs for both GET (PKCE `code` redirects from the same device)
+// and POST (the emailed-invite interstitial — see /[locale]/auth/accept). Email
+// security scanners pre-fetch links with a GET, which would consume a one-time
+// invite/recovery token before the human ever clicks; routing those through a
+// POST form means the token is only spent on a real user action.
+async function handleCallback(request: NextRequest): Promise<NextResponse> {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const tokenHash = requestUrl.searchParams.get('token_hash');
@@ -59,8 +76,12 @@ export async function GET(request: NextRequest) {
   const safeNext = sanitizeNext(rawNext);
   const nextWithLocale = withLocale(safeNext, locale);
 
+  // Use 303 so a POST entry (the invite interstitial) follows the redirect as a
+  // GET. Harmless for GET entries, which would otherwise default to 307.
+  const redirect = (path: string) => NextResponse.redirect(new URL(path, request.url), 303);
+
   if (!code && !tokenHash) {
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
+    return redirect(`/${locale}/login`);
   }
 
   const supabase = createServerClient(
@@ -93,7 +114,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (authError) {
-    return NextResponse.redirect(new URL(`/${locale}/login?error=auth_callback_failed`, request.url));
+    // An expired or already-consumed invite token should not strand the
+    // invitee on the login page — send them into the join/onboarding flow,
+    // which lets them claim their profile and set a password unauthenticated.
+    if (isJoinNext(safeNext)) {
+      return redirect(nextWithLocale);
+    }
+    return redirect(`/${locale}/login?error=auth_callback_failed`);
   }
 
   // If no explicit `next` redirect, check whether this group_admin still needs onboarding
@@ -118,11 +145,19 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
 
         if (group && !group.onboarding_completed_at) {
-          return NextResponse.redirect(new URL(`/${locale}/onboarding`, request.url));
+          return redirect(`/${locale}/onboarding`);
         }
       }
     }
   }
 
-  return NextResponse.redirect(new URL(nextWithLocale, request.url));
+  return redirect(nextWithLocale);
+}
+
+export async function GET(request: NextRequest) {
+  return handleCallback(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleCallback(request);
 }
