@@ -172,16 +172,14 @@ describe('POST /api/stripe/create-intent', () => {
     const body = await res.json();
     expect(body.clientSecret).toBe('pi_1_secret_abc');
 
-    // Destination charge: the connected staff account receives the tip and
-    // pays the Stripe fees; the platform takes a fixed SERVICE_FEE (25 cents)
-    // as application_fee_amount (plus optional bps-based platform fee).
-    expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        transfer_data: { destination: 'acct_1' },
-        application_fee_amount: 25,
-      }),
-      expect.objectContaining({ idempotencyKey: expect.any(String) })
-    );
+    // Deferred onboarding: the tip is captured on the platform via a separate
+    // charge (no transfer_data / application_fee) and held, then transferred to
+    // the staff member once they finish onboarding. The PaymentIntent carries a
+    // transfer_group tying it to the transaction for the later transfer.
+    const callArg = vi.mocked(stripe.paymentIntents.create).mock.calls[0][0] as unknown as Record<string, unknown>;
+    expect(callArg.transfer_data).toBeUndefined();
+    expect(callArg.application_fee_amount).toBeUndefined();
+    expect(callArg.transfer_group).toBe('tip_txn-new-1');
   });
 
   it('on unique_violation (23505), reuses existing pending transaction', async () => {

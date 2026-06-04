@@ -91,15 +91,15 @@
       "title": "Conditions générales",
       "intro": "Ces conditions régissent votre utilisation de Digitip. En créant un compte ou en passant commande, vous les acceptez dans leur intégralité.",
       "s1Title": "1. Le service",
-      "s1Body": "Digitip fournit des SmartTags NFC et une plateforme logicielle permettant aux clients de laisser des pourboires sans contact au personnel. Les pourboires sont traités via Stripe Connect et versés directement sur les comptes bancaires des membres du personnel.",
+      "s1Body": "Digitip fournit des SmartTags NFC et une plateforme logicielle permettant aux clients de laisser des pourboires sans contact au personnel. Les pourboires sont collectés via Stripe puis reversés au bénéficiaire désigné sur son compte bancaire, après vérification de son identité. Digitip agit comme facilitateur technique et n'est pas l'employeur des bénéficiaires.",
       "s2Title": "2. Éligibilité",
       "s2Body": "Vous devez avoir au moins 18 ans, être habilité à engager votre entreprise, et exploiter une activité légale d'hôtellerie, de restauration ou de service dans un pays où Stripe Connect est disponible.",
       "s3Title": "3. Abonnement & commandes",
       "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique auquel s'ajoute un abonnement logiciel mensuel. Le matériel n'est pas remboursable une fois expédié. L'abonnement peut être résilié à tout moment depuis le portail de facturation ; la résiliation prend effet à la fin de la période en cours.",
       "s4Title": "4. Paiements",
       "s4Body": "Tous les paiements sont traités par Stripe. La TVA est appliquée automatiquement selon votre pays. Un échec de paiement d'abonnement peut suspendre le service après 7 jours. Une période de grâce de 30 jours s'applique aux SmartTags avant désactivation complète.",
-      "s5Title": "5. Pourboires & versements",
-      "s5Body": "Digitip agit comme facilitateur technique. Les pourboires appartiennent au membre du personnel qui les a reçus et sont versés directement sur son compte bancaire connecté via Stripe, généralement sous 48 heures. Digitip prélève une commission de 5 % sur chaque pourboire collecté pour couvrir les frais d'infrastructure et de traitement des paiements. Digitip ne conserve jamais les fonds au-delà du transit de paiement.",
+      "s5Title": "5. Pourboires, encaissement et versement",
+      "s5Body": "Digitip agit comme facilitateur technique de paiement. Chaque pourboire est attribué au membre du personnel sélectionné par le client. Les fonds sont d'abord encaissés via Stripe, puis reversés au bénéficiaire sur son compte bancaire connecté dès qu'il a finalisé la vérification d'identité imposée par la réglementation (lutte contre le blanchiment). Tant que cette vérification n'est pas terminée, le pourboire est conservé de façon sécurisée, puis versé automatiquement une fois le bénéficiaire vérifié. Digitip prélève une commission de 5 % et des frais de service fixes par transaction pour couvrir l'infrastructure et les frais de paiement ; le solde revient au bénéficiaire. Digitip ne conserve les fonds que le temps nécessaire à leur versement.",
       "s6Title": "6. Vos responsabilités",
       "s6Body": "Vous devez fournir des informations exactes, garder vos identifiants en sécurité, utiliser le service de manière légale, informer votre personnel et vos clients de façon appropriée, et respecter les lois fiscales et sociales applicables aux pourboires.",
       "s7Title": "7. Utilisation acceptable",
@@ -111,7 +111,13 @@
       "s10Title": "10. Droit applicable",
       "s10Body": "Ces conditions sont régies par le droit français. Les litiges relèvent de la compétence exclusive des tribunaux de Paris, sauf disposition impérative contraire du droit de la consommation.",
       "s11Title": "11. Modifications",
-      "s11Body": "Nous pouvons modifier ces conditions. Les changements substantiels seront notifiés par email au moins 30 jours avant leur application."
+      "s11Body": "Nous pouvons modifier ces conditions. Les changements substantiels seront notifiés par email au moins 30 jours avant leur application.",
+      "s12Title": "12. Vérification d'identité",
+      "s12Body": "Pour recevoir des pourboires, chaque bénéficiaire doit confirmer son identité et fournir un IBAN via le parcours sécurisé de Stripe. Cette étape, imposée par la réglementation européenne (KYC / LCB-FT), est réduite au strict minimum et n'est demandée qu'au moment où le bénéficiaire souhaite percevoir les sommes qui lui sont attribuées.",
+      "s13Title": "13. Pourboires non réclamés",
+      "s13Body": "Si un bénéficiaire ne finalise pas sa vérification d'identité, les pourboires qui lui sont attribués sont conservés à son intention. À défaut de réclamation dans un délai de 90 jours, ils sont automatiquement remboursés au client à l'origine du paiement. Digitip ne conserve aucun fonds non réclamé au-delà de ce délai.",
+      "s14Title": "14. Obligations sociales et fiscales",
+      "s14Body": "Digitip n'est pas l'employeur des bénéficiaires et n'intervient ni dans la relation de travail ni dans la paie. Les pourboires versés directement aux salariés peuvent ouvrir droit à une exonération de cotisations et d'impôt selon la réglementation en vigueur, sous conditions. Il appartient à l'établissement et/ou au bénéficiaire de respecter leurs obligations déclaratives (notamment en paie). Pour faciliter ces démarches, Digitip met à disposition de l'administrateur un relevé mensuel des montants versés à chaque bénéficiaire. Digitip ne fournit pas de conseil juridique ou fiscal."
     }
   },
   "mentions": {
@@ -622,7 +628,8 @@
       "roleStaff": "Membre d'équipe",
       "roleAdmin": "Administrateur",
       "roleManager": "Manager",
-      "roleSuperAdmin": "Super admin"
+      "roleSuperAdmin": "Super admin",
+      "statements": "Relevés"
     },
     "billing": {
       "title": "Facturation & commissions",
@@ -812,7 +819,9 @@
       "continue": "Continuer →",
       "openingStripe": "Ouverture de Stripe…",
       "setupCta": "Configurer avec Stripe →",
-      "updateCta": "Modifier mes coordonnées bancaires →"
+      "updateCta": "Modifier mes coordonnées bancaires →",
+      "pendingBalanceTitle": "Pourboires en attente",
+      "pendingBalanceBody": "Finalisez votre vérification (2 min) pour recevoir ces pourboires sur votre compte."
     },
     "analytics": {
       "title": "Analytics",
@@ -1069,6 +1078,18 @@
         "colCurrency": "Devise",
         "colStripe": "Stripe"
       }
+    },
+    "statements": {
+      "title": "Relevés mensuels",
+      "subtitle": "Pourboires versés à chaque employé, par mois. À transmettre à votre comptable.",
+      "month": "Mois",
+      "colEmployee": "Employé",
+      "colCount": "Pourboires",
+      "colAmount": "Montant versé",
+      "total": "Total",
+      "empty": "Aucun versement ce mois-ci.",
+      "export": "Exporter en CSV",
+      "heldNote": "{amount} en attente de retrait par vos employés — non encore versé, hors relevé."
     }
   },
   "join": {

@@ -54,6 +54,11 @@ export async function createOnboardingLink(
     refresh_url: urls.refresh_url,
     return_url: urls.return_url,
     type,
+    // Collect only what is strictly due right now (identity + bank details)
+    // rather than every eventually-due field, to keep onboarding as light as
+    // possible for staff. Stripe asks for anything else only if it ever becomes
+    // actually required to keep paying out.
+    collection_options: { fields: 'currently_due' },
   });
   return link.url;
 }

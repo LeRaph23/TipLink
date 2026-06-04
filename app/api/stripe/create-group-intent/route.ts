@@ -58,18 +58,19 @@ export async function POST(request: NextRequest) {
 
   if (!estab) return NextResponse.json({ error: 'Establishment not found' }, { status: 404 });
 
-  // Check at least one payable staff member exists
-  const { data: payableStaff } = await supabase
+  // Deferred onboarding: every ACTIVE staff member shares the tip, even those
+  // who haven't finished Stripe onboarding yet — their share is held on the
+  // platform and transferred once they're ready (see webhook). We only require
+  // the establishment to have at least one active staff member to split across.
+  const { data: activeStaff } = await supabase
     .from('staff_profiles')
-    .select('id, stripe_account_id')
+    .select('id')
     .eq('establishment_id', establishmentId)
     .eq('is_active', true)
-    .eq('onboarding_status', 'complete')
-    .is('deleted_at', null)
-    .not('stripe_account_id', 'is', null);
+    .is('deleted_at', null);
 
-  if (!payableStaff || payableStaff.length === 0) {
-    return NextResponse.json({ error: 'No payable staff in this establishment' }, { status: 404 });
+  if (!activeStaff || activeStaff.length === 0) {
+    return NextResponse.json({ error: 'No active staff in this establishment' }, { status: 404 });
   }
 
   let platformFeeBps = 500;
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
 
   const transferGroup = `grp_${transactionId}`;
   const netForStaff = tipAmount - platformFee;
-  const staffIds = payableStaff.map((s) => s.id).join(',');
+  const staffIds = activeStaff.map((s) => s.id).join(',');
 
   const intent = await stripe.paymentIntents.create(
     {
@@ -159,6 +160,6 @@ export async function POST(request: NextRequest) {
     clientSecret: intent.client_secret,
     paymentIntentId: intent.id,
     transactionId,
-    staffCount: payableStaff.length,
+    staffCount: activeStaff.length,
   });
 }
