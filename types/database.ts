@@ -1265,7 +1265,7 @@ export type Database = {
           },
         ]
       }
-      group_tip_transfers: {
+      tip_transfers: {
         Row: {
           amount: number
           attempts: number

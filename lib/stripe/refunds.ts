@@ -24,7 +24,7 @@ export async function reverseTransferIfNeeded(transferId: string): Promise<boole
 
 // Reverse every transfer attached to a transaction:
 //  - solo tips: the single transfer stored on transactions.stripe_transfer_id
-//  - group tips: every row in group_tip_transfers
+//  - group tips: every row in tip_transfers
 // Updates DB to record reversal timestamps. Idempotent.
 export async function reverseTransactionTransfers(
   transactionId: string,
@@ -45,7 +45,7 @@ export async function reverseTransactionTransfers(
   }
 
   const { data: groupTransfers } = await supabase
-    .from('group_tip_transfers')
+    .from('tip_transfers')
     .select('id, stripe_transfer_id, reversed_at')
     .eq('transaction_id', transactionId)
     .is('reversed_at', null);
@@ -55,7 +55,7 @@ export async function reverseTransactionTransfers(
     try {
       await reverseTransferIfNeeded(gt.stripe_transfer_id);
       await supabase
-        .from('group_tip_transfers')
+        .from('tip_transfers')
         .update({ reversed_at: new Date().toISOString() })
         .eq('id', gt.id);
     } catch (err) {
