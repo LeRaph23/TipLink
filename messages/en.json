@@ -1153,6 +1153,13 @@
       "join": "Join {name} →"
     }
   },
+  "acceptInvite": {
+    "eyebrow": "Invitation",
+    "title": "You're almost there",
+    "body": "Click the button below to activate your invitation and set up your tips.",
+    "cta": "Continue →",
+    "footer": "Powered by Digitip · Secure payments by Stripe"
+  },
   "onboarding": {
     "stepOf": "Step {current} of {total}",
     "continue": "Continue →",

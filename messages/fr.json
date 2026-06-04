@@ -1153,6 +1153,13 @@
       "join": "Rejoindre {name} →"
     }
   },
+  "acceptInvite": {
+    "eyebrow": "Invitation",
+    "title": "Vous y êtes presque",
+    "body": "Cliquez sur le bouton ci-dessous pour activer votre invitation et configurer vos pourboires.",
+    "cta": "Continuer →",
+    "footer": "Propulsé par Digitip · Paiements sécurisés par Stripe"
+  },
   "onboarding": {
     "stepOf": "Étape {current} sur {total}",
     "continue": "Continuer →",

@@ -12,10 +12,13 @@ type ServiceClient = ReturnType<typeof createServiceClient>;
 // the onboarding flow has just created the group + the admin's role).
 //
 // We generate the link ourselves (rather than Supabase's `inviteUserByEmail`)
-// and email the `token_hash` to our own `/auth/callback`, which can verify it
-// server-side and redirect to `/join/[establishmentId]` with the email
-// pre-filled. Best-effort: returns { invited: false } on any failure — the
-// staff profile still exists and the admin can resend later.
+// and email the `token_hash` to our own `/[locale]/auth/accept` interstitial,
+// which POSTs to `/auth/callback` to verify it server-side and redirect to
+// `/join/[establishmentId]` with the email pre-filled. The interstitial keeps
+// email security scanners (which pre-fetch links with a GET) from consuming the
+// one-time token before the invitee clicks. Best-effort: returns
+// { invited: false } on any failure — the staff profile still exists and the
+// admin can resend later.
 export async function sendStaffInviteLink(
   service: ServiceClient,
   params: {
@@ -77,12 +80,16 @@ export async function sendStaffInviteLink(
     });
 
     if (!hashedToken) return { invited: false };
+    // Point at the interstitial page (not /auth/callback directly): email
+    // security scanners pre-fetch links with a GET, which would consume this
+    // one-time token before the invitee clicks. The interstitial only verifies
+    // on a form POST. See app/[locale]/auth/accept/page.tsx.
     const qs = new URLSearchParams({ token_hash: hashedToken, type: 'invite', next: nextPath, locale });
     const { ok } = await sendStaffInviteEmail({
       to: email,
       fullName,
       establishmentName,
-      inviteUrl: `${base}/auth/callback?${qs.toString()}`,
+      inviteUrl: `${base}/${locale}/auth/accept?${qs.toString()}`,
       locale,
     });
     return { invited: ok };
