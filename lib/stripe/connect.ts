@@ -1,5 +1,6 @@
 import 'server-only';
-import { stripe, CONNECT_BUSINESS_PROFILE } from './client';
+import type Stripe from 'stripe';
+import { stripe, CONNECT_BUSINESS_PROFILE, CONNECT_STATEMENT_DESCRIPTOR } from './client';
 import { getBaseUrl } from '@/lib/env';
 
 // Helpers for Stripe **Standard** connected accounts. Standard accounts carry
@@ -31,16 +32,44 @@ export async function createStandardAccount(opts: {
   email?: string;
   metadata?: Record<string, string>;
   businessType?: 'individual' | 'company' | 'non_profit';
+  fullName?: string;
 }): Promise<string> {
-  const account = await stripe.accounts.create({
+  // Prefill the individual's name/email so Stripe's hosted onboarding doesn't
+  // re-ask for what we already know (it skips fields we prefilled).
+  let individual: { first_name?: string; last_name?: string; email?: string } | undefined;
+  if (opts.businessType === 'individual') {
+    const parts = (opts.fullName ?? '').trim().split(/\s+/).filter(Boolean);
+    const draft: { first_name?: string; last_name?: string; email?: string } = {};
+    if (parts.length) draft.first_name = parts[0];
+    if (parts.length > 1) draft.last_name = parts.slice(1).join(' ');
+    if (opts.email) draft.email = opts.email;
+    if (Object.keys(draft).length > 0) individual = draft;
+  }
+
+  const base: Stripe.AccountCreateParams = {
     type: 'standard',
     country: 'FR',
     ...(opts.email ? { email: opts.email } : {}),
     ...(opts.businessType ? { business_type: opts.businessType } : {}),
     business_profile: { ...CONNECT_BUSINESS_PROFILE },
+    ...(individual ? { individual } : {}),
     ...(opts.metadata ? { metadata: opts.metadata } : {}),
-  });
-  return account.id;
+  };
+
+  // Also prefill the statement descriptor. Some Standard configurations reject
+  // a platform-set descriptor — fall back to creating without it rather than
+  // ever blocking onboarding.
+  try {
+    const account = await stripe.accounts.create({
+      ...base,
+      settings: { payments: { statement_descriptor: CONNECT_STATEMENT_DESCRIPTOR } },
+    });
+    return account.id;
+  } catch (err) {
+    console.warn('createStandardAccount: retrying without statement_descriptor', err);
+    const account = await stripe.accounts.create(base);
+    return account.id;
+  }
 }
 
 // Creates a hosted onboarding (or update) link for a connected account.

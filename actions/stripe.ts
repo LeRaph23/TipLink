@@ -4,11 +4,72 @@ import { getLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
+import { stripe } from '@/lib/stripe/client';
+import { releaseStaffPendingTransfers } from '@/lib/stripe/tip-transfers';
 import {
   createStandardAccount,
   createOnboardingLink,
   staffBankingReturnUrls,
 } from '@/lib/stripe/connect';
+
+export type BankingState = 'none' | 'incomplete' | 'verifying' | 'complete';
+
+// Resolve the signed-in staff member's banking state directly from Stripe, and
+// self-heal the DB. This does NOT rely on the account.updated webhook: when an
+// account is found ready, we promote onboarding_status to 'complete' and release
+// any held tips on the spot. Returns a precise state for accurate UI wording:
+//  - 'incomplete' → details not yet submitted (the recipient still has steps)
+//  - 'verifying'  → submitted, Stripe still enabling payouts
+//  - 'complete'   → can receive payouts
+export async function getBankingState(): Promise<{ state: BankingState; pendingBalance: number }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { state: 'none', pendingBalance: 0 };
+
+    const service = createServiceClient();
+    const { data: profile } = await service
+      .from('staff_profiles')
+      .select('id, stripe_account_id, onboarding_status')
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (!profile?.stripe_account_id) return { state: 'none', pendingBalance: 0 };
+
+    let state: BankingState = profile.onboarding_status === 'complete' ? 'complete' : 'incomplete';
+    if (state !== 'complete') {
+      try {
+        const acct = await stripe.accounts.retrieve(profile.stripe_account_id);
+        const ready = acct.details_submitted && (acct.payouts_enabled || acct.charges_enabled);
+        if (ready) {
+          await service.from('staff_profiles').update({ onboarding_status: 'complete' }).eq('id', profile.id);
+          await releaseStaffPendingTransfers(service, profile.id).catch(() => {});
+          state = 'complete';
+        } else if (acct.details_submitted) {
+          state = 'verifying';
+        } else {
+          state = 'incomplete';
+        }
+      } catch (err) {
+        console.error('getBankingState: account retrieve failed', err);
+        // Fall back to the DB-derived state (best effort).
+      }
+    }
+
+    const { data: held } = await service
+      .from('group_tip_transfers')
+      .select('amount')
+      .eq('staff_id', profile.id)
+      .eq('status', 'pending');
+    const pendingBalance = (held ?? []).reduce((s, r) => s + ((r as { amount: number }).amount ?? 0), 0);
+
+    return { state, pendingBalance };
+  } catch (err) {
+    console.error('getBankingState failed', err);
+    return { state: 'none', pendingBalance: 0 };
+  }
+}
 
 // Staff & ambassadors are paid through Stripe **Standard** connected accounts:
 // no per-account monthly fee, no per-payout fee, and Stripe pays them out
@@ -33,7 +94,7 @@ export async function getStripeOnboardingLink(): Promise<
     const service = createServiceClient();
     let { data: profile } = await service
       .from('staff_profiles')
-      .select('id, stripe_account_id, onboarding_status')
+      .select('id, stripe_account_id, onboarding_status, full_name')
       .eq('user_id', user.id)
       .is('deleted_at', null)
       .maybeSingle();
@@ -50,6 +111,7 @@ export async function getStripeOnboardingLink(): Promise<
       accountId = await createStandardAccount({
         email: user.email ?? undefined,
         businessType: 'individual',
+        fullName: profile.full_name ?? undefined,
         metadata: { staff_profile_id: profile.id },
       });
       const { error: dbErr } = await service
@@ -148,7 +210,7 @@ async function bootstrapAdminStaffProfile(
       is_active: true,
       onboarding_status: 'not_started',
     })
-    .select('id, stripe_account_id, onboarding_status')
+    .select('id, stripe_account_id, onboarding_status, full_name')
     .single();
   if (!created) return null;
 

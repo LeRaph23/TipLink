@@ -1,8 +1,7 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { createServiceClient } from '@/lib/supabase/service';
-import { getStaffEarnings } from '@/actions/stripe';
+import { getStaffEarnings, getBankingState } from '@/actions/stripe';
 import { BankingSetupForm } from './BankingSetupForm';
 
 const card: React.CSSProperties = {
@@ -68,22 +67,12 @@ export default async function BankingPage({
   );
   const canReceiveTips = !!staffProfile || isAdmin;
 
-  const hasAccount = !!staffProfile?.stripe_account_id;
-  const isComplete = staffProfile?.onboarding_status === 'complete';
-
-  // Deferred onboarding: tips captured while a staff member hasn't finished
-  // onboarding are held on the platform. Surface that balance to motivate them
-  // to verify their identity and collect it.
-  let pendingBalance = 0;
-  if (staffProfile?.id) {
-    const service = createServiceClient();
-    const { data: held } = await service
-      .from('group_tip_transfers')
-      .select('amount')
-      .eq('staff_id', staffProfile.id)
-      .eq('status', 'pending');
-    pendingBalance = (held ?? []).reduce((s, r) => s + (r.amount ?? 0), 0);
-  }
+  // Resolve banking state straight from Stripe — this self-heals
+  // onboarding_status (no dependency on the account.updated webhook) and returns
+  // a precise state for the UI, plus the held balance.
+  const { state, pendingBalance } = await getBankingState();
+  const hasAccount = state !== 'none';
+  const isComplete = state === 'complete';
 
   const earnings = hasAccount ? await getStaffEarnings() : null;
   const lifetimeNet = earnings && 'ok' in earnings ? earnings.lifetimeNet : null;
@@ -161,15 +150,15 @@ export default async function BankingPage({
                   </div>
                 </div>
               </div>
-            ) : hasAccount ? (
+            ) : state === 'verifying' || state === 'incomplete' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
                 <span style={{ display: 'flex', color: 'var(--warning)', flexShrink: 0 }}><ClockIcon /></span>
                 <div>
                   <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--warning)' }}>
-                    {t('pendingTitle')}
+                    {state === 'verifying' ? t('pendingTitle') : t('incompleteTitle')}
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 1 }}>
-                    {t('pendingBody')}
+                    {state === 'verifying' ? t('pendingBody') : t('incompleteBody')}
                   </div>
                 </div>
               </div>
