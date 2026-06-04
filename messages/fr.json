@@ -808,7 +808,7 @@
       "activeTitle": "Compte bancaire actif",
       "activeBody": "Vous recevez vos pourboires. Vous pouvez modifier vos coordonnées si besoin.",
       "pendingTitle": "Vérification en cours",
-      "pendingBody": "Terminez la configuration sur Stripe pour pouvoir recevoir vos pourboires.",
+      "pendingBody": "Stripe vérifie vos informations. Vos virements seront activés sous peu.",
       "step1Title": "Vos pourboires sur votre compte",
       "step1Body": "Configurez vos virements en 2 minutes avec Stripe, notre partenaire de paiement.",
       "step2Title": "Vos données restent privées",
@@ -821,7 +821,9 @@
       "setupCta": "Configurer avec Stripe →",
       "updateCta": "Modifier mes coordonnées bancaires →",
       "pendingBalanceTitle": "Pourboires en attente",
-      "pendingBalanceBody": "Finalisez votre vérification (2 min) pour recevoir ces pourboires sur votre compte."
+      "pendingBalanceBody": "Finalisez votre vérification (2 min) pour recevoir ces pourboires sur votre compte.",
+      "incompleteTitle": "Inscription à finaliser",
+      "incompleteBody": "Reprenez la configuration sécurisée pour recevoir vos pourboires."
     },
     "analytics": {
       "title": "Analytics",

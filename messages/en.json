@@ -808,7 +808,7 @@
       "activeTitle": "Bank account active",
       "activeBody": "You're receiving your tips. You can update your details if needed.",
       "pendingTitle": "Verification in progress",
-      "pendingBody": "Finish the setup on Stripe to start receiving your tips.",
+      "pendingBody": "Stripe is reviewing your details. Payouts will be enabled shortly.",
       "step1Title": "Your tips in your account",
       "step1Body": "Set up your payouts in 2 minutes with Stripe, our payment partner.",
       "step2Title": "Your data stays private",
@@ -821,7 +821,9 @@
       "setupCta": "Set up with Stripe →",
       "updateCta": "Update my bank details →",
       "pendingBalanceTitle": "Pending tips",
-      "pendingBalanceBody": "Finish your verification (2 min) to receive these tips in your account."
+      "pendingBalanceBody": "Finish your verification (2 min) to receive these tips in your account.",
+      "incompleteTitle": "Setup not finished",
+      "incompleteBody": "Resume the secure setup to receive your tips."
     },
     "analytics": {
       "title": "Analytics",
