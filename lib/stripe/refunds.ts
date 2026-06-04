@@ -62,6 +62,17 @@ export async function reverseTransactionTransfers(
       console.error('group transfer reversal failed', { id: gt.id, err });
     }
   }
+
+  // Deferred onboarding: allocations still HELD (no transfer created yet) must
+  // be cancelled on refund/dispute, otherwise the deferred-transfer path
+  // (account.updated / reconcile cron) would later pay out money that was
+  // already refunded to the customer. Mark them reversed so they're skipped.
+  await supabase
+    .from('group_tip_transfers')
+    .update({ status: 'reversed', reversed_at: new Date().toISOString() } as never)
+    .eq('transaction_id', transactionId)
+    .is('stripe_transfer_id', null)
+    .is('reversed_at', null);
 }
 
 // Issue a full refund for a transaction and reverse every associated transfer.

@@ -176,7 +176,7 @@ describe('POST /api/stripe/create-intent', () => {
     // charge (no transfer_data / application_fee) and held, then transferred to
     // the staff member once they finish onboarding. The PaymentIntent carries a
     // transfer_group tying it to the transaction for the later transfer.
-    const callArg = vi.mocked(stripe.paymentIntents.create).mock.calls[0][0] as Record<string, unknown>;
+    const callArg = vi.mocked(stripe.paymentIntents.create).mock.calls[0][0] as unknown as Record<string, unknown>;
     expect(callArg.transfer_data).toBeUndefined();
     expect(callArg.application_fee_amount).toBeUndefined();
     expect(callArg.transfer_group).toBe('tip_txn-new-1');
