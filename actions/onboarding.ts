@@ -345,7 +345,7 @@ export async function completeNfcOnboarding(
     .from('groups')
     .insert({
       name: establishmentName,
-      settings: { tip_thresholds: [1, 2, 5, 10] },
+      settings: { tip_thresholds: [5, 10, 20] },
       onboarding_completed_at: new Date().toISOString(),
     })
     .select('id')

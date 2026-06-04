@@ -121,7 +121,7 @@ export async function createSalon(input: {
 
   const { data: group, error: ge } = await service
     .from('groups')
-    .insert({ name, settings: { tip_thresholds: [1, 2, 5, 10] } })
+    .insert({ name, settings: { tip_thresholds: [5, 10, 20] } })
     .select('id')
     .single();
 

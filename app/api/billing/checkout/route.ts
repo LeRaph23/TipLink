@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         vat_number: biz.vat_number ?? null,
         shipping_address: biz.shipping,
         billing_address: biz.billing_same_as_shipping ? biz.shipping : (biz.billing ?? biz.shipping),
-        settings: { tip_thresholds: [1, 2, 5, 10] },
+        settings: { tip_thresholds: [5, 10, 20] },
       })
       .select('id')
       .single();

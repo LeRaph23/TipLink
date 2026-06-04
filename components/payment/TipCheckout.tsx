@@ -154,7 +154,7 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
       <ExpressCheckoutElement
         onConfirm={handlePay}
         options={{
-          buttonHeight: 62,
+          buttonHeight: 55,
           buttonType: { applePay: 'tip', googlePay: 'pay' },
           buttonTheme: { applePay: 'black', googlePay: 'black' },
           layout: { maxColumns: 1, maxRows: 3 },

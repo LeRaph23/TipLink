@@ -691,7 +691,7 @@ async function handleEvent(
             shipping_address: shipping
               ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
               : null,
-            settings: { tip_thresholds: [1, 2, 5, 10] },
+            settings: { tip_thresholds: [5, 10, 20] },
           })
           .select('id')
           .single();
@@ -1102,7 +1102,7 @@ async function handlePackExpressPaid(
       shipping_address: shipping
         ? ({ name: shipping.name, ...shipping.address } as unknown as import('@/types/database').Json)
         : null,
-      settings: { tip_thresholds: [1, 2, 5, 10] },
+      settings: { tip_thresholds: [5, 10, 20] },
     })
     .select('id')
     .single();
