@@ -33,7 +33,7 @@ export async function getStripeOnboardingLink(): Promise<
     const service = createServiceClient();
     let { data: profile } = await service
       .from('staff_profiles')
-      .select('id, stripe_account_id, onboarding_status')
+      .select('id, stripe_account_id, onboarding_status, full_name')
       .eq('user_id', user.id)
       .is('deleted_at', null)
       .maybeSingle();
@@ -50,6 +50,7 @@ export async function getStripeOnboardingLink(): Promise<
       accountId = await createStandardAccount({
         email: user.email ?? undefined,
         businessType: 'individual',
+        fullName: profile.full_name ?? undefined,
         metadata: { staff_profile_id: profile.id },
       });
       const { error: dbErr } = await service
@@ -148,7 +149,7 @@ async function bootstrapAdminStaffProfile(
       is_active: true,
       onboarding_status: 'not_started',
     })
-    .select('id, stripe_account_id, onboarding_status')
+    .select('id, stripe_account_id, onboarding_status, full_name')
     .single();
   if (!created) return null;
 
