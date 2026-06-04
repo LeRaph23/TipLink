@@ -75,6 +75,7 @@ export async function POST(req: Request) {
           amount: r.amount,
           currency,
           destination: staffAccount,
+          description: 'Pourboire',
           ...(transferGroup ? { transfer_group: transferGroup } : {}),
           source_transaction: chargeId,
         },

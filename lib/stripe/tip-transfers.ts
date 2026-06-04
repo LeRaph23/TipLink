@@ -58,6 +58,7 @@ export async function releaseStaffPendingTransfers(
           amount: row.amount,
           currency,
           destination: account,
+          description: 'Pourboire',
           ...(transferGroup ? { transfer_group: transferGroup } : {}),
           source_transaction: chargeId,
         },

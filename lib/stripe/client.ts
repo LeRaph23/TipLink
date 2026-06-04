@@ -22,4 +22,4 @@ export const CONNECT_BUSINESS_PROFILE = {
 // record for tips, so the connected account never charges customers directly —
 // prefilling Digitip's descriptor just removes the confusing "public
 // information" step from the recipient's onboarding. 5–22 chars.
-export const CONNECT_STATEMENT_DESCRIPTOR = 'DIGITIP.APP';
+export const CONNECT_STATEMENT_DESCRIPTOR = 'Digitip';

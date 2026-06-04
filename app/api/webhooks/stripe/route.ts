@@ -250,6 +250,7 @@ async function handleEvent(
                   amount: row.amount,
                   currency: intent.currency,
                   destination: account,
+                  description: 'Pourboire',
                   ...(transferGroup ? { transfer_group: transferGroup } : {}),
                   source_transaction: chargeId,
                 },

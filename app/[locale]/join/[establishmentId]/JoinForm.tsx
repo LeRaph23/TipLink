@@ -210,6 +210,15 @@ export function JoinForm({
     setLoading(true);
 
     if (isAuthenticated) {
+      // Invited via the magic link → already signed in but with no password yet.
+      // Set one now so they can log back in later, then finish joining.
+      const supabase = createClient();
+      const { error: pwErr } = await supabase.auth.updateUser({ password });
+      if (pwErr) {
+        setError(mapAuthError(pwErr.message, tAuth));
+        setLoading(false);
+        return;
+      }
       await submitJoin();
       return;
     }
@@ -511,19 +520,13 @@ export function JoinForm({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
             type="button"
-            disabled={loading}
-            onClick={async () => {
-              if (isAuthenticated) {
-                setError(null);
-                setLoading(true);
-                await submitJoin();
-              } else {
-                setStep('email');
-              }
+            onClick={() => {
+              setError(null);
+              setStep(isAuthenticated ? 'password' : 'email');
             }}
-            style={{ ...btnPrimary, opacity: loading ? 0.4 : 1 }}
+            style={btnPrimary}
           >
-            {loading ? t('creatingAccount') : t('continue')}
+            {t('continue')}
           </button>
           <button type="button" onClick={() => setStep('name-photo')} style={btnSecondary}>
             {t('back')}
@@ -625,7 +628,7 @@ export function JoinForm({
         </button>
         <button
           type="button"
-          onClick={() => { setError(null); setStep('email'); }}
+          onClick={() => { setError(null); setStep(isAuthenticated ? 'payment-intro' : 'email'); }}
           style={btnSecondary}
         >
           {t('back')}
