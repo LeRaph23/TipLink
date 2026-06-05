@@ -820,7 +820,7 @@
       "step2Title": "Rapide, et une seule fois",
       "step2Body": "Comptez 2 minutes, à ne faire qu'une seule fois. Ensuite, vos pourboires arrivent tout seuls sur votre compte bancaire — vous n'avez plus jamais à y penser.",
       "step3Title": "Gardez « Auto-entrepreneur »",
-      "step3Body": "Petit détail : Stripe ne propose pas de case « particulier ». Laissez donc l'option « Entrepreneur individuel / Auto-entrepreneur » déjà cochée (surtout pas « Société »). C'est 100 % légal et ça ne change rien pour vous.",
+      "step3Body": "Sur la première page, Stripe vous demandera votre type d'activité. Laissez « Entrepreneur individuel / Auto-entrepreneur » déjà coché (surtout pas « Société »). C'est 100 % légal et ça ne change rien pour vous.",
       "back": "← Retour",
       "continue": "Continuer →",
       "openingStripe": "Ouverture de Stripe…",

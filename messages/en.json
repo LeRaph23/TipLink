@@ -820,7 +820,7 @@
       "step2Title": "Quick, and only once",
       "step2Body": "It takes about 2 minutes, just once. After that, your tips land in your bank account automatically — you never have to think about it again.",
       "step3Title": "Keep “Sole trader”",
-      "step3Body": "One small thing: Stripe has no “private individual” option, so leave the pre-selected “Individual / sole trader” (never “Company”). It's perfectly legal and changes nothing for you.",
+      "step3Body": "On the very first page, Stripe asks for your business type. Leave the pre-selected “Individual / sole trader” (never “Company”). It's perfectly legal and changes nothing for you.",
       "back": "← Back",
       "continue": "Continue →",
       "openingStripe": "Opening Stripe…",
