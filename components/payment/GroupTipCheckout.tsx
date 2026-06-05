@@ -14,10 +14,9 @@ import { Icon } from '@/components/ambassadeur/icons';
 
 interface Props {
   establishmentId: string;
-  amount: number;
-  tipAmount: number;
+  amount: number;    // total charge in cents = tipAmount + service fee
+  tipAmount: number; // the tip the customer selected, in cents
   currency: string;
-  staffCount: number;
 }
 
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -29,7 +28,7 @@ function getStripe() {
   return stripePromise;
 }
 
-export function GroupTipCheckout({ establishmentId, amount, tipAmount, currency, staffCount }: Props) {
+export function GroupTipCheckout({ establishmentId, amount, tipAmount, currency }: Props) {
   const options = useMemo<StripeElementsOptions>(
     () => ({
       mode: 'payment',
@@ -46,18 +45,12 @@ export function GroupTipCheckout({ establishmentId, amount, tipAmount, currency,
 
   return (
     <Elements stripe={getStripe()} options={options}>
-      <InnerGroupCheckout
-        establishmentId={establishmentId}
-        amount={amount}
-        tipAmount={tipAmount}
-        currency={currency}
-        staffCount={staffCount}
-      />
+      <InnerGroupCheckout establishmentId={establishmentId} amount={amount} tipAmount={tipAmount} currency={currency} />
     </Elements>
   );
 }
 
-function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency, staffCount }: Props) {
+function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency }: Props) {
   const stripe = useStripe();
   const elements = useElements();
   const t = useTranslations('pay');
@@ -91,7 +84,6 @@ function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency, staf
       }
       return data.clientSecret as string;
     } catch (e) {
-      // Network failure / non-JSON response — never leave the button spinning.
       console.error('[pay] create-group-intent failed', e);
       setError(t('errors.initFailed'));
       return null;
@@ -124,50 +116,35 @@ function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency, staf
   }
 
   return (
-    <div style={{
-      padding: 20, borderRadius: 20,
-      background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-      display: 'flex', flexDirection: 'column', gap: 10,
-    }}>
-      {staffCount > 1 && (
-        <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
-          Le pourboire sera réparti équitablement entre {staffCount} membres de l&apos;équipe
-        </p>
-      )}
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
       {error && (
         <p style={{ fontSize: 12, color: 'var(--error)', textAlign: 'center', margin: 0 }}>{error}</p>
       )}
 
+      {/* Apple Pay / Google Pay / Link */}
       <ExpressCheckoutElement
         onConfirm={handlePay}
         options={{
-          buttonHeight: 62,
+          buttonHeight: 55,
           buttonType: { applePay: 'tip', googlePay: 'pay' },
           buttonTheme: { applePay: 'black', googlePay: 'black' },
           layout: { maxColumns: 1, maxRows: 3 },
         }}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-        <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>ou</span>
-        <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-      </div>
-
+      {/* Card — a small text link instead of a big second button. */}
       {!showCard ? (
         <button
           type="button"
           onClick={() => setShowCard(true)}
           style={{
-            width: '100%', padding: '16px', borderRadius: 14, border: '1.5px solid var(--border)',
-            background: 'var(--surface-2)', color: 'var(--text)',
-            cursor: 'pointer', fontSize: 15, fontWeight: 700,
-            fontFamily: 'var(--font)', letterSpacing: '-0.01em', transition: 'all 130ms',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            margin: '2px auto', padding: 6, background: 'none', border: 'none',
+            color: 'var(--text-3)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+            textDecoration: 'underline', textUnderlineOffset: 3,
           }}
         >
-          <Icon name="card" size={18} /> {t('payButton')}
+          <Icon name="card" size={15} /> {t('payButton')}
         </button>
       ) : (
         <>
@@ -189,6 +166,7 @@ function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency, staf
         </>
       )}
 
+      {/* Email — always visible, clearly optional */}
       <div>
         <label style={{ display: 'block', fontSize: 12, color: 'var(--text-3)', marginBottom: 6, letterSpacing: '0.01em' }}>
           {t('yourEmail')}
@@ -199,9 +177,9 @@ function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency, staf
           onChange={e => setCustomerEmail(e.target.value)}
           placeholder={t('emailPlaceholder')}
           style={{
-            width: '100%', padding: '11px 12px', borderRadius: 10,
+            width: '100%', padding: '12px', borderRadius: 10,
             border: '1px solid var(--border)', background: 'var(--surface-2)',
-            color: 'var(--text)', fontSize: 14, fontFamily: 'inherit',
+            color: 'var(--text)', fontSize: 16, fontFamily: 'inherit',
             outline: 'none', boxSizing: 'border-box',
           }}
         />
