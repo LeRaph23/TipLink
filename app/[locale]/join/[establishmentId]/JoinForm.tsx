@@ -110,12 +110,17 @@ export function JoinForm({
   const [done, setDone] = useState(false);
   const [onboardingUrl, setOnboardingUrl] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasSessionEmail, setHasSessionEmail] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }: { data: { user: import('@supabase/supabase-js').User | null } }) => {
       if (!user) return;
       setIsAuthenticated(true);
+      // A shared/generic invite link can leave the visitor signed in WITHOUT an
+      // email on the account. Only treat the email as known when the session
+      // actually carries one — otherwise we must still ask for it.
+      if (user.email) { setHasSessionEmail(true); setEmail(user.email); }
       const profileId = user.user_metadata?.staff_profile_id as string | undefined;
       const byId = profileId ? unclaimedProfiles.find((p) => p.id === profileId) : undefined;
       const byEmail = user.email ? unclaimedProfiles.find((p) => p.email === user.email) : undefined;
@@ -126,10 +131,8 @@ export function JoinForm({
         setLastName(parts.slice(1).join(' '));
         if (match.email) setEmail(match.email);
         setSelectedProfile(match);
-        setStep('name-photo');
-      } else {
-        setStep('name-photo');
       }
+      setStep('name-photo');
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -210,10 +213,15 @@ export function JoinForm({
     setLoading(true);
 
     if (isAuthenticated) {
-      // Invited via the magic link → already signed in but with no password yet.
-      // Set one now so they can log back in later, then finish joining.
+      // Invited via a magic link → already signed in but with no password yet
+      // (and, on a shared/generic link, sometimes no email either). Set the
+      // password, plus the email when the session didn't carry one, before
+      // finishing the join so they can log back in later.
       const supabase = createClient();
-      const { error: pwErr } = await supabase.auth.updateUser({ password });
+      const { error: pwErr } = await supabase.auth.updateUser({
+        password,
+        ...(hasSessionEmail ? {} : { email }),
+      });
       if (pwErr) {
         setError(mapAuthError(pwErr.message, tAuth));
         setLoading(false);
@@ -464,7 +472,7 @@ export function JoinForm({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
           <button
             type="button"
-            onClick={() => setStep(isAuthenticated ? 'password' : 'email')}
+            onClick={() => setStep(isAuthenticated && hasSessionEmail ? 'password' : 'email')}
             disabled={!firstNameFilled}
             style={{ ...btnPrimary, opacity: firstNameFilled ? 1 : 0.4 }}
           >
@@ -628,7 +636,7 @@ export function JoinForm({
         </button>
         <button
           type="button"
-          onClick={() => { setError(null); setStep(isAuthenticated ? 'name-photo' : 'email'); }}
+          onClick={() => { setError(null); setStep(isAuthenticated && hasSessionEmail ? 'name-photo' : 'email'); }}
           style={btnSecondary}
         >
           {t('back')}
