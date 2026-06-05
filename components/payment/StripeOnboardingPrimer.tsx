@@ -23,8 +23,8 @@ const svgBase = {
   stroke: 'currentColor', strokeWidth: 1.4,
   strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
 };
-function CardIcon() {
-  return <svg {...svgBase}><rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><path d="M3.5 10.5h2.5" /></svg>;
+function ShieldIcon() {
+  return <svg {...svgBase}><path d="M8 1.5l5 2v3.5c0 3-2 5.2-5 6.5-3-1.3-5-3.5-5-6.5V3.5l5-2z" /><path d="M6 8l1.5 1.5 2.7-3" /></svg>;
 }
 function CheckIcon() {
   return <svg {...svgBase}><circle cx="8" cy="8" r="6.5" /><path d="M5.3 8.2l1.8 1.8 3.6-3.8" /></svg>;
@@ -44,11 +44,11 @@ function SkipIcon() {
 // skip the Tax/Climate upsells) before handing off. Shared by the dashboard
 // banking setup and the staff invite flow so the guidance is identical.
 const STEPS = [
-  { Icon: CardIcon, key: 'step1' },
-  { Icon: UserIcon, key: 'step2' },
-  { Icon: IdIcon, key: 'step3' },
-  { Icon: SkipIcon, key: 'step4' },
-  { Icon: CheckIcon, key: 'step5' },
+  { Icon: ShieldIcon, key: 'step1' }, // why Stripe / your money is safe
+  { Icon: CheckIcon, key: 'step2' },  // quick, one-time, then automatic
+  { Icon: UserIcon, key: 'step3' },   // keep "auto-entrepreneur"
+  { Icon: IdIcon, key: 'step4' },     // what to have ready
+  { Icon: SkipIcon, key: 'step5' },   // skip the Tax / Climate upsells
 ] as const;
 
 export function StripeOnboardingPrimer({
@@ -80,23 +80,23 @@ export function StripeOnboardingPrimer({
         className="onb-card"
         style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-          gap: 10, padding: '28px 20px', borderRadius: 14,
+          gap: 12, padding: '32px 24px', borderRadius: 16,
           background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
           animation: 'onbSlideIn 220ms ease-out',
         }}
       >
         <span aria-hidden style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 52, height: 52, borderRadius: 14, marginBottom: 2,
+          width: 58, height: 58, borderRadius: 16, marginBottom: 2,
           background: 'var(--surface)', border: '1px solid var(--border-subtle)',
           color: 'var(--accent)',
         }}>
           <step.Icon />
         </span>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+        <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
           {t(`${step.key}Title`)}
         </div>
-        <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6, margin: 0, maxWidth: 320 }}>
+        <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: 0, maxWidth: 340 }}>
           {t(`${step.key}Body`)}
         </p>
       </div>
