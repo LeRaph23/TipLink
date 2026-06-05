@@ -38,6 +38,9 @@ function IdIcon() {
 function SkipIcon() {
   return <svg {...svgBase}><circle cx="8" cy="8" r="6.3" /><path d="M4 4l8 8" /></svg>;
 }
+function SelectIcon() {
+  return <svg {...svgBase}><rect x="2" y="4" width="12" height="8" rx="1.5" /><path d="M5.5 7l2.5 2.5L10.5 7" /></svg>;
+}
 
 // One idea per screen: light cards that prepare the recipient for exactly what
 // Stripe's hosted onboarding will show (keep "Individual", have ID + IBAN ready,
@@ -46,9 +49,10 @@ function SkipIcon() {
 const STEPS = [
   { Icon: ShieldIcon, key: 'step1' }, // why Stripe / your money is safe
   { Icon: CheckIcon, key: 'step2' },  // quick, one-time, then automatic
-  { Icon: UserIcon, key: 'step3' },   // keep "auto-entrepreneur"
-  { Icon: IdIcon, key: 'step4' },     // what to have ready
-  { Icon: SkipIcon, key: 'step5' },   // skip the Tax / Climate upsells
+  { Icon: UserIcon, key: 'step3' },   // you receive tips personally — no worry
+  { Icon: SelectIcon, key: 'step4' }, // keep the "auto-entrepreneur" option
+  { Icon: IdIcon, key: 'step5' },     // what to have ready
+  { Icon: SkipIcon, key: 'step6' },   // skip the Tax / Climate upsells
 ] as const;
 
 export function StripeOnboardingPrimer({

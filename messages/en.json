@@ -820,7 +820,7 @@
       "step2Title": "Quick, and only once",
       "step2Body": "It takes about 2 minutes, just once. After that, your tips land in your bank account automatically — you never have to think about it again.",
       "step3Title": "Nothing to worry about",
-      "step3Body": "You receive your tips personally, as a private individual. Stripe simply only offers two account types: “individual / sole trader” or “company”. That choice is just a technical formality — it commits you to nothing and doesn't make you a business. Just keep “Individual / sole trader” (never “Company”), and you'll only enter your personal information.",
+      "step3Body": "You receive your tips personally, as a private individual. Setting up Stripe doesn't make you a business and commits you to nothing.",
       "back": "← Back",
       "continue": "Continue →",
       "openingStripe": "Opening Stripe…",
@@ -830,10 +830,12 @@
       "pendingBalanceBody": "Finish your verification (2 min) to receive these tips in your account.",
       "incompleteTitle": "Setup not finished",
       "incompleteBody": "Resume the secure setup to receive your tips.",
-      "step4Title": "What to have ready",
-      "step4Body": "Just have your date of birth, your address and your IBAN handy. That's all Stripe needs to pay out your tips.",
-      "step5Title": "“Tax”, “Climate”? Not now",
-      "step5Body": "Stripe may offer extra add-ons (Tax, Climate). You don't need them: click “Not now” and carry on. You're all set!"
+      "step4Title": "Keep “Sole trader”",
+      "step4Body": "Stripe only offers two account types: “individual / sole trader” or “company”. Keep the pre-selected “Individual / sole trader” (never “Company”) — no company details to provide.",
+      "step5Title": "What to have ready",
+      "step5Body": "Just have your date of birth, your address and your IBAN handy. That's all Stripe needs to pay out your tips.",
+      "step6Title": "“Tax”, “Climate”? Not now",
+      "step6Body": "Stripe may offer extra add-ons (Tax, Climate). You don't need them: click “Not now” and carry on. You're all set!"
     },
     "analytics": {
       "title": "Analytics",

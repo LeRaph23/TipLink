@@ -820,7 +820,7 @@
       "step2Title": "Rapide, et une seule fois",
       "step2Body": "Comptez 2 minutes, à ne faire qu'une seule fois. Ensuite, vos pourboires arrivent tout seuls sur votre compte bancaire — vous n'avez plus jamais à y penser.",
       "step3Title": "Aucune inquiétude à avoir",
-      "step3Body": "Vous recevez vos pourboires à titre personnel, en tant que particulier. Stripe, lui, ne propose que deux types de compte : « entrepreneur individuel / auto-entrepreneur » ou « société ». Ce choix n'est qu'une formalité technique : il ne vous engage à rien et ne fait pas de vous une entreprise. Gardez simplement « Entrepreneur individuel / Auto-entrepreneur » (jamais « Société ») — vous n'aurez que vos informations personnelles à renseigner.",
+      "step3Body": "Vous recevez vos pourboires à titre personnel, en tant que particulier. La configuration Stripe ne fait pas de vous une entreprise et ne vous engage à rien.",
       "back": "← Retour",
       "continue": "Continuer →",
       "openingStripe": "Ouverture de Stripe…",
@@ -830,10 +830,12 @@
       "pendingBalanceBody": "Finalisez votre vérification (2 min) pour recevoir ces pourboires sur votre compte.",
       "incompleteTitle": "Inscription à finaliser",
       "incompleteBody": "Reprenez la configuration sécurisée pour recevoir vos pourboires.",
-      "step4Title": "Ce qu’il faut préparer",
-      "step4Body": "Ayez simplement sous la main votre date de naissance, votre adresse et votre IBAN. C'est tout ce dont Stripe a besoin pour vous verser vos pourboires.",
-      "step5Title": "« Tax », « Climate » ? Pas pour l’instant",
-      "step5Body": "Stripe peut vous proposer des options en plus (Tax, Climate). Vous n'en avez pas besoin : cliquez « Pas pour l'instant » et continuez tranquillement. C'est prêt !"
+      "step4Title": "Gardez « Auto-entrepreneur »",
+      "step4Body": "Stripe ne propose que deux types de compte : « entrepreneur individuel / auto-entrepreneur » ou « société ». Gardez l'option « Entrepreneur individuel / Auto-entrepreneur » déjà cochée (jamais « Société ») — aucune information d'entreprise à fournir.",
+      "step5Title": "Ce qu’il faut préparer",
+      "step5Body": "Ayez simplement sous la main votre date de naissance, votre adresse et votre IBAN. C'est tout ce dont Stripe a besoin pour vous verser vos pourboires.",
+      "step6Title": "« Tax », « Climate » ? Pas pour l’instant",
+      "step6Body": "Stripe peut vous proposer des options en plus (Tax, Climate). Vous n'en avez pas besoin : cliquez « Pas pour l'instant » et continuez tranquillement. C'est prêt !"
     },
     "analytics": {
       "title": "Analytics",
