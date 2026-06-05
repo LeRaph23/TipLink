@@ -820,7 +820,7 @@
       "step2Title": "Quick, and only once",
       "step2Body": "It takes about 2 minutes, just once. After that, your tips land in your bank account automatically — you never have to think about it again.",
       "step3Title": "Nothing to worry about",
-      "step3Body": "Your tips are exempt from tax and social contributions — nothing for you to declare. Stripe only offers two account types: “individual / sole trader” or “company”. This choice commits you to nothing: keep “Individual / sole trader” selected (never “Company”). You won't provide any company details, only your personal information.",
+      "step3Body": "You receive your tips personally, as a private individual. Stripe simply only offers two account types: “individual / sole trader” or “company”. That choice is just a technical formality — it commits you to nothing and doesn't make you a business. Just keep “Individual / sole trader” (never “Company”), and you'll only enter your personal information.",
       "back": "← Back",
       "continue": "Continue →",
       "openingStripe": "Opening Stripe…",

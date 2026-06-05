@@ -820,7 +820,7 @@
       "step2Title": "Rapide, et une seule fois",
       "step2Body": "Comptez 2 minutes, à ne faire qu'une seule fois. Ensuite, vos pourboires arrivent tout seuls sur votre compte bancaire — vous n'avez plus jamais à y penser.",
       "step3Title": "Aucune inquiétude à avoir",
-      "step3Body": "Vos pourboires sont exonérés d'impôt et de cotisations — vous n'avez rien à déclarer de votre côté. Stripe ne propose que deux types de compte : « entrepreneur individuel / auto-entrepreneur » ou « société ». Ce choix ne vous engage à rien : gardez « Entrepreneur individuel / Auto-entrepreneur » sélectionné (jamais « Société »). Vous n'aurez aucune information d'entreprise à fournir, seulement vos informations personnelles.",
+      "step3Body": "Vous recevez vos pourboires à titre personnel, en tant que particulier. Stripe, lui, ne propose que deux types de compte : « entrepreneur individuel / auto-entrepreneur » ou « société ». Ce choix n'est qu'une formalité technique : il ne vous engage à rien et ne fait pas de vous une entreprise. Gardez simplement « Entrepreneur individuel / Auto-entrepreneur » (jamais « Société ») — vous n'aurez que vos informations personnelles à renseigner.",
       "back": "← Retour",
       "continue": "Continuer →",
       "openingStripe": "Ouverture de Stripe…",
