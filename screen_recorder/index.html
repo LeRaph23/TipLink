@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Screen Recorder — Onboarding</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --accent: #6c5ce7;
+      --accent-hover: #5a4bd4;
+      --danger: #e74c3c;
+      --danger-hover: #c0392b;
+      --text: #e8eaf0;
+      --muted: #8a8fa3;
+      --border: #2a2e3c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 760px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+    .options {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .option input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; }
+    button {
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 22px;
+      cursor: pointer;
+      color: #fff;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-start { background: var(--accent); }
+    .btn-start:not(:disabled):hover { background: var(--accent-hover); }
+    .btn-stop { background: var(--danger); }
+    .btn-stop:not(:disabled):hover { background: var(--danger-hover); }
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 20px;
+    }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--danger);
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .timer { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); }
+    video {
+      width: 100%;
+      margin-top: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #000;
+      aspect-ratio: 16 / 9;
+      display: none;
+    }
+    .download {
+      margin-top: 16px;
+      display: none;
+    }
+    .download a {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .download a:hover { text-decoration: underline; }
+    .hint {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+    code { background: #000; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎬 Screen Recorder</h1>
+    <p class="subtitle">Enregistre ton écran pour guider tes utilisateurs pendant l'onboarding.</p>
+
+    <div class="options">
+      <label class="option">
+        <input type="checkbox" id="audio" checked />
+        Micro (ta voix)
+      </label>
+      <label class="option">
+        <input type="checkbox" id="systemAudio" />
+        Son du système
+      </label>
+    </div>
+
+    <div class="controls">
+      <button id="start" class="btn-start">● Démarrer l'enregistrement</button>
+      <button id="stop" class="btn-stop" disabled>■ Arrêter</button>
+    </div>
+
+    <div class="status" id="status">Prêt. Clique sur « Démarrer ».</div>
+
+    <video id="preview" controls></video>
+
+    <div class="download" id="downloadBox">
+      <a id="downloadLink" download>⬇ Télécharger la vidéo</a>
+    </div>
+
+    <p class="hint">
+      Astuce paysage : dans la fenêtre de partage, choisis <b>« Tout l'écran »</b> (ton écran PC est déjà au format paysage 16:9).
+      La vidéo est enregistrée au format <code>.webm</code>, lisible partout et convertible en MP4 si besoin.
+    </p>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const statusEl = document.getElementById('status');
+    const preview = document.getElementById('preview');
+    const downloadBox = document.getElementById('downloadBox');
+    const downloadLink = document.getElementById('downloadLink');
+    const audioCheck = document.getElementById('audio');
+    const systemAudioCheck = document.getElementById('systemAudio');
+
+    let mediaRecorder, chunks = [], timerInterval, startTime;
+    let combinedStream;
+
+    function fmt(ms) {
+      const s = Math.floor(ms / 1000);
+      const m = Math.floor(s / 60);
+      return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    function setStatus(html) { statusEl.innerHTML = html; }
+
+    startBtn.addEventListener('click', async () => {
+      try {
+        // Capture de l'écran en paysage (résolution idéale 1920x1080)
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 }
+          },
+          audio: systemAudioCheck.checked
+        });
+
+        let tracks = [...displayStream.getVideoTracks()];
+
+        // Ajout du son système si présent
+        displayStream.getAudioTracks().forEach(t => tracks.push(t));
+
+        // Ajout du micro si demandé
+        if (audioCheck.checked) {
+          try {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream.getAudioTracks().forEach(t => tracks.push(t));
+          } catch (e) {
+            console.warn('Micro indisponible :', e);
+          }
+        }
+
+        combinedStream = new MediaStream(tracks);
+
+        // Si l'utilisateur arrête le partage via la barre du navigateur
+        displayStream.getVideoTracks()[0].addEventListener('ended', stopRecording);
+
+        chunks = [];
+        const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+          ? 'video/webm;codecs=vp9'
+          : 'video/webm';
+        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mime });
+
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        mediaRecorder.onstop = finalize;
+
+        mediaRecorder.start();
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+          setStatus('<span class="dot"></span> Enregistrement… <span class="timer">' + fmt(Date.now() - startTime) + '</span>');
+        }, 250);
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        preview.style.display = 'none';
+        downloadBox.style.display = 'none';
+      } catch (err) {
+        setStatus('❌ Annulé ou erreur : ' + err.message);
+      }
+    });
+
+    stopBtn.addEventListener('click', stopRecording);
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      if (combinedStream) {
+        combinedStream.getTracks().forEach(t => t.stop());
+      }
+    }
+
+    function finalize() {
+      clearInterval(timerInterval);
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+
+      preview.src = url;
+      preview.style.display = 'block';
+
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      downloadLink.href = url;
+      downloadLink.download = 'onboarding-' + stamp + '.webm';
+      downloadBox.style.display = 'block';
+
+      const size = (blob.size / (1024 * 1024)).toFixed(1);
+      setStatus('✅ Terminé — ' + size + ' Mo. Aperçu ci-dessous, puis télécharge.');
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+  </script>
+</body>
+</html>
