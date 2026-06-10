@@ -189,7 +189,7 @@
       "h1a": "Le meilleur moyen",
       "h1b": "d'encaisser plus de",
       "h1c": "pourboires",
-      "sub": "La plaque se pose en 5 secondes, n'importe où. Votre client approche son téléphone ou scanne le QR code, choisit un montant — et le pourboire arrive directement sur votre compte. Zéro app, zéro cash, zéro friction.",
+      "sub": "La plaque se pose en 5 secondes, n'importe où. Votre client approche son téléphone ou scanne le QR code, choisit un montant — et le pourboire vous revient sur votre compte bancaire, via Stripe. Zéro app, zéro cash, zéro friction.",
       "social": "Adopté par 400+ équipes",
       "cta": "Commander maintenant"
     },
@@ -297,7 +297,7 @@
       "t1quote": "En deux semaines mes coiffeurs ont vu leurs pourboires doubler. Les clientes adorent le côté sans contact, et moi j'adore le dashboard.",
       "t2name": "Karim B.",
       "t2role": "Manager — Institut Beauté Harmonie (3 salons)",
-      "t2quote": "On a déployé les plaques dans les 3 salons en une matinée. Zéro friction, zéro plainte. Les pourboires tombent directement en banque.",
+      "t2quote": "On a déployé les plaques dans les 3 salons en une matinée. Zéro friction, zéro plainte. Les pourboires arrivent sur le compte bancaire, via Stripe.",
       "t3name": "Aurélie M.",
       "t3role": "Propriétaire — Salon Éclat Beauté",
       "t3quote": "Je pensais que c'était compliqué mais la config a pris 10 minutes. Mes collaboratrices reçoivent leurs pourboires le soir même."
@@ -689,11 +689,11 @@
       "last7days": "7 derniers jours",
       "trendVsPrev": "vs sem. préc.",
       "adminReceiveTipsTitle": "Recevez vous aussi des pourboires",
-      "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires directement sur votre compte.",
+      "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires sur votre compte bancaire.",
       "adminReceiveTipsCta": "Configurer →",
       "bankingSetupTitleAdmin": "Finalisez votre configuration de virements",
       "bankingSetupTitleStaff": "Configurez votre compte bancaire",
-      "bankingSetupBody": "Ajoutez votre IBAN pour commencer à recevoir vos pourboires directement sur votre compte.",
+      "bankingSetupBody": "Ajoutez votre IBAN pour commencer à recevoir vos pourboires sur votre compte bancaire.",
       "bankingSetupCta": "Configurer →"
     },
     "txs": {
@@ -708,7 +708,7 @@
     },
     "onboarding": {
       "title": "Compte de virement",
-      "subtitle": "Connectez votre banque pour recevoir vos pourboires directement.",
+      "subtitle": "Connectez votre banque pour recevoir vos pourboires.",
       "continue": "Poursuivre la configuration",
       "start": "Commencer la configuration",
       "initializing": "Initialisation…",
@@ -806,11 +806,11 @@
     "payouts": "Virements",
     "banking": {
       "title": "Virements",
-      "subtitle": "Recevez vos pourboires directement sur votre compte bancaire.",
+      "subtitle": "Recevez vos pourboires sur votre compte bancaire.",
       "notLinkedTitle": "Compte non rattaché",
       "notLinkedBody": "Votre compte n'est pas encore rattaché à un établissement. Contactez votre administrateur pour accéder à cette fonctionnalité.",
       "totalReceived": "Total reçu",
-      "autoPayout": "Vos pourboires sont versés <b>automatiquement</b> sur votre compte bancaire par Stripe.",
+      "autoPayout": "Vos pourboires sont versés sur votre compte bancaire par Stripe, <b>selon la fréquence de virement que vous avez choisie</b>.",
       "activeTitle": "Compte bancaire actif",
       "activeBody": "Vous recevez vos pourboires. Vous pouvez modifier vos coordonnées si besoin.",
       "pendingTitle": "Vérification en cours",
@@ -818,7 +818,7 @@
       "step1Title": "Pourquoi Stripe ?",
       "step1Body": "Pour vous verser vos pourboires en toute sécurité, on passe par Stripe — le spécialiste mondial du paiement, utilisé par des millions d'entreprises. C'est lui qui protège votre argent et vos coordonnées : Digitip n'y a jamais accès.",
       "step2Title": "Rapide, et une seule fois",
-      "step2Body": "Comptez 2 minutes, à ne faire qu'une seule fois. Ensuite, vos pourboires arrivent tout seuls sur votre compte bancaire — vous n'avez plus jamais à y penser.",
+      "step2Body": "Comptez 2 minutes, à ne faire qu'une seule fois. Ensuite, vos pourboires arrivent sur votre compte bancaire — c'est Stripe qui s'en charge, au rythme de virement que vous choisissez.",
       "step3Title": "Aucune inquiétude à avoir",
       "step3Body": "Vous recevez vos pourboires à titre personnel, en tant que particulier. La configuration Stripe ne fait pas de vous une entreprise et ne vous engage à rien.",
       "back": "← Retour",
@@ -1116,7 +1116,7 @@
     },
     "welcome": {
       "title": "Rejoignez {name}",
-      "subtitle": "Vos pourboires, directement sur votre compte.",
+      "subtitle": "Vos pourboires, sur votre compte bancaire.",
       "bullet1": "Vos clients vous laissent un pourboire depuis leur téléphone — sans espèces, sans appli.",
       "bullet2": "Vous recevez l'argent sur votre compte bancaire.",
       "bullet3": "Prêt(e) en 2 minutes.",
