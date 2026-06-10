@@ -27,6 +27,12 @@ Puis va sur **http://localhost:8000** dans Chrome.
 ## Options
 - **Micro (ta voix)** : pour commenter pendant l'enregistrement.
 - **Son du système** : pour capter les sons de l'appli.
+- **Qualité** :
+  - *Standard* — 1080p, 30 fps, 8 Mbps (fichier léger).
+  - *Haute* (par défaut) — 1080p, 60 fps, 16 Mbps (net et fluide, recommandé).
+  - *Max* — jusqu'à 4K, 60 fps, 40 Mbps (nécessite un écran 4K + PC costaud, gros fichier).
+
+> Le réglage qui change vraiment la netteté est le **bitrate** (Mbps). « Haute » suffit pour un onboarding propre.
 
 ## Format de sortie
 La vidéo est en `.webm` (lisible partout : VLC, navigateur, etc.).

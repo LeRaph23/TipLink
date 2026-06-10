@@ -54,6 +54,10 @@
       user-select: none;
     }
     .option input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+    .option select {
+      background: #000; color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer;
+    }
     .controls { display: flex; gap: 12px; flex-wrap: wrap; }
     button {
       font-size: 15px;
@@ -130,6 +134,14 @@
         <input type="checkbox" id="systemAudio" />
         Son du système
       </label>
+      <label class="option">
+        Qualité&nbsp;:
+        <select id="quality">
+          <option value="standard">Standard (1080p · 8 Mbps)</option>
+          <option value="haute" selected>Haute (1080p · 16 Mbps · 60fps)</option>
+          <option value="max">Max (jusqu'à 4K · 40 Mbps · 60fps)</option>
+        </select>
+      </label>
     </div>
 
     <div class="controls">
@@ -160,6 +172,14 @@
     const downloadLink = document.getElementById('downloadLink');
     const audioCheck = document.getElementById('audio');
     const systemAudioCheck = document.getElementById('systemAudio');
+    const qualitySelect = document.getElementById('quality');
+
+    // Réglages par niveau de qualité
+    const QUALITY = {
+      standard: { width: 1920, height: 1080, fps: 30, videoBps: 8_000_000 },
+      haute:    { width: 1920, height: 1080, fps: 60, videoBps: 16_000_000 },
+      max:      { width: 3840, height: 2160, fps: 60, videoBps: 40_000_000 },
+    };
 
     let mediaRecorder, chunks = [], timerInterval, startTime;
     let combinedStream;
@@ -174,12 +194,14 @@
 
     startBtn.addEventListener('click', async () => {
       try {
-        // Capture de l'écran en paysage (résolution idéale 1920x1080)
+        const q = QUALITY[qualitySelect.value] || QUALITY.haute;
+
+        // Capture de l'écran en paysage à la qualité choisie
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 30 }
+            width: { ideal: q.width },
+            height: { ideal: q.height },
+            frameRate: { ideal: q.fps }
           },
           audio: systemAudioCheck.checked
         });
@@ -205,10 +227,17 @@
         displayStream.getVideoTracks()[0].addEventListener('ended', stopRecording);
 
         chunks = [];
-        const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-          ? 'video/webm;codecs=vp9'
-          : 'video/webm';
-        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mime });
+        // Codec : on privilégie VP9 (meilleure qualité à bitrate égal), sinon VP8/webm
+        const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+          ? 'video/webm;codecs=vp9,opus'
+          : (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+              ? 'video/webm;codecs=vp9'
+              : 'video/webm');
+        mediaRecorder = new MediaRecorder(combinedStream, {
+          mimeType: mime,
+          videoBitsPerSecond: q.videoBps,
+          audioBitsPerSecond: 128_000,
+        });
 
         mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
         mediaRecorder.onstop = finalize;
