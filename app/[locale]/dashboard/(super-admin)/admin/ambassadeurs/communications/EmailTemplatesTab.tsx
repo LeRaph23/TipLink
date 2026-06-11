@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   saveEmailTemplate,
   deleteEmailTemplate,
@@ -24,6 +25,7 @@ const btnSecondary: React.CSSProperties = {
 };
 
 export function EmailTemplatesTab({ templates }: { templates: EmailTemplate[] }) {
+  const router = useRouter();
   const [editing, setEditing] = useState<EmailTemplate | null>(null);
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function EmailTemplatesTab({ templates }: { templates: EmailTemplate[] })
             const res = await saveEmailTemplate(updated);
             if (!res.ok) { setErr(res.error); return; }
             setEditing(null);
-            window.location.reload();
+            router.refresh();
           });
         }}
         isPending={isPending}
@@ -105,7 +107,7 @@ export function EmailTemplatesTab({ templates }: { templates: EmailTemplate[] })
                           startTransition(async () => {
                             const r = await deleteEmailTemplate(t.id);
                             if (!r.ok) { alert(r.error); return; }
-                            window.location.reload();
+                            router.refresh();
                           });
                         }}
                       >Suppr.</button>

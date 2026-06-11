@@ -552,6 +552,7 @@
     "selectAmount": "Select an amount",
     "customAmount": "Custom amount",
     "selectAmountPrompt": "Select an amount to continue",
+    "minAmount": "Minimum amount {min}",
     "paying": "Paying…",
     "pay": "Pay",
     "notReady": "This staff member isn't ready to receive tips yet.",

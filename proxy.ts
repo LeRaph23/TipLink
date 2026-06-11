@@ -86,7 +86,24 @@ export async function proxy(request: NextRequest) {
     return intlResponse;
   }
 
-  // 3) Supabase session refresh: only for locale-prefixed routes.
+  // 3) Supabase session refresh — only where auth actually matters.
+  //    Strip the locale prefix first so we can decide cheaply whether this
+  //    request needs a Supabase round-trip at all.
+  const localePrefix = routing.locales.find(
+    (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`)
+  );
+  const bare = localePrefix ? pathname.slice(`/${localePrefix}`.length) || '/' : pathname;
+
+  // Public pages (landing, /pay, legal, …) don't gate on auth and don't need
+  // their session refreshed on every paint. Skipping getUser() here removes an
+  // Auth network round-trip from the critical tipping/landing path; the session
+  // is still refreshed the moment the visitor hits a protected/auth route below.
+  const needsAuth =
+    bare.startsWith('/dashboard') || bare === '/login' || bare === '/signup';
+  if (!needsAuth) {
+    return intlResponse;
+  }
+
   //    We create a response that carries intl headers and attaches Supabase cookies.
   let response = intlResponse;
 
@@ -114,12 +131,6 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-
-  // Strip locale prefix for route-matching logic
-  const localePrefix = routing.locales.find(
-    (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`)
-  );
-  const bare = localePrefix ? pathname.slice(`/${localePrefix}`.length) || '/' : pathname;
 
   // Protect dashboard routes
   if (bare.startsWith('/dashboard') && !user) {

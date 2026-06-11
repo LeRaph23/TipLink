@@ -32,6 +32,9 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
     : selectedAmount;
 
   const hasAmount = tipAmount !== null && tipAmount >= 50;
+  // Below the 0.50 minimum, with something actually typed → show an inline hint
+  // instead of silently hiding the checkout.
+  const customInvalid = custom.trim() !== '' && (tipAmount === null || tipAmount < 50);
 
   const currencySymbol = cur === 'EUR' ? '€' : cur === 'GBP' ? '£' : cur === 'USD' ? '$' : '';
   const fmt = new Intl.NumberFormat(undefined, {
@@ -99,14 +102,20 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
               onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
               style={{
                 width: '100%', background: 'var(--surface-2)',
-                border: `1.5px solid ${customFocus ? 'var(--accent)' : 'var(--border)'}`,
+                border: `1.5px solid ${customInvalid ? 'var(--error)' : customFocus ? 'var(--accent)' : 'var(--border)'}`,
                 borderRadius: 'var(--radius-sm)', padding: '11px 12px 11px 28px',
                 color: 'var(--text)', fontSize: 16, outline: 'none',
-                boxShadow: customFocus ? '0 0 0 3px var(--accent-muted)' : 'none',
+                boxShadow: customFocus ? `0 0 0 3px ${customInvalid ? 'color-mix(in oklch, var(--error) 18%, transparent)' : 'var(--accent-muted)'}` : 'none',
                 fontFamily: 'var(--font)',
               }}
+              aria-invalid={customInvalid}
             />
           </div>
+        )}
+        {customInvalid && (
+          <p style={{ margin: '6px 2px 0', fontSize: 11.5, color: 'var(--error)', fontFamily: 'var(--font)' }}>
+            {t('minAmount', { min: fmtCents.format(0.5) })}
+          </p>
         )}
       </div>
 

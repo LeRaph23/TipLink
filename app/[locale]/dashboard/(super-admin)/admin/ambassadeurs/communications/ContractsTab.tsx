@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import type { AmbassadorRow } from './EmailsTab';
 import {
   sendContractToAmbassador,
@@ -59,6 +60,7 @@ export function ContractsTab({
   templates: ContractTemplate[];
   contracts: ContractRow[];
 }) {
+  const router = useRouter();
   const [openSend, setOpenSend] = useState(false);
   const [audit, setAudit] = useState<{ contractId: string; entries: ContractAuditEntry[] } | null>(null);
   const [, startTransition] = useTransition();
@@ -138,7 +140,7 @@ export function ContractsTab({
                             startTransition(async () => {
                               const r = await revokeContract(c.id, reason);
                               if (!r.ok) { alert(r.error); return; }
-                              window.location.reload();
+                              router.refresh();
                             });
                           }}
                         >Révoquer</button>
@@ -157,7 +159,7 @@ export function ContractsTab({
           ambassadors={ambassadors}
           templates={templates}
           onClose={() => setOpenSend(false)}
-          onSent={() => { setOpenSend(false); window.location.reload(); }}
+          onSent={() => { setOpenSend(false); router.refresh(); }}
         />
       )}
 

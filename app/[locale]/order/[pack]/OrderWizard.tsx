@@ -371,9 +371,21 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
           </ContinueBtn>
         ) : (
           <ContinueBtn onClick={handleSubmit} disabled={submitting}>
-            {submitting
-              ? (locale === 'fr' ? 'Chargement…' : 'Loading…')
-              : (locale === 'fr' ? 'Procéder au paiement →' : 'Proceed to payment →')}
+            {submitting ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 14, height: 14, borderRadius: '50%',
+                    border: '2px solid currentColor', borderTopColor: 'transparent',
+                    display: 'inline-block', animation: 'spin 0.6s linear infinite',
+                  }}
+                />
+                {locale === 'fr' ? 'Chargement…' : 'Loading…'}
+              </span>
+            ) : (
+              locale === 'fr' ? 'Procéder au paiement →' : 'Proceed to payment →'
+            )}
           </ContinueBtn>
         )}
       </div>

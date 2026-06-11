@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { saveContractTemplate } from '@/actions/admin/ambassador-contracts';
 import type { ContractTemplate } from './ContractsTab';
 
@@ -21,6 +22,7 @@ const btnSecondary: React.CSSProperties = {
 };
 
 export function ContractTemplatesTab({ templates }: { templates: ContractTemplate[] }) {
+  const router = useRouter();
   const [editing, setEditing] = useState<ContractTemplate | null>(null);
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export function ContractTemplatesTab({ templates }: { templates: ContractTemplat
             const r = await saveContractTemplate(payload);
             if (!r.ok) { setErr(r.error); return; }
             setEditing(null);
-            window.location.reload();
+            router.refresh();
           });
         }}
         isPending={isPending}
