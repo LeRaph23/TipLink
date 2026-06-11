@@ -88,14 +88,18 @@ export default async function StaffTipPage({
     notFound();
   }
 
-  const staff = await fetchPublicStaff(staffId);
+  // Fire the two independent lookups (staff profile + establishment id) and the
+  // translations in parallel rather than waterfalling them — saves a full
+  // round-trip on the payment page. establishmentId is used both by the
+  // "tip the team" link in the not-payable view and by the AmountSelector
+  // cross-tenant guard below; fetching it eagerly only wastes a query in the
+  // rare notFound() case.
+  const [staff, establishmentId, t] = await Promise.all([
+    fetchPublicStaff(staffId),
+    fetchEstablishmentId(staffId),
+    getTranslations('pay'),
+  ]);
   if (!staff) notFound();
-
-  const t = await getTranslations('pay');
-
-  // Resolve establishment id once: used both by the "tip the team" link in
-  // the not-payable view and by the AmountSelector cross-tenant guard below.
-  const establishmentId = await fetchEstablishmentId(staffId);
 
   if (!staff.is_payable) {
 
@@ -226,7 +230,7 @@ export default async function StaffTipPage({
           {/* Who you're tipping, on white */}
           <div style={{ background: 'var(--surface)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 13 }}>
             {staff.avatar_url ? (
-              <img src={staff.avatar_url} alt={staff.full_name} style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              <img src={staff.avatar_url} alt={staff.full_name} width={52} height={52} decoding="async" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
             ) : (
               <div style={{ width: 52, height: 52, borderRadius: '50%', flexShrink: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6" /></svg>

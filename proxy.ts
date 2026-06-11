@@ -30,19 +30,23 @@ export async function proxy(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+    // Resolve via an RPC backed by a functional lower(short_id) index, so the
+    // lookup is an index scan rather than a sequential scan. The RPC returns the
+    // same shape as before: [] when unknown, [{ establishment_id }] otherwise
+    // (establishment_id null = unassigned stock tag).
     let res: Response;
     try {
-      res = await fetch(
-        `${supabaseUrl}/rest/v1/nfc_stickers?short_id=ilike.${encodeURIComponent(shortId)}&select=establishment_id&limit=1`,
-        {
-          headers: {
-            apikey: serviceKey,
-            Authorization: `Bearer ${serviceKey}`,
-            Accept: 'application/json',
-          },
-          cache: 'no-store',
-        }
-      );
+      res = await fetch(`${supabaseUrl}/rest/v1/rpc/resolve_sticker_establishment`, {
+        method: 'POST',
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ p_short_id: shortId }),
+        cache: 'no-store',
+      });
     } catch {
       return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
     }

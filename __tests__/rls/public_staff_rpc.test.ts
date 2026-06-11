@@ -123,3 +123,85 @@ describe.skipIf(skipIfNoLocal)('get_public_staff RPC', () => {
     expect(data === null || data.length === 0).toBe(true);
   });
 });
+
+/**
+ * RPC `resolve_sticker_establishment` safety + behaviour.
+ *
+ * - Backs the /s/[shortId] proxy lookup via the lower(short_id) index.
+ * - Matches case-insensitively (short_ids are stored mixed-case).
+ * - Service role only: anon / authenticated must NOT be able to call it.
+ */
+describe.skipIf(skipIfNoLocal)('resolve_sticker_establishment RPC', () => {
+  const serviceClient = skipIfNoLocal
+    ? (null as unknown as ReturnType<typeof createClient>)
+    : createClient(SUPABASE_URL, SERVICE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+  let groupId: string;
+  let establishmentId: string;
+  let shortId: string;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const { data: group } = await serviceClient
+      .from('groups')
+      .insert({ name: `Resolve Test Group ${ts}`, settings: {} })
+      .select('id')
+      .single();
+    groupId = group!.id;
+
+    const { data: est } = await serviceClient
+      .from('establishments')
+      .insert({
+        group_id: groupId,
+        name: 'Resolve Test Est',
+        business_type: 'restaurant',
+        slug: `resolve-test-est-${ts}`,
+        country: 'FR',
+        currency: 'EUR',
+      })
+      .select('id')
+      .single();
+    establishmentId = est!.id;
+
+    // Mixed-case short_id, like a nanoid() batch sticker.
+    shortId = `AbXz${ts.toString(36)}`;
+    await serviceClient
+      .from('nfc_stickers')
+      .insert({ short_id: shortId, establishment_id: establishmentId });
+  });
+
+  afterAll(async () => {
+    await serviceClient.from('nfc_stickers').delete().eq('short_id', shortId);
+    await serviceClient.from('establishments').delete().eq('id', establishmentId);
+    await serviceClient.from('groups').delete().eq('id', groupId);
+  });
+
+  it('service role resolves the establishment case-insensitively', async () => {
+    const { data, error } = await serviceClient.rpc('resolve_sticker_establishment', {
+      p_short_id: shortId.toLowerCase(),
+    });
+    expect(error).toBeNull();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data!.length).toBe(1);
+    expect((data![0] as Record<string, unknown>).establishment_id).toBe(establishmentId);
+  });
+
+  it('returns no rows for an unknown short_id', async () => {
+    const { data, error } = await serviceClient.rpc('resolve_sticker_establishment', {
+      p_short_id: 'definitely-not-a-real-sticker',
+    });
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+  });
+
+  it('anon CANNOT call the RPC (service-role only)', async () => {
+    const anon = createClient(SUPABASE_URL, ANON_KEY);
+    const { error } = await anon.rpc('resolve_sticker_establishment', {
+      p_short_id: shortId.toLowerCase(),
+    });
+    // EXECUTE was revoked from PUBLIC and granted only to service_role.
+    expect(error).not.toBeNull();
+  });
+});
