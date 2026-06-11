@@ -41,48 +41,48 @@ async function resolvePromoCode(
 }
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIp(request.headers);
-  const rl = await rateLimit(`create-pack-intent:${ip}`, { limit: 5, windowMs: 60_000 });
-  if (!rl.ok) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
-    );
-  }
-
-  let body: { pack?: unknown; locale?: unknown; promoCode?: unknown };
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
-
-  if (!isValidPack(body.pack)) {
-    return NextResponse.json({ error: 'Invalid pack' }, { status: 400 });
-  }
-
-  const pack = body.pack;
-  const locale = body.locale === 'fr' ? 'fr' : 'en';
-
-  // Stripe is the source of truth for the actual charged amount.
-  const pricing = await getPackPricing(pack);
-  const baseAmount = pricing.unitAmount;
-
-  const supabase = createServiceClient();
-
-  // Optional promo code
-  let promo: PromoResolved | null = null;
-  let discountAmount = 0;
-  if (typeof body.promoCode === 'string' && body.promoCode.trim().length > 0) {
-    promo = await resolvePromoCode(supabase, body.promoCode);
-    if (!promo) {
-      return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+    const ip = getClientIp(request.headers);
+    const rl = await rateLimit(`create-pack-intent:${ip}`, { limit: 5, windowMs: 60_000 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
     }
-    discountAmount = Math.floor((baseAmount * promo.percentage_off) / 100);
-  }
-  const amount = Math.max(0, baseAmount - discountAmount);
 
-  try {
+    let body: { pack?: unknown; locale?: unknown; promoCode?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
+    if (!isValidPack(body.pack)) {
+      return NextResponse.json({ error: 'Invalid pack' }, { status: 400 });
+    }
+
+    const pack = body.pack;
+    const locale = body.locale === 'fr' ? 'fr' : 'en';
+
+    // Stripe is the source of truth for the actual charged amount.
+    const pricing = await getPackPricing(pack);
+    const baseAmount = pricing.unitAmount;
+
+    const supabase = createServiceClient();
+
+    // Optional promo code
+    let promo: PromoResolved | null = null;
+    let discountAmount = 0;
+    if (typeof body.promoCode === 'string' && body.promoCode.trim().length > 0) {
+      promo = await resolvePromoCode(supabase, body.promoCode);
+      if (!promo) {
+        return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+      }
+      discountAmount = Math.floor((baseAmount * promo.percentage_off) / 100);
+    }
+    const amount = Math.max(0, baseAmount - discountAmount);
+
     const intent = await stripe.paymentIntents.create({
       amount,
       currency: pricing.currency,
@@ -108,8 +108,10 @@ export async function POST(request: NextRequest) {
       promoCode: promo?.code ?? null,
     });
   } catch (err) {
-    // Log the raw Stripe/runtime error server-side; never echo it to the
-    // client (it can carry API keys, rate-limit details, internal hints).
+    // Any failure (rate-limit backend, pricing/Stripe lookup, service client,
+    // PaymentIntent creation, …) must still return JSON — an unhandled throw
+    // here yields an empty 500 body and the client crashes on res.json().
+    // Never echo the raw error to the client (it can carry keys / internals).
     console.error('[create-pack-intent]', err instanceof Error ? err.message : err);
     return NextResponse.json({ error: 'payment_failed' }, { status: 500 });
   }
