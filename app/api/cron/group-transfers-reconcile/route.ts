@@ -60,7 +60,12 @@ export async function POST(req: Request) {
     }
 
     if (!chargeId || !currency) {
-      // Cannot retry without these — leave the row for manual triage.
+      // Cannot retry without these — leave the row for manual triage. Log the
+      // id so a stuck allocation is greppable instead of silently counted.
+      console.error('[reconcile] allocation missing charge/currency', {
+        rowId: r.id,
+        attempts: r.attempts + 1,
+      });
       await service
         .from('group_tip_transfers')
         .update({ attempts: r.attempts + 1, error: 'missing context' } as never)
@@ -94,6 +99,7 @@ export async function POST(req: Request) {
       succeeded++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
+      console.error('[reconcile] transfer retry failed', { rowId: r.id, attempts: r.attempts + 1, err: msg });
       await service
         .from('group_tip_transfers')
         .update({
@@ -106,7 +112,21 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed, succeeded, failed, held });
+  // Surface allocations that have exhausted their retries for a staff member who
+  // IS onboarded — these are real stuck funds the retry loop will never pick up
+  // again (it filters `attempts < MAX_ATTEMPTS`). Without this they'd vanish
+  // silently; here they're both logged and returned so monitoring can alert.
+  const { count: exhausted } = await service
+    .from('group_tip_transfers')
+    .select('id', { count: 'exact', head: true })
+    .in('status', ['pending', 'failed'])
+    .gte('attempts', MAX_ATTEMPTS);
+
+  if ((exhausted ?? 0) > 0) {
+    console.error('[reconcile] stuck allocations need manual triage', { exhausted });
+  }
+
+  return NextResponse.json({ ok: true, processed, succeeded, failed, held, exhausted: exhausted ?? 0 });
 }
 
 // Vercel cron uses GET with the same auth header.

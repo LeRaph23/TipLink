@@ -96,25 +96,40 @@ async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<T
   return t;
 }
 
-// Resolves the establishment ids + first establishment name for a group.
-async function groupEstablishments(service: Db, groupId: string) {
+type Est = { id: string; name: string };
+
+// Batch helpers — preload once per sequence instead of per group/establishment
+// (the loops below run up to LIMIT groups, so the old per-group lookups were a
+// classic N+1). One IN query each.
+async function establishmentsByGroup(service: Db, groupIds: string[]): Promise<Map<string, Est[]>> {
+  const out = new Map<string, Est[]>();
+  if (groupIds.length === 0) return out;
   const { data } = await service
     .from('establishments')
-    .select('id, name')
-    .eq('group_id', groupId)
+    .select('id, name, group_id')
+    .in('group_id', groupIds)
     .is('deleted_at', null)
     .order('created_at', { ascending: true });
-  return (data ?? []) as Array<{ id: string; name: string }>;
+  for (const e of (data ?? []) as Array<{ id: string; name: string; group_id: string }>) {
+    const arr = out.get(e.group_id) ?? [];
+    arr.push({ id: e.id, name: e.name });
+    out.set(e.group_id, arr);
+  }
+  return out;
 }
 
-async function groupHasSucceededTip(service: Db, establishmentIds: string[]): Promise<boolean> {
-  if (establishmentIds.length === 0) return false;
-  const { count } = await service
+async function establishmentsWithSucceededTip(service: Db, establishmentIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (establishmentIds.length === 0) return out;
+  const { data } = await service
     .from('transactions')
-    .select('id', { count: 'exact', head: true })
+    .select('establishment_id')
     .in('establishment_id', establishmentIds)
     .eq('status', 'succeeded');
-  return (count ?? 0) > 0;
+  for (const r of (data ?? []) as Array<{ establishment_id: string | null }>) {
+    if (r.establishment_id) out.add(r.establishment_id);
+  }
+  return out;
 }
 
 // ─── Group admin: hardware delivered, no tip yet → place the tag ─────────────
@@ -131,22 +146,27 @@ async function runTagDeliveredNudges(service: Db, dryRun: boolean): Promise<Tall
 
   if (dryRun) { t.considered = (orders ?? []).length; return t; }
 
-  const seen = new Set<string>();
-  for (const o of orders ?? []) {
-    if (!o.group_id || seen.has(o.group_id)) continue;
-    seen.add(o.group_id);
+  // Preload establishments + which ones already have a succeeded tip, once.
+  const groupIds = [...new Set((orders ?? []).map((o) => o.group_id).filter((x): x is string => !!x))];
+  const estByGroup = await establishmentsByGroup(service, groupIds);
+  const tipped = await establishmentsWithSucceededTip(
+    service,
+    [...estByGroup.values()].flat().map((e) => e.id),
+  );
+
+  for (const groupId of groupIds) {
     t.considered++;
     try {
-      const ests = await groupEstablishments(service, o.group_id);
-      if (await groupHasSucceededTip(service, ests.map((e) => e.id))) { t.skipped++; continue; }
+      const ests = estByGroup.get(groupId) ?? [];
+      if (ests.some((e) => tipped.has(e.id))) { t.skipped++; continue; }
 
-      const recipient = await resolveGroupAdmin(service, o.group_id);
+      const recipient = await resolveGroupAdmin(service, groupId);
       if (!recipient) { t.skipped++; continue; }
-      const unsub = lifecycleUnsubUrl('group_admin', o.group_id);
+      const unsub = lifecycleUnsubUrl('group_admin', groupId);
 
       const r = await dispatchLifecycleEmail(service, {
         def: LIFECYCLE.tag_delivered_place,
-        groupId: o.group_id,
+        groupId: groupId,
         establishmentId: ests[0]?.id ?? null,
         to: recipient.email,
         locale: recipient.locale,
@@ -161,7 +181,7 @@ async function runTagDeliveredNudges(service: Db, dryRun: boolean): Promise<Tall
       t[r]++;
     } catch (e) {
       t.failed++;
-      console.error('[lifecycle] tag delivered nudge failed', o.group_id, e);
+      console.error('[lifecycle] tag delivered nudge failed', groupId, e);
     }
   }
   return t;
@@ -183,9 +203,27 @@ async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise
 
   if (dryRun) { team.considered = activation.considered = (groups ?? []).length; return { team, activation }; }
 
+  // Preload establishments, succeeded-tip set, and staff counts for every group
+  // in this batch (was an N+1 of 3 lookups per group inside the loop).
+  const groupIds = (groups ?? []).map((g) => g.id);
+  const estByGroup = await establishmentsByGroup(service, groupIds);
+  const allEstIds = [...estByGroup.values()].flat().map((e) => e.id);
+  const tipped = await establishmentsWithSucceededTip(service, allEstIds);
+  const staffByEst = new Map<string, number>();
+  if (allEstIds.length > 0) {
+    const { data: staffRows } = await service
+      .from('staff_profiles')
+      .select('establishment_id')
+      .in('establishment_id', allEstIds)
+      .is('deleted_at', null);
+    for (const s of (staffRows ?? []) as Array<{ establishment_id: string | null }>) {
+      if (s.establishment_id) staffByEst.set(s.establishment_id, (staffByEst.get(s.establishment_id) ?? 0) + 1);
+    }
+  }
+
   for (const g of groups ?? []) {
     try {
-      const ests = await groupEstablishments(service, g.id);
+      const ests = estByGroup.get(g.id) ?? [];
       const estIds = ests.map((e) => e.id);
       const recipient = await resolveGroupAdmin(service, g.id);
       if (!recipient) continue;
@@ -194,15 +232,7 @@ async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise
       const estName = ests[0]?.name ?? 'votre salon';
 
       // Invite-team nudge: establishment has at most one staff member.
-      let staffCount = 0;
-      if (estIds.length > 0) {
-        const { count } = await service
-          .from('staff_profiles')
-          .select('id', { count: 'exact', head: true })
-          .in('establishment_id', estIds)
-          .is('deleted_at', null);
-        staffCount = count ?? 0;
-      }
+      const staffCount = estIds.reduce((sum, id) => sum + (staffByEst.get(id) ?? 0), 0);
       if (staffCount <= 1) {
         team.considered++;
         const r = await dispatchLifecycleEmail(service, {
@@ -221,7 +251,8 @@ async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise
 
       // Activation nudge: 7+ days onboarded and still zero succeeded tips.
       const daysSince = Math.floor((now - new Date(g.onboarding_completed_at).getTime()) / DAY);
-      if (daysSince >= 7 && !(await groupHasSucceededTip(service, estIds))) {
+      const hasTip = estIds.some((id) => tipped.has(id));
+      if (daysSince >= 7 && !hasTip) {
         activation.considered++;
         const r = await dispatchLifecycleEmail(service, {
           def: LIFECYCLE.activation_no_tips,

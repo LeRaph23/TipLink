@@ -3,6 +3,10 @@ import type { NextRequest } from 'next/server';
 
 export const COMMERCIAL_COOKIE = 'com_session';
 
+// Server-enforced, tamper-proof session lifetime (issuedAt is signed into the
+// cookie payload). Mirrors the ambassador portal.
+const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Resolves the HMAC secret used to sign commercial portal session cookies.
  *
@@ -29,7 +33,8 @@ export function buildCommercialCookieValue(
   code: string,
   secret: string,
 ): string {
-  const payload = `${commercialId}:${code.toLowerCase()}`;
+  // issuedAt is signed in, so it can't be forged to extend a stolen cookie.
+  const payload = `${commercialId}:${code.toLowerCase()}:${Date.now()}`;
   const sig = signCookie(payload, secret);
   return `${payload}.${sig}`;
 }
@@ -51,9 +56,17 @@ export function verifyCommercialCookieValue(
     if (sigBuf.length !== expectedBuf.length) return { valid: false, commercialId: null };
     if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return { valid: false, commercialId: null };
 
-    const [commercialId, payloadCode] = payload.split(':');
+    const [commercialId, payloadCode, issuedAtRaw] = payload.split(':');
     if (payloadCode?.toLowerCase() !== expectedCode.toLowerCase()) {
       return { valid: false, commercialId: null };
+    }
+    // Tamper-proof expiry. Legacy 2-part cookies (no issuedAt) stay valid only
+    // until they age out of the browser; new cookies are hard-expired here.
+    if (issuedAtRaw !== undefined) {
+      const issuedAt = Number(issuedAtRaw);
+      if (!Number.isFinite(issuedAt) || Date.now() - issuedAt > MAX_SESSION_AGE_MS) {
+        return { valid: false, commercialId: null };
+      }
     }
     return { valid: true, commercialId: commercialId ?? null };
   } catch {
