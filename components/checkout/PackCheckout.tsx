@@ -61,15 +61,19 @@ export function PackCheckout({ pack, locale }: Props) {
       signal: ac.signal,
     })
       .then(async (res) => {
-        const data = await res.json();
+        // Defensive parse: a 5xx with an empty/non-JSON body must not throw
+        // "Unexpected end of JSON input" — surface a clean, retryable error.
+        const data = (await res.json().catch(() => null)) as
+          | { clientSecret?: string; amount?: number; baseAmount?: number; discountAmount?: number; promoCode?: string; error?: string }
+          | null;
         if (ac.signal.aborted) return;
-        if (!res.ok || !data.clientSecret) {
-          if (appliedPromo && res.status === 400 && data.error === 'Invalid promo code') {
+        if (!res.ok || !data || !data.clientSecret) {
+          if (appliedPromo && res.status === 400 && data?.error === 'Invalid promo code') {
             setAppliedPromo(null);
             setPromoError('Code promo invalide ou expiré.');
             return;
           }
-          setCached({ key: requestKey, error: data.error ?? 'Init failed' });
+          setCached({ key: requestKey, error: 'Impossible d’initialiser le paiement. Veuillez réessayer.' });
           return;
         }
         setPromoError(null);
@@ -77,10 +81,10 @@ export function PackCheckout({ pack, locale }: Props) {
           key: requestKey,
           data: {
             clientSecret: data.clientSecret,
-            amount: data.amount,
-            baseAmount: data.baseAmount,
-            discountAmount: data.discountAmount,
-            promoCode: data.promoCode,
+            amount: data.amount ?? 0,
+            baseAmount: data.baseAmount ?? 0,
+            discountAmount: data.discountAmount ?? 0,
+            promoCode: data.promoCode ?? null,
           },
         });
       })

@@ -68,26 +68,39 @@ async function upstashRateLimit(
   const windowSec = Math.ceil(windowMs / 1000);
   const redisKey = `rl:${key}:${Math.floor(Date.now() / windowMs)}`;
 
-  // Pipeline: INCR + EXPIRE (NX).
-  const res = await fetch(`${url}/pipeline`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify([
-      ['INCR', redisKey],
-      ['EXPIRE', redisKey, String(windowSec), 'NX'],
-    ]),
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    // Pipeline: INCR + EXPIRE (NX).
+    res = await fetch(`${url}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([
+        ['INCR', redisKey],
+        ['EXPIRE', redisKey, String(windowSec), 'NX'],
+      ]),
+      cache: 'no-store',
+    });
+  } catch {
+    // Network error reaching Upstash — fail open rather than throw (an
+    // unhandled rejection here would 500 the caller). Per-instance limiting
+    // still applies as a floor.
+    return inMemoryRateLimit(key, { limit, windowMs });
+  }
 
   if (!res.ok) {
     // Fail open on Redis outage rather than lock out legitimate users.
     return inMemoryRateLimit(key, { limit, windowMs });
   }
 
-  const out = (await res.json()) as Array<{ result: number }>;
+  let out: Array<{ result: number }>;
+  try {
+    out = (await res.json()) as Array<{ result: number }>;
+  } catch {
+    return inMemoryRateLimit(key, { limit, windowMs });
+  }
   const count = out[0]?.result ?? 1;
   const resetAt = (Math.floor(Date.now() / windowMs) + 1) * windowMs;
 
