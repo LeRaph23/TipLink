@@ -67,8 +67,14 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL(destination, request.url), 302);
     }
 
+    // Render the colleague list in-place via an internal rewrite instead of a
+    // 302. A redirect forces the browser into a second round-trip — a blank
+    // screen while /s/[code] bounces to /pay/group/[id] — which is the lag felt
+    // right after a scan. A rewrite serves the (streamed) group page on this
+    // same request, so the branded hero paints immediately. The visible URL
+    // stays /s/[code], and the rewrite does not re-run this middleware.
     const destination = `/${preferredLocale}/pay/group/${rows[0].establishment_id}`;
-    return NextResponse.redirect(new URL(destination, request.url), 302);
+    return NextResponse.rewrite(new URL(destination, request.url));
   }
 
   // 2) next-intl middleware: handles locale prefix detection/redirect.

@@ -29,7 +29,7 @@ describe('NFC Redirect Middleware', () => {
     vi.resetModules();
   });
 
-  it('redirects to /pay/group/[estId] when sticker is found', async () => {
+  it('rewrites in-place to /pay/group/[estId] when sticker is found', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => [{ establishment_id: 'est-uuid-456' }],
@@ -39,9 +39,12 @@ describe('NFC Redirect Middleware', () => {
     const request = new NextRequest('https://digitip.app/s/XYZ98765');
     const response = await proxy(request);
 
-    expect(response.status).toBe(302);
-    // Middleware now adds locale prefix to NFC redirects
-    expect(response.headers.get('location')).toContain('/pay/group/est-uuid-456');
+    // The colleague list is served in-place (internal rewrite, no client
+    // round-trip), so the visible URL stays /s/[code]. Rewrites are not 302s:
+    // Next signals them via the x-middleware-rewrite header.
+    const rewrite = response.headers.get('x-middleware-rewrite');
+    expect(rewrite).toContain('/pay/group/est-uuid-456');
+    expect(response.headers.get('location')).toBeNull();
   });
 
   it('redirects to /not-found for unknown short_id', async () => {
