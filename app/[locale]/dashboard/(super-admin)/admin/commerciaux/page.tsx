@@ -39,37 +39,71 @@ export default async function CommerciauxPilotagePage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  await requireSuperAdmin(locale);
+  const { supabase: userClient } = await requireSuperAdmin(locale);
 
   const service = createServiceClient();
+
+  type CommercialSummaryRow = {
+    sales_count: number; solo_count: number; duo_count: number;
+    total_commissions: number; commissions_30d: number;
+    sales_30d_count: number; paid_total: number;
+  };
+  // Server-side aggregation (migration 00069) — replaces two full-table scans.
+  // Called on the user-scoped client so the SECURITY DEFINER is_super_admin()
+  // guard sees the authenticated caller. Cast because the RPC isn't in the
+  // generated DB types yet (same pattern as the webhook's promo RPC).
+  const callSummary = userClient.rpc as unknown as (
+    fn: 'commercial_pilotage_summary',
+  ) => Promise<{ data: CommercialSummaryRow[] | null }>;
 
   const [
     { count: activeCount },
     { count: pendingApps },
-    { data: salesRows },
     { count: payoutPaidCount },
-    { data: payoutSums },
+    { data: summaryRows },
   ] = await Promise.all([
     service.from('commerciaux').select('id', { count: 'exact', head: true }).eq('is_active', true),
     service.from('commercial_recruitment_applications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    service.from('commercial_sales').select('commission_amount, created_at, pack').is('voided_at', null),
     service.from('commercial_payouts').select('id', { count: 'exact', head: true }).eq('status', 'paid'),
-    service.from('commercial_payouts').select('amount_cents, status'),
+    // PostgREST resolves (not rejects) with data:null when the function is
+    // missing, so the fallback below triggers without a try/catch here.
+    callSummary('commercial_pilotage_summary'),
   ]);
 
-  const sales = salesRows ?? [];
-  const totalCommissions = sales.reduce((sum, s) => sum + s.commission_amount, 0);
-  const soloCount = sales.filter(s => s.pack === 'solo').length;
-  const duoCount = sales.filter(s => s.pack === 'duo').length;
+  // Prefer the server-side aggregate; fall back to a client-side sum if the RPC
+  // is unavailable (e.g. a deploy landing before db:migrate) so the page never
+  // breaks — only its query cost regresses to the old full-table read.
+  const summary = summaryRows?.[0];
 
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).getTime();
-  const last30 = sales.filter(s => new Date(s.created_at).getTime() > thirtyDaysAgo);
-  const commissions30 = last30.reduce((sum, s) => sum + s.commission_amount, 0);
+  let salesCount: number, soloCount: number, duoCount: number;
+  let totalCommissions: number, commissions30: number, sales30Count: number, paidTotal: number;
 
-  const payouts = payoutSums ?? [];
-  const paidTotal = payouts.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount_cents, 0);
-  const owed = totalCommissions - paidTotal; // approx — paid_out vs commissions cumulées
+  if (summary) {
+    salesCount = Number(summary.sales_count);
+    soloCount = Number(summary.solo_count);
+    duoCount = Number(summary.duo_count);
+    totalCommissions = Number(summary.total_commissions);
+    commissions30 = Number(summary.commissions_30d);
+    sales30Count = Number(summary.sales_30d_count);
+    paidTotal = Number(summary.paid_total);
+  } else {
+    const [{ data: salesRows }, { data: payoutSums }] = await Promise.all([
+      service.from('commercial_sales').select('commission_amount, created_at, pack').is('voided_at', null),
+      service.from('commercial_payouts').select('amount_cents, status'),
+    ]);
+    const sales = salesRows ?? [];
+    salesCount = sales.length;
+    soloCount = sales.filter(s => s.pack === 'solo').length;
+    duoCount = sales.filter(s => s.pack === 'duo').length;
+    totalCommissions = sales.reduce((sum, s) => sum + s.commission_amount, 0);
+    const thirtyDaysAgo = new Date().getTime() - 30 * 86400000;
+    const last30 = sales.filter(s => new Date(s.created_at).getTime() > thirtyDaysAgo);
+    sales30Count = last30.length;
+    commissions30 = last30.reduce((sum, s) => sum + s.commission_amount, 0);
+    paidTotal = (payoutSums ?? []).filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount_cents, 0);
+  }
+
+  const owed = totalCommissions - paidTotal; // approx — paid vs commissions cumulées
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -89,8 +123,8 @@ export default async function CommerciauxPilotagePage({
             sub={(pendingApps ?? 0) > 0 ? 'À traiter sous 48 h' : undefined}
           />
           <Kpi label="Commerciaux actifs" value={String(activeCount ?? 0)} />
-          <Kpi label="Ventes cumulées" value={String(sales.length)} sub={`${soloCount} solo · ${duoCount} duo`} />
-          <Kpi label="Commissions 30 j" value={fmtEUR(commissions30)} sub={`${last30.length} ventes`} />
+          <Kpi label="Ventes cumulées" value={String(salesCount)} sub={`${soloCount} solo · ${duoCount} duo`} />
+          <Kpi label="Commissions 30 j" value={fmtEUR(commissions30)} sub={`${sales30Count} ventes`} />
           <Kpi label="Commissions totales" value={fmtEUR(totalCommissions)} />
           <Kpi label="Versements payés" value={String(payoutPaidCount ?? 0)} sub={`${fmtEUR(paidTotal)} versés`} />
           <Kpi label="Solde à reverser" value={fmtEUR(Math.max(0, owed))} sub="Commissions − versements payés" />

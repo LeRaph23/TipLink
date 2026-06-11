@@ -7,6 +7,14 @@ export const COMMERCIAL_COOKIE = 'com_session';
 // cookie payload). Mirrors the ambassador portal.
 const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Domain-separation tag mixed into the HMAC. The commercial and ambassador
+// portals may share the same signing secret (see getCommercialSessionSecret),
+// so without this prefix a valid ambassador cookie would produce a signature
+// that also verifies on the commercial route. Signing over `com:<payload>`
+// makes the two portals' cookies cryptographically disjoint regardless of
+// whether the secrets are split. The visible cookie format is unchanged.
+const COMMERCIAL_PURPOSE = 'com';
+
 /**
  * Resolves the HMAC secret used to sign commercial portal session cookies.
  *
@@ -25,7 +33,9 @@ export function getCommercialSessionSecret(): string {
 }
 
 function signCookie(payload: string, secret: string): string {
-  return crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  // Bind the signature to the commercial portal so an ambassador cookie (signed
+  // over a bare payload) cannot be replayed here even under a shared secret.
+  return crypto.createHmac('sha256', secret).update(`${COMMERCIAL_PURPOSE}:${payload}`).digest('hex');
 }
 
 export function buildCommercialCookieValue(
