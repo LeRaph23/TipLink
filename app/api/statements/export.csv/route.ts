@@ -55,19 +55,31 @@ export async function GET(req: NextRequest) {
     const staffIds = [...byId.keys()];
 
     if (staffIds.length > 0) {
-      const { data: paid } = await service
-        .from('group_tip_transfers')
-        .select('amount, staff_id')
-        .in('staff_id', staffIds)
-        .eq('status', 'succeeded')
-        .gte('transferred_at', start)
-        .lt('transferred_at', end);
+      // Page through the month's transfers so peak memory stays bounded for very
+      // active groups (and we never silently truncate at a PostgREST row cap).
+      // Output is one aggregated row per employee regardless of volume.
+      const PAGE = 1000;
+      let from = 0;
+      for (;;) {
+        const { data: paid } = await service
+          .from('group_tip_transfers')
+          .select('amount, staff_id, id')
+          .in('staff_id', staffIds)
+          .eq('status', 'succeeded')
+          .gte('transferred_at', start)
+          .lt('transferred_at', end)
+          .order('id', { ascending: true })
+          .range(from, from + PAGE - 1);
 
-      for (const a of (paid ?? []) as Array<{ amount: number; staff_id: string }>) {
-        const r = agg.get(a.staff_id) ?? { name: byId.get(a.staff_id) ?? '', count: 0, amount: 0 };
-        r.count += 1;
-        r.amount += a.amount;
-        agg.set(a.staff_id, r);
+        const rows = (paid ?? []) as Array<{ amount: number; staff_id: string }>;
+        for (const a of rows) {
+          const r = agg.get(a.staff_id) ?? { name: byId.get(a.staff_id) ?? '', count: 0, amount: 0 };
+          r.count += 1;
+          r.amount += a.amount;
+          agg.set(a.staff_id, r);
+        }
+        if (rows.length < PAGE) break;
+        from += PAGE;
       }
     }
   }
