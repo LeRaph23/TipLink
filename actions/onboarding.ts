@@ -229,6 +229,18 @@ export async function completeExpressOnboarding(
   }
   if (!user) return actionError('forbidden');
 
+  // Bind the group_admin grant to the email the onboarding token was issued for
+  // (the address the paid order confirmation was sent to). The signed token only
+  // proves "someone holds a valid link"; without this check a leaked/forwarded
+  // link would let any authenticated account — or any client-supplied userId —
+  // claim the group. The express wizard pre-fills this email, so the legitimate
+  // flow always matches.
+  const tokenEmail = verified.email?.trim().toLowerCase() || null;
+  const userEmail = user.email?.trim().toLowerCase() || null;
+  if (tokenEmail && tokenEmail !== userEmail) {
+    return actionError('forbidden');
+  }
+
   // Verify the group exists and hasn't been onboarded yet
   const { data: group } = await service
     .from('groups')

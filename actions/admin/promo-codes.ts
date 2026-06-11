@@ -123,7 +123,8 @@ export async function togglePromoCode(
       // Legacy code — stripe_promo_code_id may not exist yet; DB flag is still enforced at checkout.
     }
 
-    await service.from('promo_codes').update({ is_active: isActive }).eq('id', id);
+    const { error: dbErr } = await service.from('promo_codes').update({ is_active: isActive }).eq('id', id);
+    if (dbErr) return { ok: false, error: `Erreur DB: ${dbErr.message}` };
 
     await logAdminAction(isActive ? 'promo_codes.activate' : 'promo_codes.deactivate', {
       id, code: promo.code,
@@ -153,7 +154,7 @@ export async function updatePromoCode(
 
     const { data: promo } = await service
       .from('promo_codes')
-      .select('*')
+      .select('code, percentage_off, is_active, stripe_coupon_id, stripe_promo_code_id')
       .eq('id', id)
       .is('deleted_at', null)
       .single();

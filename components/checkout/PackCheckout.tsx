@@ -483,10 +483,12 @@ function InnerCheckout({
         disabled={!stripe || !elements || isLoading || !canPay}
         style={{
           width: '100%', padding: '16px', borderRadius: 14, border: 'none',
-          background: isLoading || !canPay ? '#F2B3C4' : '#E57A97', color: '#fff',
+          background: !stripe || !elements || isLoading || !canPay ? '#E9C6D0' : '#E57A97',
+          color: '#fff',
           fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em',
-          cursor: isLoading || !canPay ? 'not-allowed' : 'pointer',
-          boxShadow: '0 6px 24px rgba(229,122,151,0.35)',
+          opacity: !stripe || !elements || isLoading || !canPay ? 0.7 : 1,
+          cursor: !stripe || !elements || isLoading || !canPay ? 'not-allowed' : 'pointer',
+          boxShadow: !stripe || !elements || isLoading || !canPay ? 'none' : '0 6px 24px rgba(229,122,151,0.35)',
           transition: 'all 130ms',
         }}
       >

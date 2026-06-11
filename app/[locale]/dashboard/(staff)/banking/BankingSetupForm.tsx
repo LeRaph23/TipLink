@@ -40,7 +40,12 @@ export function BankingSetupForm({ mode }: Props) {
             {error}
           </div>
         )}
-        <button type="button" style={primaryBtn} disabled={pending} onClick={handleStart}>
+        <button
+          type="button"
+          style={{ ...primaryBtn, opacity: pending ? 0.6 : 1, cursor: pending ? 'not-allowed' : 'pointer' }}
+          disabled={pending}
+          onClick={handleStart}
+        >
           {pending ? t('openingStripe') : t('updateCta')}
         </button>
       </div>

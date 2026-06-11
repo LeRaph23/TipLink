@@ -267,7 +267,9 @@ export default async function StaffTipPage({
         <div style={{ textAlign: 'center', marginTop: 14 }}>
           <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6, margin: '0 0 8px' }}>{t('secured')}</p>
           {staff.group_logo_url ? (
-            <img src={staff.group_logo_url} alt="" style={{ height: 24, maxWidth: 110, objectFit: 'contain', opacity: 0.75 }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 24 }}>
+              <img src={staff.group_logo_url} alt="" height={24} style={{ height: 24, maxWidth: 110, objectFit: 'contain', opacity: 0.75 }} />
+            </span>
           ) : (
             <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
           )}
