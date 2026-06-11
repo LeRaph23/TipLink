@@ -585,6 +585,7 @@
     "or": "or",
     "errors": {
       "initFailed": "Payment init failed",
+      "paymentUnavailable": "The payment service is temporarily unavailable. Please try again in a moment.",
       "validationFailed": "Validation failed",
       "genericFailed": "Payment failed"
     },

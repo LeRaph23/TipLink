@@ -4,6 +4,7 @@ import { type PackId } from '@/lib/env';
 import { getPackPricing } from '@/lib/stripe/pricing';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase/service';
+import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 
 export const runtime = 'nodejs';
 
@@ -113,6 +114,11 @@ export async function POST(request: NextRequest) {
     // here yields an empty 500 body and the client crashes on res.json().
     // Never echo the raw error to the client (it can carry keys / internals).
     console.error('[create-pack-intent]', err instanceof Error ? err.message : err);
+    // Distinguish "external service unreachable" (transient) from a real
+    // failure so the UI can tell the buyer to simply retry in a moment.
+    if (isUpstreamUnavailable(err)) {
+      return NextResponse.json({ error: 'payment_unavailable' }, { status: 503 });
+    }
     return NextResponse.json({ error: 'payment_failed' }, { status: 500 });
   }
 }

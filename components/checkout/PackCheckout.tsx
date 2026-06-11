@@ -73,7 +73,12 @@ export function PackCheckout({ pack, locale }: Props) {
             setPromoError('Code promo invalide ou expiré.');
             return;
           }
-          setCached({ key: requestKey, error: 'Impossible d’initialiser le paiement. Veuillez réessayer.' });
+          setCached({
+            key: requestKey,
+            error: data?.error === 'payment_unavailable'
+              ? 'Le service de paiement est momentanément indisponible. Réessayez dans quelques instants.'
+              : 'Impossible d’initialiser le paiement. Veuillez réessayer.',
+          });
           return;
         }
         setPromoError(null);
