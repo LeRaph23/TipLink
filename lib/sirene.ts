@@ -160,6 +160,9 @@ async function fetchOnePage(
       'Accept': 'application/json',
     },
     cache: 'no-store',
+    // Without a timeout a hung INSEE connection blocks the whole recruitment
+    // batch until the calling function's maxDuration fires.
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (res.status === 404) return { results: [], total: 0 };

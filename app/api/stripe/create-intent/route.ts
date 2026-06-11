@@ -89,13 +89,15 @@ export async function POST(request: NextRequest) {
       .from('establishments')
       .select('group_id')
       .eq('id', staff.establishment_id)
-      .single();
+      .is('deleted_at', null)
+      .maybeSingle();
     if (estab?.group_id) {
       const { data: group } = await supabase
         .from('groups')
         .select('platform_fee_bps')
         .eq('id', estab.group_id)
-        .single();
+        .is('deleted_at', null)
+        .maybeSingle();
       if (group && typeof group.platform_fee_bps === 'number') {
         platformFeeBps = group.platform_fee_bps;
       }

@@ -5,7 +5,21 @@ import { createServiceClient } from '@/lib/supabase/service';
 export const runtime = 'nodejs';
 
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 5; // per IP + code
+
+// Global backstop across ALL IPs for a single code. The per-IP limit above is
+// trivially bypassed by rotating IPs (cheap proxies), which against a 4-digit
+// PIN (10 000 combos) makes brute-force feasible. This caps total guesses per
+// code per hour regardless of source IP. Trade-off: an attacker burning the
+// quota can lock the legitimate ambassador out for up to CODE_WINDOW_MS — kept
+// short (1 h) so the DoS window stays small while still raising brute-force cost
+// from "unbounded" to ~30/h (≈ 2 weeks to exhaust the keyspace).
+const CODE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_CODE_ATTEMPTS = 30;
+
+// Server-enforced, tamper-proof session lifetime (issuedAt lives in the signed
+// cookie payload — see buildCookieValue/verifyCookieValue).
+const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getSessionSecret(): string {
   const s = process.env.AMBASSADOR_SESSION_SECRET;
@@ -22,7 +36,9 @@ function signCookie(payload: string, secret: string): string {
 }
 
 export function buildCookieValue(ambassadorId: string, code: string, secret: string): string {
-  const payload = `${ambassadorId}:${code.toLowerCase()}`;
+  // issuedAt is part of the signed payload, so it cannot be forged to extend a
+  // stolen cookie's lifetime — verifyCookieValue enforces MAX_SESSION_AGE_MS.
+  const payload = `${ambassadorId}:${code.toLowerCase()}:${Date.now()}`;
   const sig = signCookie(payload, secret);
   return `${payload}.${sig}`;
 }
@@ -44,9 +60,18 @@ export function verifyCookieValue(
     if (sigBuf.length !== expectedBuf.length) return { valid: false, ambassadorId: null };
     if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return { valid: false, ambassadorId: null };
 
-    const [ambassadorId, payloadCode] = payload.split(':');
+    const [ambassadorId, payloadCode, issuedAtRaw] = payload.split(':');
     if (payloadCode?.toLowerCase() !== expectedCode.toLowerCase()) {
       return { valid: false, ambassadorId: null };
+    }
+    // Tamper-proof expiry. Legacy 2-part cookies (no issuedAt) stay valid only
+    // until they naturally age out of the browser (cookie maxAge ≤ 7 d); every
+    // newly issued cookie carries a signed issuedAt and is hard-expired here.
+    if (issuedAtRaw !== undefined) {
+      const issuedAt = Number(issuedAtRaw);
+      if (!Number.isFinite(issuedAt) || Date.now() - issuedAt > MAX_SESSION_AGE_MS) {
+        return { valid: false, ambassadorId: null };
+      }
     }
     return { valid: true, ambassadorId: ambassadorId ?? null };
   } catch {
@@ -79,6 +104,22 @@ export async function POST(
   if ((count ?? 0) >= MAX_ATTEMPTS) {
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessaie dans 15 minutes.' },
+      { status: 429 }
+    );
+  }
+
+  // Global backstop: cap total guesses for this code across every IP, so the
+  // per-IP limit can't be bypassed by rotating IPs against the 4-digit PIN.
+  const codeWindowStart = new Date(Date.now() - CODE_WINDOW_MS).toISOString();
+  const { count: codeCount } = await supabase
+    .from('ambassador_pin_attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('code', code.toLowerCase())
+    .gte('attempted_at', codeWindowStart);
+
+  if ((codeCount ?? 0) >= MAX_CODE_ATTEMPTS) {
+    return NextResponse.json(
+      { error: 'Trop de tentatives sur ce code. Réessaie dans 1 heure.' },
       { status: 429 }
     );
   }

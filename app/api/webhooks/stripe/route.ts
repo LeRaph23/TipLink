@@ -203,21 +203,19 @@ async function handleEvent(
           recipients = [{ staff_id: curTxn.staff_id, amount: netForStaff }];
         }
 
-        // Idempotency: create the allocation rows only the first time.
-        const { data: existingRows } = await supabase
-          .from('group_tip_transfers')
-          .select('id')
-          .eq('transaction_id', transactionId)
-          .limit(1);
-
-        if ((existingRows?.length ?? 0) === 0 && recipients.length > 0) {
-          await supabase.from('group_tip_transfers').insert(
+        // Idempotency: a unique (transaction_id, staff_id) index makes a
+        // re-delivered OR concurrently-delivered webhook a no-op instead of
+        // creating duplicate allocation rows (the old check-then-insert had a
+        // race between two parallel deliveries). ON CONFLICT DO NOTHING.
+        if (recipients.length > 0) {
+          await supabase.from('group_tip_transfers').upsert(
             recipients.map((r) => ({
               transaction_id: transactionId,
               staff_id: r.staff_id,
               amount: r.amount,
               status: 'pending',
-            })) as never
+            })) as never,
+            { onConflict: 'transaction_id,staff_id', ignoreDuplicates: true }
           );
         }
 

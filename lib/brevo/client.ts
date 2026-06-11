@@ -48,6 +48,9 @@ export async function brevoSendTransactionalEmail(
         'content-type': 'application/json',
       },
       body: JSON.stringify(input),
+      // Bound the call so a hung Brevo connection can't stall a whole
+      // cold-email cron batch up to the function's maxDuration.
+      signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');

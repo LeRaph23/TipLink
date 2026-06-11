@@ -11,7 +11,12 @@ import {
 export const runtime = 'nodejs';
 
 const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 5; // per IP + code
+
+// Global backstop across all IPs for one code — see the ambassador auth route
+// for the rationale (defeats IP rotation against the 4-digit PIN).
+const CODE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_CODE_ATTEMPTS = 30;
 
 function hashIp(ip: string): string {
   return crypto.createHash('sha256').update(ip).digest('hex');
@@ -41,6 +46,21 @@ export async function POST(
   if ((count ?? 0) >= MAX_ATTEMPTS) {
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
+      { status: 429 },
+    );
+  }
+
+  // Global backstop: cap total guesses for this code across every IP.
+  const codeWindowStart = new Date(Date.now() - CODE_WINDOW_MS).toISOString();
+  const { count: codeCount } = await supabase
+    .from('commercial_pin_attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('code', code.toLowerCase())
+    .gte('attempted_at', codeWindowStart);
+
+  if ((codeCount ?? 0) >= MAX_CODE_ATTEMPTS) {
+    return NextResponse.json(
+      { error: 'Trop de tentatives sur ce code. Réessayez dans 1 heure.' },
       { status: 429 },
     );
   }

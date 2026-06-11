@@ -59,7 +59,8 @@ function supabaseMock(opts: {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
+          is: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
             data: opts.staff?.establishment_id ? { group_id: 'group-1' } : null,
             error: null,
           }),
@@ -69,7 +70,8 @@ function supabaseMock(opts: {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
+          is: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
             data: { platform_fee_bps: feeBps },
             error: null,
           }),
