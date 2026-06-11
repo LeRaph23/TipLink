@@ -29,6 +29,8 @@ AS $function$
 $function$;
 
 -- Only the service role (used by the proxy middleware) may call this. It is not
--- exposed to anon / authenticated clients.
-REVOKE ALL ON FUNCTION public.resolve_sticker_establishment(text) FROM PUBLIC;
+-- exposed to anon / authenticated clients. Note: Supabase default privileges
+-- auto-grant EXECUTE on new public functions to anon/authenticated, so they must
+-- be revoked explicitly (REVOKE FROM PUBLIC alone is not enough).
+REVOKE ALL ON FUNCTION public.resolve_sticker_establishment(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.resolve_sticker_establishment(text) TO service_role;
