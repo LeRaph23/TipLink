@@ -93,12 +93,18 @@ export async function refundTransactionFull(
   if (txn.status === 'refunded' || txn.status === 'reversed') return { ok: true };
 
   try {
-    await stripe.refunds.create({
-      payment_intent: txn.stripe_payment_intent_id,
-      refund_application_fee: true,
-      reverse_transfer: true,
-      metadata: reason ? { reason } : undefined,
-    } as Stripe.RefundCreateParams);
+    await stripe.refunds.create(
+      {
+        payment_intent: txn.stripe_payment_intent_id,
+        refund_application_fee: true,
+        reverse_transfer: true,
+        metadata: reason ? { reason } : undefined,
+      } as Stripe.RefundCreateParams,
+      // One full refund per transaction — guards against a concurrent EFW
+      // auto-refund and a manual admin refund both passing the status check
+      // above and issuing two refunds.
+      { idempotencyKey: `refund:${transactionId}` },
+    );
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Refund failed';
     return { ok: false, error: msg };

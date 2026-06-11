@@ -59,6 +59,12 @@ const serverSchema = z.object({
   // If ambassadors are active, set this to a >=32-char random hex string:
   // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
   AMBASSADOR_SESSION_SECRET: z.string().min(32).optional(),
+  // Commercial (Commerciaux Pros) portal session secret. Optional: when absent
+  // the commercial portal reuses AMBASSADOR_SESSION_SECRET (see
+  // lib/auth/commercial-session.ts). The two portals' cookies are
+  // domain-separated by an HMAC purpose tag, so sharing the secret is safe, but
+  // setting a distinct value here fully isolates them.
+  COMMERCIAL_SESSION_SECRET: z.string().min(32).optional(),
   // Brevo (ex-Sendinblue) API key — used exclusively for the commercial cold
   // email funnel (B2B partner recruitment) to isolate sender reputation from
   // digitip.app transactional traffic. Optional — when missing, the commercial
@@ -83,6 +89,7 @@ export function serverEnv() {
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
     TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
     AMBASSADOR_SESSION_SECRET: process.env.AMBASSADOR_SESSION_SECRET,
+    COMMERCIAL_SESSION_SECRET: process.env.COMMERCIAL_SESSION_SECRET,
     BREVO_API_KEY: process.env.BREVO_API_KEY,
   });
   if (!res.success) {

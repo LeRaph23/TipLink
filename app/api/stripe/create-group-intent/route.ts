@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
       .from('groups')
       .select('platform_fee_bps')
       .eq('id', estab.group_id)
-      .single();
+      .is('deleted_at', null)
+      .maybeSingle();
     if (group && typeof group.platform_fee_bps === 'number') {
       platformFeeBps = group.platform_fee_bps;
     }

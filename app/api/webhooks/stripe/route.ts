@@ -227,6 +227,19 @@ async function handleEvent(
         const pendingRows = ((rowsRaw ?? []) as Array<{ id: string; staff_id: string; amount: number; status?: string }>)
           .filter((r) => (r.status ?? 'pending') === 'pending');
 
+        // Safety net: a positive net owed but zero allocation rows means every
+        // active staff member was removed between intent creation and this
+        // webhook. The funds would otherwise sit on the platform with nothing
+        // for the reconcile cron to replay — surface it for admin review.
+        if (recipients.length === 0 && (rowsRaw ?? []).length === 0) {
+          console.error('[webhook] tip net owed but no recipients — funds stranded on platform', {
+            transactionId,
+            netForStaff,
+            isGroup,
+            establishmentId: curTxn?.establishment_id ?? null,
+          });
+        }
+
         if (pendingRows.length > 0) {
           const { data: staffAccts } = await supabase
             .from('staff_profiles')
@@ -857,7 +870,7 @@ async function handleEvent(
               'increment_promo_redeemed',
               { promo_id: promoCodeId }
             );
-          } catch { /* ignore */ }
+          } catch (err) { console.error('[webhook] increment_promo_redeemed failed', { promoCodeId, err }); }
         }
       }
 
@@ -1172,7 +1185,7 @@ async function handlePackExpressPaid(
           'increment_promo_redeemed',
           { promo_id: promoCodeId }
         );
-      } catch { /* ignore */ }
+      } catch (err) { console.error('[webhook] increment_promo_redeemed failed', { promoCodeId, err }); }
     }
 
     if (promoCodeStr) {
@@ -1292,7 +1305,7 @@ async function handlePackOrderPaid(
         'increment_promo_redeemed',
         { promo_id: promoCodeId }
       );
-    } catch { /* ignore */ }
+    } catch (err) { console.error('[webhook] increment_promo_redeemed failed', { promoCodeId, err }); }
   }
 
   const { data: order, error: orderErr } = await supabase
