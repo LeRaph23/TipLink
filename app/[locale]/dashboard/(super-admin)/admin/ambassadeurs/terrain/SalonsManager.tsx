@@ -8,12 +8,13 @@ import {
   toggleZoneActive,
   createSalon,
   toggleSalonActive,
+  fetchZoneBboxes,
 } from '@/actions/admin/salons';
 import { startImportJob } from '@/actions/admin/import-jobs';
 import type { ImportJobParams } from '@/lib/admin/import-jobs';
 import { ImportJobsPanel } from '@/components/dashboard/admin/ImportJobsPanel';
 import { FranceImportModal } from '@/components/dashboard/admin/FranceImportModal';
-import type { AdminSalon, AdminZoneOverlay } from '@/components/salons/SalonsMap';
+import type { AdminSalon } from '@/components/salons/SalonsMap';
 
 const SalonsMap = dynamic(
   () => import('@/components/salons/SalonsMap').then((m) => m.SalonsMap),
@@ -34,13 +35,8 @@ type CityStats = {
 };
 
 type Zone = { id: string; city: string; name: string; isActive: boolean };
-type Salon = {
-  id: string; zoneId: string | null; city: string; name: string;
-  address: string | null; postalCode: string | null; phone: string | null;
-  isActive: boolean; visitCount: number;
-  googleEnriched: boolean;
-  businessStatus: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
-};
+// One enriched salon shape feeds both the map and the tables (see page.tsx).
+type Salon = AdminSalon;
 type Visit = {
   id: string; salonId: string; salonName: string; salonCity: string;
   ambassadorId: string; ambassadorName: string;
@@ -63,14 +59,12 @@ function fmtDateShort(iso: string) {
 }
 
 export function SalonsManager({
-  cityStats, zones, salons, visits, mapSalons, mapZones,
+  cityStats, zones, salons, visits,
 }: {
   cityStats: CityStats[];
   zones: Zone[];
   salons: Salon[];
   visits: Visit[];
-  mapSalons: AdminSalon[];
-  mapZones: AdminZoneOverlay[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<'overview' | 'map' | 'zones' | 'salons' | 'visits'>('overview');
@@ -309,7 +303,7 @@ export function SalonsManager({
       <div className="dash-tabs" style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
         {([
           ['overview', `Vue par ville (${cityStats.length})`],
-          ['map', `🗺️ Carte (${mapSalons.length})`],
+          ['map', `🗺️ Carte (${salons.length})`],
           ['zones', `Zones (${zones.length})`],
           ['salons', `Établissements (${salons.length})`],
           ['visits', `Visites (${visits.length})`],
@@ -332,7 +326,7 @@ export function SalonsManager({
       )}
 
       {tab === 'map' && (
-        <SalonsMap variant="admin" salons={mapSalons} zones={mapZones} />
+        <SalonsMap variant="admin" salons={salons} fetchZoneBboxes={fetchZoneBboxes} />
       )}
 
       {tab === 'zones' && (
@@ -675,7 +669,7 @@ function SalonsTable({
       if (googleFilter === 'not_enriched' &&  s.googleEnriched) return false;
       if (statusFilter === 'active'   && !s.isActive) return false;
       if (statusFilter === 'inactive' &&  s.isActive) return false;
-      if (statusFilter === 'closed'   && s.businessStatus !== 'CLOSED_PERMANENTLY') return false;
+      if (statusFilter === 'closed'   && s.business_status !== 'CLOSED_PERMANENTLY') return false;
       if (q) {
         const hay = `${s.name} ${s.address ?? ''} ${s.city} ${s.phone ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -792,7 +786,7 @@ function SalonsTable({
                 <Td>{s.city}</Td>
                 <Td>{s.zoneId ? zoneById.get(s.zoneId)?.name ?? '—' : <span style={{ color: 'var(--text-3)' }}>—</span>}</Td>
                 <Td><strong>{s.name}</strong></Td>
-                <Td>{s.address ?? <span style={{ color: 'var(--warning)' }}>— manquante</span>}{s.postalCode ? ` · ${s.postalCode}` : ''}</Td>
+                <Td>{s.address ?? <span style={{ color: 'var(--warning)' }}>— manquante</span>}{s.postal_code ? ` · ${s.postal_code}` : ''}</Td>
                 <Td>{s.phone ?? '—'}</Td>
                 <Td>{s.visitCount}</Td>
                 <Td>

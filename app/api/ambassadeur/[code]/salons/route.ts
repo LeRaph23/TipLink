@@ -15,23 +15,25 @@ async function authenticate(req: NextRequest, code: string) {
 }
 
 /**
- * Fetch a table in 1000-row chunks to bypass PostgREST's server-side max-rows
- * cap (Supabase defaults to 1000). Re-runs the same builder until a short page
- * comes back.
+ * Fetch a table in a single large page. This project's PostgREST has no
+ * server-side max-rows cap (`db_max_rows` is unset), so one request returns the
+ * whole table — far cheaper than the old 1000-row chunked loop, which issued
+ * ~30 sequential round-trips for the salons table alone. The loop is kept only
+ * as a safety net for the (currently impossible) >100k-row case.
  */
 async function fetchAll<T>(
   build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>
 ): Promise<T[]> {
-  const chunkSize = 1000;
+  const chunkSize = 100000;
   const out: T[] = [];
   let from = 0;
   for (;;) {
     const { data } = await build(from, from + chunkSize - 1);
     const rows = data ?? [];
-    out.push(...rows);
+    for (const r of rows) out.push(r);
     if (rows.length < chunkSize) break;
     from += chunkSize;
-    if (from > 500000) break; // hard safety cap
+    if (from > 1000000) break; // hard safety cap
   }
   return out;
 }
@@ -89,31 +91,55 @@ export async function GET(
     return NextResponse.json({ error: 'Compte inactif' }, { status: 403 });
   }
 
-  // Salons: the ambassador's city if set, else every active salon. Fetched in
-  // chunks (ordered by id for a stable page boundary) so a city with more than
-  // 1000 salons is not silently truncated.
-  const cityFilter = amb.city?.trim() || null;
+  // Effective city: the ambassador's assigned city, else one passed by the
+  // client (?city=). Without either we don't load all of France — we return the
+  // list of available cities so the UI can show a picker.
+  const url = new URL(req.url);
+  const requestedCity = url.searchParams.get('city')?.trim() || null;
+  const effectiveCity = amb.city?.trim() || requestedCity;
 
-  const salons = await fetchAll<SalonRow>((from, to) => {
-    let q = supabase
+  if (!effectiveCity) {
+    // Distinct active-salon cities, deduped + counted server-side. A single
+    // light query (one column) — the result sent to the client is just ~758
+    // city rows, never the 30k salons.
+    const rows = await fetchAll<{ city: string | null }>((from, to) =>
+      supabase
+        .from('salons')
+        .select('city')
+        .eq('is_active', true)
+        .range(from, to)
+    );
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const c = r.city?.trim();
+      if (c) counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    const cities = Array.from(counts, ([city, count]) => ({ city, count }))
+      .sort((a, b) => a.city.localeCompare(b.city));
+    return NextResponse.json({ city: null, needsCitySelection: true, cities, salons: [] });
+  }
+
+  // Salons for the effective city (covered by idx_salons_city).
+  const salons = await fetchAll<SalonRow>((from, to) =>
+    supabase
       .from('salons')
       .select('id, name, category, converted_at, address, postal_code, phone, website, lat, lon, opening_hours, business_status, google_rating')
       .eq('is_active', true)
+      .eq('city', effectiveCity)
       .order('id')
-      .range(from, to);
-    if (cityFilter) q = q.eq('city', cityFilter);
-    return q;
-  });
+      .range(from, to)
+  );
 
   const salonIds = new Set(salons.map((s) => s.id));
 
-  // All visits, chunked the same way; filtered to this city's salons below.
+  // Visits restricted to this city's salons via an inner join, so we never scan
+  // the whole salon_visits table.
   const visits = await fetchAll<VisitRow>((from, to) =>
     supabase
       .from('salon_visits')
-      .select('salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes')
+      .select('salon_id, ambassador_id, visited_at, flyer_left, convinced, likelihood_rating, notes, salons!inner(city)')
+      .eq('salons.city', effectiveCity)
       .order('visited_at', { ascending: false })
-      .order('id')
       .range(from, to)
   );
 
@@ -187,5 +213,5 @@ export async function GET(
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  return NextResponse.json({ city: amb.city, salons: enriched });
+  return NextResponse.json({ city: effectiveCity, salons: enriched });
 }

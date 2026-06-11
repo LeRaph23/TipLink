@@ -65,31 +65,82 @@ function TrackerCard({ children }: { children: ReactNode }) {
   );
 }
 
+type CityOption = { city: string; count: number };
+
 export function AmbassadeurSalonsTracker({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [city, setCity] = useState<string | null>(null);
+  // Non-null only for ambassadors without an assigned city: the list of
+  // selectable cities (self-service sector picker).
+  const [cities, setCities] = useState<CityOption[] | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeVisitFor, setActiveVisitFor] = useState<Salon | null>(null);
   const [view, onChangeView] = usePersistedView('tiplink:salons-view');
 
-  const loadSalons = useCallback(async () => {
+  const cityKey = `tiplink:salons-city:${code}`;
+
+  // Load salons for a city. `cityParam` is ignored server-side when the
+  // ambassador already has an assigned city, so passing the picked city is
+  // always safe.
+  const loadSalons = useCallback(async (cityParam: string | null) => {
+    setLoading(true);
     try {
-      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons`);
+      const qs = cityParam ? `?city=${encodeURIComponent(cityParam)}` : '';
+      const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons${qs}`);
       const data = await res.json();
-      if (res.ok) {
-        setActionError(null);
+      if (!res.ok) { setActionError(data.error ?? 'Erreur'); return; }
+      setActionError(null);
+      if (data.needsCitySelection) {
+        setCities(data.cities ?? []);
+        setSalons([]);
+        setCity(null);
+      } else {
         setSalons(data.salons ?? []);
         setCity(data.city ?? null);
-      } else {
-        setActionError(data.error ?? 'Erreur');
       }
     } finally {
       setLoading(false);
     }
   }, [code]);
 
-  useEffect(() => { void loadSalons(); }, [loadSalons]);
+  // Bootstrap: probe once without a city. Ambassadors with an assigned city get
+  // their salons immediately; others receive the city list and we auto-restore
+  // their last pick from localStorage.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/ambassadeur/${encodeURIComponent(code)}/salons`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) { setActionError(data.error ?? 'Erreur'); return; }
+        if (data.needsCitySelection) {
+          const list: CityOption[] = data.cities ?? [];
+          setCities(list);
+          const saved = typeof window !== 'undefined' ? window.localStorage.getItem(cityKey) : null;
+          if (saved && list.some((c) => c.city === saved)) {
+            setSelectedCity(saved);
+            await loadSalons(saved);
+          }
+        } else {
+          setSalons(data.salons ?? []);
+          setCity(data.city ?? null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [code, cityKey, loadSalons]);
+
+  const chooseCity = useCallback((c: string) => {
+    setSelectedCity(c);
+    if (typeof window !== 'undefined') window.localStorage.setItem(cityKey, c);
+    void loadSalons(c);
+  }, [cityKey, loadSalons]);
 
   // Fit the map to the salons that actually have coordinates.
   const salonsBbox = useMemo<Bbox | null>(() => {
@@ -113,6 +164,23 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
     );
   }
 
+  // No assigned city and none picked yet → sector picker.
+  if (cities && !selectedCity) {
+    return (
+      <TrackerCard>
+        <div style={{ padding: '18px 16px 22px' }}>
+          <div style={{ fontSize: FONT.bodyLg, fontWeight: WEIGHT.bold, color: 'var(--text)', marginBottom: 4 }}>
+            Choisissez votre secteur
+          </div>
+          <div style={{ fontSize: FONT.body - 1, color: 'var(--text-3)', marginBottom: SPACE.md, lineHeight: 1.5 }}>
+            Aucune ville ne vous est encore attribuée. Sélectionnez une ville pour afficher les établissements à démarcher.
+          </div>
+          <CitySelect cities={cities} value="" onChange={chooseCity} placeholder="— Sélectionner une ville —" />
+        </div>
+      </TrackerCard>
+    );
+  }
+
   const notVisited = salons.filter((s) => !s.visit);
   const visitedByOthers = salons.filter((s) => s.visit && !s.visit.visitedByMe);
   const visitedByMe = salons.filter((s) => s.visit?.visitedByMe);
@@ -125,9 +193,15 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
             <div style={{ fontSize: FONT.label, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               Secteur
             </div>
-            <div style={{ fontSize: FONT.bodyLg, fontWeight: WEIGHT.bold, color: 'var(--accent)', marginTop: 2 }}>
-              {city}
-            </div>
+            {cities ? (
+              <div style={{ marginTop: 4, maxWidth: 280 }}>
+                <CitySelect cities={cities} value={selectedCity ?? ''} onChange={chooseCity} />
+              </div>
+            ) : (
+              <div style={{ fontSize: FONT.bodyLg, fontWeight: WEIGHT.bold, color: 'var(--accent)', marginTop: 2 }}>
+                {city}
+              </div>
+            )}
           </>
         )}
         <div style={{ display: 'flex', gap: SPACE.md, marginTop: city ? SPACE.sm : 0, fontSize: FONT.label, color: 'var(--text-3)', flexWrap: 'wrap' }}>
@@ -196,11 +270,38 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
           onClose={() => setActiveVisitFor(null)}
           onSaved={async () => {
             setActiveVisitFor(null);
-            await loadSalons();
+            await loadSalons(selectedCity);
           }}
         />
       )}
     </TrackerCard>
+  );
+}
+
+function CitySelect({
+  cities, value, onChange, placeholder,
+}: {
+  cities: CityOption[];
+  value: string;
+  onChange: (city: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => { if (e.target.value) onChange(e.target.value); }}
+      style={{
+        width: '100%', minHeight: 44, padding: '10px 12px',
+        borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+        background: 'var(--surface-2)', color: 'var(--text)',
+        fontSize: FONT.body, fontWeight: WEIGHT.semibold, fontFamily: 'inherit', cursor: 'pointer',
+      }}
+    >
+      <option value="" disabled>{placeholder ?? '— Changer de ville —'}</option>
+      {cities.map((c) => (
+        <option key={c.city} value={c.city}>{c.city} ({c.count})</option>
+      ))}
+    </select>
   );
 }
 
