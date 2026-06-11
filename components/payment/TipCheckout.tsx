@@ -93,9 +93,9 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
           ...(expectedEstablishmentId ? { expectedEstablishmentId } : {}),
         }),
       });
-      const data = await res.json().catch(() => ({} as { clientSecret?: string }));
+      const data = await res.json().catch(() => ({} as { clientSecret?: string; error?: string }));
       if (!res.ok || !data.clientSecret) {
-        setError(t('errors.initFailed'));
+        setError(t(data.error === 'payment_unavailable' ? 'errors.paymentUnavailable' : 'errors.initFailed'));
         return null;
       }
       return data.clientSecret as string;

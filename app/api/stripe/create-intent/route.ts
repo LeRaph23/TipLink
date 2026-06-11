@@ -4,6 +4,7 @@ import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 
 export const runtime = 'nodejs';
 
@@ -154,37 +155,48 @@ export async function POST(request: NextRequest) {
 
   const transferGroup = `tip_${transactionId}`;
 
-  const intent = await stripe.paymentIntents.create(
-    {
-      amount,
-      currency: currency.toLowerCase(),
-      automatic_payment_methods: { enabled: true },
-      // Separate charge: funds land on the platform and are held until the
-      // staff member finishes onboarding, then transferred (webhook /
-      // reconcile cron) via source_transaction. No transfer_data /
-      // application_fee here — the "fee" is simply what we don't transfer.
-      transfer_group: transferGroup,
-      ...(customerEmail ? { receipt_email: customerEmail } : {}),
-      payment_method_options: {
-        card: { request_three_d_secure: 'automatic' },
-      },
-      metadata: {
-        transaction_id: transactionId,
-        staff_id: staffId,
-        tip_amount: String(tipAmount),
-        service_fee: String(SERVICE_FEE),
-        platform_fee_bps: String(platformFeeBps),
-        platform_fee: String(platformFee),
-        net_for_staff: String(netForStaff),
+  try {
+    const intent = await stripe.paymentIntents.create(
+      {
+        amount,
+        currency: currency.toLowerCase(),
+        automatic_payment_methods: { enabled: true },
+        // Separate charge: funds land on the platform and are held until the
+        // staff member finishes onboarding, then transferred (webhook /
+        // reconcile cron) via source_transaction. No transfer_data /
+        // application_fee here — the "fee" is simply what we don't transfer.
         transfer_group: transferGroup,
+        ...(customerEmail ? { receipt_email: customerEmail } : {}),
+        payment_method_options: {
+          card: { request_three_d_secure: 'automatic' },
+        },
+        metadata: {
+          transaction_id: transactionId,
+          staff_id: staffId,
+          tip_amount: String(tipAmount),
+          service_fee: String(SERVICE_FEE),
+          platform_fee_bps: String(platformFeeBps),
+          platform_fee: String(platformFee),
+          net_for_staff: String(netForStaff),
+          transfer_group: transferGroup,
+        },
       },
-    },
-    { idempotencyKey }
-  );
+      { idempotencyKey }
+    );
 
-  return NextResponse.json({
-    clientSecret: intent.client_secret,
-    paymentIntentId: intent.id,
-    transactionId,
-  });
+    return NextResponse.json({
+      clientSecret: intent.client_secret,
+      paymentIntentId: intent.id,
+      transactionId,
+    });
+  } catch (err) {
+    // The pending transaction row stays as-is (no charge happened). Tell the
+    // tipper whether the payment service is simply unreachable (retry) vs a
+    // genuine failure — never leak the raw Stripe error to the client.
+    console.error('[create-intent]', err instanceof Error ? err.message : err);
+    if (isUpstreamUnavailable(err)) {
+      return NextResponse.json({ error: 'payment_unavailable' }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'payment_failed' }, { status: 500 });
+  }
 }

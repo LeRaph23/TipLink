@@ -585,6 +585,7 @@
     "or": "ou",
     "errors": {
       "initFailed": "Impossible d'initier le paiement",
+      "paymentUnavailable": "Le service de paiement est momentanément indisponible. Réessayez dans quelques instants.",
       "validationFailed": "Validation impossible",
       "genericFailed": "Paiement échoué"
     },
