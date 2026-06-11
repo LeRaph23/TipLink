@@ -334,6 +334,10 @@ async function runEnrichAddresses(
       // in this chunk; the cursor stays at the current offset and the next
       // chunk picks up from the same zone with whatever's still pending.
       let nominatimDone = 0;
+      // Collect resolved rows and flush them in one batched UPDATE per chunk
+      // (via applyAddressUpdates) instead of one round-trip per row interleaved
+      // with the rate-limit sleep. The geocoding stays serial (Nominatim QPS).
+      const nominatimUpdates: Array<{ id: string; address: string | null; postal_code: string | null }> = [];
       for (const c of slice) {
         if (Date.now() - start > CHUNK_BUDGET_MS) break;
         if (banResults.has(String(c.id))) continue;
@@ -344,16 +348,17 @@ async function runEnrichAddresses(
 
         const r = await reverseGeocode(Number(c.lat), Number(c.lon));
         if (r.address || r.postal_code) {
-          const update: { address?: string; postal_code?: string } = {};
-          if (r.address)     update.address     = r.address;
-          if (r.postal_code) update.postal_code = r.postal_code;
-          const { error } = await service.from('salons').update(update).eq('id', c.id);
-          if (error) missing += 1; else enriched += 1;
+          nominatimUpdates.push({ id: String(c.id), address: r.address, postal_code: r.postal_code });
         } else {
           missing += 1;
         }
         nominatimDone += 1;
         await sleep(NOMINATIM_DELAY_MS);
+      }
+      if (nominatimUpdates.length > 0) {
+        const applied = await applyAddressUpdates(service, nominatimUpdates);
+        enriched += applied;
+        missing += nominatimUpdates.length - applied; // rows whose UPDATE errored
       }
 
       // 4) Anything BAN didn't return *and* we didn't get to with Nominatim
@@ -651,6 +656,7 @@ async function runImportFrance(
     let deptIndex = cursor.deptIndex ?? 0;
     let inserted = (result.inserted as number) ?? 0;
     let skipped  = (result.skipped  as number) ?? 0;
+    let deptFailures = (result.deptFailures as number) ?? 0;
     const zoneIds: string[] = (cursor.zoneIds as string[]) ?? [];
 
     if (deptIndex === 0) {
@@ -674,19 +680,24 @@ async function runImportFrance(
           const ids = await loadZoneIdsForCity(service, dept, zones);
           for (const id of ids) zoneIds.push(id);
         }
-      } catch {
+      } catch (err) {
         // Continue with the next département — a flaky Overpass call shouldn't
-        // sink the whole France import.
+        // sink the whole France import — but count and log it so a systematic
+        // failure (Overpass down/rate-limited) doesn't pass unnoticed.
+        deptFailures += 1;
+        console.error('[import] département zone fetch failed', {
+          jobId, dept, err: err instanceof Error ? err.message : 'unknown',
+        });
       }
       deptIndex += 1;
 
       await service.from('import_jobs').update({
         done: deptIndex,
         succeeded: inserted,
-        failed_count: 0,
+        failed_count: deptFailures,
         current_step: `Étape 1/${phaseLabel} · ${deptIndex}/${depts.length} · ${dept}`,
         result: {
-          ...result, inserted, skipped,
+          ...result, inserted, skipped, deptFailures,
           cursor: { francePhase: 'zones', deptIndex, zoneIds },
         } as Json,
         last_heartbeat_at: new Date().toISOString(),
