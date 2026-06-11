@@ -8,23 +8,25 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
- * Fetch a Supabase table in chunks of 1000 to bypass any PostgREST
- * server-side max-rows limit (Supabase defaults to 1000 on some projects).
- * Re-runs the same builder until fewer rows than the chunk size come back.
+ * Fetch a Supabase table in a single large page. This project's PostgREST has
+ * no server-side max-rows cap (`db_max_rows` is unset), so one request returns
+ * the whole table. The old 1000-row chunking issued ~30 sequential round-trips
+ * for salons and ~28 for zones — pure latency. The loop survives only as a
+ * safety net for the (currently impossible) >100k-row case.
  */
 async function fetchAll<T>(
   build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>
 ): Promise<T[]> {
-  const chunkSize = 1000;
+  const chunkSize = 100000;
   const out: T[] = [];
   let from = 0;
   for (;;) {
     const { data } = await build(from, from + chunkSize - 1);
     const rows = data ?? [];
-    out.push(...rows);
+    for (const r of rows) out.push(r);
     if (rows.length < chunkSize) break;
     from += chunkSize;
-    if (from > 500000) break; // hard safety cap
+    if (from > 1000000) break; // hard safety cap
   }
   return out;
 }
@@ -41,9 +43,9 @@ export default async function AdminSalonsPage({
   const service = createServiceClient();
 
   const [zones, salons, visits, ambassadors] = await Promise.all([
-    fetchAll<{ id: string; city: string; name: string; is_active: boolean; created_at: string; bbox_min_lat: number | null; bbox_min_lon: number | null; bbox_max_lat: number | null; bbox_max_lon: number | null }>(
+    fetchAll<{ id: string; city: string; name: string; is_active: boolean }>(
       (a, b) => service.from('salon_zones')
-        .select('id, city, name, is_active, created_at, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
+        .select('id, city, name, is_active')
         .order('city').order('name')
         .range(a, b)
     ),
@@ -148,6 +150,9 @@ export default async function AdminSalonsPage({
     arr.sort((a, b) => +new Date(b.visitedAt) - +new Date(a.visitedAt));
   }
 
+  // One enriched salon array drives both the map and the management tables —
+  // shipping a single projection instead of two (map + light) roughly halves
+  // the RSC payload for ~30k salons.
   const mapSalons = (salons ?? []).map((s) => {
     const zone = s.zone_id ? zoneById.get(s.zone_id) : null;
     return {
@@ -165,23 +170,11 @@ export default async function AdminSalonsPage({
       business_status: (s.business_status as 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null) ?? null,
       google_rating: s.google_rating == null ? null : Number(s.google_rating),
       isActive: s.is_active,
+      visitCount: visitCountBySalon.get(s.id) ?? 0,
+      googleEnriched: !!s.google_enriched_at,
       visits: visitsBySalon.get(s.id) ?? [],
     };
   });
-
-  const mapZones = (zones ?? []).map((z) => ({
-    id: z.id,
-    city: z.city,
-    name: z.name,
-    bbox: z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
-      ? {
-          minLat: Number(z.bbox_min_lat),
-          minLon: Number(z.bbox_min_lon),
-          maxLat: Number(z.bbox_max_lat),
-          maxLon: Number(z.bbox_max_lon),
-        }
-      : null,
-  }));
 
   return (
     <div>
@@ -202,19 +195,7 @@ export default async function AdminSalonsPage({
           name: z.name,
           isActive: z.is_active,
         }))}
-        salons={(salons ?? []).map((s) => ({
-          id: s.id,
-          zoneId: s.zone_id,
-          city: s.city,
-          name: s.name,
-          address: s.address,
-          postalCode: s.postal_code,
-          phone: s.phone,
-          isActive: s.is_active,
-          visitCount: visitCountBySalon.get(s.id) ?? 0,
-          googleEnriched: !!s.google_enriched_at,
-          businessStatus: (s.business_status as 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null) ?? null,
-        }))}
+        salons={mapSalons}
         visits={(visits ?? []).map((v) => ({
           id: v.id,
           salonId: v.salon_id,
@@ -231,8 +212,6 @@ export default async function AdminSalonsPage({
           locationVerified: v.location_verified,
           distanceM: v.distance_m == null ? null : Number(v.distance_m),
         }))}
-        mapSalons={mapSalons}
-        mapZones={mapZones}
       />
     </div>
   );

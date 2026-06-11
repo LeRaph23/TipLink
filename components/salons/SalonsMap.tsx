@@ -49,6 +49,8 @@ export type AdminSalon = {
   business_status: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
   google_rating: number | null;
   isActive: boolean;
+  visitCount: number;
+  googleEnriched: boolean;
   visits: Array<{
     id: string;
     ambassadorId: string;
@@ -83,7 +85,12 @@ type AmbassadorProps = CommonProps & {
 type AdminProps = CommonProps & {
   variant: 'admin';
   salons: AdminSalon[];
-  zones?: AdminZoneOverlay[];
+  /**
+   * Lazily fetch zone bounding boxes for one city — used by the optional "Bbox
+   * zones" overlay. Kept out of the initial payload (28k zones × bbox) and only
+   * called for the selected city when the overlay is toggled on.
+   */
+  fetchZoneBboxes?: (city: string) => Promise<AdminZoneOverlay[]>;
 };
 
 export type SalonsMapProps = AmbassadorProps | AdminProps;
@@ -571,9 +578,23 @@ function AmbassadorMap({
 }
 
 function AdminMap({
-  salons, zones, initialBbox, theme,
+  salons, fetchZoneBboxes, initialBbox, theme,
 }: AdminProps & { theme: 'light' | 'dark' }) {
   const f = useAdminFilters(salons);
+  // Tagged with the city it belongs to, so stale boxes from a previous city
+  // never render while the new city's fetch is in flight.
+  const [bboxes, setBboxes] = useState<{ city: string; list: AdminZoneOverlay[] }>({ city: '', list: [] });
+
+  // Zone bboxes are loaded on demand for the selected city only — never shipped
+  // for all 28k zones up front.
+  useEffect(() => {
+    if (!f.state.showBboxes || f.state.city === 'all' || !fetchZoneBboxes) return;
+    let cancelled = false;
+    void fetchZoneBboxes(f.state.city).then((rows) => {
+      if (!cancelled) setBboxes({ city: f.state.city, list: rows });
+    });
+    return () => { cancelled = true; };
+  }, [f.state.showBboxes, f.state.city, fetchZoneBboxes]);
 
   return (
     <div>
@@ -630,7 +651,7 @@ function AdminMap({
           <FitToBbox bbox={initialBbox ?? null} />
           <UserLocation />
 
-          {f.state.showBboxes && (zones ?? []).map((z) => z.bbox && (
+          {f.state.showBboxes && f.state.city !== 'all' && bboxes.city === f.state.city && bboxes.list.map((z) => z.bbox && (
             <Rectangle
               key={z.id}
               bounds={[

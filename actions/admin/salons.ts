@@ -165,6 +165,44 @@ export async function importSalonsForZone(
   }
 }
 
+// ─── Zone bbox overlay (lazy, per-city) ──────────────────────────────────────
+// The terrain map no longer ships 28k zone bboxes up front. When the admin
+// toggles the "Bbox zones" overlay for a selected city, fetch just that city's
+// zone bounding boxes on demand.
+export type ZoneBbox = {
+  id: string;
+  city: string;
+  name: string;
+  bbox: { minLat: number; minLon: number; maxLat: number; maxLon: number } | null;
+};
+
+export async function fetchZoneBboxes(city: string): Promise<ZoneBbox[]> {
+  await requireSuperAdminUser();
+  const c = city.trim();
+  if (!c) return [];
+
+  const service = createServiceClient();
+  const { data } = await service
+    .from('salon_zones')
+    .select('id, city, name, bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon')
+    .eq('city', c)
+    .range(0, 99999);
+
+  return (data ?? []).map((z) => ({
+    id: z.id,
+    city: z.city,
+    name: z.name,
+    bbox: z.bbox_min_lat != null && z.bbox_min_lon != null && z.bbox_max_lat != null && z.bbox_max_lon != null
+      ? {
+          minLat: Number(z.bbox_min_lat),
+          minLon: Number(z.bbox_min_lon),
+          maxLat: Number(z.bbox_max_lat),
+          maxLon: Number(z.bbox_max_lon),
+        }
+      : null,
+  }));
+}
+
 // ─── Manual zone CRUD ────────────────────────────────────────────────────────
 export async function createZone(
   city: string,
