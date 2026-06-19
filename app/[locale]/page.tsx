@@ -457,32 +457,53 @@ function ClaimSection() {
 function KeyAdvantagesSection() {
   const t = useTranslations('landing');
   return (
-    <section style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <Reveal style={{ textAlign: 'center', marginBottom: 44 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{t('keyAdv.kicker')}</div>
-        </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+    <section style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,100px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 'clamp(36px,6vw,80px)', flexWrap: 'wrap' }}>
+
+        {/* Left: copy */}
+        <div style={{ flex: '1 1 320px', minWidth: 0 }}>
           <Reveal>
-            <div className="land-claim-card land-card-hover" style={{ background: '#16a34a', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #14532d', color: '#fff', height: '100%', boxSizing: 'border-box' }}>
-              <div style={{ marginBottom: 16 }}>
-                <UsersIcon size={48} color="#bbf7d0" />
-              </div>
-              <div className="land-claim-title" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, lineHeight: 1.25 }}>
-                {t('keyAdv.split.title')} <span style={{ color: '#bbf7d0' }}>{t('keyAdv.split.titleAccent')}</span>
-              </div>
-              <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.78)', lineHeight: 1.75 }}>{t('keyAdv.split.body')}</p>
-            </div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>{t('keyAdv.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(28px,3.8vw,46px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1.08, marginBottom: 18 }}>
+              {t('keyAdv.split.title')}<br />
+              <span style={{ color: '#E57A97' }}>{t('keyAdv.split.titleAccent')}</span>
+            </h2>
+            <p style={{ fontSize: 15.5, color: '#74748a', lineHeight: 1.8, maxWidth: 460, marginBottom: 32 }}>{t('keyAdv.split.body')}</p>
           </Reveal>
+
+          {/* No subscription highlight */}
           <Reveal delay={100}>
-            <div className="land-claim-card land-card-hover" style={{ background: '#0d0d1a', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #E57A97', color: '#fff', height: '100%', boxSizing: 'border-box' }}>
-              <div className="land-claim-title" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, lineHeight: 1.25 }}>
-                {t('keyAdv.nosub.title')}
+            <div style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 14, background: '#0d0d1a', borderRadius: 16, padding: '20px 24px', borderLeft: '4px solid #E57A97' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(229,122,151,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <ShieldIcon size={20} color="#E57A97" />
               </div>
-              <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.55)', lineHeight: 1.75 }}>{t('keyAdv.nosub.body')}</p>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4, letterSpacing: '-0.01em' }}>{t('keyAdv.nosub.title')}</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{t('keyAdv.nosub.body')}</div>
+              </div>
             </div>
           </Reveal>
         </div>
+
+        {/* Right: phone mockup */}
+        <Reveal delay={120} style={{ flex: '0 1 300px', display: 'flex', justifyContent: 'center', alignSelf: 'flex-end' }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{ borderRadius: 36, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.10)', width: 260, lineHeight: 0 }}>
+              <Image src="/mockup-app.jpg" alt="Digitip — choisir à qui va le pourboire" width={260} height={520} style={{ objectFit: 'cover', display: 'block', width: '100%', height: 'auto' }} />
+            </div>
+            {/* Floating badge */}
+            <div style={{ position: 'absolute', bottom: -14, left: -20, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 12, padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#FEF1F4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <UsersIcon size={15} color="#E57A97" />
+              </div>
+              <div>
+                <div style={{ fontSize: 11.5, fontWeight: 800, color: '#111118', lineHeight: 1 }}>Répartition libre</div>
+                <div style={{ fontSize: 10.5, color: '#74748a', marginTop: 2 }}>Chaque tip va à la bonne personne</div>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
       </div>
     </section>
   );
