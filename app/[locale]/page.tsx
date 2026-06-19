@@ -202,6 +202,17 @@ function MessageIcon({ size = 20, color = 'currentColor' }: { size?: number; col
   );
 }
 
+function UsersIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
 // ─── PromoBanner ──────────────────────────────────────────────────────────────
 function PromoBanner({ text }: { text: string }) {
   return (
@@ -437,6 +448,42 @@ function ClaimSection() {
             <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.7 }}>{t('claim.sub')}</p>
           </div>
         </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// ─── Key advantages (tip distribution + no subscription) ──────────────────────
+function KeyAdvantagesSection() {
+  const t = useTranslations('landing');
+  return (
+    <section style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <Reveal style={{ textAlign: 'center', marginBottom: 44 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{t('keyAdv.kicker')}</div>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+          <Reveal>
+            <div className="land-claim-card land-card-hover" style={{ background: '#16a34a', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #14532d', color: '#fff', height: '100%', boxSizing: 'border-box' }}>
+              <div style={{ marginBottom: 16 }}>
+                <UsersIcon size={48} color="#bbf7d0" />
+              </div>
+              <div className="land-claim-title" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, lineHeight: 1.25 }}>
+                {t('keyAdv.split.title')} <span style={{ color: '#bbf7d0' }}>{t('keyAdv.split.titleAccent')}</span>
+              </div>
+              <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.78)', lineHeight: 1.75 }}>{t('keyAdv.split.body')}</p>
+            </div>
+          </Reveal>
+          <Reveal delay={100}>
+            <div className="land-claim-card land-card-hover" style={{ background: '#0d0d1a', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #E57A97', color: '#fff', height: '100%', boxSizing: 'border-box' }}>
+              <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 14, color: '#E57A97' }}>{t('keyAdv.nosub.num')}</div>
+              <div className="land-claim-title" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, lineHeight: 1.25 }}>
+                {t('keyAdv.nosub.title')} <span style={{ color: '#E57A97' }}>— {t('keyAdv.nosub.titleAccent')}</span>
+              </div>
+              <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.55)', lineHeight: 1.75 }}>{t('keyAdv.nosub.body')}</p>
+            </div>
+          </Reveal>
+        </div>
       </div>
     </section>
   );
@@ -921,6 +968,7 @@ export default function LandingPage() {
       <StatsStrip />
       <Marquee />
       <ClaimSection />
+      <KeyAdvantagesSection />
       <ProductSection onOrderClick={openCart} pricing={pricing} />
       <HowItWorksSection />
       <ShippingSection />

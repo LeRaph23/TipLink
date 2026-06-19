@@ -342,6 +342,20 @@
       "legal": "Légal",
       "payment": "Paiements acceptés",
       "copyright": "© 2026 Digitip SAS · Tous droits réservés"
+    },
+    "keyAdv": {
+      "kicker": "Ce qui change tout",
+      "split": {
+        "title": "Vous choisissez",
+        "titleAccent": "à qui va le pourboire",
+        "body": "Chaque collaborateur a son propre profil. Le client décide directement qui reçoit le pourboire — équitable, transparent, et facteur de motivation pour toute l'équipe."
+      },
+      "nosub": {
+        "num": "0 €",
+        "title": "Zéro abonnement",
+        "titleAccent": "payez une fois, encaissez à vie",
+        "body": "Aucun frais mensuel, aucune surprise. Achetez votre pack une fois et vos SmartTags fonctionnent pour toujours. Pas de renouvellement, pas de piège."
+      }
     }
   },
   "pricing": {
