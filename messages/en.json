@@ -342,6 +342,18 @@
       "legal": "Legal",
       "payment": "Accepted payments",
       "copyright": "© 2026 Digitip SAS · All rights reserved"
+    },
+    "keyAdv": {
+      "kicker": "What makes us different",
+      "split": {
+        "title": "You choose",
+        "titleAccent": "who gets the tip",
+        "body": "Every team member has their own profile. The client directly decides who receives the tip — fair, transparent, and a real motivation driver for the whole team."
+      },
+      "nosub": {
+        "title": "No subscription whatsoever",
+        "body": "No monthly fees, no hidden costs. Buy your pack once and your SmartTags work forever. No renewal, no catch."
+      }
     }
   },
   "pricing": {
