@@ -212,6 +212,13 @@ function UsersIcon({ size = 20, color = 'currentColor' }: { size?: number; color
     </svg>
   );
 }
+function CheckIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
 
 // ─── PromoBanner ──────────────────────────────────────────────────────────────
 function PromoBanner({ text }: { text: string }) {
@@ -336,9 +343,16 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
             {t('hero.h1a')}<br />{t('hero.h1b')}<br />
             <span style={{ color: '#E57A97' }}>{t('hero.h1c')}</span>
           </h1>
-          <p className="fade-up" style={{ fontSize: 16, color: '#74748a', lineHeight: 1.8, maxWidth: 480, marginBottom: 28, animationDelay: '130ms' }}>
-            {t('hero.sub')}
-          </p>
+          <ul className="fade-up" style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 480, animationDelay: '130ms' }}>
+            {[t('hero.b1'), t('hero.b2'), t('hero.b3'), t('hero.b4')].map((b, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
+                <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <CheckIcon size={13} color="#E57A97" />
+                </span>
+                <span style={{ fontSize: 15.5, color: '#3a3b4f', lineHeight: 1.5, fontWeight: 500 }}>{b}</span>
+              </li>
+            ))}
+          </ul>
           <div className="fade-up land-hero-btns" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 28, animationDelay: '200ms' }}>
             <button onClick={onOrderClick} className="land-hero-btn btn-accent" style={{ padding: '15px 32px', borderRadius: 11, cursor: 'pointer', background: '#E57A97', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', boxShadow: '0 4px 24px rgba(229,122,151,0.42)', transition: 'all 140ms', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               {t('hero.cta')} →

@@ -191,7 +191,11 @@
       "h1c": "pourboires",
       "sub": "La plaque se pose en 5 secondes, n'importe où. Votre client approche son téléphone ou scanne le QR code, choisit un montant — et le pourboire vous revient sur votre compte bancaire, via Stripe. Zéro app, zéro cash, zéro friction.",
       "social": "Adopté par 400+ équipes",
-      "cta": "Commander maintenant"
+      "cta": "Commander maintenant",
+      "b1": "Pourboire nominatif : le client choisit qui récompenser",
+      "b2": "Sans aucun abonnement — payez une fois, à vie",
+      "b3": "Versé directement sur votre compte bancaire via Stripe",
+      "b4": "Zéro app, zéro cash : un simple tap ou QR code"
     },
     "claim": {
       "kicker": "Pourquoi Digitip ?",

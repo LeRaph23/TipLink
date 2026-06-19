@@ -191,7 +191,11 @@
       "h1c": "tips",
       "sub": "Place the plaque anywhere in 5 seconds. Your client taps their phone or scans the QR code, picks an amount — and the tip makes its way to your bank account, via Stripe. No app, no cash, no friction.",
       "social": "Trusted by 400+ teams",
-      "cta": "Order now"
+      "cta": "Order now",
+      "b1": "Named tipping: the client chooses who to reward",
+      "b2": "No subscription whatsoever — pay once, for life",
+      "b3": "Paid straight to your bank account via Stripe",
+      "b4": "No app, no cash: just a tap or QR code"
     },
     "claim": {
       "kicker": "Why Digitip?",
