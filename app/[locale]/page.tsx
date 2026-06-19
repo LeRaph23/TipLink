@@ -476,9 +476,8 @@ function KeyAdvantagesSection() {
           </Reveal>
           <Reveal delay={100}>
             <div className="land-claim-card land-card-hover" style={{ background: '#0d0d1a', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #E57A97', color: '#fff', height: '100%', boxSizing: 'border-box' }}>
-              <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 14, color: '#E57A97' }}>{t('keyAdv.nosub.num')}</div>
               <div className="land-claim-title" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, lineHeight: 1.25 }}>
-                {t('keyAdv.nosub.title')} <span style={{ color: '#E57A97' }}>— {t('keyAdv.nosub.titleAccent')}</span>
+                {t('keyAdv.nosub.title')}
               </div>
               <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.55)', lineHeight: 1.75 }}>{t('keyAdv.nosub.body')}</p>
             </div>
