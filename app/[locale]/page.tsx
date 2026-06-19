@@ -438,35 +438,6 @@ function Marquee() {
   );
 }
 
-// ─── Claim section (doublez + 3 secondes) ─────────────────────────────────────
-function ClaimSection() {
-  const t = useTranslations('landing');
-  return (
-    <section style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-        <Reveal>
-          <div className="land-claim-card land-card-hover" style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #E57A97' }}>
-            <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, color: '#E57A97', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>3s</div>
-            <div className="land-claim-title" style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 10 }}>
-              {t('claim.title')} <span style={{ color: '#E57A97' }}>{t('claim.titleAccent')}</span>
-            </div>
-            <p style={{ fontSize: 14.5, color: '#74748a', lineHeight: 1.7 }}>{t('claim.sub')}</p>
-          </div>
-        </Reveal>
-        <Reveal delay={100}>
-          <div className="land-claim-card land-card-hover" style={{ background: '#E57A97', borderRadius: 20, padding: '40px 36px', borderTop: '4px solid #B03860', color: '#fff' }}>
-            <div className="land-claim-num" style={{ fontSize: 52, fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12, color: '#FBDAE3' }}>×2</div>
-            <div className="land-claim-title" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10 }}>
-              {t('claim.claim2title')} <span style={{ color: '#FBDAE3' }}>{t('claim.claim2sub')}</span>
-            </div>
-            <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.7 }}>{t('claim.sub')}</p>
-          </div>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
 // ─── Key advantages (tip distribution + no subscription) ──────────────────────
 function KeyAdvantagesSection() {
   const t = useTranslations('landing');
@@ -1001,7 +972,6 @@ export default function LandingPage() {
       <HeroSection onOrderClick={() => openCart()} />
       <StatsStrip />
       <Marquee />
-      <ClaimSection />
       <KeyAdvantagesSection />
       <ProductSection onOrderClick={openCart} pricing={pricing} />
       <HowItWorksSection />
