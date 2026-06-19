@@ -453,20 +453,7 @@ function KeyAdvantagesSection() {
               {t('keyAdv.split.title')}<br />
               <span style={{ color: '#E57A97' }}>{t('keyAdv.split.titleAccent')}</span>
             </h2>
-            <p style={{ fontSize: 15.5, color: '#74748a', lineHeight: 1.8, maxWidth: 460, marginBottom: 32 }}>{t('keyAdv.split.body')}</p>
-          </Reveal>
-
-          {/* No subscription highlight */}
-          <Reveal delay={100}>
-            <div style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 14, background: '#0d0d1a', borderRadius: 16, padding: '20px 24px', borderLeft: '4px solid #E57A97' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(229,122,151,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <ShieldIcon size={20} color="#E57A97" />
-              </div>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4, letterSpacing: '-0.01em' }}>{t('keyAdv.nosub.title')}</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{t('keyAdv.nosub.body')}</div>
-              </div>
-            </div>
+            <p style={{ fontSize: 15.5, color: '#74748a', lineHeight: 1.8, maxWidth: 460, marginBottom: 0 }}>{t('keyAdv.split.body')}</p>
           </Reveal>
         </div>
 
