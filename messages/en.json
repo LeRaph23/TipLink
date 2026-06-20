@@ -328,7 +328,7 @@
       "q6": "Do I need a business registration?",
       "a6": "Not to order SmartTags. However, to receive tips via Stripe Connect, your staff will need to create a Stripe account (standard identity verification).",
       "q7": "How does Digitip make money?",
-      "a7": "Digitip takes a 5% fee on each tip collected. This covers the processing fees charged by Stripe (between 1.5% and 2.5% depending on the country, plus a fixed €0.25 per transaction), payment server hosting, technical infrastructure maintenance, fraud prevention, and support. We've compressed our margin as much as we possibly can — below 5%, we can't sustain the quality and reliability of the service. What matters most to us: you owe us nothing until you've actually collected a tip."
+      "a7": "For a €10 tip, the client pays €10.25 in total. The breakdown is as follows: €9.50 goes directly to you; €0.45 goes to Stripe (€0.25 fixed fee per transaction + 2% of the amount — standard banking fees, the same for everyone); €0.30 goes to Digitip to cover infrastructure, hosting, support and service development. No subscription, no fixed monthly fees — you only pay when you earn."
     },
     "doubleGuarantee": {
       "g1title": "Premium quality guaranteed",
@@ -354,6 +354,21 @@
         "titleAccent": "who gets the tip",
         "body": "Every team member has their own profile. The client directly decides who receives the tip — fair, transparent, and a real motivation driver for the whole team."
       }
+    },
+    "pricing": {
+      "kicker": "Full transparency",
+      "title": "Where does each euro go?",
+      "sub": "For a €10 tip, your client pays €10.25. Here is the exact breakdown.",
+      "row1label": "You",
+      "row1amount": "€9.50",
+      "row1detail": "Paid directly to your bank account, with nothing to advance.",
+      "row2label": "Stripe (secure payment)",
+      "row2amount": "€0.45",
+      "row2detail": "€0.25 fixed fee per transaction + 2% of the amount — unavoidable banking fees.",
+      "row3label": "Digitip",
+      "row3amount": "€0.30",
+      "row3detail": "Infrastructure, hosting, support and ongoing service improvements.",
+      "footer": "No subscription, no fixed monthly fees."
     }
   },
   "pricing": {

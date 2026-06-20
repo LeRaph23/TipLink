@@ -804,6 +804,50 @@ function FinalCTASection({ onOrderClick }: { onOrderClick: () => void }) {
   );
 }
 
+// ─── Pricing transparency ─────────────────────────────────────────────────────
+function PricingTransparencySection() {
+  const t = useTranslations('landing');
+  const rows: { label: string; amount: string; detail: string; color: string }[] = [
+    { label: t('pricing.row1label'), amount: t('pricing.row1amount'), detail: t('pricing.row1detail'), color: '#16a34a' },
+    { label: t('pricing.row2label'), amount: t('pricing.row2amount'), detail: t('pricing.row2detail'), color: '#74748a' },
+    { label: t('pricing.row3label'), amount: t('pricing.row3amount'), detail: t('pricing.row3detail'), color: '#E57A97' },
+  ];
+  return (
+    <section style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 44 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('pricing.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,36px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 10 }}>{t('pricing.title')}</h2>
+            <p style={{ fontSize: 15, color: '#74748a', lineHeight: 1.7 }}>{t('pricing.sub')}</p>
+          </div>
+        </Reveal>
+        <Reveal delay={60}>
+          <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, overflow: 'hidden' }}>
+            {rows.map((row, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', gap: 16, borderBottom: i < rows.length - 1 ? '1px solid #f0f0f5' : 'none', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: row.color, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111118' }}>{row.label}</div>
+                    <div style={{ fontSize: 13, color: '#74748a', marginTop: 2 }}>{row.detail}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: row.color, letterSpacing: '-0.03em', flexShrink: 0 }}>{row.amount}</div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+        <Reveal delay={100}>
+          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13.5, color: '#74748a' }}>
+            {t('pricing.footer')} <span style={{ color: '#E57A97' }}>♥</span>
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 function FAQSection() {
   const t = useTranslations('landing');
@@ -967,6 +1011,7 @@ export default function LandingPage() {
       <ProductGridSection onOrderClick={openCart} pricing={pricing} />
       <ReviewsSection />
       <FinalCTASection onOrderClick={() => openCart()} />
+      <PricingTransparencySection />
       <FAQSection />
       <DoubleGuaranteeSection />
       <FooterSection />

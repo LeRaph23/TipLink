@@ -328,7 +328,7 @@
       "q6": "Ai-je besoin d'un SIRET ou d'un statut particulier ?",
       "a6": "Non pour commander les SmartTags. En revanche, pour recevoir les pourboires via Stripe Connect, votre personnel devra créer un compte Stripe (vérification d'identité standard).",
       "q7": "Comment Digitip se rémunère-t-il ?",
-      "a7": "Digitip prélève 5 % sur chaque pourboire encaissé. Cette commission couvre les frais de traitement imposés par Stripe (entre 1,5 % et 2,5 % selon le pays, auxquels s'ajoutent 0,25 € fixes par transaction), l'hébergement des serveurs de paiement, la maintenance de l'infrastructure technique, la lutte contre la fraude, et le support. Nous avons compressé notre marge autant que possible — en dessous de 5 %, nous ne pouvons pas maintenir la qualité et la fiabilité du service. Ce qui compte pour nous avant tout : vous ne nous devez rien tant que vous n'avez pas encaissé."
+      "a7": "Pour un pourboire de 10 €, le client règle 10,25 € au total. La répartition est la suivante : 9,50 € vous reviennent directement ; 0,45 € vont à Stripe (0,25 € de frais fixes par transaction + 2 % du montant — des frais bancaires standards, identiques pour tous) ; 0,30 € reviennent à Digitip pour couvrir l'infrastructure, l'hébergement, le support et le développement du service. Aucun abonnement, aucun frais fixe mensuel — vous ne payez que lorsque vous encaissez."
     },
     "doubleGuarantee": {
       "g1title": "Qualité premium garantie",
@@ -354,6 +354,21 @@
         "titleAccent": "à qui va le pourboire",
         "body": "Chaque collaborateur a son propre profil. Le client décide directement qui reçoit le pourboire — équitable, transparent, et facteur de motivation pour toute l'équipe."
       }
+    },
+    "pricing": {
+      "kicker": "Transparence totale",
+      "title": "Où va chaque euro ?",
+      "sub": "Pour un pourboire de 10 €, votre client règle 10,25 €. Voici la répartition exacte.",
+      "row1label": "Vous",
+      "row1amount": "9,50 €",
+      "row1detail": "Versés directement sur votre compte bancaire, sans rien avancer.",
+      "row2label": "Stripe (paiement sécurisé)",
+      "row2amount": "0,45 €",
+      "row2detail": "0,25 € de frais fixes par transaction + 2 % du montant — frais bancaires incompressibles.",
+      "row3label": "Digitip",
+      "row3amount": "0,30 €",
+      "row3detail": "Infrastructure, hébergement, support et amélioration continue du service.",
+      "footer": "Aucun abonnement, aucun frais fixe mensuel."
     }
   },
   "pricing": {
