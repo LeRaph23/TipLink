@@ -16,7 +16,11 @@ ALTER TABLE establishments
 -- ── Expose the review URL to the single-staff tip success page ────────────────
 -- Extends get_public_staff (last redefined in 00023) with one extra column.
 -- SECURITY DEFINER + a fixed column whitelist keep it safe for anon callers.
-CREATE OR REPLACE FUNCTION public.get_public_staff(p_staff_id uuid)
+-- Adding a column changes the function's return type, which CREATE OR REPLACE
+-- cannot do — drop the previous definition first.
+DROP FUNCTION IF EXISTS public.get_public_staff(uuid);
+
+CREATE FUNCTION public.get_public_staff(p_staff_id uuid)
 RETURNS TABLE (
   id uuid,
   full_name text,
@@ -57,7 +61,9 @@ GRANT EXECUTE ON FUNCTION public.get_public_staff(uuid) TO anon, authenticated;
 -- ── Expose the review URL for the group tip flow ─────────────────────────────
 -- The group tip PI carries establishment_id (not a single staff_id), so the
 -- success page needs a way to fetch the review link from the establishment.
-CREATE OR REPLACE FUNCTION public.get_public_establishment_review(p_establishment_id uuid)
+DROP FUNCTION IF EXISTS public.get_public_establishment_review(uuid);
+
+CREATE FUNCTION public.get_public_establishment_review(p_establishment_id uuid)
 RETURNS TABLE (
   establishment_name text,
   establishment_review_url text
