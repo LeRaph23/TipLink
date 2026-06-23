@@ -1,9 +1,11 @@
 'use server';
 
+import { updateTag } from 'next/cache';
 import { getLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
+import { staffTipTag, establishmentTipTag } from '@/lib/cache/pay-tags';
 import { stripe } from '@/lib/stripe/client';
 import { releaseStaffPendingTransfers } from '@/lib/stripe/tip-transfers';
 import {
@@ -30,7 +32,7 @@ export async function getBankingState(): Promise<{ state: BankingState; pendingB
     const service = createServiceClient();
     const { data: profile } = await service
       .from('staff_profiles')
-      .select('id, stripe_account_id, onboarding_status')
+      .select('id, establishment_id, stripe_account_id, onboarding_status')
       .eq('user_id', user.id)
       .is('deleted_at', null)
       .maybeSingle();
@@ -45,6 +47,10 @@ export async function getBankingState(): Promise<{ state: BankingState; pendingB
         if (ready) {
           await service.from('staff_profiles').update({ onboarding_status: 'complete' }).eq('id', profile.id);
           await releaseStaffPendingTransfers(service, profile.id).catch(() => {});
+          // Staff just became payable — refresh the public tip pages so a scan
+          // immediately shows the amount selector instead of "not ready".
+          updateTag(staffTipTag(profile.id));
+          if (profile.establishment_id) updateTag(establishmentTipTag(profile.establishment_id));
           state = 'complete';
         } else if (acct.details_submitted) {
           state = 'verifying';

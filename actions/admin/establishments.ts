@@ -1,9 +1,10 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
+import { establishmentTipTag } from '@/lib/cache/pay-tags';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -57,6 +58,8 @@ export async function updateEstablishment(
   await logAdminAction('establishment.update', { id, ...patch });
   revalidatePath('/dashboard/admin/establishments');
   revalidatePath(`/dashboard/admin/establishments/${id}`);
+  // Name/currency are shown on the public tip pages.
+  updateTag(establishmentTipTag(id));
   return { ok: true, data: null };
 }
 
@@ -75,6 +78,8 @@ export async function setDemoMode(id: string, enabled: boolean): Promise<Result<
   await logAdminAction('establishment.set_demo', { id, enabled });
   revalidatePath('/dashboard/admin/establishments');
   revalidatePath(`/dashboard/admin/establishments/${id}`);
+  // Demo mode flips is_payable for every colleague in the establishment.
+  updateTag(establishmentTipTag(id));
   return { ok: true, data: null };
 }
 
