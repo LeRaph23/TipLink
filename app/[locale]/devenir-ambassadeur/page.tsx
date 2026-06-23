@@ -52,7 +52,7 @@ const STEPS: Step[] = [
   {
     n: '03',
     title: 'Démarchage encadré',
-    body: "Vous présentez le SmartTag à des commerces de proximité (coiffeurs, instituts, restauration) à votre rythme.",
+    body: "Vous présentez le SmartTag à des établissements de proximité (restaurants, bars, cafés, salons, hôtels…) à votre rythme.",
   },
   {
     n: '04',
@@ -189,7 +189,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
   {
     q: "Quel produit présente-t-on aux commerces ?",
-    a: "Le SmartTag Digitip : un sticker NFC qui permet aux clients d'un commerce de laisser un pourboire sans contact directement à l'employé qui les a servis. Cible prioritaire : salons de coiffure, instituts d'esthétique, barbiers, spas, restauration et bars.",
+    a: "Le SmartTag Digitip : un sticker NFC qui permet aux clients d'un établissement de laisser un pourboire sans contact directement à l'employé qui les a servis. Cible prioritaire : restaurants, bars, cafés, hôtels, salons de coiffure, instituts d'esthétique, barbiers et spas.",
   },
   {
     q: "Et si je ne réalise aucune vente ?",
@@ -280,7 +280,7 @@ export default async function DevenirAmbassadeurPage({
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 18px' }}>
             Vous présentez nos SmartTags NFC — un dispositif de pourboire sans contact — à des
-            commerces de proximité (coiffeurs, instituts d&apos;esthétique, restauration), et touchez
+            établissements de proximité (restaurants, bars, cafés, salons, hôtels…), et touchez
             35 à 45 € par vente.
           </p>
           <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexWrap: 'wrap', gap: '8px 18px' }}>

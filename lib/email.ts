@@ -198,12 +198,12 @@ export async function sendOrderConfirmation(opts: {
     ? `<tr><td style="padding:0 32px 28px">
         <div class="highlight" style="background:#fde7ee;border:1px solid #f4c2d2;border-radius:12px;padding:20px 24px">
           <div class="text-strong" style="font-size:14px;font-weight:700;color:#0f0f12;margin-bottom:6px">
-            ${isFr ? 'Configurez votre salon maintenant' : 'Set up your salon now'}
+            ${isFr ? 'Configurez votre établissement maintenant' : 'Set up your establishment now'}
           </div>
           <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-bottom:16px;line-height:1.5">
             ${isFr
-              ? 'Créez votre espace Digitip en 2 minutes : nom du salon, votre équipe, et vous êtes prêts à encaisser des pourboires.'
-              : 'Set up your Digitip space in 2 minutes: salon name, your team, and you\'re ready to collect tips.'}
+              ? 'Créez votre espace Digitip en 2 minutes : nom de l\'établissement, votre équipe, et vous êtes prêts à encaisser des pourboires.'
+              : 'Set up your Digitip space in 2 minutes: establishment name, your team, and you\'re ready to collect tips.'}
           </div>
           <a href="${setupUrl}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#E57A97,#EC97B0);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;letter-spacing:-0.01em">
             ${isFr ? 'Configurer mon espace →' : 'Set up my space →'}
@@ -1312,7 +1312,7 @@ export async function sendCommercialColdEmailStep(opts: {
         ? `${firstName}, un partenariat à étudier — apport d'affaires B2B`
         : `Un partenariat à étudier — apport d'affaires B2B`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je suis Raphaël Meyer, fondateur de Digitip. On édite un dispositif de pourboire sans contact (SmartTag NFC) pour les commerces de proximité — coiffeurs, instituts, restauration, bars. Je vois que votre activité${companyMention}${cityFragment} pourrait correspondre à un canal d'apport d'affaires que nous structurons.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je suis Raphaël Meyer, fondateur de Digitip. On édite un dispositif de pourboire sans contact (SmartTag NFC) pour les établissements de proximité — restaurants, bars, cafés, hôtels, salons, instituts. Je vois que votre activité${companyMention}${cityFragment} pourrait correspondre à un canal d'apport d'affaires que nous structurons.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Le cadre est <strong class="text-strong" style="color:#0f0f12">strictement professionnel</strong> : contrat d'apporteur d'affaires en bonne et due forme, facturation B2B, paiement Stripe Connect, sans exclusivité ni quota. Le ticket moyen côté commerçant est court (1-2 RDV) et le produit répond à un vrai manque.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si le sujet vous intéresse, voici la fiche de candidature (~2 min) :</p>
         <p><a href="${landingUrl}" style="display:inline-block;padding:11px 20px;background:#0f0f12;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Découvrir le programme partenaire →</a></p>
@@ -1512,12 +1512,12 @@ export async function sendGroupOnboardingNudge(opts: {
 }): Promise<{ id: string | null }> {
   const { to, firstName, setupUrl, step, unsubscribeUrl } = opts;
   if (step === 1) {
-    return lifecycleSend(to, `${firstName}, votre salon est à 2 minutes d'encaisser des pourboires`,
+    return lifecycleSend(to, `${firstName}, votre établissement est à 2 minutes d'encaisser des pourboires`,
       lifecycleBody({
         badge: 'Configuration', tone: 'pink',
         title: `${firstName}, finalisez votre espace Digitip`,
         intro: `Votre commande est validée. Dernière étape : créer votre espace Digitip — <strong class="text-strong" style="color:#0f0f12">moins de 2 minutes</strong>.`,
-        bullets: ['① Nommez votre salon', '② Ajoutez vos employés', '③ Posez le SmartTag et encaissez'],
+        bullets: ['① Nommez votre établissement', '② Ajoutez vos employés', '③ Posez le SmartTag et encaissez'],
         ctaLabel: 'Configurer mon espace →', ctaUrl: setupUrl,
         note: 'Une question ? Répondez à cet email.',
         unsubscribeUrl,
@@ -1550,7 +1550,7 @@ export async function sendTagDeliveredPlaceNudge(opts: {
         '③ Dites à votre équipe d\'en parler à chaque client',
       ],
       ctaLabel: 'Voir mon tableau de bord →', ctaUrl: dashboardUrl,
-      note: 'Les salons qui posent leur tag le jour de la livraison encaissent beaucoup plus dès la première semaine.',
+      note: 'Les établissements qui posent leur tag le jour de la livraison encaissent beaucoup plus dès la première semaine.',
       unsubscribeUrl,
     }));
 }

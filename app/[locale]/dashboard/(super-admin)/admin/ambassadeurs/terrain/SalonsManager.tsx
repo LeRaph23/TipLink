@@ -566,7 +566,7 @@ function ZonesTable({
 
               <div style={{ display: 'flex', gap: 12, marginBottom: 10, fontSize: 12, flexWrap: 'wrap' }}>
                 <span style={{ color: 'var(--text-3)' }}>
-                  Salons : <strong style={{ color: count > 0 ? 'var(--accent)' : 'var(--text)' }}>{count}</strong>
+                  Établissements : <strong style={{ color: count > 0 ? 'var(--accent)' : 'var(--text)' }}>{count}</strong>
                 </span>
                 {missing > 0 && (
                   <span style={{ color: 'var(--warning)', fontSize: 11 }}>

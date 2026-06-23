@@ -415,7 +415,7 @@ function StatsStrip() {
 }
 
 // ─── Marquee ──────────────────────────────────────────────────────────────────
-const VENUES = ['Salon Éclat Beauté', 'L\'Atelier Coiffure', 'Institut Harmonie', 'Coupe & Style', 'Beauty Lab Paris', 'The Hair Studio', 'Ô Beauté', 'Nails & Co.', 'Salon Lumière', 'Spa Sérénité', 'L\'Artiste Coiffure', 'Glam Institut'];
+const VENUES = ['Le Comptoir', 'Brasserie Lumière', 'Café des Arts', 'Salon Éclat Beauté', 'Trattoria Bella', 'L\'Atelier Coiffure', 'Bistrot du Marché', 'Institut Harmonie', 'Le Bar à Vins', 'Spa Sérénité', 'Chez Marcel', 'Sushi House'];
 
 function Marquee() {
   const items = [...VENUES, ...VENUES];
@@ -688,52 +688,52 @@ function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo
 // ─── Placements ───────────────────────────────────────────────────────────────
 // ─── Reviews (45 avis réalistes) ─────────────────────────────────────────────
 const REVIEWS = [
-  { stars: 5, name: 'Camille D.', role: 'Coiffeuse indépendante', city: 'Paris', date: 'mars 2026', text: 'Franchement impeccable. Installation en 5 minutes, mes clientes testent dès le lendemain. Premier pourboire reçu en 2 jours. Je recommande vraiment.' },
+  { stars: 5, name: 'Camille D.', role: 'Restauratrice', city: 'Paris', date: 'mars 2026', text: 'Franchement impeccable. Installation en 5 minutes, mes clients testent dès le lendemain. Premier pourboire reçu en 2 jours. Je recommande vraiment.' },
   { stars: 4, name: 'Marc T.', role: 'Barbier', city: 'Lyon', date: 'fév. 2026', text: 'Très bon produit, la plaque est belle et solide. Les clients adorent.' },
   { stars: 5, name: 'Inès B.', role: 'Esthéticienne', city: 'Bordeaux', date: 'janv. 2026', text: 'ca fait 3 semaines et j\'ai déjà reçu 47 pourboires. je pensais pas que mes clients tipperaient autant, maintenant c\'est naturel pour eux' },
   { stars: 5, name: 'Sarah K.', role: 'Massage therapist', city: 'Dublin', date: 'fév. 2026', text: 'The setup was literally 2 minutes. Already had 12 tips in the first week. Customers don\'t even ask — they just tap.' },
   { stars: 4, name: 'Noémie F.', role: 'Onglerie', city: 'Nantes', date: 'mars 2026', text: 'Produit de qualité, je l\'avais vu sur insta et hésité longtemps. Finalement c\'est exactement comme présenté. Mes clientes l\'utilisent sans qu\'on leur explique rien.' },
-  { stars: 5, name: 'Laura V.', role: 'Coiffeuse', city: 'Toulouse', date: 'janv. 2026', text: 'Ma patronne me l\'a offert pour le salon et vraiment c\'est game changer. Avant je repartais avec 0 pourboire certains soirs.' },
+  { stars: 5, name: 'Laura V.', role: 'Serveuse', city: 'Toulouse', date: 'janv. 2026', text: 'Mon patron l\'a mis en place pour le resto et vraiment c\'est game changer. Avant je repartais avec 0 pourboire certains soirs.' },
   { stars: 5, name: 'Rayan A.', role: 'Barbier', city: 'Marseille', date: 'déc. 2025', text: 'Top.' },
   { stars: 5, name: 'Philippe M.', role: 'Gérant spa', city: 'Cannes', date: 'janv. 2026', text: 'Livraison rapide, produit solide. La plaque tient bien sur le comptoir avec l\'adhésif inclus. Le dashboard est vraiment bien fait.' },
   { stars: 4, name: 'Anaïs R.', role: 'Institut beauté', city: 'Strasbourg', date: 'fév. 2026', text: 'Fonctionne nickel, mes clients y ont vite pris l\'habitude. Le dashboard est clair et les pourboires arrivent vite sur le compte.' },
   { stars: 5, name: 'Fatima O.', role: 'Esthéticienne', city: 'Créteil', date: 'mars 2026', text: 'Vraiment satisfaite. En un mois j\'ai reçu plus de pourboires qu\'en 2 ans avant. Les clientes trouvent ça élégant, elles ne se sentent pas obligées.' },
-  { stars: 5, name: 'Thomas G.', role: 'Coiffeur', city: 'Rennes', date: 'fév. 2026', text: 'Depuis que j\'ai posé la plaque face au miroir les pourboires ont vraiment augmenté. La cliente la voit pendant toute la coupe.' },
+  { stars: 5, name: 'Thomas G.', role: 'Serveur', city: 'Rennes', date: 'fév. 2026', text: 'Depuis que j\'ai posé la plaque sur le comptoir les pourboires ont vraiment augmenté. Le client la voit au moment de régler.' },
   { stars: 4, name: 'Virginie L.', role: 'Onglerie', city: 'Nice', date: 'janv. 2026', text: 'Bon produit. Les clientes utilisent le QR code sans problème et les pourboires tombent directement sur le compte. Contente.' },
   { stars: 5, name: 'Jessica T.', role: 'Coiffeuse', city: 'Reims', date: 'mars 2026', text: 'recu en 4 jours, pose en 2 minutes. Mes clientes adorent elles me disent que c\'est pratique. First review of my life lol' },
   { stars: 5, name: 'Aoife M.', role: 'Beauty therapist', city: 'Cork', date: 'fév. 2026', text: 'Perfect product. Works exactly as described. My clients started tipping the very first day.' },
   { stars: 5, name: 'Christophe D.', role: 'Barbier', city: 'Montpellier', date: 'janv. 2026', text: 'J\'ai pris le pack duo pour mes deux postes. Super rapport qualité/prix. Le support a répondu en 2h quand j\'avais une question.' },
-  { stars: 4, name: 'Marie-Claire F.', role: 'Gérante salon', city: 'Grenoble', date: 'fév. 2026', text: 'Très bien dans l\'ensemble. La plaque est solide, le dashboard est clair, mes équipes reçoivent leurs pourboires sans que je m\'en occupe.' },
-  { stars: 5, name: 'Karim N.', role: 'Gérant salon', city: 'Paris 18e', date: 'mars 2026', text: 'Mes coiffeurs sont contents, moi aussi. Les pourboires sont directement sur leur compte, plus besoin de gérer le cash.' },
+  { stars: 4, name: 'Marie-Claire F.', role: 'Gérante restaurant', city: 'Grenoble', date: 'fév. 2026', text: 'Très bien dans l\'ensemble. La plaque est solide, le dashboard est clair, mes équipes reçoivent leurs pourboires sans que je m\'en occupe.' },
+  { stars: 5, name: 'Karim N.', role: 'Gérant brasserie', city: 'Paris 18e', date: 'mars 2026', text: 'Mes serveurs sont contents, moi aussi. Les pourboires sont directement sur leur compte, plus besoin de gérer le cash.' },
   { stars: 5, name: 'Yasmine C.', role: 'Manucure', city: 'Paris', date: 'déc. 2025', text: 'super propre comme produit. la résine est épaisse et solide. Mes clientes l\'ont toutes remarqué et demandé ce que c\'est' },
   { stars: 5, name: 'Alice B.', role: 'Masseuse', city: 'Paris', date: 'janv. 2026', text: 'A mis fin au awkward tip moment 🙏 maintenant c\'est naturel, la cliente scanne si elle veut, rien d\'obligatoire' },
   { stars: 5, name: 'Klaus W.', role: 'Friseur', city: 'Köln', date: 'fév. 2026', text: 'Tolle Idee, funktioniert wunderbar. Meine Kunden sind begeistert und geben viel mehr Trinkgeld als früher.' },
-  { stars: 4, name: 'Julien P.', role: 'Barbier', city: 'Bordeaux', date: 'mars 2026', text: 'Bien. La plaque est propre et bien finie. Les clients l\'adoptent naturellement, sans qu\'on leur dise quoi que ce soit.' },
+  { stars: 4, name: 'Julien P.', role: 'Barman', city: 'Bordeaux', date: 'mars 2026', text: 'Bien. La plaque est propre et bien finie. Les clients l\'adoptent naturellement, sans qu\'on leur dise quoi que ce soit.' },
   { stars: 5, name: 'Sabrine M.', role: 'Esthéticienne', city: 'Lille', date: 'janv. 2026', text: 'J\'étais sceptique au début. Maintenant j\'en achèterais 10 autres. Vraiment.' },
-  { stars: 5, name: 'Brendan O.', role: 'Barber', city: 'Galway', date: 'fév. 2026', text: 'First tip came in 4 minutes after placing it on the counter. 4 MINUTES.' },
+  { stars: 5, name: 'Brendan O.', role: 'Bartender', city: 'Galway', date: 'fév. 2026', text: 'First tip came in 4 minutes after placing it on the counter. 4 MINUTES.' },
   { stars: 5, name: 'Stéphanie V.', role: 'Coiffeuse', city: 'Toulouse', date: 'déc. 2025', text: 'Nickel. Configuration facile, la plaque est jolie, les clients l\'utilisent naturellement.' },
   { stars: 4, name: 'Houda B.', role: 'Manucure', city: 'Montpellier', date: 'fév. 2026', text: 'Bonne expérience globalement. La plaque tient bien sur le comptoir, les clientes la remarquent et l\'utilisent spontanément.' },
   { stars: 5, name: 'Emilie R.', role: 'Coiffeuse', city: 'Nantes', date: 'janv. 2026', text: 'Merci Digitip!! En 3 semaines j\'ai eu 78 pourboires. je comprends pas pourquoi j\'ai pas fait ça avant franchement' },
-  { stars: 5, name: 'Laurent D.', role: 'Gérant', city: 'Paris', date: 'mars 2026', text: 'Très professionnel. La plaque s\'intègre parfaitement dans le décor du salon.' },
+  { stars: 5, name: 'Laurent D.', role: 'Gérant restaurant', city: 'Paris', date: 'mars 2026', text: 'Très professionnel. La plaque s\'intègre parfaitement dans le décor de la salle.' },
   { stars: 4, name: 'Sophie T.', role: 'Esthéticienne', city: 'Tours', date: 'fév. 2026', text: 'ça marche bien, pas grand chose à dire. Simple, efficace, les clientes l\'utilisent sans hésiter.' },
   { stars: 5, name: 'Nathalie G.', role: 'Coiffeuse', city: 'Angers', date: 'janv. 2026', text: 'Ma cliente de 72 ans a réussi à l\'utiliser du premier coup. C\'est ça qui m\'a convaincu que c\'était vraiment simple.' },
   { stars: 5, name: 'Fleur de V.', role: 'Kapper', city: 'Amsterdam', date: 'fév. 2026', text: 'Geweldig product. Mijn klanten gebruiken het elke dag en de fooi is verdubbeld.' },
   { stars: 5, name: 'Olivier M.', role: 'Barbier', city: 'Bordeaux', date: 'mars 2026', text: 'Excellent. La qualité de la plaque est vraiment premium, pas du tout cheap comme on pourrait le craindre.' },
-  { stars: 4, name: 'Mehdi K.', role: 'Barbier', city: 'Bruxelles', date: 'déc. 2025', text: 'Très bien, mes clients ont bien adopté. La plaque s\'intègre bien dans le décor du salon, c\'est discret et efficace.' },
+  { stars: 4, name: 'Mehdi K.', role: 'Gérant café', city: 'Bruxelles', date: 'déc. 2025', text: 'Très bien, mes clients ont bien adopté. La plaque s\'intègre bien dans le décor du café, c\'est discret et efficace.' },
   { stars: 5, name: 'Carole F.', role: 'Directrice spa', city: 'Paris', date: 'janv. 2026', text: 'Parfait pour notre spa. On a 4 cabines et autant de plaques, chaque praticienne reçoit ses pourboires directement.' },
   { stars: 5, name: 'Axelle P.', role: 'Onglerie', city: 'Dijon', date: 'fév. 2026', text: 'reçu rapidement, posé en 2 mn et premier tip dès le soir même 😂 top produit' },
-  { stars: 5, name: 'Emma W.', role: 'Hairdresser', city: 'Dublin', date: 'mars 2026', text: 'My clients kept asking "can I tip by card?" and I kept saying no. Not anymore.' },
+  { stars: 5, name: 'Emma W.', role: 'Waitress', city: 'Dublin', date: 'mars 2026', text: 'My customers kept asking "can I tip by card?" and I kept saying no. Not anymore.' },
   { stars: 4, name: 'Audrey N.', role: 'Masseuse', city: 'Brest', date: 'janv. 2026', text: 'Ça fait ce que c\'est censé faire, nickel. Mes clients l\'ont adopté très vite et les pourboires arrivent directement en banque.' },
   { stars: 5, name: 'Benoît L.', role: 'Coiffeur', city: 'Caen', date: 'fév. 2026', text: 'L\'équipe support est très sympa. Ils m\'ont aidé à configurer Stripe en 10 minutes par chat.' },
-  { stars: 5, name: 'Véronique D.', role: 'Salon de coiffure', city: 'Rouen', date: 'mars 2026', text: 'Mes apprenties aussi peuvent recevoir des pourboires maintenant, c\'est super pour leur motivation.' },
-  { stars: 4, name: 'Damien B.', role: 'Gérant', city: 'Nîmes', date: 'déc. 2025', text: 'Top rapport qualité prix. La plaque duo est idéale pour un salon avec plusieurs postes de travail. Les pourboires sont bien répartis par profil.' },
+  { stars: 5, name: 'Véronique D.', role: 'Gérante bistrot', city: 'Rouen', date: 'mars 2026', text: 'Mes apprentis aussi peuvent recevoir des pourboires maintenant, c\'est super pour leur motivation.' },
+  { stars: 4, name: 'Damien B.', role: 'Gérant restaurant', city: 'Nîmes', date: 'déc. 2025', text: 'Top rapport qualité prix. La plaque duo est idéale pour un resto avec plusieurs serveurs. Les pourboires sont bien répartis par profil.' },
   { stars: 5, name: 'Leïla M.', role: 'Esthéticienne', city: 'Versailles', date: 'janv. 2026', text: 'Aucune prise de tête. J\'avais peur que ce soit compliqué mais non.' },
   { stars: 5, name: 'Fred T.', role: 'Barbier', city: 'Roubaix', date: 'fév. 2026', text: 'je suis nul en techno et j\'ai réussi à tout configurer seul. Honnêtement impressionné' },
   { stars: 5, name: 'Sandrine K.', role: 'Coiffeuse', city: 'Metz', date: 'mars 2026', text: 'Fonctionne avec iPhone et Android, mes clientes ont des deux. Zero problème depuis 2 mois.' },
-  { stars: 4, name: 'Hugo V.', role: 'Gérant salon', city: 'Perpignan', date: 'janv. 2026', text: 'Bien. Les clientes l\'utilisent naturellement, c\'est le principal. La plaque est bien posée, pas bougé depuis 3 semaines.' },
+  { stars: 4, name: 'Hugo V.', role: 'Gérant bar', city: 'Perpignan', date: 'janv. 2026', text: 'Bien. Les clients l\'utilisent naturellement, c\'est le principal. La plaque est bien posée, pas bougé depuis 3 semaines.' },
   { stars: 5, name: 'Caroline R.', role: 'Institut beauté', city: 'Pau', date: 'fév. 2026', text: 'Commande le jeudi, reçu le lundi. Posé le lundi matin, premiers tips le lundi soir. Simple.' },
   { stars: 5, name: 'Nina S.', role: 'Spa manager', city: 'Marseille', date: 'mars 2026', text: 'Vraiment cool comme produit. Discret, élégant, et ça marche.' },
-  { stars: 5, name: 'Chloe R.', role: 'Nail artist', city: 'Lyon', date: 'fév. 2026', text: 'Toutes mes collègues du salon se sont mises à en commander après avoir vu le mien. La preuve.' },
+  { stars: 5, name: 'Chloe R.', role: 'Serveuse', city: 'Lyon', date: 'fév. 2026', text: 'Tous mes collègues du resto se sont mis à en commander après avoir vu le mien. La preuve.' },
   { stars: 4, name: 'Antoine M.', role: 'Kiné', city: 'Toulouse', date: 'janv. 2026', text: 'Mes patients ne tipaient jamais avant. Depuis que la plaque est là ça arrive régulièrement. Contenu du résultat.' },
 ];
 

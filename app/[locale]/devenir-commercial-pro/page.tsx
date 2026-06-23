@@ -189,7 +189,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
   {
     q: 'Quel produit présente-t-on ?',
-    a: 'Le SmartTag Digitip : un sticker NFC qui permet aux clients d\'un commerce de proximité de laisser un pourboire sans contact directement à l\'employé qui les a servis. Cibles prioritaires : salons de coiffure, instituts d\'esthétique, barbiers, spas, restauration et bars. Ticket moyen 200-400 € HT, cycle de vente court (1-2 RDV).',
+    a: 'Le SmartTag Digitip : un sticker NFC qui permet aux clients d\'un établissement de proximité de laisser un pourboire sans contact directement à l\'employé qui les a servis. Cibles prioritaires : restaurants, bars, cafés, hôtels, salons de coiffure, instituts d\'esthétique, barbiers et spas. Ticket moyen 200-400 € HT, cycle de vente court (1-2 RDV).',
   },
 ];
 

@@ -55,9 +55,9 @@ export function CreateSalonForm({ baseUrl }: { baseUrl: string }) {
     return (
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 24 }}>
         <div style={{ marginBottom: 8, color: 'var(--success)' }}><Icon name="checkCircle" size={28} /></div>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Salon créé</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Établissement créé</h2>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 18 }}>
-          Partagez ce lien avec le manager ou les coiffeurs pour qu&apos;ils puissent rejoindre :
+          Partagez ce lien avec le manager ou l&apos;équipe pour qu&apos;ils puissent rejoindre :
         </p>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20 }}>
           <code style={{ flex: 1, padding: '10px 12px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-2)', wordBreak: 'break-all' }}>
@@ -77,7 +77,7 @@ export function CreateSalonForm({ baseUrl }: { baseUrl: string }) {
             onClick={() => { setResult(null); setName(''); setCountry('FR'); }}
             style={{ padding: '9px 16px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}
           >
-            Nouveau salon
+            Nouvel établissement
           </button>
           <button
             type="button"
@@ -100,12 +100,12 @@ export function CreateSalonForm({ baseUrl }: { baseUrl: string }) {
       )}
 
       <label style={{ display: 'block', marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6, fontWeight: 500 }}>Nom du salon</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6, fontWeight: 500 }}>Nom de l&apos;établissement</div>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Salon de Marie"
+          placeholder="Ex. Le Comptoir, Salon de Marie…"
           style={inp}
           autoFocus
         />
@@ -134,7 +134,7 @@ export function CreateSalonForm({ baseUrl }: { baseUrl: string }) {
           disabled={!name.trim() || pending}
           style={{ flex: 1, padding: '10px 16px', borderRadius: 8, background: !name.trim() || pending ? 'var(--surface-2)' : 'var(--accent)', color: !name.trim() || pending ? 'var(--text-3)' : '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: !name.trim() || pending ? 'not-allowed' : 'pointer', fontFamily: 'var(--font)' }}
         >
-          {pending ? 'Création…' : 'Créer le salon'}
+          {pending ? 'Création…' : 'Créer l\'établissement'}
         </button>
       </div>
     </div>
