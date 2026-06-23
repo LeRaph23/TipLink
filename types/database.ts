@@ -2389,6 +2389,7 @@ export type Database = {
         Returns: {
           avatar_url: string
           establishment_currency: string
+          establishment_id: string
           establishment_is_demo: boolean
           establishment_name: string
           establishment_review_url: string

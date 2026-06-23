@@ -2,8 +2,10 @@
  * RPC `get_public_staff` safety tests.
  *
  * - Anon can call the RPC (SECURITY DEFINER + explicit GRANT).
- * - The RPC NEVER exposes sensitive columns (stripe_account_id,
- *   user_id, establishment_id).
+ * - The RPC NEVER exposes sensitive columns (stripe_account_id, user_id).
+ * - It DOES expose establishment_id: a public identifier (it appears in the
+ *   `/pay/group/[establishmentId]` URL the page links to) that the tip page
+ *   needs for the "tip the team" link and the cross-tenant amount guard.
  * - `is_payable` correctly reflects onboarding state.
  *
  * Prerequisites: npx supabase start
@@ -99,10 +101,13 @@ describe.skipIf(skipIfNoLocal)('get_public_staff RPC', () => {
     expect(row.full_name).toBe('Ready Staff');
     expect(row.is_payable).toBe(true);
 
-    // Sensitive columns must NOT leak through.
+    // establishment_id is a public identifier and is intentionally exposed so
+    // the page can build the "tip the team" link and the cross-tenant guard.
+    expect(row.establishment_id).toBe(establishmentId);
+
+    // Truly sensitive columns must NOT leak through.
     expect(row).not.toHaveProperty('stripe_account_id');
     expect(row).not.toHaveProperty('user_id');
-    expect(row).not.toHaveProperty('establishment_id');
   });
 
   it('is_payable is false when onboarding is not complete', async () => {

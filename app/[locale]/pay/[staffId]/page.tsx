@@ -9,17 +9,19 @@ import { staffTipTag } from '@/lib/cache/pay-tags';
 // Edge-safe: uses raw PostgREST fetch against a SECURITY DEFINER RPC
 // that only exposes whitelisted columns. No Supabase SDK import here.
 //
-// The two Supabase reads are cached in the Next.js Data Cache and tagged per
-// staff member, so a scanned tag is served without a database round-trip after
-// the first hit. Dashboard mutations (name/avatar, activation, Stripe
-// onboarding completion, demo mode…) invalidate `staffTipTag(staffId)`, and the
-// `revalidate` windows below bound staleness if a path is ever missed.
+// A single get_public_staff call returns everything the page needs (profile +
+// establishment_id), cached in the Next.js Data Cache and tagged per staff
+// member, so a scanned tag is served without a database round-trip after the
+// first hit. Dashboard mutations (name/avatar, activation, Stripe onboarding
+// completion, demo mode…) invalidate `staffTipTag(staffId)`, and the
+// `revalidate` window below bounds staleness if a path is ever missed.
 export const runtime = 'edge';
 
 interface PublicStaffRow {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  establishment_id: string | null;
   establishment_name: string | null;
   establishment_currency: string | null;
   tip_thresholds: number[] | null;
@@ -59,34 +61,6 @@ async function fetchPublicStaff(staffId: string): Promise<PublicStaffRow | null>
   return rows[0] ?? null;
 }
 
-async function fetchEstablishmentId(staffId: string): Promise<string | null> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !anonKey) return null;
-
-  try {
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/staff_profiles?id=eq.${encodeURIComponent(staffId)}&select=establishment_id&limit=1`,
-      {
-        headers: {
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
-          Accept: 'application/json',
-        },
-        // A staff member's establishment never changes, so this can be cached
-        // aggressively; still tagged so it's purged alongside the profile.
-        next: { revalidate: 3600, tags: [staffTipTag(staffId)] },
-      }
-    );
-    if (!res.ok) return null;
-    const rows = (await res.json()) as Array<{ establishment_id: string | null }>;
-    return rows[0]?.establishment_id ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export default async function StaffTipPage({
   params,
 }: {
@@ -99,18 +73,17 @@ export default async function StaffTipPage({
     notFound();
   }
 
-  // Fire the two independent lookups (staff profile + establishment id) and the
-  // translations in parallel rather than waterfalling them — saves a full
-  // round-trip on the payment page. establishmentId is used both by the
-  // "tip the team" link in the not-payable view and by the AmountSelector
-  // cross-tenant guard below; fetching it eagerly only wastes a query in the
-  // rare notFound() case.
-  const [staff, establishmentId, t] = await Promise.all([
+  // One RPC returns the profile and its establishment_id together, so the page
+  // needs a single Supabase round-trip (run in parallel with translations).
+  // establishmentId drives both the "tip the team" link in the not-payable view
+  // and the AmountSelector cross-tenant guard below.
+  const [staff, t] = await Promise.all([
     fetchPublicStaff(staffId),
-    fetchEstablishmentId(staffId),
     getTranslations('pay'),
   ]);
   if (!staff) notFound();
+
+  const establishmentId = staff.establishment_id;
 
   if (!staff.is_payable) {
 
