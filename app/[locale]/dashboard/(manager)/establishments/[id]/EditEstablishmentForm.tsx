@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { updateEstablishment, deleteEstablishment } from '@/actions/establishment';
+import { GoogleReviewPicker } from '@/components/onboarding/GoogleReviewPicker';
 
 const COUNTRIES = [
   ['FR', 'France'], ['DE', 'Germany'], ['GB', 'United Kingdom'],
@@ -38,15 +39,21 @@ interface Establishment {
   business_type: string;
   country: string;
   currency: string;
+  address?: string | null;
+  google_place_id?: string | null;
+  google_review_url?: string | null;
 }
 
 export function EditEstablishmentForm({ establishment }: { establishment: Establishment }) {
   const t = useTranslations('dashboard.establishments');
+  const tReview = useTranslations('onboarding.googleReview');
   const router = useRouter();
   const [name, setName] = useState(establishment.name);
   const [businessType, setBusinessType] = useState(establishment.business_type as 'restaurant' | 'beauty');
   const [country, setCountry] = useState(establishment.country);
   const [currency, setCurrency] = useState(establishment.currency);
+  const [googlePlaceId, setGooglePlaceId] = useState(establishment.google_place_id ?? '');
+  const [googleReviewUrl, setGoogleReviewUrl] = useState(establishment.google_review_url ?? '');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -56,6 +63,8 @@ export function EditEstablishmentForm({ establishment }: { establishment: Establ
     setErrorMsg('');
     const result = await updateEstablishment(establishment.id, {
       name: name.trim(), business_type: businessType, country, currency,
+      google_place_id: googlePlaceId,
+      google_review_url: googleReviewUrl,
     });
     if ('error' in result) {
       setSaveStatus('error');
@@ -111,6 +120,24 @@ export function EditEstablishmentForm({ establishment }: { establishment: Establ
             <option key={code} value={code}>{label}</option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label style={labelStyle}>{tReview('fieldLabel')}</label>
+        <p style={{ fontSize: 11.5, color: 'var(--text-3)', margin: '0 0 8px', lineHeight: 1.5 }}>
+          {tReview('fieldHint')}
+        </p>
+        <GoogleReviewPicker
+          variant="compact"
+          name={name}
+          address={establishment.address ?? null}
+          value={googleReviewUrl}
+          placeId={googlePlaceId}
+          onChange={({ placeId, reviewUrl }) => {
+            setGooglePlaceId(placeId ?? '');
+            setGoogleReviewUrl(reviewUrl);
+          }}
+        />
       </div>
 
       {saveStatus === 'error' && (

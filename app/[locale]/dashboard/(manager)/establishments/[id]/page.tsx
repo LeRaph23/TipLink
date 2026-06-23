@@ -31,7 +31,7 @@ export default async function EditEstablishmentPage({
   const service = createServiceClient();
   const { data: est } = await service
     .from('establishments')
-    .select('id, name, business_type, country, currency, group_id')
+    .select('id, name, business_type, country, currency, group_id, google_place_id, google_review_url, address')
     .eq('id', id)
     .is('deleted_at', null)
     .single();

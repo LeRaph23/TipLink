@@ -59,23 +59,48 @@ function StatusIcon({ status }: { status: RedirectStatus }) {
   );
 }
 
-async function fetchStaffName(staffId: string): Promise<string | null> {
+async function callRpc<T>(fn: string, body: Record<string, unknown>): Promise<T[] | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !anonKey) return null;
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/get_public_staff`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
       method: 'POST',
       headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ p_staff_id: staffId }),
+      body: JSON.stringify(body),
       cache: 'no-store',
     });
     if (!res.ok) return null;
-    const rows = (await res.json()) as Array<{ full_name?: string }>;
-    return rows[0]?.full_name ?? null;
+    return (await res.json()) as T[];
   } catch {
     return null;
   }
+}
+
+// Resolves the tipped staff member's name and the establishment's Google review
+// link. Single-staff tips carry staff_id; group tips carry establishment_id.
+async function fetchTipContext(
+  staffId: string | null,
+  establishmentId: string | null,
+): Promise<{ staffName: string | null; reviewUrl: string | null }> {
+  if (staffId) {
+    const rows = await callRpc<{ full_name?: string; establishment_review_url?: string | null }>(
+      'get_public_staff',
+      { p_staff_id: staffId },
+    );
+    return {
+      staffName: rows?.[0]?.full_name ?? null,
+      reviewUrl: rows?.[0]?.establishment_review_url ?? null,
+    };
+  }
+  if (establishmentId) {
+    const rows = await callRpc<{ establishment_review_url?: string | null }>(
+      'get_public_establishment_review',
+      { p_establishment_id: establishmentId },
+    );
+    return { staffName: null, reviewUrl: rows?.[0]?.establishment_review_url ?? null };
+  }
+  return { staffName: null, reviewUrl: null };
 }
 
 export default async function PaySuccessPage({ params, searchParams }: Props) {
@@ -98,6 +123,7 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   let amountCents: number | null = null;
   let currency: string | null = null;
   let staffId: string | null = null;
+  let establishmentId: string | null = null;
 
   if (sp.payment_intent && sp.redirect_status === 'succeeded') {
     try {
@@ -109,6 +135,7 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
       amountCents = pi.amount;
       currency = pi.currency?.toUpperCase() ?? null;
       staffId = pi.metadata?.staff_id ?? null;
+      establishmentId = pi.metadata?.establishment_id ?? null;
     } catch {
       // Stripe unreachable — keep query-param as fallback
     }
@@ -117,6 +144,7 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
     try {
       const pi = await stripe.paymentIntents.retrieve(sp.payment_intent);
       staffId = pi.metadata?.staff_id ?? null;
+      establishmentId = pi.metadata?.establishment_id ?? null;
       amountCents = pi.amount;
       currency = pi.currency?.toUpperCase() ?? null;
     } catch {
@@ -124,7 +152,12 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
     }
   }
 
-  const staffName = staffId ? await fetchStaffName(staffId) : null;
+  // Only fetch the review link on success — there's nothing to celebrate (or
+  // ask a review for) on a failed/processing payment.
+  const { staffName, reviewUrl } =
+    status === 'succeeded'
+      ? await fetchTipContext(staffId, establishmentId)
+      : { staffName: staffId ? (await fetchTipContext(staffId, null)).staffName : null, reviewUrl: null };
 
   const heading =
     status === 'succeeded'
@@ -184,6 +217,39 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
             </div>
           )}
         </div>
+
+        {status === 'succeeded' && reviewUrl && (
+          <a
+            href={reviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'block', textDecoration: 'none',
+              background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 20,
+              boxShadow: 'var(--shadow)',
+            }}
+          >
+            <div style={{ fontSize: 22, letterSpacing: 2, color: '#f5a623', marginBottom: 8 }}>
+              ★★★★★
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+              {staffName ? t('reviewTitleNamed', { name: staffName }) : t('reviewTitle')}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 14 }}>
+              {t('reviewBody')}
+            </div>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', boxSizing: 'border-box',
+              padding: '12px 20px', borderRadius: 'var(--radius)',
+              background: 'var(--accent)', color: 'var(--accent-fg, #fff)',
+              fontSize: 14, fontWeight: 700,
+            }}>
+              {t('reviewButton')}
+            </span>
+          </a>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {status !== 'succeeded' && staffId && (

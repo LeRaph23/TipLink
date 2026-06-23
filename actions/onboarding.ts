@@ -7,7 +7,26 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { sendStaffInviteLink } from '@/lib/staff-invite';
 import { verifyOnboardingToken } from '@/lib/auth/onboarding-token';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
+import { normalizeGoogleReviewUrl } from '@/lib/google-places';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
+
+// Shared review-link fields collected by the onboarding wizard's Google step.
+const GoogleReviewFields = {
+  googlePlaceId: z.string().max(300).optional(),
+  googleReviewUrl: z.string().max(1000).optional(),
+};
+
+// Turns the raw wizard input into a clean establishments column patch. The
+// review URL is normalised (place_id / g.page / maps link → canonical link);
+// anything unrecognised is dropped rather than stored as junk.
+function googleReviewPatch(input: { googlePlaceId?: string; googleReviewUrl?: string }) {
+  const url = input.googleReviewUrl ? normalizeGoogleReviewUrl(input.googleReviewUrl) : null;
+  if (!url) return {};
+  return {
+    google_review_url: url,
+    ...(input.googlePlaceId ? { google_place_id: input.googlePlaceId } : {}),
+  };
+}
 
 const ColleagueSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -53,6 +72,7 @@ const PostPurchaseSchema = z.object({
   adminFullName: z.string().min(1).max(200),
   colleagues: z.array(ColleagueSchema).max(20).default([]),
   locale: z.enum(['fr', 'en']).default('fr'),
+  ...GoogleReviewFields,
 });
 
 const NfcOnboardingSchema = z.object({
@@ -63,6 +83,7 @@ const NfcOnboardingSchema = z.object({
   adminFullName: z.string().min(1).max(200),
   colleagues: z.array(ColleagueSchema).max(20).default([]),
   locale: z.enum(['fr', 'en']).default('fr'),
+  ...GoogleReviewFields,
 });
 
 // Validates a single NFC short_id and returns its DB id if it's unassigned.
@@ -129,7 +150,7 @@ export async function completePostPurchaseOnboarding(
   // Update establishment
   const { error: estErr } = await service
     .from('establishments')
-    .update({ name: establishmentName, address, slug })
+    .update({ name: establishmentName, address, slug, ...googleReviewPatch(parsed.data) })
     .eq('id', est.id);
 
   if (estErr) return actionError(classifyDbError(estErr), estErr, 'completePostPurchaseOnboarding.est');
@@ -200,6 +221,7 @@ const ExpressOnboardingSchema = z.object({
   // Optional: when Supabase email confirmation is enabled, sign-up returns
   // no session, so we fall back to the admin API to resolve the user.
   userId: z.string().uuid().optional(),
+  ...GoogleReviewFields,
 });
 
 // For the express checkout flow (bought on landing page, no existing account).
@@ -267,7 +289,7 @@ export async function completeExpressOnboarding(
   // Update establishment with wizard data
   const { error: estErr } = await service
     .from('establishments')
-    .update({ name: establishmentName, address, slug })
+    .update({ name: establishmentName, address, slug, ...googleReviewPatch(parsed.data) })
     .eq('id', est.id);
 
   if (estErr) return actionError(classifyDbError(estErr), estErr, 'completeExpressOnboarding.est');
@@ -377,6 +399,7 @@ export async function completeNfcOnboarding(
       country: 'FR',
       currency: 'eur',
       onboarding_status: 'not_started',
+      ...googleReviewPatch(parsed.data),
     })
     .select('id')
     .single();

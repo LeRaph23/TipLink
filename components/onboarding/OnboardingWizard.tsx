@@ -10,6 +10,7 @@ import {
   completeExpressOnboarding,
 } from '@/actions/onboarding';
 import { AddressAutocomplete } from './AddressAutocomplete';
+import { GoogleReviewPicker } from './GoogleReviewPicker';
 import { getBaseUrl } from '@/lib/env';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
 
@@ -24,19 +25,21 @@ interface WizardState {
   nfcCodes: string[];
   establishmentName: string;
   address: string;
+  googlePlaceId: string;
+  googleReviewUrl: string;
   adminFullName: string;
   adminEmail: string;
   password: string;
   colleagues: Colleague[];
 }
 
-type ScanStep = 'codes' | 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
-type AuthStep = 'salon' | 'address' | 'admin-name' | 'team' | 'tips-opt-in' | 'banking';
-type ExpressStep = 'salon' | 'address' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
+type ScanStep = 'codes' | 'salon' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
+type AuthStep = 'salon' | 'address' | 'google-review' | 'admin-name' | 'team' | 'tips-opt-in' | 'banking';
+type ExpressStep = 'salon' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
 
-const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'address', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
-const AUTH_STEPS: AuthStep[] = ['salon', 'address', 'admin-name', 'team', 'tips-opt-in', 'banking'];
-const EXPRESS_STEPS: ExpressStep[] = ['salon', 'address', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
+const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
+const AUTH_STEPS: AuthStep[] = ['salon', 'address', 'google-review', 'admin-name', 'team', 'tips-opt-in', 'banking'];
+const EXPRESS_STEPS: ExpressStep[] = ['salon', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
 
 type Props =
   | {
@@ -328,6 +331,8 @@ export function OnboardingWizard(props: Props) {
       nfcCodes: mode === 'scan' ? [props.initialCode] : [],
       establishmentName: props.establishment?.name ?? '',
       address: props.establishment?.address ?? '',
+      googlePlaceId: '',
+      googleReviewUrl: '',
       adminFullName: '',
       adminEmail: mode === 'express' ? props.initialEmail : '',
       password: '',
@@ -361,6 +366,9 @@ export function OnboardingWizard(props: Props) {
         case 'codes': return state.nfcCodes.length > 0 && state.nfcCodes.every((c) => c.trim().length > 0);
         case 'salon': return state.establishmentName.trim().length > 0;
         case 'address': return state.address.trim().length > 0;
+        // Soft-required: never blocks navigation (a discreet "skip" link exists),
+        // so the bounce-back guard treats it as satisfied.
+        case 'google-review': return true;
         case 'admin-name': return state.adminFullName.trim().length > 0;
         case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
         case 'password': return state.password.length >= 8;
@@ -451,6 +459,8 @@ export function OnboardingWizard(props: Props) {
         nfcCodes: state.nfcCodes,
         establishmentName: state.establishmentName,
         address: state.address,
+        googlePlaceId: state.googlePlaceId || undefined,
+        googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         locale: locale as 'fr' | 'en',
@@ -491,6 +501,8 @@ export function OnboardingWizard(props: Props) {
         token: props.token,
         establishmentName: state.establishmentName,
         address: state.address,
+        googlePlaceId: state.googlePlaceId || undefined,
+        googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         locale: locale as 'fr' | 'en',
@@ -509,6 +521,8 @@ export function OnboardingWizard(props: Props) {
       const result = await completePostPurchaseOnboarding({
         establishmentName: state.establishmentName,
         address: state.address,
+        googlePlaceId: state.googlePlaceId || undefined,
+        googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         locale: locale as 'fr' | 'en',
@@ -638,6 +652,7 @@ export function OnboardingWizard(props: Props) {
   // (the dashed step ids differ from the camelCase message keys).
   const STEP_I18N: Record<string, string> = {
     codes: 'codes', salon: 'salon', address: 'address',
+    'google-review': 'googleReview',
     'admin-name': 'adminName', email: 'email', password: 'password',
     team: 'team', 'tips-opt-in': 'tipsOptIn', banking: 'banking',
   };
@@ -651,6 +666,9 @@ export function OnboardingWizard(props: Props) {
     : steps.length - 1;
   const isLastStep = stepIndex === effectiveLastIdx;
   const totalSteps = steps.length;
+  // Google review is soft-required: the primary CTA stays disabled until a link
+  // is chosen, but a discreet skip link lets the manager move on.
+  const reviewBlocking = currentStep === 'google-review' && state.googleReviewUrl.trim().length === 0;
 
   function renderStepBody() {
     switch (currentStep) {
@@ -681,6 +699,19 @@ export function OnboardingWizard(props: Props) {
             onChange={(address) => dispatch({ address })}
             onConfirm={() => canAdvance() && (isLastStep ? handleSubmit() : next())}
             style={inp}
+          />
+        );
+
+      case 'google-review':
+        return (
+          <GoogleReviewPicker
+            name={state.establishmentName}
+            address={state.address}
+            value={state.googleReviewUrl}
+            placeId={state.googlePlaceId}
+            onChange={({ placeId, reviewUrl }) =>
+              dispatch({ googlePlaceId: placeId ?? '', googleReviewUrl: reviewUrl })
+            }
           />
         );
 
@@ -862,8 +893,8 @@ export function OnboardingWizard(props: Props) {
           <button
             type="button"
             onClick={next}
-            disabled={!canAdvance()}
-            style={{ ...btnPrimary, opacity: canAdvance() ? 1 : 0.4 }}
+            disabled={!canAdvance() || reviewBlocking}
+            style={{ ...btnPrimary, opacity: (canAdvance() && !reviewBlocking) ? 1 : 0.4 }}
           >
             {t('continue')}
           </button>
@@ -875,6 +906,23 @@ export function OnboardingWizard(props: Props) {
           <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
             {t('fillField')}
           </p>
+        )}
+
+        {/* Soft-required Google review step: a deliberately small, low-contrast
+            "skip" link — we want most managers to set this up, but never trap
+            someone who doesn't have their link handy (they can add it later). */}
+        {currentStep === 'google-review' && reviewBlocking && (
+          <button
+            type="button"
+            onClick={next}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-3)',
+              fontSize: 11.5, cursor: 'pointer', fontFamily: 'var(--font)',
+              opacity: 0.7, textAlign: 'center', padding: 0, marginTop: 2,
+            }}
+          >
+            {t('googleReview.skip')}
+          </button>
         )}
 
         {/* "Skip" for team step (not last) */}

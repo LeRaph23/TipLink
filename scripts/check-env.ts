@@ -20,6 +20,7 @@ const required: { key: string; hint: string }[] = [
 
 const optional: { key: string; hint: string }[] = [
   { key: 'RESEND_API_KEY',            hint: 'Tip receipt emails (resend.com)' },
+  { key: 'GOOGLE_PLACES_API_KEY',     hint: 'Google review link picker + salon enrichment' },
   { key: 'UPSTASH_REDIS_REST_URL',    hint: 'Production rate limiting (upstash.com)' },
   { key: 'UPSTASH_REDIS_REST_TOKEN',  hint: 'Production rate limiting (upstash.com)' },
 ];

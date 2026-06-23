@@ -631,7 +631,11 @@
     "tipSubhead": "Leave a tip in a tap",
     "feeInfo": "These few cents only cover part of the bank transaction fees we pay on every tip. We do our best to keep them as low as possible.",
     "successBodyNamed": "Your tip is on its way — {name} has been notified.",
-    "sentTo": "Sent to"
+    "sentTo": "Sent to",
+    "reviewTitle": "Did you have a great time?",
+    "reviewTitleNamed": "Did you enjoy {name}?",
+    "reviewBody": "Help the team by leaving a Google review — it takes 10 seconds.",
+    "reviewButton": "Leave a Google review →"
   },
   "dashboard": {
     "welcome": "Welcome back,",
@@ -1267,6 +1271,27 @@
       "title": "Receiving your tips",
       "subtitle": "Your payouts are set up afterwards from your dashboard, via Stripe.",
       "body": "Perfect — you'll be able to receive tips personally. Setting up your payouts takes a few clicks from your dashboard (the <b>Payouts</b> section), via <b>Stripe</b>, our secure payment partner. Stripe collects and encrypts your details — your banking information never passes through Digitip."
+    },
+    "googleReview": {
+      "title": "Google reviews",
+      "subtitle": "Link your Google listing so customers can leave a review right after tipping.",
+      "skip": "Skip for now",
+      "searchPlaceholder": "Your business name",
+      "searchButton": "Search",
+      "searching": "Searching…",
+      "noResults": "No business found. Try another name or add the link manually.",
+      "useManual": "Enter the link manually",
+      "manualIntro": "Paste the “Ask for reviews” link from your Google Business profile.",
+      "manualSave": "Save link",
+      "backToSearch": "← Back to search",
+      "manualHelp": "Find it on your Google Business profile → “Ask for reviews”. A place ID or a g.page link also works.",
+      "manualInvalid": "Enter a valid Google review link.",
+      "linked": "Google listing linked",
+      "change": "Change",
+      "unknownPlace": "Business",
+      "reviewCount": "{count} reviews",
+      "fieldLabel": "Google review link",
+      "fieldHint": "After each tip, the customer can leave a Google review in one tap."
     }
   }
 }
