@@ -635,7 +635,12 @@
     "reviewTitle": "Vous avez passé un bon moment ?",
     "reviewTitleNamed": "Vous avez apprécié {name} ?",
     "reviewBody": "Aidez l’équipe en laissant un avis Google — ça prend 10 secondes.",
-    "reviewButton": "Laisser un avis Google →"
+    "reviewButton": "Laisser un avis Google →",
+    "demo": {
+      "badge": "Mode démo",
+      "banner": "Démo — aucun paiement réel",
+      "payButton": "Payer {amount} (démo)"
+    }
   },
   "dashboard": {
     "welcome": "Bon retour,",

@@ -15,6 +15,7 @@ interface PublicGroupStaffRow {
   tip_thresholds: number[] | null;
   staff_id: string | null;
   is_payable: boolean | null;
+  establishment_is_demo?: boolean | null;
 }
 
 async function fetchGroupStaff(establishmentId: string): Promise<PublicGroupStaffRow[] | null> {
@@ -126,6 +127,7 @@ export default async function TeamTipPage({
             currency={currency}
             thresholds={thresholds}
             staffCount={payableStaff.length}
+            isDemo={header.establishment_is_demo ?? false}
           />
         </Suspense>
 
