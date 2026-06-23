@@ -271,7 +271,7 @@ export default async function AdminOverviewPage({
               Actions rapides
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <QuickAction href="/dashboard/admin/groups/new" label="Nouveau groupe" description="Créer un salon/groupe" />
+              <QuickAction href="/dashboard/admin/groups/new" label="Nouveau groupe" description="Créer un établissement/groupe" />
               <QuickAction href="/dashboard/admin/promo-codes" label="Codes promo" description="Gérer les promotions" />
               <QuickAction href="/dashboard/admin/orders" label="Commandes" description="Voir les commandes en attente" />
               <QuickAction href="/dashboard/admin/smarttags" label="SmartTags" description="Gérer le stock NFC" />

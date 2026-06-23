@@ -19,13 +19,13 @@ export default async function NewSalonPage({
           href="/dashboard/admin/groups"
           style={{ fontSize: 12.5, color: 'var(--text-3)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 12 }}
         >
-          ← Retour aux salons
+          ← Retour aux établissements
         </Link>
         <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          Nouveau salon
+          Nouvel établissement
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          Crée le groupe et l&apos;établissement, puis partage le lien de rejoindre avec les coiffeurs.
+          Crée le groupe et l&apos;établissement, puis partage le lien de rejoindre avec l&apos;équipe.
         </p>
       </div>
       <CreateSalonForm baseUrl={baseUrl} />

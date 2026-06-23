@@ -60,7 +60,7 @@ export async function onTipSucceeded(service: Db, transactionId: string): Promis
               firstName: firstNameFrom(recipient.name, 'Bonjour'),
               amount: txn.amount,
               currency: txn.currency,
-              establishmentName: est?.name ?? 'votre salon',
+              establishmentName: est?.name ?? 'votre établissement',
               dashboardUrl: `${getBaseUrl()}/dashboard`,
               unsubscribeUrl: lifecycleUnsubUrl('group_admin', groupId),
             }),

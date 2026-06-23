@@ -107,7 +107,7 @@ export default async function AdminEmailsPage({ params }: { params: Promise<{ lo
       <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', marginBottom: 20 }}>
         <Kpi label="Envoyés (récents)" value={String(totalSent)} sub={`sur ${rows.length} entrées`} />
         <Kpi label="Échecs" value={String(totalFailed)} />
-        <Kpi label="Désinscriptions" value={String((groupsOptOut ?? 0) + (staffOptOut ?? 0))} sub={`${groupsOptOut ?? 0} salons · ${staffOptOut ?? 0} staff`} />
+        <Kpi label="Désinscriptions" value={String((groupsOptOut ?? 0) + (staffOptOut ?? 0))} sub={`${groupsOptOut ?? 0} établissements · ${staffOptOut ?? 0} staff`} />
         <Kpi label="Types d'emails actifs" value={String(byKey.size)} />
       </div>
 

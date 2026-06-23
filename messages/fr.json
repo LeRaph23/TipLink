@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "Digitip - Pourboires par CB via NFC | digitip.app",
-    "description": "Digitip est l'app de pourboires sans contact par NFC : posez un SmartTag, vos clients laissent un pourboire en un tap. Solution française pour coiffeurs, restaurants et hôtels — disponible sur digitip.app."
+    "description": "Digitip est l'app de pourboires sans contact par NFC : posez un SmartTag, vos clients laissent un pourboire en un tap. Solution française pour restaurants, bars, cafés, salons, hôtels et tous les établissements de proximité — disponible sur digitip.app."
   },
   "common": {
     "login": "Connexion",
@@ -286,22 +286,22 @@
       "title": "Partout où votre client vous voit",
       "p1": "Comptoir / caisse",
       "p1sub": "Visible au moment de régler, naturel",
-      "p2": "Poste de travail",
-      "p2sub": "À portée de main pendant la prestation",
-      "p3": "Face au miroir",
-      "p3sub": "Le client l'a en face de lui toute la séance",
-      "p4": "Salle d'attente",
+      "p2": "Table ou poste de travail",
+      "p2sub": "À portée de main pendant le repas ou la prestation",
+      "p3": "Avec l'addition",
+      "p3sub": "Présenté au moment de régler, le geste est naturel",
+      "p4": "Entrée / salle d'attente",
       "p4sub": "Discret, toujours visible"
     },
     "testimonials": {
       "kicker": "Ils en parlent",
       "title": "Ce que disent les gérants",
       "t1name": "Sophie L.",
-      "t1role": "Gérante — Salon Coupe & Style",
-      "t1quote": "En deux semaines mes coiffeurs ont vu leurs pourboires doubler. Les clientes adorent le côté sans contact, et moi j'adore le dashboard.",
+      "t1role": "Gérante — Restaurant Le Comptoir",
+      "t1quote": "En deux semaines mon équipe en salle a vu ses pourboires doubler. Les clients adorent le côté sans contact, et moi j'adore le dashboard.",
       "t2name": "Karim B.",
-      "t2role": "Manager — Institut Beauté Harmonie (3 salons)",
-      "t2quote": "On a déployé les plaques dans les 3 salons en une matinée. Zéro friction, zéro plainte. Les pourboires arrivent sur le compte bancaire, via Stripe.",
+      "t2role": "Manager — Groupe Harmonie (3 établissements)",
+      "t2quote": "On a déployé les plaques dans les 3 établissements en une matinée. Zéro friction, zéro plainte. Les pourboires arrivent sur le compte bancaire, via Stripe.",
       "t3name": "Aurélie M.",
       "t3role": "Propriétaire — Salon Éclat Beauté",
       "t3quote": "Je pensais que c'était compliqué mais la config a pris 10 minutes. Mes collaboratrices reçoivent leurs pourboires le soir même."
@@ -398,11 +398,11 @@
     "packs": {
       "solo": {
         "name": "Solo",
-        "tagline": "Une plaque époxy premium pour un coiffeur ou un comptoir individuel."
+        "tagline": "Une plaque époxy premium pour un professionnel ou un comptoir individuel."
       },
       "duo": {
         "name": "Duo",
-        "tagline": "Deux plaques au meilleur tarif — idéal pour les salons avec plusieurs coiffeurs."
+        "tagline": "Deux plaques au meilleur tarif — idéal pour les établissements avec plusieurs collaborateurs."
       }
     },
     "trust1": "Sécurisé par Stripe",
@@ -828,7 +828,7 @@
       "tipLink": "Page de pourboire client",
       "copyLink": "Copier le lien",
       "linkCopied": "Copié !",
-      "createHint": "Créez un établissement supplémentaire seulement si vous gérez plusieurs salons. Pensez ensuite à y affecter un SmartTag depuis l'onglet SmartTags — sans tag, l'établissement ne peut pas recevoir de pourboires."
+      "createHint": "Créez un établissement supplémentaire seulement si vous gérez plusieurs établissements. Pensez ensuite à y affecter un SmartTag depuis l'onglet SmartTags — sans tag, l'établissement ne peut pas recevoir de pourboires."
     },
     "stickers": {
       "title": "SmartTags",
@@ -904,7 +904,7 @@
     },
     "admin": {
       "nav": {
-        "tenantSectionTitle": "Salon / groupe",
+        "tenantSectionTitle": "Établissement / groupe",
         "sectionTitle": "Plateforme",
         "overview": "Vue d'ensemble",
         "search": "Recherche",
@@ -1235,8 +1235,8 @@
       "hint": "Les codes se trouvent sous le QR code imprimé sur chaque SmartTag."
     },
     "salon": {
-      "title": "Nom du salon",
-      "subtitle": "Comment s'appelle votre salon ou établissement ?"
+      "title": "Nom de l'établissement",
+      "subtitle": "Comment s'appelle votre établissement ?"
     },
     "address": {
       "title": "Adresse",

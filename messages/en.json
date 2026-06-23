@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "Digitip — Cashless tips via NFC | digitip.app",
-    "description": "Digitip is the cashless tipping app powered by NFC: place a SmartTag, your customers tip in one tap. Built for hair salons, restaurants and hotels — available at digitip.app."
+    "description": "Digitip is the cashless tipping app powered by NFC: place a SmartTag, your customers tip in one tap. Built for restaurants, bars, cafés, salons, hotels and every local business — available at digitip.app."
   },
   "common": {
     "login": "Log in",
@@ -286,22 +286,22 @@
       "title": "Wherever your client looks",
       "p1": "Counter / checkout",
       "p1sub": "Visible at payment time, feels natural",
-      "p2": "Workstation",
-      "p2sub": "Within reach during the service",
-      "p3": "Facing the mirror",
-      "p3sub": "The client sees it throughout the whole session",
-      "p4": "Waiting area",
+      "p2": "Table or workstation",
+      "p2sub": "Within reach during the meal or the service",
+      "p3": "With the bill",
+      "p3sub": "Presented at payment time, the gesture feels natural",
+      "p4": "Entrance / waiting area",
       "p4sub": "Discreet, always visible"
     },
     "testimonials": {
       "kicker": "What they say",
       "title": "Owners speak for themselves",
       "t1name": "Sophie L.",
-      "t1role": "Owner — Coupe & Style Salon",
-      "t1quote": "Within two weeks my stylists doubled their tips. Clients love the contactless experience, and I love the dashboard.",
+      "t1role": "Owner — Le Comptoir Restaurant",
+      "t1quote": "Within two weeks my floor team doubled their tips. Customers love the contactless experience, and I love the dashboard.",
       "t2name": "Karim B.",
-      "t2role": "Manager — Institut Beauté Harmonie (3 salons)",
-      "t2quote": "We deployed the plaques across all 3 salons in one morning. Zero friction, zero complaints. Tips arrive in the bank account, via Stripe.",
+      "t2role": "Manager — Harmonie Group (3 venues)",
+      "t2quote": "We deployed the plaques across all 3 venues in one morning. Zero friction, zero complaints. Tips arrive in the bank account, via Stripe.",
       "t3name": "Aurélie M.",
       "t3role": "Owner — Salon Éclat Beauté",
       "t3quote": "I thought it would be complicated but setup took 10 minutes. My team receives their tips the same evening."
@@ -398,11 +398,11 @@
     "packs": {
       "solo": {
         "name": "Solo",
-        "tagline": "One premium epoxy plaque for a single stylist or counter."
+        "tagline": "One premium epoxy plaque for a single professional or counter."
       },
       "duo": {
         "name": "Duo",
-        "tagline": "Two plaques at the best rate — ideal for multi-stylist salons."
+        "tagline": "Two plaques at the best rate — ideal for venues with several team members."
       }
     },
     "trust1": "Secured by Stripe",
@@ -828,7 +828,7 @@
       "tipLink": "Customer tip page",
       "copyLink": "Copy link",
       "linkCopied": "Copied!",
-      "createHint": "Only create an extra establishment if you run several salons. Then remember to assign a SmartTag to it from the SmartTags tab — without a tag, the establishment can't receive tips."
+      "createHint": "Only create an extra establishment if you run several establishments. Then remember to assign a SmartTag to it from the SmartTags tab — without a tag, the establishment can't receive tips."
     },
     "stickers": {
       "title": "SmartTags",
@@ -904,7 +904,7 @@
     },
     "admin": {
       "nav": {
-        "tenantSectionTitle": "Salon / group",
+        "tenantSectionTitle": "Establishment / group",
         "sectionTitle": "Platform",
         "overview": "Overview",
         "search": "Search",
@@ -1235,8 +1235,8 @@
       "hint": "Codes are printed under the QR code on each SmartTag."
     },
     "salon": {
-      "title": "Salon name",
-      "subtitle": "What is your salon or establishment called?"
+      "title": "Establishment name",
+      "subtitle": "What is your establishment called?"
     },
     "address": {
       "title": "Address",

@@ -75,7 +75,7 @@ export function CreateEstablishmentForm() {
         <label style={labelStyle}>{t('name')}</label>
         <input
           type="text" required value={name} onChange={e => setName(e.target.value)}
-          placeholder="Salon Lumière"
+          placeholder="Ex. Le Comptoir, Salon Lumière…"
           style={fieldStyle}
         />
       </div>
