@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -11,6 +12,7 @@ import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
+import { staffTipTag, establishmentTipTag } from '@/lib/cache/pay-tags';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -632,10 +634,18 @@ async function handleEvent(
       const accountId = (event as Stripe.Event & { account?: string }).account ?? null;
       if (!accountId) break;
 
-      await supabase
+      const { data: deauthorized } = await supabase
         .from('staff_profiles')
         .update({ payouts_frozen: true, onboarding_status: 'deauthorized' } as never)
-        .eq('stripe_account_id', accountId);
+        .eq('stripe_account_id', accountId)
+        .select('id, establishment_id');
+
+      // Account revoked → staff is no longer payable; refresh the public pages.
+      for (const row of deauthorized ?? []) {
+        const s = row as { id: string; establishment_id: string | null };
+        revalidateTag(staffTipTag(s.id), 'max');
+        if (s.establishment_id) revalidateTag(establishmentTipTag(s.establishment_id), 'max');
+      }
 
       break;
     }
@@ -645,7 +655,7 @@ async function handleEvent(
       if (account.details_submitted && account.charges_enabled) {
         const { data: staffRow } = await supabase
           .from('staff_profiles')
-          .select('id, onboarding_status')
+          .select('id, establishment_id, onboarding_status')
           .eq('stripe_account_id', account.id)
           .maybeSingle();
         // Only act on the actual transition into 'complete'.
@@ -654,6 +664,11 @@ async function handleEvent(
             .from('staff_profiles')
             .update({ onboarding_status: 'complete' })
             .eq('id', staffRow.id);
+          // Staff just became payable — refresh the public tip pages.
+          revalidateTag(staffTipTag(staffRow.id), 'max');
+          if (staffRow.establishment_id) {
+            revalidateTag(establishmentTipTag(staffRow.establishment_id), 'max');
+          }
           await onStaffBankingComplete(supabase, staffRow.id).catch((err) =>
             console.error('[lifecycle] onStaffBankingComplete failed', err));
           // Deferred onboarding: pay out every tip that accumulated (held) while

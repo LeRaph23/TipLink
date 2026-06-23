@@ -2,9 +2,14 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { establishmentTipTag } from '@/lib/cache/pay-tags';
 
+// Reached via an internal rewrite from `/s/[shortId]` right after an NFC scan,
+// so this is the hottest tip path. The colleague list is cached in the Data
+// Cache and tagged per establishment, so repeat scans skip the Supabase
+// round-trip. Mutations that change the roster or its display (staff add/edit/
+// deactivate, Stripe onboarding, demo mode…) invalidate the tag.
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
 
@@ -36,7 +41,7 @@ async function fetchGroupStaff(establishmentId: string): Promise<PublicGroupStaf
         Accept: 'application/json',
       },
       body: JSON.stringify({ p_establishment_id: establishmentId }),
-      cache: 'no-store',
+      next: { revalidate: 300, tags: [establishmentTipTag(establishmentId)] },
     });
   } catch {
     return null;

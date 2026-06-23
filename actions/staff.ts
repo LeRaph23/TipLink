@@ -1,11 +1,12 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getTranslations } from 'next-intl/server';
 import { sendStaffInviteLink } from '@/lib/staff-invite';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
+import { staffTipTag, establishmentTipTag } from '@/lib/cache/pay-tags';
 
 interface CreateStaffInput {
   fullName: string;
@@ -34,6 +35,8 @@ export async function createStaffMember(
   if (error) return actionError(classifyDbError(error), error, 'createStaffMember');
 
   revalidatePath(`/dashboard/establishments/${input.establishmentId}`);
+  // New colleague shows up on the establishment's public "pick a colleague" page.
+  updateTag(establishmentTipTag(input.establishmentId));
   return { id: data.id };
 }
 
@@ -94,6 +97,7 @@ export async function inviteStaffMember(
   });
 
   revalidatePath('/dashboard/staff');
+  updateTag(establishmentTipTag(input.establishmentId));
   return { id: staff.id, invited };
 }
 
@@ -115,13 +119,17 @@ export async function updateStaffMember(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update(patch as any)
     .eq('id', staffId)
-    .select('id');
+    .select('id, establishment_id');
 
   if (error) return actionError(classifyDbError(error), error, 'updateStaffMember');
   if (!updated || updated.length === 0) return actionError('forbidden');
 
   revalidatePath('/dashboard/staff');
   revalidatePath(`/dashboard/staff/${staffId}`);
+  // Name/avatar are shown on both public tip pages.
+  updateTag(staffTipTag(staffId));
+  const establishmentId = updated[0]?.establishment_id;
+  if (establishmentId) updateTag(establishmentTipTag(establishmentId));
   return { success: true };
 }
 
@@ -180,6 +188,7 @@ export async function joinAsStaffMember(): Promise<{ ok: true } | { error: strin
   if (error) return actionError(classifyDbError(error), error, 'joinAsStaffMember');
 
   revalidatePath('/dashboard/staff');
+  updateTag(establishmentTipTag(est.id));
   return { ok: true };
 }
 
@@ -207,12 +216,16 @@ export async function deactivateStaffMember(
     .from('staff_profiles')
     .update({ is_active: false, deleted_at: new Date().toISOString() })
     .eq('id', staffId)
-    .select('id');
+    .select('id, establishment_id');
 
   if (error) return actionError(classifyDbError(error), error, 'deactivateStaffMember');
   if (!updated || updated.length === 0) return actionError('forbidden');
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/staff');
+  // Deactivation flips is_payable and removes the colleague from the roster.
+  updateTag(staffTipTag(staffId));
+  const establishmentId = updated[0]?.establishment_id;
+  if (establishmentId) updateTag(establishmentTipTag(establishmentId));
   return { success: true };
 }

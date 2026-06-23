@@ -4,11 +4,17 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { AmountSelector } from '@/components/payment/AmountSelector';
 import { Icon } from '@/components/ambassadeur/icons';
+import { staffTipTag } from '@/lib/cache/pay-tags';
 
 // Edge-safe: uses raw PostgREST fetch against a SECURITY DEFINER RPC
 // that only exposes whitelisted columns. No Supabase SDK import here.
+//
+// The two Supabase reads are cached in the Next.js Data Cache and tagged per
+// staff member, so a scanned tag is served without a database round-trip after
+// the first hit. Dashboard mutations (name/avatar, activation, Stripe
+// onboarding completion, demo mode…) invalidate `staffTipTag(staffId)`, and the
+// `revalidate` windows below bound staleness if a path is ever missed.
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 
 interface PublicStaffRow {
   id: string;
@@ -39,7 +45,9 @@ async function fetchPublicStaff(staffId: string): Promise<PublicStaffRow | null>
         Accept: 'application/json',
       },
       body: JSON.stringify({ p_staff_id: staffId }),
-      cache: 'no-store',
+      // Cache the profile (name, avatar, payable status, thresholds) for a few
+      // minutes; invalidated on-demand via staffTipTag when any of it changes.
+      next: { revalidate: 300, tags: [staffTipTag(staffId)] },
     });
   } catch {
     return null;
@@ -66,7 +74,9 @@ async function fetchEstablishmentId(staffId: string): Promise<string | null> {
           Authorization: `Bearer ${anonKey}`,
           Accept: 'application/json',
         },
-        cache: 'no-store',
+        // A staff member's establishment never changes, so this can be cached
+        // aggressively; still tagged so it's purged alongside the profile.
+        next: { revalidate: 3600, tags: [staffTipTag(staffId)] },
       }
     );
     if (!res.ok) return null;
