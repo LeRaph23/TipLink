@@ -1220,6 +1220,8 @@ export type Database = {
           created_at: string
           currency: string
           deleted_at: string | null
+          google_place_id: string | null
+          google_review_url: string | null
           group_id: string
           id: string
           name: string
@@ -1234,6 +1236,8 @@ export type Database = {
           created_at?: string
           currency?: string
           deleted_at?: string | null
+          google_place_id?: string | null
+          google_review_url?: string | null
           group_id: string
           id?: string
           name: string
@@ -1248,6 +1252,8 @@ export type Database = {
           created_at?: string
           currency?: string
           deleted_at?: string | null
+          google_place_id?: string | null
+          google_review_url?: string | null
           group_id?: string
           id?: string
           name?: string
@@ -2367,12 +2373,20 @@ export type Database = {
           tip_thresholds: Json
         }[]
       }
+      get_public_establishment_review: {
+        Args: { p_establishment_id: string }
+        Returns: {
+          establishment_name: string
+          establishment_review_url: string
+        }[]
+      }
       get_public_staff: {
         Args: { p_staff_id: string }
         Returns: {
           avatar_url: string
           establishment_currency: string
           establishment_name: string
+          establishment_review_url: string
           full_name: string
           id: string
           is_payable: boolean

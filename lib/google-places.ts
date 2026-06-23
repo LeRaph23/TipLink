@@ -171,6 +171,114 @@ export async function findGooglePlaceForSalon(input: {
   };
 }
 
+// ─── Onboarding: pick an establishment to attach a Google review link ─────────
+
+export type GooglePlaceCandidate = {
+  placeId: string;
+  displayName: string | null;
+  formattedAddress: string | null;
+  rating: number | null;
+  userRatingCount: number | null;
+  reviewUrl: string;
+};
+
+/**
+ * Canonical "write a review" deep link. Opening this drops the customer
+ * straight on the 5-star review form for the place — no search, no app.
+ */
+export function buildGoogleReviewUrl(placeId: string): string {
+  return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
+}
+
+/**
+ * Best-effort normalisation of whatever a manager pastes into the manual review
+ * field. Accepts a bare place_id, a writereview link, a maps URL carrying a
+ * place_id, or a g.page short link. Returns a clean review URL, or null when the
+ * input doesn't look like anything Google-related (so callers can reject it).
+ */
+export function normalizeGoogleReviewUrl(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+
+  // Bare place_id (Google IDs start with ChIJ / GhIJ and are alphanum-ish).
+  if (/^[A-Za-z0-9_-]{15,}$/.test(v) && !v.includes('/') && !v.includes('.')) {
+    return buildGoogleReviewUrl(v);
+  }
+
+  // Anything with a placeid / place_id query param → rebuild canonical link.
+  const idMatch = v.match(/place[_]?id=([A-Za-z0-9_-]+)/i);
+  if (idMatch) return buildGoogleReviewUrl(idMatch[1]);
+
+  // g.page short links already deep-link to the business; append /review when
+  // it isn't there so the form opens directly.
+  if (/^https?:\/\/(www\.)?g\.page\//i.test(v)) {
+    return v.replace(/\/+$/, '').endsWith('/review') ? v : `${v.replace(/\/+$/, '')}/review`;
+  }
+
+  // Any other Google/Maps URL: keep it as-is (still better than nothing).
+  if (/^https?:\/\/([a-z0-9-]+\.)*google\.[a-z.]+\//i.test(v) ||
+      /^https?:\/\/maps\.app\.goo\.gl\//i.test(v)) {
+    return v;
+  }
+
+  return null;
+}
+
+/**
+ * Free-text search for an establishment by name (+ optional address), used when
+ * a manager sets up their Google review link. Unlike findGooglePlaceForSalon
+ * this has no GPS to bias against, so we return the top matches and let the
+ * human confirm which one is theirs. Each candidate carries a ready-to-use
+ * review URL.
+ */
+export async function searchEstablishmentCandidates(input: {
+  name: string;
+  address?: string | null;
+}): Promise<GooglePlaceCandidate[]> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) throw new Error('GOOGLE_PLACES_API_KEY non configurée');
+
+  const textQuery = [input.name, input.address].filter(Boolean).join(' ').trim();
+  if (textQuery.length < 2) return [];
+
+  const res = await fetch(PLACES_SEARCH_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': [
+        'places.id',
+        'places.displayName',
+        'places.formattedAddress',
+        'places.rating',
+        'places.userRatingCount',
+      ].join(','),
+    },
+    body: JSON.stringify({
+      textQuery,
+      languageCode: 'fr',
+      regionCode: 'FR',
+      maxResultCount: 5,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 300)}`);
+  }
+
+  const data = (await res.json()) as SearchTextResponse;
+  return (data.places ?? []).map((p) => ({
+    placeId: p.id,
+    displayName: p.displayName?.text ?? null,
+    formattedAddress: p.formattedAddress ?? null,
+    rating: p.rating ?? null,
+    userRatingCount: p.userRatingCount ?? null,
+    reviewUrl: buildGoogleReviewUrl(p.id),
+  }));
+}
+
 /**
  * Best-effort enrich for a batch. Sequential to play nice with Google's
  * QPS limits — no manual throttle needed (they allow 10 QPS by default).

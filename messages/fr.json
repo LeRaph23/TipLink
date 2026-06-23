@@ -631,7 +631,11 @@
     "tipSubhead": "Laissez un pourboire en un clin d’œil",
     "feeInfo": "Ces quelques centimes ne couvrent qu’une partie des frais de transaction bancaire que nous payons sur chaque pourboire. On fait notre maximum pour les limiter.",
     "successBodyNamed": "Votre pourboire est bien parti — {name} en a été informé·e.",
-    "sentTo": "Envoyé à"
+    "sentTo": "Envoyé à",
+    "reviewTitle": "Vous avez passé un bon moment ?",
+    "reviewTitleNamed": "Vous avez apprécié {name} ?",
+    "reviewBody": "Aidez l’équipe en laissant un avis Google — ça prend 10 secondes.",
+    "reviewButton": "Laisser un avis Google →"
   },
   "dashboard": {
     "welcome": "Bon retour,",
@@ -1267,6 +1271,27 @@
       "title": "Recevoir vos pourboires",
       "subtitle": "Vos virements se configurent ensuite depuis votre tableau de bord, via Stripe.",
       "body": "Parfait — vous pourrez recevoir des pourboires personnellement. La configuration de vos virements se fait en quelques clics depuis votre tableau de bord (rubrique <b>Virements</b>), via <b>Stripe</b>, notre partenaire de paiement sécurisé. C'est Stripe qui collecte et chiffre vos coordonnées — vos informations bancaires ne transitent jamais par Digitip."
+    },
+    "googleReview": {
+      "title": "Avis Google",
+      "subtitle": "Reliez votre fiche Google pour proposer aux clients de laisser un avis juste après leur pourboire.",
+      "skip": "Passer pour l’instant",
+      "searchPlaceholder": "Nom de votre établissement",
+      "searchButton": "Rechercher",
+      "searching": "Recherche…",
+      "noResults": "Aucun établissement trouvé. Réessayez avec un autre nom ou ajoutez le lien manuellement.",
+      "useManual": "Saisir le lien manuellement",
+      "manualIntro": "Collez le lien « Demander des avis » de votre fiche Google Business.",
+      "manualSave": "Enregistrer le lien",
+      "backToSearch": "← Revenir à la recherche",
+      "manualHelp": "Vous le trouvez sur votre fiche Google Business → « Demander des avis ». Un identifiant de lieu (place ID) ou un lien g.page fonctionne aussi.",
+      "manualInvalid": "Saisissez un lien d’avis Google valide.",
+      "linked": "Fiche Google reliée",
+      "change": "Changer",
+      "unknownPlace": "Établissement",
+      "reviewCount": "{count} avis",
+      "fieldLabel": "Lien d’avis Google",
+      "fieldHint": "Après chaque pourboire, le client pourra laisser un avis Google en un clic."
     }
   }
 }

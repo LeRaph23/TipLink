@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
+import { normalizeGoogleReviewUrl } from '@/lib/google-places';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
 
 const EstSchema = z.object({
@@ -12,6 +13,9 @@ const EstSchema = z.object({
   business_type: z.enum(['restaurant', 'beauty']),
   country: z.string().length(2),
   currency: z.string().length(3),
+  google_place_id: z.string().max(300).optional(),
+  // Empty string is allowed so a manager can clear the link from the dashboard.
+  google_review_url: z.string().max(1000).optional(),
 });
 
 export async function createEstablishment(
@@ -28,6 +32,9 @@ export async function createEstablishment(
   if (!parsed.success) return actionError('validation', parsed.error, 'createEstablishment');
 
   const { name, business_type, country, currency } = parsed.data;
+  const reviewUrl = parsed.data.google_review_url
+    ? normalizeGoogleReviewUrl(parsed.data.google_review_url)
+    : null;
 
   const service = createServiceClient();
   const slug = await makeUniqueEstablishmentSlug(service, name);
@@ -41,6 +48,8 @@ export async function createEstablishment(
       country: country.toUpperCase(),
       currency: currency.toLowerCase(),
       onboarding_status: 'not_started',
+      ...(reviewUrl ? { google_review_url: reviewUrl } : {}),
+      ...(parsed.data.google_place_id ? { google_place_id: parsed.data.google_place_id } : {}),
     })
     .select('id')
     .single();
@@ -76,6 +85,18 @@ export async function updateEstablishment(
     ? await makeUniqueEstablishmentSlug(service, input.name, estId)
     : undefined;
 
+  // google_review_url: undefined → leave untouched; '' → clear; value → normalise.
+  // When cleared, also drop the stored place_id so the two never disagree.
+  const reviewPatch =
+    input.google_review_url === undefined
+      ? {}
+      : input.google_review_url.trim() === ''
+        ? { google_review_url: null, google_place_id: null }
+        : {
+            google_review_url: normalizeGoogleReviewUrl(input.google_review_url),
+            ...(input.google_place_id !== undefined ? { google_place_id: input.google_place_id || null } : {}),
+          };
+
   const { error } = await service
     .from('establishments')
     .update({
@@ -83,6 +104,7 @@ export async function updateEstablishment(
       ...(input.business_type ? { business_type: input.business_type } : {}),
       ...(input.country ? { country: input.country.toUpperCase() } : {}),
       ...(input.currency ? { currency: input.currency.toLowerCase() } : {}),
+      ...reviewPatch,
     })
     .eq('id', estId);
 
