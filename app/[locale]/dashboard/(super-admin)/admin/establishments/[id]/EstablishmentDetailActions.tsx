@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { deleteEstablishment, updateEstablishment } from '@/actions/admin/establishments';
+import { deleteEstablishment, updateEstablishment, setDemoMode } from '@/actions/admin/establishments';
 
 const ghostBtn: React.CSSProperties = {
   padding: '7px 14px', borderRadius: 6, background: 'transparent',
@@ -39,9 +39,10 @@ type Props = {
   name: string;
   address: string | null;
   businessType: BusinessType | null;
+  isDemo?: boolean;
 };
 
-export function EstablishmentDetailActions({ id, name, address, businessType }: Props) {
+export function EstablishmentDetailActions({ id, name, address, businessType, isDemo }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -58,6 +59,16 @@ export function EstablishmentDetailActions({ id, name, address, businessType }: 
       const res = await deleteEstablishment(id);
       if (!res.ok) setError(res.error);
       else router.push('/dashboard/admin/establishments');
+    });
+  }
+
+  function handleToggleDemo() {
+    const next = !isDemo;
+    if (next && !confirm(`Activer le mode démo (faux paiement 0 €) pour "${name}" ?\nLes pourboires ne seront pas réellement débités.`)) return;
+    startTransition(async () => {
+      const res = await setDemoMode(id, next);
+      if (!res.ok) setError(res.error);
+      else router.refresh();
     });
   }
 
@@ -78,8 +89,18 @@ export function EstablishmentDetailActions({ id, name, address, businessType }: 
       {error && (
         <div style={{ fontSize: 12, color: 'var(--error, #ef4444)', marginTop: 4 }}>{error}</div>
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button style={ghostBtn} disabled={pending} onClick={() => setEditing(true)}>Modifier</button>
+        <button
+          style={isDemo
+            ? { ...ghostBtn, borderColor: 'var(--accent)', color: 'var(--accent)', background: 'var(--accent-muted)' }
+            : ghostBtn}
+          disabled={pending}
+          onClick={handleToggleDemo}
+          title="Faux paiement 0 € pour les démos"
+        >
+          {isDemo ? '🧪 Démo : ON' : 'Activer démo'}
+        </button>
         <button style={dangerBtn} disabled={pending} onClick={handleDelete}>Supprimer</button>
       </div>
 

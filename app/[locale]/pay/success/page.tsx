@@ -11,6 +11,12 @@ interface Props {
   searchParams: Promise<{
     payment_intent?: string;
     redirect_status?: string;
+    // Demo mode (no real charge): the pay page routes here directly.
+    demo?: string;
+    staff?: string;
+    establishment?: string;
+    amt?: string;
+    cur?: string;
   }>;
 }
 
@@ -118,14 +124,18 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
     }
   })();
 
-  // Server-side verification: retrieve real status and amount from Stripe
-  let status: RedirectStatus = queryStatus;
-  let amountCents: number | null = null;
-  let currency: string | null = null;
-  let staffId: string | null = null;
-  let establishmentId: string | null = null;
+  // Demo mode: no PaymentIntent exists — values come straight from the query
+  // string the demo pay button built. Nothing is ever charged or persisted.
+  const isDemo = sp.demo === '1';
 
-  if (sp.payment_intent && sp.redirect_status === 'succeeded') {
+  // Server-side verification: retrieve real status and amount from Stripe
+  let status: RedirectStatus = isDemo ? 'succeeded' : queryStatus;
+  let amountCents: number | null = isDemo && sp.amt ? Number(sp.amt) || null : null;
+  let currency: string | null = isDemo ? (sp.cur?.toUpperCase() ?? 'EUR') : null;
+  let staffId: string | null = isDemo ? (sp.staff ?? null) : null;
+  let establishmentId: string | null = isDemo ? (sp.establishment ?? null) : null;
+
+  if (!isDemo && sp.payment_intent && sp.redirect_status === 'succeeded') {
     try {
       const pi = await stripe.paymentIntents.retrieve(sp.payment_intent);
       status =
@@ -190,6 +200,16 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
       <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 400, borderRadius: '50%', background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
       <div className="fade-up" style={{ width: '100%', maxWidth: 380, textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        {isDemo && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 14,
+            padding: '4px 12px', borderRadius: 100,
+            background: 'var(--surface-2)', border: '1px dashed var(--border)',
+            color: 'var(--text-3)', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.06em',
+          }}>
+            🧪 {t('demo.badge')}
+          </div>
+        )}
         <StatusIcon status={status} />
 
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 8 }}>

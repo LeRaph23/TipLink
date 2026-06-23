@@ -18,11 +18,14 @@ export default async function EstablishmentsPage({
     .from('establishments')
     .select(`
       id, name, business_type, slug, country, currency, address,
-      onboarding_status, deleted_at,
+      onboarding_status, deleted_at, google_review_url, is_demo,
       groups (name)
     `)
     .is('deleted_at', null)
     .order('name');
+
+  const total = establishments?.length ?? 0;
+  const withReview = (establishments ?? []).filter((e) => !!e.google_review_url).length;
 
   return (
     <div>
@@ -33,6 +36,17 @@ export default async function EstablishmentsPage({
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
           {t('establishments.subtitle')}
         </p>
+        {total > 0 && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 12,
+            padding: '6px 12px', borderRadius: 100,
+            background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+            fontSize: 12.5, color: 'var(--text-2)',
+          }}>
+            <span style={{ color: '#f5a623' }}>★</span>
+            <span><strong style={{ color: 'var(--text)' }}>{withReview}/{total}</strong> ont configuré leur lien d’avis Google</span>
+          </div>
+        )}
       </div>
 
       <div style={{
@@ -49,6 +63,7 @@ export default async function EstablishmentsPage({
                   t('establishments.colType'),
                   t('establishments.colCurrency'),
                   t('establishments.colStripe'),
+                  'Avis Google',
                   '',
                   'Actions',
                 ].map((h) => (
@@ -65,7 +80,7 @@ export default async function EstablishmentsPage({
             <tbody>
               {(!establishments || establishments.length === 0) && (
                 <tr>
-                  <td colSpan={7} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
+                  <td colSpan={8} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
                     {t('establishments.empty')}
                   </td>
                 </tr>
@@ -79,6 +94,13 @@ export default async function EstablishmentsPage({
                       <Link href={`/dashboard/admin/establishments/${e.id}`} style={{ color: 'var(--text)', textDecoration: 'none' }}>
                         {e.name}
                       </Link>
+                      {e.is_demo && (
+                        <span style={{
+                          marginLeft: 8, padding: '1px 7px', borderRadius: 100, fontSize: 10, fontWeight: 700,
+                          background: 'var(--accent-muted)', color: 'var(--accent)', letterSpacing: '0.04em',
+                          verticalAlign: 'middle',
+                        }}>🧪 DÉMO</span>
+                      )}
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)' }}>{group?.name ?? '—'}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)', textTransform: 'capitalize' }}>{e.business_type}</td>
@@ -94,6 +116,16 @@ export default async function EstablishmentsPage({
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
                         {e.onboarding_status ?? '—'}
                       </span>
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      {e.google_review_url ? (
+                        <a href={e.google_review_url} target="_blank" rel="noopener noreferrer" title={e.google_review_url}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--success)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
+                          <span style={{ color: '#f5a623' }}>★</span> Configuré
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                       <Link

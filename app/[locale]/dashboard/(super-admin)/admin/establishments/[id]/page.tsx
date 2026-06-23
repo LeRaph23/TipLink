@@ -213,6 +213,7 @@ export default async function EstablishmentDetailPage({
             name={est.name}
             address={est.address ?? null}
             businessType={est.business_type ?? null}
+            isDemo={est.is_demo ?? false}
           />
         </div>
       </div>
@@ -255,6 +256,14 @@ export default async function EstablishmentDetailPage({
             } />
             <KV label="Créé le" value={fmtDatetime(est.created_at, locale)} />
             <KV label="Onboarding" value={<StatusBadge status={est.onboarding_status} />} />
+            <KV label="Avis Google" value={est.google_review_url
+              ? <a href={est.google_review_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 12, wordBreak: 'break-all' }}>Configuré ↗</a>
+              : <span style={{ color: 'var(--text-3)' }}>Non configuré</span>
+            } />
+            <KV label="Mode démo" value={est.is_demo
+              ? <span style={{ color: 'var(--accent)', fontWeight: 700 }}>🧪 Activé (faux paiement)</span>
+              : <span style={{ color: 'var(--text-3)' }}>Désactivé</span>
+            } />
           </div>
         </div>
 

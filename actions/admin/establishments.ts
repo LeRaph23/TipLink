@@ -60,6 +60,24 @@ export async function updateEstablishment(
   return { ok: true, data: null };
 }
 
+export async function setDemoMode(id: string, enabled: boolean): Promise<Result<null>> {
+  const auth = await assertSuperAdmin();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const service = createServiceClient();
+  const { error } = await service
+    .from('establishments')
+    .update({ is_demo: enabled } as never)
+    .eq('id', id);
+
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction('establishment.set_demo', { id, enabled });
+  revalidatePath('/dashboard/admin/establishments');
+  revalidatePath(`/dashboard/admin/establishments/${id}`);
+  return { ok: true, data: null };
+}
+
 export async function deleteEstablishment(id: string): Promise<Result<null>> {
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };

@@ -1224,6 +1224,7 @@ export type Database = {
           google_review_url: string | null
           group_id: string
           id: string
+          is_demo: boolean
           name: string
           onboarding_status: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug: string
@@ -1240,6 +1241,7 @@ export type Database = {
           google_review_url?: string | null
           group_id: string
           id?: string
+          is_demo?: boolean
           name: string
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug: string
@@ -1256,6 +1258,7 @@ export type Database = {
           google_review_url?: string | null
           group_id?: string
           id?: string
+          is_demo?: boolean
           name?: string
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug?: string
@@ -2365,6 +2368,7 @@ export type Database = {
           avatar_url: string
           establishment_currency: string
           establishment_id: string
+          establishment_is_demo: boolean
           establishment_name: string
           full_name: string
           group_logo_url: string
@@ -2385,6 +2389,7 @@ export type Database = {
         Returns: {
           avatar_url: string
           establishment_currency: string
+          establishment_is_demo: boolean
           establishment_name: string
           establishment_review_url: string
           full_name: string

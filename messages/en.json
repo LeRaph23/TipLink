@@ -635,7 +635,12 @@
     "reviewTitle": "Did you have a great time?",
     "reviewTitleNamed": "Did you enjoy {name}?",
     "reviewBody": "Help the team by leaving a Google review — it takes 10 seconds.",
-    "reviewButton": "Leave a Google review →"
+    "reviewButton": "Leave a Google review →",
+    "demo": {
+      "badge": "Demo mode",
+      "banner": "Demo — no real payment",
+      "payButton": "Pay {amount} (demo)"
+    }
   },
   "dashboard": {
     "welcome": "Welcome back,",

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { GroupTipCheckout } from './GroupTipCheckout';
+import { DemoPayButton } from './DemoPayButton';
 import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
 
 const SERVICE_FEE_CENTS = 25;
@@ -12,9 +13,10 @@ interface Props {
   currency: string;
   thresholds: number[];
   staffCount: number;
+  isDemo?: boolean;
 }
 
-export function GroupAmountSelector({ establishmentId, currency, thresholds, staffCount }: Props) {
+export function GroupAmountSelector({ establishmentId, currency, thresholds, staffCount, isDemo }: Props) {
   const t = useTranslations('pay');
   const cur = (currency || 'EUR').toUpperCase();
   // 5 is pre-selected by default (falls back to the first preset).
@@ -164,24 +166,33 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
           button flicker): Stripe Elements updates the amount in place via the
           changing `options.amount`. */}
       {hasAmount && tipAmount ? (
-        <CheckoutErrorBoundary
-          fallback={
-            <div style={{
-              padding: 20, borderRadius: 20, background: 'var(--surface)',
-              border: '1px solid var(--border-subtle)', textAlign: 'center',
-              color: 'var(--error)', fontSize: 13,
-            }}>
-              {t('errors.initFailed')}
-            </div>
-          }
-        >
-          <GroupTipCheckout
-            establishmentId={establishmentId}
-            tipAmount={tipAmount}
+        isDemo ? (
+          <DemoPayButton
+            kind="group"
+            targetId={establishmentId}
             amount={tipAmount + SERVICE_FEE_CENTS}
             currency={currency}
           />
-        </CheckoutErrorBoundary>
+        ) : (
+          <CheckoutErrorBoundary
+            fallback={
+              <div style={{
+                padding: 20, borderRadius: 20, background: 'var(--surface)',
+                border: '1px solid var(--border-subtle)', textAlign: 'center',
+                color: 'var(--error)', fontSize: 13,
+              }}>
+                {t('errors.initFailed')}
+              </div>
+            }
+          >
+            <GroupTipCheckout
+              establishmentId={establishmentId}
+              tipAmount={tipAmount}
+              amount={tipAmount + SERVICE_FEE_CENTS}
+              currency={currency}
+            />
+          </CheckoutErrorBoundary>
+        )
       ) : (
         <div style={{
           padding: 20, borderRadius: 20,
