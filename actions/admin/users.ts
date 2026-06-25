@@ -38,7 +38,10 @@ export async function listAuthUsersForAdmin(): Promise<Result<AdminAuthUserRow[]
 
   const service = createServiceClient();
   const { data, error } = await service.auth.admin.listUsers({ page: 1, perPage: 200 });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error('[listAuthUsersForAdmin] Supabase auth admin error:', error);
+    return { ok: false, error: error.message };
+  }
 
   const rows: AdminAuthUserRow[] = (data.users ?? []).map((u) => ({
     id: u.id,
