@@ -634,11 +634,21 @@ async function handleEvent(
       const accountId = (event as Stripe.Event & { account?: string }).account ?? null;
       if (!accountId) break;
 
-      const { data: deauthorized } = await supabase
+      // `onboarding_status` is a Postgres enum of ('not_started','pending',
+      // 'complete'). This used to write 'deauthorized' behind an `as never`
+      // cast, so the whole UPDATE failed on an invalid enum value — which also
+      // meant `payouts_frozen` was never set and a revoked account stayed
+      // payable. 'not_started' is both valid and accurate: the connection is
+      // gone and onboarding has to be redone from scratch.
+      const { data: deauthorized, error: deauthErr } = await supabase
         .from('staff_profiles')
-        .update({ payouts_frozen: true, onboarding_status: 'deauthorized' } as never)
+        .update({ payouts_frozen: true, onboarding_status: 'not_started' })
         .eq('stripe_account_id', accountId)
         .select('id, establishment_id');
+
+      if (deauthErr) {
+        console.error('[stripe] failed to freeze deauthorized account', accountId, deauthErr);
+      }
 
       // Account revoked → staff is no longer payable; refresh the public pages.
       for (const row of deauthorized ?? []) {
@@ -785,7 +795,10 @@ async function handleEvent(
         await supabase.from('establishments').insert({
           group_id: newGroup.id,
           name: legalName,
-          business_type: 'beauty',
+          // Provisional. The webhook fires before the buyer has told us anything
+// about their trade; the onboarding wizard asks and overwrites this.
+// The column is NOT NULL with no default, so a value is required here.
+business_type: 'beauty',
           slug: expressSlug,
           country: expressCountry,
           currency: 'eur',
@@ -997,7 +1010,10 @@ async function handleEvent(
         await supabase.from('establishments').insert({
           group_id: groupId,
           name: estName,
-          business_type: 'beauty',
+          // Provisional. The webhook fires before the buyer has told us anything
+// about their trade; the onboarding wizard asks and overwrites this.
+// The column is NOT NULL with no default, so a value is required here.
+business_type: 'beauty',
           slug,
           country,
           currency: 'eur',
@@ -1218,7 +1234,10 @@ async function handlePackExpressPaid(
   await supabase.from('establishments').insert({
     group_id: newGroup.id,
     name: legalName,
-    business_type: 'beauty',
+    // Provisional. The webhook fires before the buyer has told us anything
+// about their trade; the onboarding wizard asks and overwrites this.
+// The column is NOT NULL with no default, so a value is required here.
+business_type: 'beauty',
     slug,
     country,
     currency: 'eur',
@@ -1393,7 +1412,10 @@ async function handlePackOrderPaid(
     await supabase.from('establishments').insert({
       group_id: groupId,
       name: estName,
-      business_type: 'beauty',
+      // Provisional. The webhook fires before the buyer has told us anything
+// about their trade; the onboarding wizard asks and overwrites this.
+// The column is NOT NULL with no default, so a value is required here.
+business_type: 'beauty',
       slug,
       country,
       currency: 'eur',

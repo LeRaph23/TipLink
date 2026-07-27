@@ -844,6 +844,7 @@
     "banking": {
       "title": "Virements",
       "subtitle": "Recevez vos pourboires sur votre compte bancaire.",
+      "returnIncomplete": "Votre configuration Stripe n'est pas terminée. Vos pourboires sont conservés en sécurité, mais ils ne pourront être versés qu'une fois la vérification finalisée. Reprenez là où vous en étiez ci-dessous.",
       "notLinkedTitle": "Compte non rattaché",
       "notLinkedBody": "Votre compte n'est pas encore rattaché à un établissement. Contactez votre administrateur pour accéder à cette fonctionnalité.",
       "totalReceived": "Total reçu",
@@ -1215,6 +1216,7 @@
       "title": "Votre espace est prêt !",
       "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
       "cta": "Accéder au dashboard →",
+      "ctaBanking": "Configurer mes virements →",
       "payoutTitle": "Finalisez vos virements",
       "payoutBody": "Après avoir confirmé votre email, rendez-vous dans <b>Dashboard → Virements</b> pour configurer vos virements avec Stripe et commencer à recevoir des pourboires."
     },
@@ -1236,6 +1238,12 @@
     "salon": {
       "title": "Nom de l'établissement",
       "subtitle": "Comment s'appelle votre établissement ?"
+    },
+    "businessType": {
+      "title": "Votre activité",
+      "subtitle": "Cela nous aide à adapter les montants de pourboire suggérés à vos clients.",
+      "restaurant": "Restaurant, bar ou café",
+      "beauty": "Coiffure, beauté ou bien-être"
     },
     "address": {
       "title": "Adresse",
@@ -1261,7 +1269,8 @@
       "subtitle": "Invitez vos collègues pour qu'ils puissent eux aussi recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard.",
       "intro": "Vos collègues recevront un email pour créer leur compte et commencer à recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard depuis votre dashboard.",
       "namePlaceholder": "Prénom du collègue",
-      "emailPlaceholder": "Email du collègue",
+      "emailPlaceholder": "Email du collègue (obligatoire pour l'inviter)",
+      "emailRequiredHint": "Sans email, ce collègue n'aura pas de compte et ne pourra pas recevoir de pourboires. Vous pourrez ajouter son adresse plus tard depuis le dashboard.",
       "add": "+ Ajouter un collègue",
       "remove": "Retirer"
     },

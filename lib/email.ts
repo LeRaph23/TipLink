@@ -1494,7 +1494,20 @@ function lifecycleBody(opts: {
 }
 
 async function lifecycleSend(to: string, subject: string, inner: string): Promise<{ id: string | null }> {
-  if (!resend) return { id: null };
+  // Must throw, not return quietly.
+  //
+  // The lifecycle engine writes a `pending` row, calls this, and marks the row
+  // `sent` on success or `failed` on throw. Returning { id: null } here made it
+  // record a send that never happened — and because lifecycle_email_log has a
+  // partial unique index on dedup_key WHERE status IN ('pending','sent'), that
+  // row then blocked the same email to the same recipient forever, including
+  // after the API key was finally configured. `failed` rows are outside the
+  // index, so throwing keeps the send retryable.
+  if (!resend) {
+    throw new Error(
+      'RESEND_API_KEY is not configured — refusing to record a lifecycle email as sent.'
+    );
+  }
   const result = await resend.emails.send({ from: FROM, to, subject, html: themedLayout(inner) });
   if (result.error) throw new Error(result.error.message || 'Resend send failed');
   return { id: result.data?.id ?? null };

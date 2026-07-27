@@ -844,6 +844,7 @@
     "banking": {
       "title": "Payouts",
       "subtitle": "Receive your tips in your bank account.",
+      "returnIncomplete": "Your Stripe setup is not finished. Your tips are held safely, but they cannot be paid out until the verification is complete. Pick up where you left off below.",
       "notLinkedTitle": "Account not linked",
       "notLinkedBody": "Your account isn't linked to an establishment yet. Contact your administrator to access this feature.",
       "totalReceived": "Total received",
@@ -1215,6 +1216,7 @@
       "title": "Your space is ready!",
       "body": "{name} is set up. You can now manage your team and track your tips.",
       "cta": "Go to dashboard →",
+      "ctaBanking": "Set up my payouts →",
       "payoutTitle": "Finish your payouts",
       "payoutBody": "After confirming your email, go to <b>Dashboard → Payouts</b> to set up your payouts with Stripe and start receiving tips."
     },
@@ -1236,6 +1238,12 @@
     "salon": {
       "title": "Establishment name",
       "subtitle": "What is your establishment called?"
+    },
+    "businessType": {
+      "title": "Your business",
+      "subtitle": "This helps us tailor the suggested tip amounts to your customers.",
+      "restaurant": "Restaurant, bar or café",
+      "beauty": "Hair, beauty or wellness"
     },
     "address": {
       "title": "Address",
@@ -1261,7 +1269,8 @@
       "subtitle": "Invite your colleagues so they can also receive tips. You can skip this step and invite them later from your dashboard.",
       "intro": "Your colleagues will receive an email to create their account and start receiving tips. You can skip this step and invite them later from your dashboard.",
       "namePlaceholder": "Colleague's first name",
-      "emailPlaceholder": "Colleague's email",
+      "emailPlaceholder": "Colleague email (required to invite them)",
+      "emailRequiredHint": "Without an email this colleague gets no account and cannot receive tips. You can add their address later from the dashboard.",
       "add": "+ Add a colleague",
       "remove": "Remove"
     },

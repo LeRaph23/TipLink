@@ -34,10 +34,18 @@ function ClockIcon({ size = 18 }: { size?: number }) {
 
 export default async function BankingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ stripe?: string }>;
 }) {
   const { locale } = await params;
+  // lib/stripe/connect.ts sends Stripe back here with ?stripe=return (the user
+  // finished the hosted flow) or ?stripe=refresh (the link expired or they
+  // bailed). Nothing read it, so someone who abandoned KYC landed on a page
+  // identical to the success case — no message, and no way to tell the two
+  // apart in analytics.
+  const { stripe: stripeReturn } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('dashboard.banking');
 
@@ -80,8 +88,24 @@ export default async function BankingPage({
     style: 'currency', currency: 'EUR', minimumFractionDigits: 2,
   });
 
+  // Returned from Stripe but the account still is not usable → they dropped out
+  // mid-flow. Say so, rather than showing the same neutral page as a success.
+  const returnedIncomplete = stripeReturn != null && !isComplete;
+
   return (
     <div style={{ maxWidth: 520 }}>
+      {returnedIncomplete && (
+        <div
+          role="status"
+          style={{
+            marginBottom: 20, padding: '14px 16px', borderRadius: 12,
+            background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e',
+            fontSize: 13.5, lineHeight: 1.6,
+          }}
+        >
+          {t('returnIncomplete')}
+        </div>
+      )}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
           {t('title')}

@@ -24,6 +24,7 @@ interface Colleague {
 interface WizardState {
   nfcCodes: string[];
   establishmentName: string;
+  businessType: 'restaurant' | 'beauty';
   address: string;
   googlePlaceId: string;
   googleReviewUrl: string;
@@ -33,13 +34,13 @@ interface WizardState {
   colleagues: Colleague[];
 }
 
-type ScanStep = 'codes' | 'salon' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
-type AuthStep = 'salon' | 'address' | 'google-review' | 'admin-name' | 'team' | 'tips-opt-in' | 'banking';
-type ExpressStep = 'salon' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
+type ScanStep = 'codes' | 'salon' | 'business-type' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
+type AuthStep = 'salon' | 'business-type' | 'address' | 'google-review' | 'admin-name' | 'team' | 'tips-opt-in' | 'banking';
+type ExpressStep = 'salon' | 'business-type' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
 
-const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
-const AUTH_STEPS: AuthStep[] = ['salon', 'address', 'google-review', 'admin-name', 'team', 'tips-opt-in', 'banking'];
-const EXPRESS_STEPS: ExpressStep[] = ['salon', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
+const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'business-type', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
+const AUTH_STEPS: AuthStep[] = ['salon', 'business-type', 'address', 'google-review', 'admin-name', 'team', 'tips-opt-in', 'banking'];
+const EXPRESS_STEPS: ExpressStep[] = ['salon', 'business-type', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
 
 type Props =
   | {
@@ -248,7 +249,12 @@ function StepTeamContent({
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {colleagues.map((c, i) => (
+        {colleagues.map((c, i) => {
+          // A colleague added without an email gets a profile with no account,
+          // so no invite is sent and they can never connect a bank account or
+          // receive a tip. That used to happen silently; say so instead.
+          const missingEmail = c.fullName.trim() !== '' && c.email.trim() === '';
+          return (
           <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input
@@ -262,8 +268,16 @@ function StepTeamContent({
                 placeholder={t('emailPlaceholder')}
                 value={c.email}
                 onChange={(e) => update(i, { email: e.target.value })}
-                style={{ ...inp, fontSize: 14, padding: '11px 14px' }}
+                style={{
+                  ...inp, fontSize: 14, padding: '11px 14px',
+                  ...(missingEmail ? { borderColor: '#d97706' } : {}),
+                }}
               />
+              {missingEmail && (
+                <p style={{ fontSize: 12.5, color: '#d97706', lineHeight: 1.5, margin: 0 }}>
+                  {t('emailRequiredHint')}
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -283,7 +297,8 @@ function StepTeamContent({
               {t('remove')}
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <button
@@ -330,6 +345,10 @@ export function OnboardingWizard(props: Props) {
     {
       nfcCodes: mode === 'scan' ? [props.initialCode] : [],
       establishmentName: props.establishment?.name ?? '',
+      // Every real creation path used to hardcode 'beauty', so the column said
+      // "beauty" for every establishment in production regardless of trade.
+      // Defaulted rather than left null because the column is NOT NULL.
+      businessType: 'beauty',
       address: props.establishment?.address ?? '',
       googlePlaceId: '',
       googleReviewUrl: '',
@@ -373,6 +392,7 @@ export function OnboardingWizard(props: Props) {
         case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
         case 'password': return state.password.length >= 8;
         case 'team': return true;
+        case 'business-type': return true;
         case 'tips-opt-in': return wantsTips !== null;
         case 'banking': return true;
         default: return true;
@@ -463,6 +483,7 @@ export function OnboardingWizard(props: Props) {
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
+        businessType: state.businessType,
         locale: locale as 'fr' | 'en',
       });
 
@@ -505,6 +526,7 @@ export function OnboardingWizard(props: Props) {
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
+        businessType: state.businessType,
         locale: locale as 'fr' | 'en',
         userId: signUpData.user?.id,
       });
@@ -525,6 +547,7 @@ export function OnboardingWizard(props: Props) {
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
+        businessType: state.businessType,
         locale: locale as 'fr' | 'en',
       });
 
@@ -636,11 +659,25 @@ export function OnboardingWizard(props: Props) {
             </div>
           </div>
         )}
+        {/* The wizard's `banking` step is only a reassurance panel — it never
+            touches Stripe. Finishing onboarding therefore leaves the account
+            with no payout capability, and the user had to find
+            /dashboard/banking on their own. When they said they want to receive
+            tips and they already have a session (postpurchase), send them
+            straight there instead. In scan/express mode they are signed out
+            pending email confirmation, so the dashboard is the only honest
+            destination and the note above explains the remaining step. */}
         <button
-          onClick={() => router.push(`/${locale}/dashboard`)}
+          onClick={() =>
+            router.push(
+              wantsTips && mode === 'postpurchase'
+                ? `/${locale}/dashboard/banking`
+                : `/${locale}/dashboard`
+            )
+          }
           style={{ ...btnPrimary, maxWidth: 320, margin: '0 auto', display: 'block' }}
         >
-          {t('done.cta')}
+          {wantsTips && mode === 'postpurchase' ? t('done.ctaBanking') : t('done.cta')}
         </button>
       </div>
     );
@@ -655,6 +692,7 @@ export function OnboardingWizard(props: Props) {
     'google-review': 'googleReview',
     'admin-name': 'adminName', email: 'email', password: 'password',
     team: 'team', 'tips-opt-in': 'tipsOptIn', banking: 'banking',
+    'business-type': 'businessType',
   };
   const i18nKey = STEP_I18N[currentStep];
   const config = i18nKey
@@ -760,6 +798,35 @@ export function OnboardingWizard(props: Props) {
             colleagues={state.colleagues}
             onChange={(colleagues) => dispatch({ colleagues })}
           />
+        );
+
+      case 'business-type':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(
+              [
+                { value: 'restaurant', label: t('businessType.restaurant'), icon: '🍽️' },
+                { value: 'beauty', label: t('businessType.beauty'), icon: '💇' },
+              ] as const
+            ).map(({ value, label, icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => dispatch({ businessType: value })}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '16px 18px', borderRadius: 14,
+                  border: `1.5px solid ${state.businessType === value ? 'var(--accent)' : 'var(--border)'}`,
+                  background: state.businessType === value ? 'var(--surface-2)' : 'var(--surface)',
+                  cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
+                  transition: 'border-color 150ms, background 150ms',
+                }}
+              >
+                <span style={{ fontSize: 22 }}>{icon}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
+              </button>
+            ))}
+          </div>
         );
 
       case 'tips-opt-in':

@@ -56,12 +56,12 @@ async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<T
   for (const g of groups ?? []) {
     t.considered++;
     try {
-      const { count } = await service
-        .from('smarttag_orders')
-        .select('id', { count: 'exact', head: true })
-        .eq('group_id', g.id);
-      if (!count) { t.skipped++; continue; }
-
+      // Previously gated on the group having a paid smarttag_orders row, which
+      // meant this sequence could never fire for a group that signed up but had
+      // not ordered — exactly the group most worth nudging. With zero paid
+      // orders in production it had never fired at all. A group that created an
+      // account and abandoned onboarding is a legitimate recipient whether or
+      // not it has bought anything.
       const recipient = await resolveGroupAdmin(service, g.id);
       if (!recipient) { t.skipped++; continue; }
 
@@ -333,7 +333,11 @@ async function runStaffBankingNudges(service: Db, dryRun: boolean): Promise<Tall
     .from('staff_profiles')
     .select('id, created_at, establishment_id')
     .eq('is_active', true)
-    .eq('onboarding_status', 'not_started')
+    // 'pending' means a Stripe account exists but KYC was never finished — the
+    // single most valuable person to nudge, and previously the one excluded.
+    // The filter was `.eq('onboarding_status', 'not_started')`, so anyone who
+    // clicked through to Stripe and bailed was never emailed again.
+    .in('onboarding_status', ['not_started', 'pending'])
     .is('deleted_at', null)
     .lt('created_at', new Date(now - 1 * DAY).toISOString())
     .gt('created_at', new Date(now - 30 * DAY).toISOString())
