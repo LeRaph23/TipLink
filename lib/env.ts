@@ -11,6 +11,14 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(10),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(10).optional(),
+  // End date of the launch offer, as YYYY-MM-DD (interpreted as end of that
+  // day, UTC). Drives the countdown in the landing promo banner. When unset or
+  // already past, the banner falls back to its evergreen text and no deadline
+  // is announced — an offer with no end date must not claim to have one.
+  NEXT_PUBLIC_LAUNCH_OFFER_ENDS_AT: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
+    .optional(),
 });
 
 const parsed = publicSchema.safeParse({
@@ -18,6 +26,7 @@ const parsed = publicSchema.safeParse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  NEXT_PUBLIC_LAUNCH_OFFER_ENDS_AT: process.env.NEXT_PUBLIC_LAUNCH_OFFER_ENDS_AT,
 });
 
 if (!parsed.success) {

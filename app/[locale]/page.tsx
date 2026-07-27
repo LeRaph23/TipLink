@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -12,6 +12,7 @@ import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFla
 import { fetchPackPricingAction } from '@/actions/pricing';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
+import { launchOfferState, formatOfferEnd, type LaunchOfferState } from '@/lib/launch-offer';
 
 type PackId = 'solo' | 'duo';
 type PricingMap = Record<PackId, PackPricing>;
@@ -206,10 +207,43 @@ function CheckIcon({ size = 20, color = 'currentColor' }: { size?: number; color
 }
 
 // ─── PromoBanner ──────────────────────────────────────────────────────────────
-function PromoBanner({ text }: { text: string }) {
+// Announces the launch-offer deadline when one is configured, falling back to
+// evergreen text otherwise.
+//
+// The remaining-days count depends on the current date, so it cannot come from
+// the prerendered HTML — this page is statically generated and the count would
+// be frozen at build time, eventually claiming an offer that has already
+// expired. The server snapshot is therefore always "inactive" and the real
+// state is read on the client. useSyncExternalStore is the right primitive
+// here: it gives a server/client split without a mount effect that would
+// re-render the whole page a second time on every visit.
+const OFFER_INACTIVE: LaunchOfferState = { active: false };
+const subscribeToNothing = () => () => {};
+let clientOfferCache: LaunchOfferState | null = null;
+
+function readClientOffer(): LaunchOfferState {
+  // Cached because getSnapshot must return a referentially stable value.
+  clientOfferCache ??= launchOfferState(process.env.NEXT_PUBLIC_LAUNCH_OFFER_ENDS_AT);
+  return clientOfferCache;
+}
+
+function PromoBanner() {
+  const t = useTranslations('landing');
+  const locale = useLocale();
+  const offer = useSyncExternalStore(
+    subscribeToNothing,
+    readClientOffer,
+    () => OFFER_INACTIVE
+  );
+
   return (
     <div style={{ background: 'linear-gradient(90deg,#C95578,#E57A97,#EC97B0)', color: '#fff', textAlign: 'center', padding: '9px 16px', fontSize: 13, fontWeight: 600, letterSpacing: '0.01em', position: 'sticky', top: 0, zIndex: 300 }}>
-      {text}
+      {offer.active
+        ? t('promoBannerDated', {
+            date: formatOfferEnd(offer.endsAt, locale),
+            days: offer.daysLeft,
+          })
+        : t('promoBanner')}
     </div>
   );
 }
@@ -908,7 +942,7 @@ export default function LandingPage() {
 
   return (
     <div style={{ ...LIGHT, minHeight: '100vh', fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)' }}>
-      <PromoBanner text={t('promoBanner')} />
+      <PromoBanner />
       <Header onOrderClick={() => openCart()} />
       <HeroSection onOrderClick={() => openCart()} />
       <StatsStrip />
