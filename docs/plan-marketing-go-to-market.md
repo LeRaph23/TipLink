@@ -99,36 +99,68 @@ Aucun de ces trois ne demande de développement lourd. Deux sont déjà codés.
 
 **C'est le levier n°1. Il fait disparaître le défaut structurel au lieu de le contourner.**
 
-Il existe en France une population énorme de professionnels qui sont **leur propre
-patron, leur propre équipe et leur propre bénéficiaire** :
-
-| Segment | Taille France | Pourquoi ça marche |
-|---|---|---|
-| **Chauffeurs VTC** | ~71 300 chauffeurs actifs sur plateformes en 2024, **+27 % en un an**, 2/3 en Île-de-France | Décision solo, 10 secondes. Le pourboire cash a totalement disparu en VTC. Communautés Facebook massives et faciles à toucher. |
-| **Coiffeurs / barbiers en location de fauteuil** | Secteur coiffure : 111 000 établissements, 178 000 actifs ; **plus de 60 % des gérants travaillent seuls** | Ils encaissent pour eux-mêmes. Le pitch « c'est ton argent » fonctionne directement. |
-| **Barbershops** | 1 617 établissements, +6 %/an, 400 M€ | Culture du pourboire forte, clientèle jeune, 100 % CB. |
-| Tatoueurs, prothésistes ongulaires, esthéticiennes à domicile, masseurs, toiletteurs, guides touristiques, moniteurs | dizaines de milliers | Même logique : indépendants, encaissement personnel. |
-
-Pour ces gens-là, le tableau devient :
+Il existe en France une population de professionnels qui sont **leur propre patron, leur
+propre équipe et leur propre bénéficiaire**. Pour eux, le tableau du §1 devient :
 
 | | Qui décide | Qui paie | Qui en profite |
 |---|---|---|---|
 | Digitip — segment indépendants | **Lui** | **Lui (69 €)** | **Lui** |
 
-Conséquences directes, et elles sont énormes :
+#### Les deux filtres d'éligibilité
 
-- **Le prix cesse d'être une objection.** Un VTC qui gagne 2 800 € net/mois et prend
-  5 pourboires de 2 € par jour récupère ~300 €/mois. Un tag à 69 € se rembourse en une
-  semaine. Ce n'est plus une dépense, c'est un investissement à ROI évident.
-- **Le cycle de vente passe de 3 semaines à 3 minutes.** Pas de gatekeeper, pas de
-  « j'en parle à mon associé », pas de devis.
-- **La pub payante redevient possible.** C'est le point critique : le ciblage B2B local
-  sur Meta est mauvais (tu ne sais pas atteindre « gérant de salon à Lille »), mais le
-  ciblage d'un chauffeur VTC ou d'un barbier via ses centres d'intérêt, ses groupes et
-  ses apps est excellent. **Tu passes d'un marché non-adressable en publicité à un
-  marché adressable.**
-- **Tu sors frontalement de la zone où Sunday, Yavin et OneTip te battent.** Aucun d'eux
-  ne s'adresse à l'individu : ils vendent à l'établissement, souvent via la caisse.
+Tous les indépendants ne se valent pas. Un segment n'est retenu que s'il passe **les deux** :
+
+1. **Aucune plateforme ne s'interpose déjà sur le pourboire.** Si le client paie dans une
+   app qui propose déjà un bouton « pourboire », le tag physique n'a aucune place.
+2. **Il existe un moment de fin de prestation, en face à face, avec le téléphone du client
+   à portée de main.** Sans ce moment, le tag n'est jamais tapé.
+
+> **Segments écartés par ces filtres : VTC et livraison.** Uber, Bolt et Uber Eats
+> intègrent déjà le pourboire dans l'app, et le paiement se fait hors du véhicule — le
+> client ne sort jamais son téléphone pour payer en fin de course. Le tag n'a ni place ni
+> moment. Le volume brut du segment (~71 300 chauffeurs) est trompeur : c'est un marché
+> déjà occupé par l'intermédiaire lui-même.
+
+#### Les segments retenus, par ordre de priorité
+
+| Segment | Taille France | Pourboire type | Pourquoi il passe les filtres |
+|---|---|---|---|
+| **Tatoueurs** | **~15 000 tatoueurs**, ~5 000 salons, 270 M€/an | 20–40 € (ticket 150–500 €) | Aucune plateforme. Fin de séance en face à face. Instagram est leur portfolio **et** leur canal — ils y vivent. Communauté très soudée : le bouche-à-oreille y circule vite. |
+| **Barbiers / barbershops** | 1 617 établissements, +6 %/an, 400 M€ | 2–5 € × 8–12 clients/jour | Culture du pourboire importée des US, très forte. Clientèle jeune, 100 % CB. Paiement au comptoir, face à face. Natifs Instagram/TikTok. |
+| **Guides & free tours** | Niche, concentrée Paris / Strasbourg / Colmar | 3–10 € × 15–30 pers./tour | **Le pourboire *est* le revenu.** Touristes étrangers sans espèces = douleur maximale et immédiate. Meilleure économie unitaire du document (voir plus bas). Fortement saisonnier. |
+| **Esthétique & ongles en indépendant** (cabine ou domicile) | Dizaines de milliers | 3–8 € | Prestation longue, relation personnelle, paiement en fin de séance. Natives TikTok/Instagram. |
+| Toiletteurs, masseurs, praticiens bien-être | Long tail | 3–10 € | Même logique, à traiter en second. |
+
+> **Note sur les barbiers vs « coiffeurs surchargés ».** Un barbershop n'est pas un salon
+> de coiffure : clientèle, culture du pourboire et canaux d'acquisition sont différents,
+> et les concurrents (OneTip en tête) pitchent la coiffure féminine, pas le barbershop.
+> Le risque de saturation existe quand même — à tester sur 20 contacts avant d'investir.
+
+#### L'économie unitaire — et pourquoi elle est meilleure qu'avec les VTC
+
+Rappel : tu nets **~3 % du volume de pourboires**.
+
+- **Tatoueur** : 2–3 clients/jour, ~20 € de pourboire → ~1 200 €/mois de volume → **~36 €/mois** pour toi, sur un seul tag.
+- **Guide free tour** : 2 tours/jour × 15 pourboires × 5 € → ~3 000 €/mois → **~90 €/mois** sur un seul tag. Le meilleur ratio de tout le plan.
+- **Barbier** : ~10 clients/jour, 3 € → ~700 €/mois → **~21 €/mois**.
+
+À comparer à un restaurant moyen (~24 €/mois). Le vivier est plus petit qu'avec les VTC,
+mais **chaque tag vaut plus cher et personne ne se bat pour la place**.
+
+#### Conséquences
+
+- **Le prix cesse d'être une objection.** Un tatoueur qui récupère 400 €/mois de
+  pourboires amortit 69 € en une semaine. Ce n'est plus une dépense, c'est un ROI.
+- **Le cycle de vente passe de 3 semaines à 3 minutes.** Pas de gatekeeper, pas de devis.
+- **L'acquisition redevient possible** — mais par la communauté plus que par la pub
+  froide. Ces segments sont petits, denses et très connectés entre eux : les
+  micro-influenceurs et le bouche-à-oreille y battent le ciblage large (voir §6).
+- **Tu sors de la zone où Sunday, Yavin et OneTip te battent.** Aucun ne s'adresse à
+  l'individu : ils vendent à l'établissement, souvent via la caisse.
+
+> ⚠️ **Le vivier est plus petit qu'espéré au départ** (~40 000 individus adressables
+> contre 71 000 pour les seuls VTC). Le Moteur A reste ton moteur de **cash rapide et de
+> preuve sociale**, mais **le moteur de volume, c'est le Moteur B** (§5).
 
 > **Le produit le supporte déjà.** Un `staff_profile` a son propre `stripe_account_id`
 > et sa propre page `/pay/[staffId]`. Un indépendant = un établissement d'une personne.
@@ -319,12 +351,13 @@ tu as deux problèmes différents : encaisser vite, et construire de la valeur.
 
 ### Moteur A — Indépendants : le moteur de cash et de vitesse
 
-- **Cible** : VTC, barbiers, coiffeurs en location de fauteuil, tatoueurs, esthétique à domicile.
+- **Cible** : tatoueurs, barbiers, guides/free tours, esthétique et ongles en indépendant.
+  **Ni VTC ni livreurs** (§2.1 — la plateforme occupe déjà le pourboire).
 - **Offre** : SmartTag à 69 €, plein tarif, acheté en ligne, livré. **Aucune remise.**
   Ils achètent pour eux, le ROI est évident, le prix n'est pas le sujet.
-- **Vente** : 100 % self-service. Pub → landing dédiée → checkout. Zéro humain.
-- **Pourquoi ça marche** : acheteur = bénéficiaire, décision solo, ciblage publicitaire
-  réellement possible.
+- **Vente** : 100 % self-service. Communauté / pub → landing dédiée → checkout. Zéro humain.
+- **Pourquoi ça marche** : acheteur = bénéficiaire, décision solo, et des communautés
+  petites, denses et très connectées où une référence circule vite.
 - **Ce que ça t'apporte** : du cash immédiat, et surtout **tes premiers vrais utilisateurs,
   donc tes premiers vrais témoignages** — qui débloquent le Moteur B.
 
@@ -371,36 +404,44 @@ Moteur A. Ça te donne exactement de quoi valider les deux moteurs sans réassor
 
 ## 6. Les canaux, classés par rendement réel
 
-### 🥇 Canal 1 — Publicité Meta / TikTok vers les indépendants
+### 🥇 Canal 1 — Communautés et micro-influenceurs des segments indépendants
 
-**Le seul canal réellement scalable de ce document.** Il n'a de sens que grâce au
-repositionnement §2.1 — c'est le passage de « B2B local non-ciblable » à « quasi-B2C
-ciblable ».
+**Le canal n°1 du Moteur A** — et pas la pub, contrairement à ce qu'on pourrait croire.
+Les segments retenus (tatoueurs, barbiers, guides) sont petits mais **extrêmement
+connectés** : les tatoueurs d'une ville se connaissent tous, les barbiers se suivent tous
+sur Instagram. Dans un réseau dense, une référence circule plus vite et coûte moins cher
+qu'une impression achetée.
 
-- **Ciblage VTC** : centres d'intérêt Uber/Bolt/Heetch, « chauffeur VTC », apps
-  concurrentes, géo Île-de-France (2/3 des chauffeurs y sont).
-- **Ciblage barbiers/coiffeurs indépendants** : intérêts barbershop, marques pro
-  (Wahl, BaByliss PRO), « location de fauteuil ».
+- **Micro-influenceurs** (5–50 k abonnés) tatoueurs et barbiers sur TikTok/Instagram :
+  100–300 € le post, ou tag offert + commission. Meilleur rapport coût/crédibilité du
+  document.
+- **Conventions de tatouage** — il y en a plusieurs dizaines par an en France. Deux jours
+  sur place valent des centaines d'appels : tu rencontres 200 tatoueurs indépendants qui
+  décident seuls, avec le tag dans la main.
+- **Groupes Facebook et Instagram** de barbiers et de tatoueurs. Ne poste pas une pub,
+  poste un **résultat** : « J'ai testé un truc pendant 3 semaines, voilà ce que ça a
+  donné », avec la capture des pourboires reçus.
+- **Fournisseurs et distributeurs** (matériel de tatouage, marques barbier) : ils ont déjà
+  la relation et une newsletter.
+
+### 🥈 Canal 2 — Publicité Meta / TikTok vers les indépendants
+
+Le seul canal **payant** scalable — mais avec des audiences plus étroites qu'espéré, donc
+un budget de test réduit et un jugement plus rapide.
+
+- **Ciblage tatoueurs** : intérêts matériel de tatouage, conventions, marques pro,
+  hashtags métier.
+- **Ciblage barbiers** : intérêts barbershop, marques pro (Wahl, BaByliss PRO),
+  « location de fauteuil ».
 - **Créa qui marche** : vidéo verticale 15 s, filmée au téléphone, **pas de production**.
-  Un vrai chauffeur, un vrai tag sur l'appuie-tête, un vrai pourboire qui tombe, la
+  Un vrai tatoueur, un vrai tag sur le comptoir, un vrai pourboire qui tombe, la
   notification à l'écran. La preuve visuelle du pourboire qui arrive **est** la publicité.
 - **Accroche** : « Tes clients te laisseraient un pourboire s'ils avaient du cash. Ils
   n'en ont plus. 69 €, une fois. »
-- **Budget de test** : 1 500 € sur 3 semaines, 3 segments × 3 créas. Objectif CAC < 25 €
+- **Budget de test** : 1 000 € sur 3 semaines, 2–3 segments × 3 créas. Objectif CAC < 25 €
   pour un produit à 69 € HT.
-- **Critère d'arrêt** : si après 800 € dépensés le CAC dépasse 45 €, tu coupes le segment.
-
-### 🥈 Canal 2 — Communautés d'indépendants (gratuit, immédiat)
-
-Les chauffeurs VTC français vivent dans des groupes Facebook de plusieurs dizaines de
-milliers de membres, sur des forums, sur WhatsApp. Idem pour les barbiers sur Instagram.
-
-- Ne poste pas une pub. Poste un **résultat** : « J'ai testé un truc pendant 3 semaines,
-  voilà ce que ça a donné » avec la capture des pourboires reçus.
-- Contacte les **admins de groupes** : un post épinglé ou un partenariat rémunéré coûte
-  100–300 € et touche 30 000 chauffeurs ciblés. Rendement bien supérieur à la pub froide.
-- Micro-influenceurs VTC/barbier sur TikTok (5–50 k abonnés) : 100–300 € le post, ou un
-  tag offert + commission. C'est le meilleur rapport coût/crédibilité disponible.
+- **Critère d'arrêt** : si après 500 € dépensés le CAC dépasse 45 €, tu coupes le segment
+  et tu bascules le budget sur le Canal 1.
 
 ### 🥉 Canal 3 — Téléphone vers les établissements (avec l'offre gratuite)
 
@@ -529,11 +570,12 @@ Semaine 2 :
 
 ### Phase 2 — J15 à J45 : allumer le Moteur A
 
-**Objectif : 100 ventes indépendants + 40 établissements équipés.**
+**Objectif : 50 ventes indépendants + 40 établissements équipés.**
 
-- [ ] Landing dédiée indépendants (VTC en premier), checkout en 2 clics.
-- [ ] Lancer la pub Meta/TikTok : 1 500 € de test, 3 segments × 3 créas (§6.1).
-- [ ] Contacter 10 admins de groupes VTC + 10 micro-influenceurs barbiers.
+- [ ] Landing dédiée indépendants (tatoueurs en premier), checkout en 2 clics.
+- [ ] Contacter 15 micro-influenceurs tatoueurs/barbiers + repérer la prochaine convention
+      de tatouage (canal n°1, §6.1).
+- [ ] Lancer la pub Meta/TikTok : 1 000 € de test, 2–3 segments × 3 créas (§6.2).
 - [ ] Publier les 3 articles SEO exonération.
 - [ ] Envoyer les premiers emails de partenariat : 5 éditeurs de caisse, 3 grossistes CHR,
       10 comptables CHR.
@@ -558,15 +600,25 @@ Semaine 2 :
 
 | Poste | Montant |
 |---|---|
-| Publicité Meta / TikTok (test puis scale) | 3 000 € |
-| Micro-influenceurs et partenariats groupes | 1 200 € |
-| Matériel offert (150 tags × ~4 €) | 600 € |
+| Micro-influenceurs, communautés, conventions (canal n°1) | 2 000 € |
+| Publicité Meta / TikTok (test puis scale) | 2 000 € |
+| Matériel offert (130 tags × ~4 €) | 520 € |
 | Domaine secondaire + outil cold email | 300 € |
 | Déplacements terrain Alsace | 400 € |
-| **Total** | **~5 500 €** |
+| **Total** | **~5 200 €** |
+
+Le poids est passé de la pub vers la communauté depuis l'abandon des VTC : les segments
+retenus sont plus petits et plus connectés, la recommandation y bat l'impression achetée.
 
 Tu peux démarrer avec 2 000 € en ne faisant que la Phase 1 et le test publicitaire —
 le reste ne se dépense que si les chiffres le justifient.
+
+### Répartition des 200 tags en stock (tous neutres, non assignés)
+
+- **50** vendus 69 € aux indépendants (Moteur A)
+- **130** offerts aux établissements en Alsace (Moteur B) — coût réel ~520 €
+- **15** démos, influenceurs, conventions
+- **5** casse et SAV
 
 ### Les KPI qui comptent vraiment
 
@@ -598,8 +650,10 @@ Fixe-les maintenant, à froid, pendant que tu es lucide :
 
 1. Tu n'as pas un problème de canal. Tu as **0 vente, jamais**, et un produit qui demande
    au patron de payer pour un bénéfice qui va à ses salariés.
-2. Répare ça en vendant à ceux qui sont **acheteur et bénéficiaire** : VTC, barbiers,
-   coiffeurs en location de fauteuil. C'est le seul segment où la pub payante fonctionne.
+2. Répare ça en vendant à ceux qui sont **acheteur et bénéficiaire** : tatoueurs,
+   barbiers, guides, esthétique indépendante. Filtre d'éligibilité : aucune plateforme
+   ne doit déjà proposer le pourboire (c'est ce qui élimine les VTC et les livreurs), et
+   il faut un moment de fin de prestation en face à face.
 3. Au patron, vends **l'avis Google** (déjà codé, invisible dans ton marketing) et
    **l'exonération de charges jusqu'en 2028** (vérifiée, loi du 19 février 2026).
 4. Quitte la coiffure : ta propre base contient **22 900 restaurants/bars/cafés** contre
@@ -623,7 +677,8 @@ Fixe-les maintenant, à froid, pendant que tu es lucide :
 - [PLF 2026 : prolongation de l'exonération des pourboires — L'Hôtellerie Restauration](https://www.lhotellerie-restauration.fr/sos-experts/plf-2026-les-deputes-prolongent-l-exoneration-des-pourboires-jusqu-en-2028)
 - [Exonération des pourboires 2026-2028 : conditions, plafond 1,6 SMIC, paie et DSN — Socic](https://www.socic.fr/ressources-comptabilite/articles/exoneration-des-pourboires-2026-2028-ir-et-cotisations-sociales-plafond-16-smic-paie-dsn)
 - [Frais de transport et pourboires : prolongation des mesures d'exonération — Service Public Entreprendre](https://entreprendre.service-public.gouv.fr/actualites/A18726)
-- [Les chauffeurs des plateformes de VTC en 2024 : premiers résultats — SDES, Ministère de la Transition écologique](https://www.statistiques.developpement-durable.gouv.fr/les-chauffeurs-des-plateformes-de-vtc-en-2024-premiers-resultats)
+- [Analyse du marché du tatouage en France (2026)](https://modelesdebusinessplan.com/blogs/infos/marche-tatouage)
+- [Le tatouage en France : chiffres, marché et évolution](https://lesfleursdumaltatouage.com/societe-et-tendances/tatouage-en-france-chiffres-et-evolution-des-mentalites/)
 - [Coiffure en France en 2026 : les chiffres clés du secteur — Coiffure Actu](https://coiffure-actu.fr/chiffres-cles-secteur-coiffure-france-2026/)
 - [Le marché des barbiers en France : chiffres et statistiques](https://modelesdebusinessplan.com/blogs/infos/marche-barbiers-france-chiffres)
 - [Location de fauteuil coiffure : profil du salon idéal — HairB2B](https://www.hairb2b.fr/location-fauteuil-coiffure-salon-ideal/)
