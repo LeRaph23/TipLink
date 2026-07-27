@@ -67,7 +67,7 @@
     "backHome": "Back to home",
     "privacy": {
       "title": "Privacy Policy",
-      "intro": "At Digitip we take your privacy seriously. This policy explains what data we collect, how we use it, and the rights you have over it. Digitip SAS is the data controller.",
+      "intro": "At Digitip we take your privacy seriously. This policy explains what data we collect, how we use it, and the rights you have over it. The data controller is YUZU LABS SAS, the company operating the Digitip service — SIREN 994 879 013, 11 rue de Lorraine, 68490 Petit-Landau, France.",
       "s1Title": "1. Data we collect",
       "s1Body": "Account data (name, email, password hash), business data (company name, VAT, shipping/billing address), tipping data (amount, date, recipient staff member), payout data handled by Stripe (bank account, identity verification), and technical data (IP address, browser, language) used for security and analytics.",
       "s2Title": "2. How we use your data",
@@ -85,7 +85,7 @@
       "s8Title": "8. Security",
       "s8Body": "Data is encrypted in transit (TLS 1.2+) and at rest. Access is restricted to authorised staff. We conduct regular security reviews.",
       "s9Title": "9. Contact",
-      "s9Body": "For any question about this policy, email privacy@digitip.app or write to Digitip SAS, data protection office."
+      "s9Body": "For any question about this policy, or to exercise your rights, email privacy@digitip.app or write to YUZU LABS SAS — Data Protection, 11 rue de Lorraine, 68490 Petit-Landau, France."
     },
     "terms": {
       "title": "Terms of Service",
@@ -94,10 +94,10 @@
       "s1Body": "Digitip provides NFC SmartTags and software that lets customers leave contactless tips to staff. Tips are collected via Stripe and then paid out to the designated recipient's bank account, after their identity is verified. Digitip acts as a technical facilitator and is not the recipients' employer.",
       "s2Title": "2. Eligibility",
       "s2Body": "You must be at least 18, have the authority to bind your business, and operate a lawful hospitality or service activity in a country where Stripe Connect is available.",
-      "s3Title": "3. Subscription & orders",
-      "s3Body": "SmartTag packs are sold as a one-time hardware purchase plus a monthly software subscription. Hardware is non-refundable once shipped. The subscription can be cancelled at any time from the billing portal; cancellation takes effect at the end of the current period.",
+      "s3Title": "3. Orders",
+      "s3Body": "SmartTag packs are sold as a one-time hardware purchase. There is no subscription and no monthly fee: once the plaque is paid for, no recurring amount is charged. The Digitip platform earns revenue solely through a 5% commission on tips actually collected (see section 5). With no tips, nothing is owed. Hardware is non-refundable once shipped, without prejudice to the legal warranties and the right of withdrawal set out in the terms of sale.",
       "s4Title": "4. Payments",
-      "s4Body": "All payments are processed by Stripe. VAT is applied automatically according to your country. Failed subscription payments may suspend service after 7 days. A 30-day grace period applies to SmartTags before full deactivation.",
+      "s4Body": "All payments are processed by Stripe. VAT is applied automatically according to your country. Hardware is paid for once, at the time of the order; no recurring charge is made. A 30-day grace period applies to SmartTags before full deactivation if the account is closed.",
       "s5Title": "5. Tips, collection and payout",
       "s5Body": "Digitip acts as a technical payment facilitator. Each tip is attributed to the staff member chosen by the customer. Funds are first collected via Stripe, then paid out to the recipient's connected bank account as soon as they complete the identity verification required by anti-money-laundering rules. Until that verification is complete, the tip is held securely and paid out automatically once the recipient is verified. Digitip charges a 5% commission plus a fixed per-transaction service fee to cover infrastructure and payment costs; the balance goes to the recipient. Digitip only holds funds for as long as needed to pay them out.",
       "s6Title": "6. Your responsibilities",
@@ -109,7 +109,7 @@
       "s9Title": "9. Termination",
       "s9Body": "You may close your account at any time. We may suspend or terminate access if you breach these terms or create risk for us, payment partners or other users. On termination, SmartTags are deactivated after 30 days.",
       "s10Title": "10. Governing law",
-      "s10Body": "These terms are governed by French law. Disputes are subject to the exclusive jurisdiction of the competent courts of Paris, France, unless mandatory consumer law provides otherwise.",
+      "s10Body": "These terms are governed by French law. Disputes between businesses are subject to the exclusive jurisdiction of the courts within the remit of the Colmar Court of Appeal, unless mandatory consumer law provides otherwise.",
       "s11Title": "11. Changes",
       "s11Body": "We may update these terms. Material changes will be notified by email at least 30 days before they apply.",
       "s12Title": "12. Identity verification",
@@ -350,7 +350,7 @@
       "links": "Quick links",
       "legal": "Legal",
       "payment": "Accepted payments",
-      "copyright": "© 2026 Digitip SAS · All rights reserved"
+      "copyright": "© 2026 YUZU LABS SAS · Digitip · All rights reserved"
     },
     "keyAdv": {
       "kicker": "What makes us different",

@@ -67,7 +67,7 @@
     "backHome": "Retour à l'accueil",
     "privacy": {
       "title": "Politique de confidentialité",
-      "intro": "Chez Digitip nous prenons votre vie privée au sérieux. Cette politique explique quelles données nous collectons, comment nous les utilisons et les droits dont vous disposez. Digitip SAS est responsable du traitement.",
+      "intro": "Chez Digitip nous prenons votre vie privée au sérieux. Cette politique explique quelles données nous collectons, comment nous les utilisons et les droits dont vous disposez. Le responsable du traitement est YUZU LABS SAS, éditrice du service Digitip — SIREN 994 879 013, 11 rue de Lorraine, 68490 Petit-Landau, France.",
       "s1Title": "1. Données collectées",
       "s1Body": "Données de compte (nom, email, hash du mot de passe), données professionnelles (raison sociale, TVA, adresse de livraison et de facturation), données de pourboire (montant, date, membre du personnel destinataire), données de versement gérées par Stripe (coordonnées bancaires, vérification d'identité), et données techniques (IP, navigateur, langue) utilisées pour la sécurité et l'analytique.",
       "s2Title": "2. Utilisation des données",
@@ -85,7 +85,7 @@
       "s8Title": "8. Sécurité",
       "s8Body": "Les données sont chiffrées en transit (TLS 1.2+) et au repos. L'accès est limité au personnel habilité. Nous menons régulièrement des revues de sécurité.",
       "s9Title": "9. Contact",
-      "s9Body": "Pour toute question sur cette politique, écrivez à privacy@digitip.app ou à Digitip SAS, délégué à la protection des données."
+      "s9Body": "Pour toute question sur cette politique ou pour exercer vos droits, écrivez à privacy@digitip.app ou à YUZU LABS SAS — Protection des données, 11 rue de Lorraine, 68490 Petit-Landau, France."
     },
     "terms": {
       "title": "Conditions générales",
@@ -94,10 +94,10 @@
       "s1Body": "Digitip fournit des SmartTags NFC et une plateforme logicielle permettant aux clients de laisser des pourboires sans contact au personnel. Les pourboires sont collectés via Stripe puis reversés au bénéficiaire désigné sur son compte bancaire, après vérification de son identité. Digitip agit comme facilitateur technique et n'est pas l'employeur des bénéficiaires.",
       "s2Title": "2. Éligibilité",
       "s2Body": "Vous devez avoir au moins 18 ans, être habilité à engager votre entreprise, et exploiter une activité légale d'hôtellerie, de restauration ou de service dans un pays où Stripe Connect est disponible.",
-      "s3Title": "3. Abonnement & commandes",
-      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique auquel s'ajoute un abonnement logiciel mensuel. Le matériel n'est pas remboursable une fois expédié. L'abonnement peut être résilié à tout moment depuis le portail de facturation ; la résiliation prend effet à la fin de la période en cours.",
+      "s3Title": "3. Commandes",
+      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique. Il n'existe aucun abonnement ni frais mensuel : une fois la plaque payée, aucune somme récurrente n'est prélevée. La plateforme Digitip se rémunère exclusivement par une commission de 5 % prélevée sur les pourboires effectivement encaissés (voir article 5). En l'absence de pourboire, aucun montant n'est dû. Le matériel n'est pas remboursable une fois expédié, sous réserve des garanties légales et du droit de rétractation prévus aux CGV.",
       "s4Title": "4. Paiements",
-      "s4Body": "Tous les paiements sont traités par Stripe. La TVA est appliquée automatiquement selon votre pays. Un échec de paiement d'abonnement peut suspendre le service après 7 jours. Une période de grâce de 30 jours s'applique aux SmartTags avant désactivation complète.",
+      "s4Body": "Tous les paiements sont traités par Stripe. La TVA est appliquée automatiquement selon votre pays. Le paiement du matériel est unique et intervient à la commande ; aucun prélèvement récurrent n'est effectué. Une période de grâce de 30 jours s'applique aux SmartTags avant désactivation complète en cas de résiliation du compte.",
       "s5Title": "5. Pourboires, encaissement et versement",
       "s5Body": "Digitip agit comme facilitateur technique de paiement. Chaque pourboire est attribué au membre du personnel sélectionné par le client. Les fonds sont d'abord encaissés via Stripe, puis reversés au bénéficiaire sur son compte bancaire connecté dès qu'il a finalisé la vérification d'identité imposée par la réglementation (lutte contre le blanchiment). Tant que cette vérification n'est pas terminée, le pourboire est conservé de façon sécurisée, puis versé automatiquement une fois le bénéficiaire vérifié. Digitip prélève une commission de 5 % et des frais de service fixes par transaction pour couvrir l'infrastructure et les frais de paiement ; le solde revient au bénéficiaire. Digitip ne conserve les fonds que le temps nécessaire à leur versement.",
       "s6Title": "6. Vos responsabilités",
@@ -109,7 +109,7 @@
       "s9Title": "9. Résiliation",
       "s9Body": "Vous pouvez fermer votre compte à tout moment. Nous pouvons suspendre ou résilier l'accès en cas de manquement ou de risque pour nos partenaires ou d'autres utilisateurs. À la résiliation, les SmartTags sont désactivés après 30 jours.",
       "s10Title": "10. Droit applicable",
-      "s10Body": "Ces conditions sont régies par le droit français. Les litiges relèvent de la compétence exclusive des tribunaux de Paris, sauf disposition impérative contraire du droit de la consommation.",
+      "s10Body": "Ces conditions sont régies par le droit français. Les litiges entre professionnels relèvent de la compétence exclusive des tribunaux du ressort de la Cour d'appel de Colmar, sauf disposition impérative contraire du droit de la consommation.",
       "s11Title": "11. Modifications",
       "s11Body": "Nous pouvons modifier ces conditions. Les changements substantiels seront notifiés par email au moins 30 jours avant leur application.",
       "s12Title": "12. Vérification d'identité",
@@ -350,7 +350,7 @@
       "links": "Liens rapides",
       "legal": "Légal",
       "payment": "Paiements acceptés",
-      "copyright": "© 2026 Digitip SAS · Tous droits réservés"
+      "copyright": "© 2026 YUZU LABS SAS · Digitip · Tous droits réservés"
     },
     "keyAdv": {
       "kicker": "Ce qui change tout",
