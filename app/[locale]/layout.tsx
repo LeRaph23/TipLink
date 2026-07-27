@@ -199,7 +199,9 @@ function buildJsonLd(locale: string) {
         availableLanguage: ['French', 'English'],
       },
     ],
-    sameAs: [`${BASE_URL}`],
+    vatID: 'FR13994879013',
+    taxID: '994879013',
+    areaServed: ['FR', 'BE', 'CH', 'LU'],
   };
 
   const website = {
@@ -214,31 +216,20 @@ function buildJsonLd(locale: string) {
     publisher: { '@id': `${BASE_URL}#organization` },
   };
 
-  const softwareApplication = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'Digitip',
-    alternateName: 'Digitip App',
-    url: BASE_URL,
-    applicationCategory: 'BusinessApplication',
-    operatingSystem: 'Web, iOS, Android',
-    description,
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'EUR',
-      availability: 'https://schema.org/InStock',
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      bestRating: '5',
-      ratingCount: '400',
-    },
-    publisher: { '@id': `${BASE_URL}#organization` },
-  };
-
-  return [organization, website, softwareApplication];
+  // NOTE: there is deliberately no `aggregateRating` node here, and no
+  // `SoftwareApplication` node either.
+  //
+  // The previous version advertised a 4.8/400 AggregateRating while the
+  // product had zero customers. Fabricated review markup is a Google
+  // structured-data manual-action risk and, in France, a `pratique
+  // commerciale trompeuse` (art. L121-2 / L121-4 code de la consommation).
+  // Never re-add rating markup until the ratings are real and sourced.
+  //
+  // `SoftwareApplication` was also dropped: Digitip sells hardware plus a
+  // service, not a downloadable app, and its `offers.price: '0'` misdescribed
+  // a paid product. Real prices are emitted as `Product`/`Offer` nodes on the
+  // routes that actually know them (`/` and `/pricing`).
+  return [organization, website];
 }
 
 export default async function LocaleLayout({

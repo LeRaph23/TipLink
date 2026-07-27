@@ -7,13 +7,6 @@ import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
 import { CountryFlag } from '@/components/landing/CountryFlag';
 
-function StarIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
-}
 function ShieldIcon({ size = 14, color = '#0ea36b' }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
@@ -190,13 +183,6 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
           <span style={{ fontSize: 11, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('product.kicker')}</span>
         </div>
         <h2 style={{ fontSize: 26, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.03em', marginBottom: 10 }}>{t('product.name')}</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <span style={{ display: 'inline-flex', gap: 2, alignItems: 'center' }}>
-            {[1,2,3,4,5].map(i => <StarIcon key={i} size={16} />)}
-          </span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#0f1020' }}>{t('product.rating')}</span>
-          <span style={{ fontSize: 13, color: '#6b6d85' }}>{t('product.reviewCount')}</span>
-        </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
           <span style={{

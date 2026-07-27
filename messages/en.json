@@ -184,32 +184,22 @@
       "contact": "Contact"
     },
     "hero": {
-      "badge": "4.8 / 5",
+      "badge": "Lifetime hardware guarantee",
       "srBrand": "Digitip — the cashless NFC tipping app, available at digitip.app.",
       "h1a": "The best way",
       "h1b": "to earn more",
       "h1c": "tips",
       "sub": "Place the plaque anywhere in 5 seconds. Your client taps their phone or scans the QR code, picks an amount — and the tip makes its way to your bank account, via Stripe. No app, no cash, no friction.",
-      "social": "Trusted by 400+ teams",
+      "social": "One-time payment, no subscription",
       "cta": "Order now",
       "b1": "Named tipping: the client chooses who to reward",
       "b2": "No subscription whatsoever — pay once, for life",
       "b3": "Paid straight to your bank account via Stripe",
       "b4": "No app, no cash: just a tap or QR code"
     },
-    "claim": {
-      "kicker": "Why Digitip?",
-      "title": "Receive tips in just",
-      "titleAccent": "3 seconds",
-      "claim2title": "Double",
-      "claim2sub": "your tips within the first week",
-      "sub": "Digitip SmartTags are set up in 20 seconds and work immediately. No app needed for customers, no technical setup required."
-    },
     "product": {
       "kicker": "Featured product",
       "name": "Digitip NFC SmartTag",
-      "rating": "4.8",
-      "reviewCount": "+150 verified reviews",
       "claim": "Lifetime hardware guarantee",
       "frenchCompany": "French company",
       "get3s": "Receive tips in 3 seconds!",
@@ -293,18 +283,33 @@
       "p4": "Entrance / waiting area",
       "p4sub": "Discreet, always visible"
     },
-    "testimonials": {
-      "kicker": "What they say",
-      "title": "Owners speak for themselves",
-      "t1name": "Sophie L.",
-      "t1role": "Owner — Le Comptoir Restaurant",
-      "t1quote": "Within two weeks my floor team doubled their tips. Customers love the contactless experience, and I love the dashboard.",
-      "t2name": "Karim B.",
-      "t2role": "Manager — Harmonie Group (3 venues)",
-      "t2quote": "We deployed the plaques across all 3 venues in one morning. Zero friction, zero complaints. Tips arrive in the bank account, via Stripe.",
-      "t3name": "Aurélie M.",
-      "t3role": "Owner — Salon Éclat Beauté",
-      "t3quote": "I thought it would be complicated but setup took 10 minutes. My team receives their tips the same evening."
+    "stats": {
+      "s1n": "3 sec",
+      "s1l": "to leave a tip",
+      "s2n": "2 min",
+      "s2l": "to install the plaque",
+      "s3n": "0 €",
+      "s3l": "monthly fee",
+      "s4n": "Lifetime",
+      "s4l": "hardware guarantee"
+    },
+    "trust": {
+      "kicker": "Our commitments",
+      "title": "What you can count on",
+      "sub": "Digitip is just starting out. Instead of customer numbers, here are verifiable commitments — each one is written into our terms of sale or our legal notice.",
+      "freeShippingShort": "Free shipping across Europe",
+      "warranty": "Lifetime hardware guarantee",
+      "warrantySub": "Broken or faulty plaque? We replace it free of charge, with no time limit.",
+      "noSubscription": "No subscription",
+      "noSubscriptionSub": "You pay for the plaque once. After that, 5% commission on collected tips only.",
+      "stripe": "Payments secured by Stripe",
+      "stripeSub": "No card data ever touches our servers. Apple Pay and Google Pay accepted.",
+      "directPayout": "Paid to the recipient's own account",
+      "directPayoutSub": "The tip goes to the person the customer picked, straight to their own bank account.",
+      "frenchCompany": "French company",
+      "frenchCompanySub": "YUZU LABS SAS — SIREN 994 879 013. Plaques programmed and shipped from France.",
+      "euData": "Data hosted in the EU",
+      "euDataSub": "No advertising cookies, no third-party trackers. GDPR compliant."
     },
     "finalCta": {
       "title": "Not convinced yet?",

@@ -48,7 +48,8 @@ function Reveal({ children, delay = 0, style: s = {} }: { children: React.ReactN
 }
 
 // Animated number that counts up once scrolled into view. Parses the leading
-// numeric part of a label ("400+", "4.8/5", "3 sec") and re-appends the suffix.
+// numeric part of a label ("3 sec", "2 min", "0 €") and re-appends the suffix.
+// Labels with no leading digit ("À vie") fall through and render verbatim.
 function CountUp({ value }: { value: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const match = /^(\d+(?:\.\d+)?)(.*)$/.exec(value.trim());
@@ -91,22 +92,6 @@ function Badge({ children, variant = 'accent' }: { children: React.ReactNode; va
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 100, background: c.bg, border: `1px solid ${c.border}`, fontSize: 12, fontWeight: 700, color: c.text, letterSpacing: '0.01em' }}>
       {children}
-    </span>
-  );
-}
-
-function StarIcon({ filled = true, size = 14 }: { filled?: boolean; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill={filled ? '#f59e0b' : '#e4e4ec'} xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
-}
-
-function StarRow({ size = 15, gap = 2 }: { size?: number; gap?: number }) {
-  return (
-    <span style={{ display: 'inline-flex', gap, alignItems: 'center' }}>
-      {[1,2,3,4,5].map(i => <StarIcon key={i} filled size={size} />)}
     </span>
   );
 }
@@ -244,7 +229,7 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
 
   const navItems = [
     { key: 'packs', href: '#packs' },
-    { key: 'clients', href: '#clients' },
+    { key: 'clients', href: '#engagements' },
     { key: 'faq', href: '#faq' },
     { key: 'contact', href: '/contact' },
   ] as const;
@@ -333,8 +318,8 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
           <div className="fade-up" style={{ marginBottom: 20 }}>
             <Badge>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, lineHeight: 1 }}>
-                <StarRow size={12} gap={1} />
-                <span>4.8 / 5</span>
+                <ShieldIcon size={12} color="#E57A97" />
+                <span>{t('hero.badge')}</span>
               </span>
             </Badge>
           </div>
@@ -362,13 +347,9 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
             </a>
           </div>
           <div className="fade-up" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', animationDelay: '280ms' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <StarRow size={15} gap={2} />
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#111118' }}>4.8</span>
-              <span style={{ fontSize: 13, color: '#74748a' }}>/ 5</span>
-            </div>
-            <span style={{ color: '#e4e4ec' }}>·</span>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#74748a' }}>{t('hero.social')}</span>
+            <span style={{ color: '#e4e4ec' }}>·</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#74748a' }}>{t('trust.freeShippingShort')}</span>
             <span style={{ color: '#e4e4ec' }}>·</span>
             <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}>
               {SHIPPING_COUNTRIES.map((c) => <CountryFlag key={c} code={c} size={22} />)}
@@ -382,8 +363,8 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
             <div style={{ width: 300, height: 300, borderRadius: 24, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)', position: 'relative' }}>
               <Image src="/products/duo-double.jpg" alt="Plaques époxy NFC Digitip" fill sizes="300px" style={{ objectFit: 'cover' }} priority />
             </div>
-            <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#d97706', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <StarRow size={12} gap={1} /> 4.8
+            <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#E57A97', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <BoltIcon size={12} color="#E57A97" /> {t('product.get3s')}
             </div>
           </div>
         </div>
@@ -394,11 +375,15 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
 
 // ─── Stats strip ──────────────────────────────────────────────────────────────
 function StatsStrip() {
+  const t = useTranslations('landing');
+  // Product facts only — never customer counts or ratings. Digitip has no
+  // customer base to cite yet, and unverifiable social proof is both a
+  // trust problem and an L121-2 exposure.
   const stats = [
-    { n: '400+', label: 'équipes actives' },
-    { n: '4.8/5', label: '+127 avis vérifiés' },
-    { n: '3 sec', label: 'pour recevoir un pourboire' },
-    { n: '0 €', label: 'frais mensuel' },
+    { n: t('stats.s1n'), label: t('stats.s1l') },
+    { n: t('stats.s2n'), label: t('stats.s2l') },
+    { n: t('stats.s3n'), label: t('stats.s3l') },
+    { n: t('stats.s4n'), label: t('stats.s4l') },
   ];
   return (
     <div style={{ background: '#f9f9f7', borderBottom: '1px solid #e4e4ec', padding: '0 clamp(16px,4vw,48px)' }}>
@@ -409,30 +394,6 @@ function StatsStrip() {
             <div style={{ fontSize: 12.5, color: '#74748a', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Marquee ──────────────────────────────────────────────────────────────────
-const VENUES = ['Le Comptoir', 'Brasserie Lumière', 'Café des Arts', 'Salon Éclat Beauté', 'Trattoria Bella', 'L\'Atelier Coiffure', 'Bistrot du Marché', 'Institut Harmonie', 'Le Bar à Vins', 'Spa Sérénité', 'Chez Marcel', 'Sushi House'];
-
-function Marquee() {
-  const items = [...VENUES, ...VENUES];
-  return (
-    <div className="marquee" style={{ borderBottom: '1px solid #e4e4ec', background: '#fff' }}>
-      <div style={{ textAlign: 'center', paddingTop: 14, fontSize: 11, fontWeight: 700, color: '#c4c4d4', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-        Utilisé par des équipes en Europe
-      </div>
-      <div style={{ overflow: 'hidden', padding: '10px 0 14px', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}>
-        <div className="marquee-track" style={{ display: 'flex', animation: 'marqueeScroll 32s linear infinite', width: 'max-content' }}>
-          {items.map((v, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '0 18px', whiteSpace: 'nowrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#c4c4d4', letterSpacing: '0.01em' }}>{v}</span>
-              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#e4e4ec', flexShrink: 0, display: 'inline-block' }} />
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -494,9 +455,8 @@ function ProductSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo' | 
               <h2 style={{ fontSize: 'clamp(26px,3.5vw,40px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{t('product.name')}</h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <StarRow size={17} gap={2} />
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#111118' }}>{t('product.rating')}</span>
-              <span style={{ fontSize: 13, color: '#74748a' }}>{t('product.reviewCount')}</span>
+              <ShieldIcon size={17} color="#E57A97" />
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#111118' }}>{t('product.claim')}</span>
             </div>
           </div>
         </Reveal>
@@ -686,93 +646,43 @@ function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo
 }
 
 // ─── Placements ───────────────────────────────────────────────────────────────
-// ─── Reviews (45 avis réalistes) ─────────────────────────────────────────────
-const REVIEWS = [
-  { stars: 5, name: 'Camille D.', role: 'Restauratrice', city: 'Paris', date: 'mars 2026', text: 'Franchement impeccable. Installation en 5 minutes, mes clients testent dès le lendemain. Premier pourboire reçu en 2 jours. Je recommande vraiment.' },
-  { stars: 4, name: 'Marc T.', role: 'Barbier', city: 'Lyon', date: 'fév. 2026', text: 'Très bon produit, la plaque est belle et solide. Les clients adorent.' },
-  { stars: 5, name: 'Inès B.', role: 'Esthéticienne', city: 'Bordeaux', date: 'janv. 2026', text: 'ca fait 3 semaines et j\'ai déjà reçu 47 pourboires. je pensais pas que mes clients tipperaient autant, maintenant c\'est naturel pour eux' },
-  { stars: 5, name: 'Sarah K.', role: 'Massage therapist', city: 'Dublin', date: 'fév. 2026', text: 'The setup was literally 2 minutes. Already had 12 tips in the first week. Customers don\'t even ask — they just tap.' },
-  { stars: 4, name: 'Noémie F.', role: 'Onglerie', city: 'Nantes', date: 'mars 2026', text: 'Produit de qualité, je l\'avais vu sur insta et hésité longtemps. Finalement c\'est exactement comme présenté. Mes clientes l\'utilisent sans qu\'on leur explique rien.' },
-  { stars: 5, name: 'Laura V.', role: 'Serveuse', city: 'Toulouse', date: 'janv. 2026', text: 'Mon patron l\'a mis en place pour le resto et vraiment c\'est game changer. Avant je repartais avec 0 pourboire certains soirs.' },
-  { stars: 5, name: 'Rayan A.', role: 'Barbier', city: 'Marseille', date: 'déc. 2025', text: 'Top.' },
-  { stars: 5, name: 'Philippe M.', role: 'Gérant spa', city: 'Cannes', date: 'janv. 2026', text: 'Livraison rapide, produit solide. La plaque tient bien sur le comptoir avec l\'adhésif inclus. Le dashboard est vraiment bien fait.' },
-  { stars: 4, name: 'Anaïs R.', role: 'Institut beauté', city: 'Strasbourg', date: 'fév. 2026', text: 'Fonctionne nickel, mes clients y ont vite pris l\'habitude. Le dashboard est clair et les pourboires arrivent vite sur le compte.' },
-  { stars: 5, name: 'Fatima O.', role: 'Esthéticienne', city: 'Créteil', date: 'mars 2026', text: 'Vraiment satisfaite. En un mois j\'ai reçu plus de pourboires qu\'en 2 ans avant. Les clientes trouvent ça élégant, elles ne se sentent pas obligées.' },
-  { stars: 5, name: 'Thomas G.', role: 'Serveur', city: 'Rennes', date: 'fév. 2026', text: 'Depuis que j\'ai posé la plaque sur le comptoir les pourboires ont vraiment augmenté. Le client la voit au moment de régler.' },
-  { stars: 4, name: 'Virginie L.', role: 'Onglerie', city: 'Nice', date: 'janv. 2026', text: 'Bon produit. Les clientes utilisent le QR code sans problème et les pourboires tombent directement sur le compte. Contente.' },
-  { stars: 5, name: 'Jessica T.', role: 'Coiffeuse', city: 'Reims', date: 'mars 2026', text: 'recu en 4 jours, pose en 2 minutes. Mes clientes adorent elles me disent que c\'est pratique. First review of my life lol' },
-  { stars: 5, name: 'Aoife M.', role: 'Beauty therapist', city: 'Cork', date: 'fév. 2026', text: 'Perfect product. Works exactly as described. My clients started tipping the very first day.' },
-  { stars: 5, name: 'Christophe D.', role: 'Barbier', city: 'Montpellier', date: 'janv. 2026', text: 'J\'ai pris le pack duo pour mes deux postes. Super rapport qualité/prix. Le support a répondu en 2h quand j\'avais une question.' },
-  { stars: 4, name: 'Marie-Claire F.', role: 'Gérante restaurant', city: 'Grenoble', date: 'fév. 2026', text: 'Très bien dans l\'ensemble. La plaque est solide, le dashboard est clair, mes équipes reçoivent leurs pourboires sans que je m\'en occupe.' },
-  { stars: 5, name: 'Karim N.', role: 'Gérant brasserie', city: 'Paris 18e', date: 'mars 2026', text: 'Mes serveurs sont contents, moi aussi. Les pourboires sont directement sur leur compte, plus besoin de gérer le cash.' },
-  { stars: 5, name: 'Yasmine C.', role: 'Manucure', city: 'Paris', date: 'déc. 2025', text: 'super propre comme produit. la résine est épaisse et solide. Mes clientes l\'ont toutes remarqué et demandé ce que c\'est' },
-  { stars: 5, name: 'Alice B.', role: 'Masseuse', city: 'Paris', date: 'janv. 2026', text: 'A mis fin au awkward tip moment 🙏 maintenant c\'est naturel, la cliente scanne si elle veut, rien d\'obligatoire' },
-  { stars: 5, name: 'Klaus W.', role: 'Friseur', city: 'Köln', date: 'fév. 2026', text: 'Tolle Idee, funktioniert wunderbar. Meine Kunden sind begeistert und geben viel mehr Trinkgeld als früher.' },
-  { stars: 4, name: 'Julien P.', role: 'Barman', city: 'Bordeaux', date: 'mars 2026', text: 'Bien. La plaque est propre et bien finie. Les clients l\'adoptent naturellement, sans qu\'on leur dise quoi que ce soit.' },
-  { stars: 5, name: 'Sabrine M.', role: 'Esthéticienne', city: 'Lille', date: 'janv. 2026', text: 'J\'étais sceptique au début. Maintenant j\'en achèterais 10 autres. Vraiment.' },
-  { stars: 5, name: 'Brendan O.', role: 'Bartender', city: 'Galway', date: 'fév. 2026', text: 'First tip came in 4 minutes after placing it on the counter. 4 MINUTES.' },
-  { stars: 5, name: 'Stéphanie V.', role: 'Coiffeuse', city: 'Toulouse', date: 'déc. 2025', text: 'Nickel. Configuration facile, la plaque est jolie, les clients l\'utilisent naturellement.' },
-  { stars: 4, name: 'Houda B.', role: 'Manucure', city: 'Montpellier', date: 'fév. 2026', text: 'Bonne expérience globalement. La plaque tient bien sur le comptoir, les clientes la remarquent et l\'utilisent spontanément.' },
-  { stars: 5, name: 'Emilie R.', role: 'Coiffeuse', city: 'Nantes', date: 'janv. 2026', text: 'Merci Digitip!! En 3 semaines j\'ai eu 78 pourboires. je comprends pas pourquoi j\'ai pas fait ça avant franchement' },
-  { stars: 5, name: 'Laurent D.', role: 'Gérant restaurant', city: 'Paris', date: 'mars 2026', text: 'Très professionnel. La plaque s\'intègre parfaitement dans le décor de la salle.' },
-  { stars: 4, name: 'Sophie T.', role: 'Esthéticienne', city: 'Tours', date: 'fév. 2026', text: 'ça marche bien, pas grand chose à dire. Simple, efficace, les clientes l\'utilisent sans hésiter.' },
-  { stars: 5, name: 'Nathalie G.', role: 'Coiffeuse', city: 'Angers', date: 'janv. 2026', text: 'Ma cliente de 72 ans a réussi à l\'utiliser du premier coup. C\'est ça qui m\'a convaincu que c\'était vraiment simple.' },
-  { stars: 5, name: 'Fleur de V.', role: 'Kapper', city: 'Amsterdam', date: 'fév. 2026', text: 'Geweldig product. Mijn klanten gebruiken het elke dag en de fooi is verdubbeld.' },
-  { stars: 5, name: 'Olivier M.', role: 'Barbier', city: 'Bordeaux', date: 'mars 2026', text: 'Excellent. La qualité de la plaque est vraiment premium, pas du tout cheap comme on pourrait le craindre.' },
-  { stars: 4, name: 'Mehdi K.', role: 'Gérant café', city: 'Bruxelles', date: 'déc. 2025', text: 'Très bien, mes clients ont bien adopté. La plaque s\'intègre bien dans le décor du café, c\'est discret et efficace.' },
-  { stars: 5, name: 'Carole F.', role: 'Directrice spa', city: 'Paris', date: 'janv. 2026', text: 'Parfait pour notre spa. On a 4 cabines et autant de plaques, chaque praticienne reçoit ses pourboires directement.' },
-  { stars: 5, name: 'Axelle P.', role: 'Onglerie', city: 'Dijon', date: 'fév. 2026', text: 'reçu rapidement, posé en 2 mn et premier tip dès le soir même 😂 top produit' },
-  { stars: 5, name: 'Emma W.', role: 'Waitress', city: 'Dublin', date: 'mars 2026', text: 'My customers kept asking "can I tip by card?" and I kept saying no. Not anymore.' },
-  { stars: 4, name: 'Audrey N.', role: 'Masseuse', city: 'Brest', date: 'janv. 2026', text: 'Ça fait ce que c\'est censé faire, nickel. Mes clients l\'ont adopté très vite et les pourboires arrivent directement en banque.' },
-  { stars: 5, name: 'Benoît L.', role: 'Coiffeur', city: 'Caen', date: 'fév. 2026', text: 'L\'équipe support est très sympa. Ils m\'ont aidé à configurer Stripe en 10 minutes par chat.' },
-  { stars: 5, name: 'Véronique D.', role: 'Gérante bistrot', city: 'Rouen', date: 'mars 2026', text: 'Mes apprentis aussi peuvent recevoir des pourboires maintenant, c\'est super pour leur motivation.' },
-  { stars: 4, name: 'Damien B.', role: 'Gérant restaurant', city: 'Nîmes', date: 'déc. 2025', text: 'Top rapport qualité prix. La plaque duo est idéale pour un resto avec plusieurs serveurs. Les pourboires sont bien répartis par profil.' },
-  { stars: 5, name: 'Leïla M.', role: 'Esthéticienne', city: 'Versailles', date: 'janv. 2026', text: 'Aucune prise de tête. J\'avais peur que ce soit compliqué mais non.' },
-  { stars: 5, name: 'Fred T.', role: 'Barbier', city: 'Roubaix', date: 'fév. 2026', text: 'je suis nul en techno et j\'ai réussi à tout configurer seul. Honnêtement impressionné' },
-  { stars: 5, name: 'Sandrine K.', role: 'Coiffeuse', city: 'Metz', date: 'mars 2026', text: 'Fonctionne avec iPhone et Android, mes clientes ont des deux. Zero problème depuis 2 mois.' },
-  { stars: 4, name: 'Hugo V.', role: 'Gérant bar', city: 'Perpignan', date: 'janv. 2026', text: 'Bien. Les clients l\'utilisent naturellement, c\'est le principal. La plaque est bien posée, pas bougé depuis 3 semaines.' },
-  { stars: 5, name: 'Caroline R.', role: 'Institut beauté', city: 'Pau', date: 'fév. 2026', text: 'Commande le jeudi, reçu le lundi. Posé le lundi matin, premiers tips le lundi soir. Simple.' },
-  { stars: 5, name: 'Nina S.', role: 'Spa manager', city: 'Marseille', date: 'mars 2026', text: 'Vraiment cool comme produit. Discret, élégant, et ça marche.' },
-  { stars: 5, name: 'Chloe R.', role: 'Serveuse', city: 'Lyon', date: 'fév. 2026', text: 'Tous mes collègues du resto se sont mis à en commander après avoir vu le mien. La preuve.' },
-  { stars: 4, name: 'Antoine M.', role: 'Kiné', city: 'Toulouse', date: 'janv. 2026', text: 'Mes patients ne tipaient jamais avant. Depuis que la plaque est là ça arrive régulièrement. Contenu du résultat.' },
-];
-
-function Stars({ n }: { n: number }) {
+// Digitip has no customer base to cite yet. Rather than invent one, this
+// section states commitments that are individually verifiable — each one is
+// backed by the CGV, the mentions légales, or the payment stack itself.
+// Do NOT reintroduce ratings, review counts or customer numbers here until
+// they are real and sourced: unverifiable social proof is an L121-2/L121-4
+// exposure and a Google structured-data manual-action risk.
+function TrustSection() {
+  const t = useTranslations('landing');
+  const items = [
+    { icon: <ShieldIcon size={22} color="#E57A97" />, title: t('trust.warranty'), body: t('trust.warrantySub') },
+    { icon: <CoinIcon size={22} color="#E57A97" />, title: t('trust.noSubscription'), body: t('trust.noSubscriptionSub') },
+    { icon: <CardIcon size={22} color="#E57A97" />, title: t('trust.stripe'), body: t('trust.stripeSub') },
+    { icon: <UsersIcon size={22} color="#E57A97" />, title: t('trust.directPayout'), body: t('trust.directPayoutSub') },
+    { icon: <BuildingIcon size={22} color="#E57A97" />, title: t('trust.frenchCompany'), body: t('trust.frenchCompanySub') },
+    { icon: <GlobeIcon size={22} color="#E57A97" />, title: t('trust.euData'), body: t('trust.euDataSub') },
+  ];
   return (
-    <div style={{ display: 'flex', gap: 2, marginBottom: 8 }}>
-      {[1,2,3,4,5].map(i => <StarIcon key={i} filled={i <= n} size={13} />)}
-    </div>
-  );
-}
-
-function ReviewsSection() {
-  return (
-    <section id="clients" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+    <section id="engagements" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
         <Reveal>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>Avis vérifiés</div>
-            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 12 }}>Ce qu&apos;ils en disent</h2>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <StarRow size={22} gap={3} />
-              <span style={{ fontSize: 17, fontWeight: 900, color: '#111118' }}>4.8 / 5</span>
-              <span style={{ fontSize: 13, color: '#74748a' }}>· 127 avis</span>
-            </div>
+          <div style={{ textAlign: 'center', marginBottom: 48, maxWidth: 660, marginInline: 'auto' }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('trust.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 14 }}>{t('trust.title')}</h2>
+            <p style={{ fontSize: 15.5, color: '#74748a', lineHeight: 1.65 }}>{t('trust.sub')}</p>
           </div>
         </Reveal>
-        <div style={{ columns: '260px', columnGap: 14 }}>
-          {REVIEWS.map((r, i) => (
-            <div key={i} className="land-card-hover" style={{ breakInside: 'avoid', background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '16px 18px', marginBottom: 14, display: 'inline-block', width: '100%' }}>
-              <Stars n={r.stars} />
-              <p style={{ fontSize: 13.5, color: '#3a3b4f', lineHeight: 1.7, marginBottom: 12 }}>{r.text}</p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#111118' }}>{r.name}</div>
-                  <div style={{ fontSize: 11.5, color: '#74748a' }}>{r.role} · {r.city}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+          {items.map((it, i) => (
+            <Reveal key={i} delay={i * 50}>
+              <div className="land-card-hover" style={{ height: '100%', background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 14, padding: '22px 22px 24px' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#FEF1F4', border: '1px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                  {it.icon}
                 </div>
-                <div style={{ fontSize: 11, color: '#c4c4d4', flexShrink: 0 }}>{r.date}</div>
+                <div style={{ fontSize: 15.5, fontWeight: 800, color: '#111118', marginBottom: 7, letterSpacing: '-0.01em' }}>{it.title}</div>
+                <p style={{ fontSize: 13.5, color: '#74748a', lineHeight: 1.65 }}>{it.body}</p>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -1002,14 +912,13 @@ export default function LandingPage() {
       <Header onOrderClick={() => openCart()} />
       <HeroSection onOrderClick={() => openCart()} />
       <StatsStrip />
-      <Marquee />
       <KeyAdvantagesSection />
       <ProductSection onOrderClick={openCart} pricing={pricing} />
       <HowItWorksSection />
       <ShippingSection />
       <GuaranteeSection />
       <ProductGridSection onOrderClick={openCart} pricing={pricing} />
-      <ReviewsSection />
+      <TrustSection />
       <FinalCTASection onOrderClick={() => openCart()} />
       <PricingTransparencySection />
       <FAQSection />

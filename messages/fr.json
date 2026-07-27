@@ -184,32 +184,22 @@
       "contact": "Contact"
     },
     "hero": {
-      "badge": "4.8 / 5",
+      "badge": "Garantie matériel à vie",
       "srBrand": "Digitip — l'app de pourboires sans contact par NFC, disponible sur digitip.app.",
       "h1a": "Le meilleur moyen",
       "h1b": "d'encaisser plus de",
       "h1c": "pourboires",
       "sub": "La plaque se pose en 5 secondes, n'importe où. Votre client approche son téléphone ou scanne le QR code, choisit un montant — et le pourboire vous revient sur votre compte bancaire, via Stripe. Zéro app, zéro cash, zéro friction.",
-      "social": "Adopté par 400+ équipes",
+      "social": "Paiement unique, sans abonnement",
       "cta": "Commander maintenant",
       "b1": "Pourboire nominatif : le client choisit qui récompenser",
       "b2": "Sans aucun abonnement — payez une fois, à vie",
       "b3": "Versé directement sur votre compte bancaire via Stripe",
       "b4": "Zéro app, zéro cash : un simple tap ou QR code"
     },
-    "claim": {
-      "kicker": "Pourquoi Digitip ?",
-      "title": "Recevez des pourboires en seulement",
-      "titleAccent": "3 secondes",
-      "claim2title": "Doublez",
-      "claim2sub": "vos pourboires dès la première semaine",
-      "sub": "Les SmartTags Digitip se posent en 20 secondes et fonctionnent immédiatement. Aucune app pour le client, aucune configuration technique."
-    },
     "product": {
       "kicker": "Produit vedette",
       "name": "SmartTag Digitip NFC",
-      "rating": "4.8",
-      "reviewCount": "+150 avis vérifiés",
       "claim": "Garantie matériel à vie",
       "frenchCompany": "Entreprise française",
       "get3s": "Recevez des pourboires en 3 secondes !",
@@ -293,18 +283,33 @@
       "p4": "Entrée / salle d'attente",
       "p4sub": "Discret, toujours visible"
     },
-    "testimonials": {
-      "kicker": "Ils en parlent",
-      "title": "Ce que disent les gérants",
-      "t1name": "Sophie L.",
-      "t1role": "Gérante — Restaurant Le Comptoir",
-      "t1quote": "En deux semaines mon équipe en salle a vu ses pourboires doubler. Les clients adorent le côté sans contact, et moi j'adore le dashboard.",
-      "t2name": "Karim B.",
-      "t2role": "Manager — Groupe Harmonie (3 établissements)",
-      "t2quote": "On a déployé les plaques dans les 3 établissements en une matinée. Zéro friction, zéro plainte. Les pourboires arrivent sur le compte bancaire, via Stripe.",
-      "t3name": "Aurélie M.",
-      "t3role": "Propriétaire — Salon Éclat Beauté",
-      "t3quote": "Je pensais que c'était compliqué mais la config a pris 10 minutes. Mes collaboratrices reçoivent leurs pourboires le soir même."
+    "stats": {
+      "s1n": "3 sec",
+      "s1l": "pour laisser un pourboire",
+      "s2n": "2 min",
+      "s2l": "pour installer la plaque",
+      "s3n": "0 €",
+      "s3l": "de frais mensuel",
+      "s4n": "À vie",
+      "s4l": "de garantie matériel"
+    },
+    "trust": {
+      "kicker": "Nos engagements",
+      "title": "Ce sur quoi vous pouvez compter",
+      "sub": "Digitip démarre. Plutôt que des chiffres de clientèle, voici des engagements vérifiables — chacun est inscrit dans nos CGV ou dans nos mentions légales.",
+      "freeShippingShort": "Livraison offerte en Europe",
+      "warranty": "Garantie matériel à vie",
+      "warrantySub": "Plaque cassée ou défectueuse ? On la remplace gratuitement, sans limite de durée.",
+      "noSubscription": "Aucun abonnement",
+      "noSubscriptionSub": "Vous payez la plaque une fois. Ensuite, 5 % de commission uniquement sur les pourboires encaissés.",
+      "stripe": "Paiements sécurisés par Stripe",
+      "stripeSub": "Aucune donnée bancaire ne transite par nos serveurs. Apple Pay et Google Pay acceptés.",
+      "directPayout": "Versé sur le compte du bénéficiaire",
+      "directPayoutSub": "Le pourboire va à la personne choisie par le client, sur son propre compte bancaire.",
+      "frenchCompany": "Entreprise française",
+      "frenchCompanySub": "YUZU LABS SAS — SIREN 994 879 013. Plaques programmées et expédiées depuis la France.",
+      "euData": "Données hébergées dans l'UE",
+      "euDataSub": "Aucun cookie publicitaire, aucun traqueur tiers. Conforme au RGPD."
     },
     "finalCta": {
       "title": "Pas encore convaincu ?",
