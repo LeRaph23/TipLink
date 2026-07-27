@@ -372,3 +372,51 @@ input, select, textarea, button { font-family: var(--font); }
     outline-offset: 2px;
   }
 }
+
+/* ── Long-form article prose ─────────────────────────────────────────────────
+   Used by components/content/ArticleLayout.tsx for the guides and per-trade
+   pages. Scoped to .prose-article so it can never leak into the dashboard or
+   the landing page, which style their own typography inline. */
+.prose-article {
+  font-size: 15.5px;
+  line-height: 1.8;
+  color: var(--text-2);
+}
+.prose-article > p {
+  margin: 0 0 18px;
+}
+.prose-article > h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
+  margin: 40px 0 14px;
+}
+.prose-article > h3 {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 28px 0 10px;
+}
+.prose-article strong {
+  color: var(--text);
+  font-weight: 650;
+}
+.prose-article em {
+  font-style: italic;
+}
+.prose-article a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-article > ul,
+.prose-article > ol {
+  margin: 0 0 18px;
+  padding-left: 22px;
+}
+.prose-article li {
+  margin-bottom: 8px;
+}
