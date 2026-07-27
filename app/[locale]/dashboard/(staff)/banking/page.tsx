@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getStaffEarnings, getBankingState } from '@/actions/stripe';
 import { BankingSetupForm } from './BankingSetupForm';
+import { StripeReturnTracker } from './StripeReturnTracker';
 
 const card: React.CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--border-subtle)',
@@ -94,6 +95,7 @@ export default async function BankingPage({
 
   return (
     <div style={{ maxWidth: 520 }}>
+      <StripeReturnTracker stripeReturn={stripeReturn} isComplete={isComplete} />
       {returnedIncomplete && (
         <div
           role="status"

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { getStripeOnboardingLink } from '@/actions/stripe';
 import { StripeOnboardingPrimer } from '@/components/payment/StripeOnboardingPrimer';
+import { trackEvent } from '@/lib/analytics';
 
 const primaryBtn: React.CSSProperties = {
   padding: '13px 20px', borderRadius: 12, border: 'none',
@@ -26,7 +27,11 @@ export function BankingSetupForm({ mode }: Props) {
     startTransition(async () => {
       const res = await getStripeOnboardingLink();
       if ('error' in res) { setError(res.error); return; }
-      // Hand off to Stripe's hosted onboarding.
+      // The next navigation leaves the app entirely, so this is the last
+      // moment we can record that KYC was attempted. Paired with the
+      // stripe_returned_* events on the banking page, it turns an invisible
+      // hand-off into a measurable step.
+      trackEvent('stripe_link_requested', { mode });
       window.location.href = res.url;
     });
   }

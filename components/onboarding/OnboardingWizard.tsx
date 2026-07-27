@@ -13,6 +13,7 @@ import { AddressAutocomplete } from './AddressAutocomplete';
 import { GoogleReviewPicker } from './GoogleReviewPicker';
 import { getBaseUrl } from '@/lib/env';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { trackEvent } from '@/lib/analytics';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -424,6 +425,10 @@ export function OnboardingWizard(props: Props) {
 
   // In postpurchase mode, skip banking step if admin said no
   const next = () => {
+    // Steps live in the query string and advance via router.replace, so they
+    // never produce a pageview — without this event the whole wizard is a
+    // single row in analytics and the drop-off step is unknowable.
+    trackEvent('onboarding_step_completed', { mode, step: currentStep, index: stepIndex });
     let nextIdx = stepIndex + 1;
     const s = steps[nextIdx];
     // Skip 'banking' if wantsTips is false
@@ -559,6 +564,7 @@ export function OnboardingWizard(props: Props) {
 
     }
 
+    trackEvent('onboarding_submitted', { mode, wantsTips: wantsTips ?? false });
     setDone(true);
     setSubmitting(false);
     } catch (err) {
