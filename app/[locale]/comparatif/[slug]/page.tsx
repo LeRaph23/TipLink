@@ -71,10 +71,15 @@ export default async function ComparisonPage({ params }: Props) {
     faqPage(cmp.faq),
   ]);
 
-  const relatedLinks = cmp.related
+  const relatedLinks: { label: string; href: string }[] = cmp.related
     .map((s) => getComparison(s))
     .filter((c): c is NonNullable<typeof c> => Boolean(c))
     .map((c) => ({ label: `Digitip ou ${c.competitor}`, href: `/comparatif/${c.slug}` }));
+
+  relatedLinks.push(
+    { label: 'Comment marche le pourboire dématérialisé', href: '/guides/pourboire-dematerialise' },
+    { label: 'Le pourboire métier par métier', href: '/solutions' },
+  );
 
   return (
     <>

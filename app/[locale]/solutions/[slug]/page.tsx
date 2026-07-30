@@ -104,10 +104,15 @@ export default async function SolutionPage({ params }: Props) {
       : []),
   ]);
 
-  const relatedLinks = sol.related
+  const relatedLinks: { label: string; href: string }[] = sol.related
     .map((s) => getSolution(s))
     .filter((s): s is NonNullable<typeof s> => Boolean(s))
     .map((s) => ({ label: s.trade, href: `/solutions/${s.slug}` }));
+
+  relatedLinks.push(
+    { label: "L'exonération des pourboires jusqu'en 2028", href: '/guides/exoneration-pourboires-2026' },
+    { label: 'Comparatifs des solutions', href: '/comparatif' },
+  );
 
   return (
     <>

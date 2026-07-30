@@ -890,6 +890,22 @@ function FooterSection() {
               <a key={l.href} href={l.href} className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</a>
             ))}
           </div>
+          {/* Content hubs. Without these the guides, trade pages and
+              comparisons are orphans: reachable only from the sitemap, so they
+              receive no internal link equity and get crawled far less often.
+              Internal links from the homepage are the cheapest ranking factor
+              available and the easiest one to forget. */}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.resources')}</div>
+            {[
+              { label: t('footer.guides'),      href: '/guides' },
+              { label: t('footer.solutions'),   href: '/solutions' },
+              { label: t('footer.comparatifs'), href: '/comparatif' },
+              { label: t('footer.about'),       href: '/a-propos' },
+            ].map((l) => (
+              <Link key={l.href} href={l.href} className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</Link>
+            ))}
+          </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.legal')}</div>
             {[

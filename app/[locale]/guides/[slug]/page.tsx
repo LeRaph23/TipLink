@@ -76,10 +76,17 @@ export default async function GuidePage({ params }: Props) {
     faqPage(guide.faq),
   ]);
 
-  const relatedLinks = guide.related
+  const relatedLinks: { label: string; href: string }[] = guide.related
     .map((s) => getGuide(s))
     .filter((g): g is NonNullable<typeof g> => Boolean(g))
     .map((g) => ({ label: g.cardTitle, href: `/guides/${g.slug}` }));
+
+  // Cross-type links, so guides / trade pages / comparisons form one cluster
+  // rather than three islands that only ever link within themselves.
+  relatedLinks.push(
+    { label: 'Le pourboire métier par métier', href: '/solutions' },
+    { label: 'Comparatifs des solutions', href: '/comparatif' },
+  );
 
   return (
     <>
