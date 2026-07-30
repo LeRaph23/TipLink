@@ -32,6 +32,7 @@ export const PUBLIC_PATHS: PublicPath[] = [
   // Content hubs — FR-only, like the articles under them.
   { path: '/guides', priority: 0.7, changeFrequency: 'weekly', locales: ['fr'] },
   { path: '/solutions', priority: 0.7, changeFrequency: 'weekly', locales: ['fr'] },
+  { path: '/comparatif', priority: 0.7, changeFrequency: 'monthly', locales: ['fr'] },
   // FR-only landing pages — the /en variants call notFound().
   { path: '/devenir-ambassadeur', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },
   { path: '/devenir-commercial-pro', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },

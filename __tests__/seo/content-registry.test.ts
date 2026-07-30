@@ -5,6 +5,7 @@ import { GUIDES } from '@/content/guides';
 import { GUIDE_BODIES } from '@/content/guides/registry';
 import { SOLUTIONS } from '@/content/solutions';
 import { SOLUTION_BODIES } from '@/content/solutions/registry';
+import { COMPARISONS } from '@/content/comparatifs';
 import type { ContentMeta } from '@/content/types';
 
 // Stops half-finished content shipping. A missing description or a broken
@@ -93,5 +94,56 @@ describe.each(SUITES)('$name registry', ({ items, bodies, dir }) => {
   it('has no orphaned body registrations', () => {
     const slugs = new Set(items.map((i) => i.slug));
     for (const key of Object.keys(bodies)) expect(slugs.has(key), key).toBe(true);
+  });
+});
+
+// Comparison pages carry the strictest constraint in the content set: French
+// comparative advertising (art. L122-1 s. code de la consommation) requires
+// claims to be objective and verifiable, so every row must name its source and
+// the date it was checked. Enforced here rather than trusted to review.
+describe('comparison registry', () => {
+  it('is not empty and has unique, URL-safe slugs', () => {
+    expect(COMPARISONS.length).toBeGreaterThan(0);
+    const slugs = COMPARISONS.map((c) => c.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+    for (const s of slugs) expect(s).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  });
+
+  it('sources and dates every single comparison row', () => {
+    for (const c of COMPARISONS) {
+      expect(c.rows.length, c.slug).toBeGreaterThan(0);
+      for (const r of c.rows) {
+        expect(r.source, `${c.slug}/${r.criterion}`).toMatch(/^https:\/\//);
+        expect(r.verifiedOn, `${c.slug}/${r.criterion}`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(r.criterion.trim().length).toBeGreaterThan(2);
+        expect(r.digitip.trim().length).toBeGreaterThan(2);
+        expect(r.competitor.trim().length).toBeGreaterThan(2);
+      }
+    }
+  });
+
+  it('states where the competitor is the better choice', () => {
+    // A comparison that never concedes anything reads as advertising and is
+    // exactly what "non-disparaging and objective" is meant to prevent.
+    for (const c of COMPARISONS) {
+      expect(c.bestFor.trim().length, c.slug).toBeGreaterThan(30);
+      expect(c.bestFor).toContain(c.competitor);
+    }
+  });
+
+  it('respects the same title and description limits as other content', () => {
+    for (const c of COMPARISONS) {
+      expect(c.title.length, c.slug).toBeLessThanOrEqual(60);
+      expect(c.description.length, c.slug).toBeGreaterThanOrEqual(120);
+      expect(c.description.length, c.slug).toBeLessThanOrEqual(170);
+    }
+  });
+
+  it('resolves related slugs and cites page-level sources', () => {
+    const slugs = new Set(COMPARISONS.map((c) => c.slug));
+    for (const c of COMPARISONS) {
+      for (const r of c.related) expect(slugs.has(r), `${c.slug} -> ${r}`).toBe(true);
+      expect(c.sources.length, c.slug).toBeGreaterThan(0);
+    }
   });
 });

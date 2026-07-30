@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { BASE_URL, PUBLIC_PATHS } from '@/lib/seo';
 import { GUIDES } from '@/content/guides';
 import { SOLUTIONS } from '@/content/solutions';
+import { COMPARISONS } from '@/content/comparatifs';
 
 // Built from the route registry in lib/seo/routes.ts plus the content
 // registries, so a new page or article cannot be forgotten here.
@@ -46,6 +47,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  // The /guides and /solutions hubs come from PUBLIC_PATHS above, not from here.
-  return [...staticEntries, ...guideEntries, ...solutionEntries];
+  const comparisonEntries = COMPARISONS.map((c) => ({
+    url: `${BASE_URL}/fr/comparatif/${c.slug}`,
+    lastModified: new Date(c.dateModified),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  // The hub pages come from PUBLIC_PATHS above, not from here.
+  return [...staticEntries, ...guideEntries, ...solutionEntries, ...comparisonEntries];
 }
