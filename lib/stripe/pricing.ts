@@ -18,7 +18,11 @@ export type PackPricing = {
   currency: string;
   productName: string;
   quantity: number;
-  listAmount: number | null; // strikethrough — always unitAmount + 30€
+  // Strikethrough reference price, in cents, or null when none is configured.
+  // Sourced from the Stripe product's `list_price_cents` metadata so that the
+  // reference is a deliberate catalogue price someone set, not a number this
+  // code invented. See `resolveListAmount` for the resolution order.
+  listAmount: number | null;
   savingsPercent: number | null;
 };
 
@@ -27,12 +31,45 @@ function computeSavings(unit: number, list: number | null): number | null {
   return Math.round(((list - unit) / list) * 100);
 }
 
+// Resolve the strikethrough "regular" price.
+//
+// Order: the Stripe product's `list_price_cents` metadata first, then the
+// catalogue fallback in lib/env.ts. Both are values a human sets deliberately.
+//
+// This used to be `unitAmount + 3000` — a reference price the code fabricated,
+// which always produced a ~30% discount badge no matter what the real tariff
+// was. Under art. L112-1-1 code de la consommation the announced reference has
+// to be the lowest price actually charged in the 30 days before the offer, so
+// a computed one cannot be right except by accident. Setting it in Stripe puts
+// the number back in the hands of whoever can vouch for it.
+//
+// Returns null when no reference is configured, which renders no strikethrough
+// and no savings badge at all — the correct default for a price never charged.
+export function resolveListAmount(
+  metadata: Record<string, string> | undefined,
+  unitAmount: number,
+  pack: PackId
+): number | null {
+  const raw = metadata?.list_price_cents;
+  if (raw != null && raw.trim() !== '') {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed > unitAmount) return parsed;
+    console.error(
+      `[pricing] product for pack "${pack}" has list_price_cents="${raw}", which is ` +
+        `not an integer greater than the charged amount (${unitAmount}) — ignoring it.`
+    );
+    return null;
+  }
+  const fallback = PACKS[pack].listAmount;
+  return fallback > unitAmount ? fallback : null;
+}
+
 // Fallback to the hardcoded lib/env.ts amount. Used (and logged loudly) when the
 // product ID is missing or its default_price can't be read — a missing/broken
 // link in production means prices are NOT driven by Stripe.
 function fallbackPricing(pack: PackId): PackPricing {
   const def = PACKS[pack];
-  const listAmount = def.hardwareAmount + 3000;
+  const listAmount = def.listAmount > def.hardwareAmount ? def.listAmount : null;
   return {
     pack,
     unitAmount: def.hardwareAmount,
@@ -69,7 +106,7 @@ async function fetchPackPricing(pack: PackId): Promise<PackPricing> {
   }
 
   const unitAmount = price.unit_amount;
-  const listAmount = unitAmount + 3000;
+  const listAmount = resolveListAmount(product.metadata, unitAmount, pack);
 
   return {
     pack,

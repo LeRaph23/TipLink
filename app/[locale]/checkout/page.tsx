@@ -4,7 +4,27 @@ import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { PackCheckout } from '@/components/checkout/PackCheckout';
 import { getPackPricing } from '@/lib/stripe/pricing';
+import { buildPageMetadata } from '@/lib/seo';
 import type { PackId } from '@/lib/env';
+import type { Metadata } from 'next';
+
+// Transactional page: never index it. Without its own `alternates` it would
+// also inherit the homepage canonical from the locale layout and tell Google
+// it is a duplicate of "/".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildPageMetadata({
+    locale,
+    path: '/checkout',
+    title: 'Commande',
+    description: 'Finalisez votre commande de SmartTag Digitip.',
+    noindex: true,
+  });
+}
 
 const PACK_VISUAL = {
   solo: { img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },

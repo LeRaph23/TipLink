@@ -71,6 +71,7 @@ const PostPurchaseSchema = z.object({
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
   colleagues: z.array(ColleagueSchema).max(20).default([]),
+  businessType: z.enum(['restaurant', 'beauty']).default('beauty'),
   locale: z.enum(['fr', 'en']).default('fr'),
   ...GoogleReviewFields,
 });
@@ -82,6 +83,7 @@ const NfcOnboardingSchema = z.object({
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
   colleagues: z.array(ColleagueSchema).max(20).default([]),
+  businessType: z.enum(['restaurant', 'beauty']).default('beauty'),
   locale: z.enum(['fr', 'en']).default('fr'),
   ...GoogleReviewFields,
 });
@@ -150,7 +152,7 @@ export async function completePostPurchaseOnboarding(
   // Update establishment
   const { error: estErr } = await service
     .from('establishments')
-    .update({ name: establishmentName, address, slug, ...googleReviewPatch(parsed.data) })
+    .update({ name: establishmentName, address, slug, business_type: parsed.data.businessType, ...googleReviewPatch(parsed.data) })
     .eq('id', est.id);
 
   if (estErr) return actionError(classifyDbError(estErr), estErr, 'completePostPurchaseOnboarding.est');
@@ -217,6 +219,7 @@ const ExpressOnboardingSchema = z.object({
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
   colleagues: z.array(ColleagueSchema).max(20).default([]),
+  businessType: z.enum(['restaurant', 'beauty']).default('beauty'),
   locale: z.enum(['fr', 'en']).default('fr'),
   // Optional: when Supabase email confirmation is enabled, sign-up returns
   // no session, so we fall back to the admin API to resolve the user.
@@ -289,7 +292,7 @@ export async function completeExpressOnboarding(
   // Update establishment with wizard data
   const { error: estErr } = await service
     .from('establishments')
-    .update({ name: establishmentName, address, slug, ...googleReviewPatch(parsed.data) })
+    .update({ name: establishmentName, address, slug, business_type: parsed.data.businessType, ...googleReviewPatch(parsed.data) })
     .eq('id', est.id);
 
   if (estErr) return actionError(classifyDbError(estErr), estErr, 'completeExpressOnboarding.est');
@@ -394,7 +397,7 @@ export async function completeNfcOnboarding(
       group_id: group.id,
       name: establishmentName,
       address,
-      business_type: 'beauty',
+      business_type: parsed.data.businessType,
       slug,
       country: 'FR',
       currency: 'eur',

@@ -18,8 +18,8 @@ export default async function EstablishmentsPage({
     .from('establishments')
     .select(`
       id, name, business_type, slug, country, currency, address,
-      onboarding_status, deleted_at, google_review_url, is_demo,
-      groups (name)
+      deleted_at, google_review_url, is_demo,
+      groups (name, onboarding_completed_at)
     `)
     .is('deleted_at', null)
     .order('name');
@@ -87,7 +87,13 @@ export default async function EstablishmentsPage({
               )}
               {establishments?.map((e) => {
                 const group = Array.isArray(e.groups) ? e.groups[0] : e.groups;
-                const isComplete = e.onboarding_status === 'complete';
+                // establishments.onboarding_status is a dead column: it is
+                // written once at INSERT as 'not_started' and no code path ever
+                // updates it. Reading it here showed every establishment as
+                // "not_started" forever, which is how a full audit came to the
+                // conclusion that nobody had completed onboarding when in fact
+                // everybody had. The real marker is groups.onboarding_completed_at.
+                const isComplete = !!group?.onboarding_completed_at;
                 return (
                   <tr key={e.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>
@@ -114,7 +120,7 @@ export default async function EstablishmentsPage({
                         whiteSpace: 'nowrap',
                       }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
-                        {e.onboarding_status ?? '—'}
+                        {isComplete ? 'complete' : 'en cours'}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>

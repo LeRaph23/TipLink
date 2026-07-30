@@ -1494,7 +1494,20 @@ function lifecycleBody(opts: {
 }
 
 async function lifecycleSend(to: string, subject: string, inner: string): Promise<{ id: string | null }> {
-  if (!resend) return { id: null };
+  // Must throw, not return quietly.
+  //
+  // The lifecycle engine writes a `pending` row, calls this, and marks the row
+  // `sent` on success or `failed` on throw. Returning { id: null } here made it
+  // record a send that never happened — and because lifecycle_email_log has a
+  // partial unique index on dedup_key WHERE status IN ('pending','sent'), that
+  // row then blocked the same email to the same recipient forever, including
+  // after the API key was finally configured. `failed` rows are outside the
+  // index, so throwing keeps the send retryable.
+  if (!resend) {
+    throw new Error(
+      'RESEND_API_KEY is not configured — refusing to record a lifecycle email as sent.'
+    );
+  }
   const result = await resend.emails.send({ from: FROM, to, subject, html: themedLayout(inner) });
   if (result.error) throw new Error(result.error.message || 'Resend send failed');
   return { id: result.data?.id ?? null };
@@ -1567,6 +1580,32 @@ export async function sendInviteTeamNudge(opts: {
       intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> n'a pas encore d'équipe sur Digitip. Chaque employé ajouté peut recevoir ses pourboires directement sur son compte — et c'est un vrai argument pour les motiver.`,
       ctaLabel: 'Ajouter mon équipe →', ctaUrl: inviteUrl,
       note: 'Ça prend 30 secondes par personne : un nom, un email, c\'est tout.',
+      unsubscribeUrl,
+    }));
+}
+
+/**
+ * Group admin — some staff profiles have no email, so they can never be paid.
+ *
+ * Addressed to the admin rather than the staff member on purpose: a profile
+ * with user_id NULL has no address and no account, so no staff-audience email
+ * can reach it. Recurring, because the situation persists until the admin acts
+ * and it silently caps the establishment's tip volume for as long as it does.
+ */
+export async function sendStaffMissingEmailNudge(opts: {
+  to: string; firstName: string; establishmentName: string; count: number;
+  staffUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, count, staffUrl, unsubscribeUrl } = opts;
+  const people = count === 1 ? 'une personne' : `${count} personnes`;
+  const verb = count === 1 ? 'ne peut' : 'ne peuvent';
+  return lifecycleSend(to, `${firstName}, ${people} de votre équipe ${verb} pas être payée`,
+    lifecycleBody({
+      badge: 'Équipe', tone: 'amber',
+      title: `${people} ${verb} pas recevoir de pourboires`,
+      intro: `Chez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong>, ${people} a été ajoutée sans adresse email. Sans email, pas d'invitation, donc pas de compte — et un pourboire qui leur serait destiné ne peut pas leur être versé.`,
+      ctaLabel: 'Renseigner leur email →', ctaUrl: staffUrl,
+      note: 'Une adresse suffit : l\'invitation part automatiquement.',
       unsubscribeUrl,
     }));
 }

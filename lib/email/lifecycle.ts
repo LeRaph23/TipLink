@@ -27,6 +27,10 @@ export const LIFECYCLE: Record<string, LifecycleEmailDef> = {
   group_onboarding_nudge: { key: 'group_onboarding_nudge', audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   tag_delivered_place:    { key: 'tag_delivered_place',    audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   invite_team:            { key: 'invite_team',            audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
+  // Staff added without an email have user_id NULL, so resolveStaffRecipient
+  // cannot reach them and no staff-audience sequence ever will. The admin is
+  // the only reachable party — hence a group_admin email about a staff problem.
+  staff_missing_email:    { key: 'staff_missing_email',    audience: 'group_admin', recurrence: 'recurring', transactional: false },
   activation_no_tips:     { key: 'activation_no_tips',     audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   staff_invite_reminder:  { key: 'staff_invite_reminder',  audience: 'staff',       recurrence: 'one_shot',  transactional: false },
   staff_banking_nudge:    { key: 'staff_banking_nudge',    audience: 'staff',       recurrence: 'one_shot',  transactional: false },

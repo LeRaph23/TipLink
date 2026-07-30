@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { getBaseUrl } from '@/lib/env';
 import { StaffInviteCopy } from './StaffInviteCopy';
+import { MissingEmailRepair } from './MissingEmailRepair';
 import { joinAsStaffMember } from '@/actions/staff';
 import { Icon } from '@/components/ambassadeur/icons';
 
@@ -119,6 +120,15 @@ export default async function StaffListPage({
           {t('addButton')} {tc('arrowRight')}
         </Link>
       </div>
+
+      {/* Profiles created without an email: no account, no invite, and no way
+          to ever be paid. Surfaced first because it is the only blocker here
+          that silently caps revenue. */}
+      <MissingEmailRepair
+        staff={(staffMembers ?? [])
+          .filter((s) => !s.user_id)
+          .map((s) => ({ id: s.id, fullName: s.full_name }))}
+      />
 
       {/* Invitation link card */}
       {joinUrl && (

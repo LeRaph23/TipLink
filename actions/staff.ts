@@ -101,6 +101,68 @@ export async function inviteStaffMember(
   return { id: staff.id, invited };
 }
 
+/**
+ * Sends an invite to a staff profile that already exists but was never linked
+ * to an account.
+ *
+ * The onboarding wizard lets a manager add colleagues without an email address.
+ * Those profiles are created with `user_id = NULL`, which means: no invite, no
+ * account, no Stripe onboarding, and — because resolveStaffRecipient() in
+ * lib/email/lifecycle.ts bails on a null user_id — permanent exclusion from
+ * every reminder sequence. They can never become payable, and nothing in the
+ * product said so. In production this was 16 of 24 profiles.
+ *
+ * This is the repair path: the dashboard lists those profiles and the manager
+ * supplies the missing address here.
+ */
+export async function inviteExistingStaffMember(
+  staffId: string,
+  email: string,
+  locale?: string
+): Promise<{ invited: boolean } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return actionError('forbidden');
+
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return actionError('validation');
+  }
+
+  // Read through the user client so RLS confirms the caller owns this profile.
+  const { data: staff, error: readErr } = await supabase
+    .from('staff_profiles')
+    .select('id, full_name, establishment_id, user_id')
+    .eq('id', staffId)
+    .maybeSingle();
+
+  if (readErr) return actionError(classifyDbError(readErr), readErr, 'inviteExistingStaffMember');
+  if (!staff) return actionError('forbidden');
+  // Already linked to an account — re-inviting would mint a second auth user.
+  if (staff.user_id) return actionError('duplicate');
+
+  const service = createServiceClient();
+  const { data: est } = await service
+    .from('establishments')
+    .select('name')
+    .eq('id', staff.establishment_id)
+    .maybeSingle();
+
+  const { invited } = await sendStaffInviteLink(service, {
+    staffProfileId: staff.id,
+    fullName: staff.full_name,
+    email: normalizedEmail,
+    establishmentId: staff.establishment_id,
+    establishmentName: est?.name ?? 'Digitip',
+    role: 'staff',
+    locale: locale === 'fr' ? 'fr' : 'en',
+  });
+
+  revalidatePath('/dashboard/staff');
+  updateTag(establishmentTipTag(staff.establishment_id));
+  return { invited };
+}
+
 export async function updateStaffMember(
   staffId: string,
   input: { fullName?: string; avatarUrl?: string | null }

@@ -1,9 +1,17 @@
 import type { Metadata } from 'next';
 import { routing } from '@/i18n/routing';
+import { getBaseUrl } from '@/lib/env';
 
-export const BASE_URL = (
-  process.env.NEXT_PUBLIC_APP_URL ?? 'https://digitip.app'
-).replace(/\/$/, '');
+/**
+ * Canonical origin for every absolute URL we publish (canonicals, hreflang,
+ * sitemap, JSON-LD @ids, OG images).
+ *
+ * Reads the one validated variable, NEXT_PUBLIC_BASE_URL. This used to read an
+ * undeclared NEXT_PUBLIC_APP_URL, which is validated nowhere and set nowhere,
+ * so it always fell through to the hardcoded literal — meaning preview
+ * deployments advertised production canonicals pointing at digitip.app.
+ */
+export const BASE_URL = getBaseUrl();
 
 /**
  * Builds the canonical URL + hreflang alternates for a localized page.
@@ -12,7 +20,7 @@ export const BASE_URL = (
  * so without a page-level override every sub-page would declare the
  * homepage as its canonical URL — which makes Google reject the declared
  * canonical and treat the page as a duplicate. Each indexable page must
- * call this with its own path.
+ * call this with its own path (in practice, via `buildPageMetadata`).
  *
  * `path` is locale-relative and starts with '/' ('' for the homepage).
  * `locales` restricts which language versions exist (e.g. FR-only pages).

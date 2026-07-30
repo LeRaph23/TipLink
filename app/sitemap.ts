@@ -1,40 +1,25 @@
 import type { MetadataRoute } from 'next';
-import { routing } from '@/i18n/routing';
-import { BASE_URL } from '@/lib/seo';
+import { BASE_URL, PUBLIC_PATHS } from '@/lib/seo';
+import { GUIDES } from '@/content/guides';
+import { SOLUTIONS } from '@/content/solutions';
+import { COMPARISONS } from '@/content/comparatifs';
 
-type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>;
-
-type PublicPath = {
-  path: string;
-  priority: number;
-  changeFrequency: ChangeFrequency;
-  /** Locales for which this page actually exists and returns 200. */
-  locales: readonly string[];
-};
-
-// Only canonical, 200-returning public pages belong here. Pages that redirect
-// (e.g. /rejoindre, /signup) or 404 in some locales must NOT be listed —
-// Google flags them as "page with redirect" / "excluded by noindex".
-const PUBLIC_PATHS: PublicPath[] = [
-  { path: '', priority: 1.0, changeFrequency: 'weekly', locales: routing.locales },
-  { path: '/pricing', priority: 0.9, changeFrequency: 'weekly', locales: routing.locales },
-  { path: '/contact', priority: 0.7, changeFrequency: 'monthly', locales: routing.locales },
-  // FR-only landing page — /en/devenir-ambassadeur returns 404 (notFound()).
-  { path: '/devenir-ambassadeur', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },
-  { path: '/login', priority: 0.4, changeFrequency: 'yearly', locales: routing.locales },
-  { path: '/cgv', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
-  { path: '/terms', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
-  { path: '/privacy', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
-  { path: '/mentions-legales', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
-];
+// Built from the route registry in lib/seo/routes.ts plus the content
+// registries, so a new page or article cannot be forgotten here.
+//
+// Sitemap sharding via generateSitemaps() is deliberately not used: the limit
+// is 50,000 URLs per file and the realistic ceiling here is a few hundred. If
+// that is ever crossed, shard by content type (/sitemap/guides.xml, …) rather
+// than by numeric index — Search Console reports coverage per sitemap, so
+// type-sharding makes the indexation rate readable per template.
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  const now = new Date();
 
-  return PUBLIC_PATHS.flatMap(({ path, priority, changeFrequency, locales }) =>
+  const staticEntries = PUBLIC_PATHS.flatMap(({ path, priority, changeFrequency, locales }) =>
     locales.map((locale) => ({
       url: `${BASE_URL}/${locale}${path}`,
-      lastModified,
+      lastModified: now,
       changeFrequency,
       priority,
       alternates: {
@@ -44,4 +29,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
       },
     }))
   );
+
+  // Guides and solution pages are FR-only: the subject matter is French tax law
+  // and French trade practice, so an English variant would be duplication with
+  // no query behind it.
+  const guideEntries = GUIDES.map((g) => ({
+    url: `${BASE_URL}/fr/guides/${g.slug}`,
+    lastModified: new Date(g.dateModified),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  const solutionEntries = SOLUTIONS.map((s) => ({
+    url: `${BASE_URL}/fr/solutions/${s.slug}`,
+    lastModified: new Date(s.dateModified),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  const comparisonEntries = COMPARISONS.map((c) => ({
+    url: `${BASE_URL}/fr/comparatif/${c.slug}`,
+    lastModified: new Date(c.dateModified),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  // The hub pages come from PUBLIC_PATHS above, not from here.
+  return [...staticEntries, ...guideEntries, ...solutionEntries, ...comparisonEntries];
 }

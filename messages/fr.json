@@ -67,7 +67,7 @@
     "backHome": "Retour à l'accueil",
     "privacy": {
       "title": "Politique de confidentialité",
-      "intro": "Chez Digitip nous prenons votre vie privée au sérieux. Cette politique explique quelles données nous collectons, comment nous les utilisons et les droits dont vous disposez. Digitip SAS est responsable du traitement.",
+      "intro": "Chez Digitip nous prenons votre vie privée au sérieux. Cette politique explique quelles données nous collectons, comment nous les utilisons et les droits dont vous disposez. Le responsable du traitement est YUZU LABS SAS, éditrice du service Digitip — SIREN 994 879 013, 11 rue de Lorraine, 68490 Petit-Landau, France.",
       "s1Title": "1. Données collectées",
       "s1Body": "Données de compte (nom, email, hash du mot de passe), données professionnelles (raison sociale, TVA, adresse de livraison et de facturation), données de pourboire (montant, date, membre du personnel destinataire), données de versement gérées par Stripe (coordonnées bancaires, vérification d'identité), et données techniques (IP, navigateur, langue) utilisées pour la sécurité et l'analytique.",
       "s2Title": "2. Utilisation des données",
@@ -85,7 +85,7 @@
       "s8Title": "8. Sécurité",
       "s8Body": "Les données sont chiffrées en transit (TLS 1.2+) et au repos. L'accès est limité au personnel habilité. Nous menons régulièrement des revues de sécurité.",
       "s9Title": "9. Contact",
-      "s9Body": "Pour toute question sur cette politique, écrivez à privacy@digitip.app ou à Digitip SAS, délégué à la protection des données."
+      "s9Body": "Pour toute question sur cette politique ou pour exercer vos droits, écrivez à privacy@digitip.app ou à YUZU LABS SAS — Protection des données, 11 rue de Lorraine, 68490 Petit-Landau, France."
     },
     "terms": {
       "title": "Conditions générales",
@@ -94,10 +94,10 @@
       "s1Body": "Digitip fournit des SmartTags NFC et une plateforme logicielle permettant aux clients de laisser des pourboires sans contact au personnel. Les pourboires sont collectés via Stripe puis reversés au bénéficiaire désigné sur son compte bancaire, après vérification de son identité. Digitip agit comme facilitateur technique et n'est pas l'employeur des bénéficiaires.",
       "s2Title": "2. Éligibilité",
       "s2Body": "Vous devez avoir au moins 18 ans, être habilité à engager votre entreprise, et exploiter une activité légale d'hôtellerie, de restauration ou de service dans un pays où Stripe Connect est disponible.",
-      "s3Title": "3. Abonnement & commandes",
-      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique auquel s'ajoute un abonnement logiciel mensuel. Le matériel n'est pas remboursable une fois expédié. L'abonnement peut être résilié à tout moment depuis le portail de facturation ; la résiliation prend effet à la fin de la période en cours.",
+      "s3Title": "3. Commandes",
+      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique. Il n'existe aucun abonnement ni frais mensuel : une fois la plaque payée, aucune somme récurrente n'est prélevée. La plateforme Digitip se rémunère exclusivement par une commission de 5 % prélevée sur les pourboires effectivement encaissés (voir article 5). En l'absence de pourboire, aucun montant n'est dû. Le matériel n'est pas remboursable une fois expédié, sous réserve des garanties légales et du droit de rétractation prévus aux CGV.",
       "s4Title": "4. Paiements",
-      "s4Body": "Tous les paiements sont traités par Stripe. La TVA est appliquée automatiquement selon votre pays. Un échec de paiement d'abonnement peut suspendre le service après 7 jours. Une période de grâce de 30 jours s'applique aux SmartTags avant désactivation complète.",
+      "s4Body": "Tous les paiements sont traités par Stripe. La TVA est appliquée automatiquement selon votre pays. Le paiement du matériel est unique et intervient à la commande ; aucun prélèvement récurrent n'est effectué. Une période de grâce de 30 jours s'applique aux SmartTags avant désactivation complète en cas de résiliation du compte.",
       "s5Title": "5. Pourboires, encaissement et versement",
       "s5Body": "Digitip agit comme facilitateur technique de paiement. Chaque pourboire est attribué au membre du personnel sélectionné par le client. Les fonds sont d'abord encaissés via Stripe, puis reversés au bénéficiaire sur son compte bancaire connecté dès qu'il a finalisé la vérification d'identité imposée par la réglementation (lutte contre le blanchiment). Tant que cette vérification n'est pas terminée, le pourboire est conservé de façon sécurisée, puis versé automatiquement une fois le bénéficiaire vérifié. Digitip prélève une commission de 5 % et des frais de service fixes par transaction pour couvrir l'infrastructure et les frais de paiement ; le solde revient au bénéficiaire. Digitip ne conserve les fonds que le temps nécessaire à leur versement.",
       "s6Title": "6. Vos responsabilités",
@@ -109,7 +109,7 @@
       "s9Title": "9. Résiliation",
       "s9Body": "Vous pouvez fermer votre compte à tout moment. Nous pouvons suspendre ou résilier l'accès en cas de manquement ou de risque pour nos partenaires ou d'autres utilisateurs. À la résiliation, les SmartTags sont désactivés après 30 jours.",
       "s10Title": "10. Droit applicable",
-      "s10Body": "Ces conditions sont régies par le droit français. Les litiges relèvent de la compétence exclusive des tribunaux de Paris, sauf disposition impérative contraire du droit de la consommation.",
+      "s10Body": "Ces conditions sont régies par le droit français. Les litiges entre professionnels relèvent de la compétence exclusive des tribunaux du ressort de la Cour d'appel de Colmar, sauf disposition impérative contraire du droit de la consommation.",
       "s11Title": "11. Modifications",
       "s11Body": "Nous pouvons modifier ces conditions. Les changements substantiels seront notifiés par email au moins 30 jours avant leur application.",
       "s12Title": "12. Vérification d'identité",
@@ -177,6 +177,7 @@
   },
   "landing": {
     "promoBanner": "OFFRE DE LANCEMENT — Livraison offerte en Europe",
+    "promoBannerDated": "OFFRE DE LANCEMENT — Livraison offerte en Europe · jusqu'au {date} ({days, plural, one {# jour restant} other {# jours restants}})",
     "nav": {
       "packs": "Nos packs",
       "clients": "Clients",
@@ -184,32 +185,22 @@
       "contact": "Contact"
     },
     "hero": {
-      "badge": "4.8 / 5",
+      "badge": "Garantie matériel à vie",
       "srBrand": "Digitip — l'app de pourboires sans contact par NFC, disponible sur digitip.app.",
       "h1a": "Le meilleur moyen",
       "h1b": "d'encaisser plus de",
       "h1c": "pourboires",
       "sub": "La plaque se pose en 5 secondes, n'importe où. Votre client approche son téléphone ou scanne le QR code, choisit un montant — et le pourboire vous revient sur votre compte bancaire, via Stripe. Zéro app, zéro cash, zéro friction.",
-      "social": "Adopté par 400+ équipes",
+      "social": "Paiement unique, sans abonnement",
       "cta": "Commander maintenant",
       "b1": "Pourboire nominatif : le client choisit qui récompenser",
       "b2": "Sans aucun abonnement — payez une fois, à vie",
       "b3": "Versé directement sur votre compte bancaire via Stripe",
       "b4": "Zéro app, zéro cash : un simple tap ou QR code"
     },
-    "claim": {
-      "kicker": "Pourquoi Digitip ?",
-      "title": "Recevez des pourboires en seulement",
-      "titleAccent": "3 secondes",
-      "claim2title": "Doublez",
-      "claim2sub": "vos pourboires dès la première semaine",
-      "sub": "Les SmartTags Digitip se posent en 20 secondes et fonctionnent immédiatement. Aucune app pour le client, aucune configuration technique."
-    },
     "product": {
       "kicker": "Produit vedette",
       "name": "SmartTag Digitip NFC",
-      "rating": "4.8",
-      "reviewCount": "+150 avis vérifiés",
       "claim": "Garantie matériel à vie",
       "frenchCompany": "Entreprise française",
       "get3s": "Recevez des pourboires en 3 secondes !",
@@ -219,9 +210,6 @@
       "packSLabel": "1 emplacement",
       "packMLabel": "2 emplacements",
       "packLLabel": "3+ emplacements",
-      "priceFull": "99,00 €",
-      "priceOffer": "69,00 €",
-      "priceSave": "ÉCONOMISEZ 30%",
       "bullet1": "Paiement unique, 0 frais mensuel",
       "bullet2": "5 % de commission sur les pourboires uniquement",
       "bullet3": "Résine époxy haute densité — conçue pour durer",
@@ -267,12 +255,8 @@
       "sub": "Plaques époxy pré-programmées, livrées prêtes à l'emploi. 5 % de commission sur les pourboires uniquement.",
       "packS": "Solo",
       "packSTag": "1 plaque époxy NFC",
-      "packSPrice": "69,00 €",
-      "packSFull": "89,00 €",
       "packM": "Duo",
       "packMTag": "2 plaques époxy NFC",
-      "packMPrice": "99,00 €",
-      "packMFull": "138,00 €",
       "packCustom": "Sur-mesure",
       "packCustomTag": "60+ SmartTags",
       "packCustomPrice": "Devis",
@@ -293,18 +277,33 @@
       "p4": "Entrée / salle d'attente",
       "p4sub": "Discret, toujours visible"
     },
-    "testimonials": {
-      "kicker": "Ils en parlent",
-      "title": "Ce que disent les gérants",
-      "t1name": "Sophie L.",
-      "t1role": "Gérante — Restaurant Le Comptoir",
-      "t1quote": "En deux semaines mon équipe en salle a vu ses pourboires doubler. Les clients adorent le côté sans contact, et moi j'adore le dashboard.",
-      "t2name": "Karim B.",
-      "t2role": "Manager — Groupe Harmonie (3 établissements)",
-      "t2quote": "On a déployé les plaques dans les 3 établissements en une matinée. Zéro friction, zéro plainte. Les pourboires arrivent sur le compte bancaire, via Stripe.",
-      "t3name": "Aurélie M.",
-      "t3role": "Propriétaire — Salon Éclat Beauté",
-      "t3quote": "Je pensais que c'était compliqué mais la config a pris 10 minutes. Mes collaboratrices reçoivent leurs pourboires le soir même."
+    "stats": {
+      "s1n": "3 sec",
+      "s1l": "pour laisser un pourboire",
+      "s2n": "2 min",
+      "s2l": "pour installer la plaque",
+      "s3n": "0 €",
+      "s3l": "de frais mensuel",
+      "s4n": "À vie",
+      "s4l": "de garantie matériel"
+    },
+    "trust": {
+      "kicker": "Nos engagements",
+      "title": "Ce sur quoi vous pouvez compter",
+      "sub": "Digitip démarre. Plutôt que des chiffres de clientèle, voici des engagements vérifiables — chacun est inscrit dans nos CGV ou dans nos mentions légales.",
+      "freeShippingShort": "Livraison offerte en Europe",
+      "warranty": "Garantie matériel à vie",
+      "warrantySub": "Plaque cassée ou défectueuse ? On la remplace gratuitement, sans limite de durée.",
+      "noSubscription": "Aucun abonnement",
+      "noSubscriptionSub": "Vous payez la plaque une fois. Ensuite, 5 % de commission uniquement sur les pourboires encaissés.",
+      "stripe": "Paiements sécurisés par Stripe",
+      "stripeSub": "Aucune donnée bancaire ne transite par nos serveurs. Apple Pay et Google Pay acceptés.",
+      "directPayout": "Versé sur le compte du bénéficiaire",
+      "directPayoutSub": "Le pourboire va à la personne choisie par le client, sur son propre compte bancaire.",
+      "frenchCompany": "Entreprise française",
+      "frenchCompanySub": "YUZU LABS SAS — SIREN 994 879 013. Plaques programmées et expédiées depuis la France.",
+      "euData": "Données hébergées dans l'UE",
+      "euDataSub": "Aucun cookie publicitaire, aucun traqueur tiers. Conforme au RGPD."
     },
     "finalCta": {
       "title": "Pas encore convaincu ?",
@@ -343,9 +342,14 @@
     "footer": {
       "tagline": "Encaissez vos pourboires sans contact.",
       "links": "Liens rapides",
+      "resources": "Ressources",
+      "guides": "Guides",
+      "solutions": "Par métier",
+      "comparatifs": "Comparatifs",
+      "about": "À propos",
       "legal": "Légal",
       "payment": "Paiements acceptés",
-      "copyright": "© 2026 Digitip SAS · Tous droits réservés"
+      "copyright": "© 2026 YUZU LABS SAS · Digitip · Tous droits réservés"
     },
     "keyAdv": {
       "kicker": "Ce qui change tout",
@@ -845,6 +849,7 @@
     "banking": {
       "title": "Virements",
       "subtitle": "Recevez vos pourboires sur votre compte bancaire.",
+      "returnIncomplete": "Votre configuration Stripe n'est pas terminée. Vos pourboires sont conservés en sécurité, mais ils ne pourront être versés qu'une fois la vérification finalisée. Reprenez là où vous en étiez ci-dessous.",
       "notLinkedTitle": "Compte non rattaché",
       "notLinkedBody": "Votre compte n'est pas encore rattaché à un établissement. Contactez votre administrateur pour accéder à cette fonctionnalité.",
       "totalReceived": "Total reçu",
@@ -1216,6 +1221,7 @@
       "title": "Votre espace est prêt !",
       "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
       "cta": "Accéder au dashboard →",
+      "ctaBanking": "Configurer mes virements →",
       "payoutTitle": "Finalisez vos virements",
       "payoutBody": "Après avoir confirmé votre email, rendez-vous dans <b>Dashboard → Virements</b> pour configurer vos virements avec Stripe et commencer à recevoir des pourboires."
     },
@@ -1237,6 +1243,12 @@
     "salon": {
       "title": "Nom de l'établissement",
       "subtitle": "Comment s'appelle votre établissement ?"
+    },
+    "businessType": {
+      "title": "Votre activité",
+      "subtitle": "Cela nous aide à adapter les montants de pourboire suggérés à vos clients.",
+      "restaurant": "Restaurant, bar ou café",
+      "beauty": "Coiffure, beauté ou bien-être"
     },
     "address": {
       "title": "Adresse",
@@ -1262,7 +1274,8 @@
       "subtitle": "Invitez vos collègues pour qu'ils puissent eux aussi recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard.",
       "intro": "Vos collègues recevront un email pour créer leur compte et commencer à recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard depuis votre dashboard.",
       "namePlaceholder": "Prénom du collègue",
-      "emailPlaceholder": "Email du collègue",
+      "emailPlaceholder": "Email du collègue (obligatoire pour l'inviter)",
+      "emailRequiredHint": "Sans email, ce collègue n'aura pas de compte et ne pourra pas recevoir de pourboires. Vous pourrez ajouter son adresse plus tard depuis le dashboard.",
       "add": "+ Ajouter un collègue",
       "remove": "Retirer"
     },

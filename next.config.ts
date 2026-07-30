@@ -46,6 +46,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // `/pricing` is an English segment on a French-primary site, and French
+      // visitors type "tarifs". Rather than adopt next-intl's `pathnames` map —
+      // which would narrow Link's href type and force every route in the app to
+      // be enumerated — this single alias covers the one route where it matters.
+      // Permanent so the canonical stays /pricing and no duplicate is indexed.
+      { source: '/fr/tarifs', destination: '/fr/pricing', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
