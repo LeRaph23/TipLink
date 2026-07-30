@@ -44,7 +44,12 @@ export function buildPageMetadata({
   noindex = false,
 }: BuildPageMetadataInput): Metadata {
   const url = `${BASE_URL}/${locale}${path}`;
-  const ogImage = image ?? `${BASE_URL}/${locale}/opengraph-image`;
+  // Root-level static PNG, not a per-locale ImageResponse route: see
+  // app/opengraph-image.png and the note in lib/seo/README-og.md. The `.png`
+  // extension matters — the extensionless path 307-redirects into the locale
+  // prefix, and social crawlers routinely refuse to follow redirects for
+  // images, which would leave every share with no preview at all.
+  const ogImage = image ?? `${BASE_URL}/opengraph-image.png`;
 
   return {
     title,
