@@ -6,4 +6,7 @@ export const SOLUTION_BODIES: Record<string, () => Promise<{ default: ComponentT
   bar: () => import('./body/bar'),
   cafe: () => import('./body/cafe'),
   coiffeur: () => import('./body/coiffeur'),
+  tatoueur: () => import('./body/tatoueur'),
+  barbier: () => import('./body/barbier'),
+  'guide-touristique': () => import('./body/guide-touristique'),
 };

@@ -164,6 +164,120 @@ export const SOLUTIONS: SolutionMeta[] = [
       },
     ],
   },
+  {
+    slug: 'tatoueur',
+    trade: 'Tatoueur',
+    tradePlural: 'les tatoueurs',
+    title: 'Pourboire par carte pour tatoueur',
+    description:
+      "Ticket élevé, séance longue, clientèle 100 % carte : le métier où un pourboire dématérialisé rapporte le plus par client. Ce que ça change en studio.",
+    h1: 'Le pourboire par carte, pour les tatoueurs',
+    cardSummary:
+      'Le meilleur montant par pourboire de tous les métiers : 20 à 40 € quand il tombe, sur une clientèle qui ne porte plus de liquide.',
+    datePublished: '2026-07-27',
+    dateModified: '2026-07-27',
+    related: ['barbier', 'coiffeur'],
+    faq: [
+      {
+        question: 'Le pourboire au tatoueur, ça se fait vraiment en France ?',
+        answer:
+          "Moins systématiquement qu'aux États-Unis, mais oui — surtout sur les grosses pièces et avec les clients fidèles. La culture existe, elle est simplement bridée par l'absence d'espèces.",
+      },
+      {
+        question: 'Comment gérer un studio avec plusieurs artistes ?',
+        answer:
+          "Chaque artiste a son propre profil et son propre compte bancaire. Le client choisit qui il récompense, et la somme part directement chez cette personne sans transiter par le studio.",
+      },
+      {
+        question: 'Suis-je concerné par l\'exonération jusqu\'en 2028 ?',
+        answer:
+          "Le dispositif vise les salariés en contact avec la clientèle sous 1,6 SMIC. La plupart des tatoueurs sont indépendants, souvent en location de poste, donc hors de ce cadre. Faites vérifier votre situation par votre comptable.",
+      },
+    ],
+    sources: [
+      {
+        label: 'Analyse du marché du tatouage en France (2026)',
+        url: 'https://modelesdebusinessplan.com/blogs/infos/marche-tatouage',
+        verifiedOn: '2026-07-27',
+      },
+    ],
+  },
+  {
+    slug: 'barbier',
+    trade: 'Barbershop',
+    tradePlural: 'les barbershops',
+    title: 'Pourboire par carte pour barbershop',
+    description:
+      'La culture du pourboire la plus installée de la coiffure française, une clientèle jeune qui revient toutes les trois semaines et paie exclusivement par carte.',
+    h1: 'Le pourboire par carte, pour les barbershops',
+    cardSummary:
+      "Culture du pourboire importée des US, clientèle fidèle qui revient toutes les 2 à 4 semaines : la répétition fait le volume.",
+    datePublished: '2026-07-27',
+    dateModified: '2026-07-27',
+    related: ['tatoueur', 'coiffeur'],
+    faq: [
+      {
+        question: 'En quoi un barbershop diffère-t-il d\'un salon de coiffure ?',
+        answer:
+          "Le rythme de retour, surtout : deux à quatre semaines contre six à huit, avec une clientèle plus jeune et une culture du pourboire nettement plus installée. Le même geste rapporte deux à trois fois plus souvent.",
+      },
+      {
+        question: 'Et les barbiers en location de poste ?',
+        answer:
+          "Ils encaissent pour eux-mêmes, avec leur propre profil et leur propre compte. Le gérant n'a rien à encaisser ni à reverser, et il n'y a pas de discussion sur la répartition.",
+      },
+      {
+        question: 'Une plaque par poste ou une seule au comptoir ?',
+        answer:
+          "Une par poste, avec le profil de chacun. Le client sait exactement qui il récompense, et c'est ce lien direct qui déclenche le geste — une plaque commune le dilue.",
+      },
+    ],
+    sources: [
+      {
+        label: 'Le marché des barbiers en France : chiffres et statistiques',
+        url: 'https://modelesdebusinessplan.com/blogs/infos/marche-barbiers-france',
+        verifiedOn: '2026-07-27',
+      },
+    ],
+  },
+  {
+    slug: 'guide-touristique',
+    trade: 'Guide touristique',
+    tradePlural: 'les guides',
+    title: 'Pourboire par carte pour guide touristique',
+    description:
+      'Sur un free tour, le pourboire est le revenu. Vos clients sont des touristes étrangers sans euros en poche : comment récupérer ce qu\'ils voulaient déjà donner.',
+    h1: 'Le pourboire par carte, pour les guides',
+    cardSummary:
+      "Le métier où le pourboire n'est pas un bonus mais le salaire — et où les clients n'ont par définition pas de liquide.",
+    datePublished: '2026-07-27',
+    dateModified: '2026-07-27',
+    related: ['restaurant', 'cafe'],
+    faq: [
+      {
+        question: 'Comment ça marche avec un groupe de trente personnes ?',
+        answer:
+          "La plaque se porte plutôt qu'elle ne se pose : tour de cou, porte-badge ou panneau de repérage. À la fin de la visite, les participants s'approchent successivement, chacun choisit son montant. Personne n'attend son tour à une caisse.",
+      },
+      {
+        question: 'Un touriste étranger doit-il installer quelque chose ?',
+        answer:
+          "Non, et c'est décisif : personne n'installe une application française pour donner 5 € une fois dans sa vie. Le tap ouvre une page web ordinaire, le paiement se fait avec la carte déjà enregistrée dans le téléphone.",
+      },
+      {
+        question: 'Et hors saison ?',
+        answer:
+          "La plaque est un achat unique sans abonnement, et la commission ne s'applique qu'aux pourboires encaissés. Les mois sans visite ne coûtent rien.",
+      },
+    ],
+    sources: [
+      {
+        label: 'France Num — mettre en place le pourboire par carte bancaire',
+        url: 'https://www.francenum.gouv.fr/guides-et-conseils/developpement-commercial/solutions-de-paiement/mettre-en-place-le-pourboire-par',
+        verifiedOn: '2026-07-27',
+      },
+    ],
+  },
 ];
 
 export const SOLUTION_SLUGS = SOLUTIONS.map((s) => s.slug);
