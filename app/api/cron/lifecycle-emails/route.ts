@@ -18,6 +18,7 @@ import {
   sendGroupOnboardingNudge,
   sendTagDeliveredPlaceNudge,
   sendInviteTeamNudge,
+  sendStaffMissingEmailNudge,
   sendActivationNudge,
   sendStaffInviteReminder,
   sendStaffBankingNudge,
@@ -578,6 +579,73 @@ async function runWeeklyRecap(service: Db, dryRun: boolean): Promise<Tally> {
   return t;
 }
 
+
+// ─── Group admin: staff profiles with no email (recurring, 30-day bucket) ────
+// These profiles have user_id NULL: no invite was sent, no account exists, and
+// resolveStaffRecipient() cannot reach them — so no staff-audience sequence
+// ever will. The admin is the only reachable party, and the situation caps the
+// establishment's tip volume for as long as it lasts.
+async function runStaffMissingEmailNudges(service: Db, dryRun: boolean): Promise<Tally> {
+  const t = newTally();
+  const { data: groups } = await service
+    .from('groups')
+    .select('id')
+    .not('onboarding_completed_at', 'is', null)
+    .is('deleted_at', null)
+    .limit(LIMIT);
+
+  if (dryRun) { t.considered = (groups ?? []).length; return t; }
+
+  for (const g of groups ?? []) {
+    try {
+      const { data: ests } = await service
+        .from('establishments')
+        .select('id, name')
+        .eq('group_id', g.id)
+        .is('deleted_at', null);
+      const estIds = (ests ?? []).map((e) => e.id);
+      if (estIds.length === 0) continue;
+
+      const { data: orphans } = await service
+        .from('staff_profiles')
+        .select('id')
+        .in('establishment_id', estIds)
+        .is('user_id', null)
+        .is('deleted_at', null);
+
+      const count = (orphans ?? []).length;
+      if (count === 0) continue;
+
+      t.considered++;
+      const recipient = await resolveGroupAdmin(service, g.id);
+      if (!recipient) { t.skipped++; continue; }
+
+      const r = await dispatchLifecycleEmail(service, {
+        def: LIFECYCLE.staff_missing_email,
+        groupId: g.id,
+        establishmentId: ests?.[0]?.id ?? null,
+        to: recipient.email,
+        locale: recipient.locale,
+        // Recurring: re-send at most once per 30-day bucket while unresolved.
+        occurrenceSalt: `m${Math.floor(Date.now() / (30 * DAY))}`,
+        send: () => sendStaffMissingEmailNudge({
+          to: recipient.email,
+          firstName: firstNameFrom(recipient.name, 'Bonjour'),
+          establishmentName: ests?.[0]?.name ?? 'votre établissement',
+          count,
+          staffUrl: `${getBaseUrl()}/dashboard/staff`,
+          unsubscribeUrl: lifecycleUnsubUrl('group_admin', g.id),
+        }),
+      });
+      t[r]++;
+    } catch (e) {
+      t.failed++;
+      console.error('[lifecycle] staff missing-email nudge failed', g.id, e);
+    }
+  }
+  return t;
+}
+
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -593,6 +661,7 @@ export async function GET(req: NextRequest) {
   results.staffBanking = await runStaffBankingNudges(service, dryRun);
   results.unclaimedTips = await runUnclaimedTipsReminders(service, dryRun);
   results.staffInvite = await runStaffInviteReminders(service, dryRun);
+  results.staffMissingEmail = await runStaffMissingEmailNudges(service, dryRun);
   results.tagDelivered = await runTagDeliveredNudges(service, dryRun);
   const ta = await runTeamAndActivationNudges(service, dryRun);
   results.inviteTeam = ta.team;

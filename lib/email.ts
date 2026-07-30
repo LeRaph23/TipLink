@@ -1584,6 +1584,32 @@ export async function sendInviteTeamNudge(opts: {
     }));
 }
 
+/**
+ * Group admin — some staff profiles have no email, so they can never be paid.
+ *
+ * Addressed to the admin rather than the staff member on purpose: a profile
+ * with user_id NULL has no address and no account, so no staff-audience email
+ * can reach it. Recurring, because the situation persists until the admin acts
+ * and it silently caps the establishment's tip volume for as long as it does.
+ */
+export async function sendStaffMissingEmailNudge(opts: {
+  to: string; firstName: string; establishmentName: string; count: number;
+  staffUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, count, staffUrl, unsubscribeUrl } = opts;
+  const people = count === 1 ? 'une personne' : `${count} personnes`;
+  const verb = count === 1 ? 'ne peut' : 'ne peuvent';
+  return lifecycleSend(to, `${firstName}, ${people} de votre équipe ${verb} pas être payée`,
+    lifecycleBody({
+      badge: 'Équipe', tone: 'amber',
+      title: `${people} ${verb} pas recevoir de pourboires`,
+      intro: `Chez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong>, ${people} a été ajoutée sans adresse email. Sans email, pas d'invitation, donc pas de compte — et un pourboire qui leur serait destiné ne peut pas leur être versé.`,
+      ctaLabel: 'Renseigner leur email →', ctaUrl: staffUrl,
+      note: 'Une adresse suffit : l\'invitation part automatiquement.',
+      unsubscribeUrl,
+    }));
+}
+
 /** Group admin — live for a while, still zero succeeded tips. */
 export async function sendActivationNudge(opts: {
   to: string; firstName: string; establishmentName: string; dashboardUrl: string; daysSince: number; unsubscribeUrl?: string | null;
