@@ -1,14 +1,19 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { LegalPage } from '@/components/legal/LegalPage';
-import { pageAlternates } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'legal.privacy' });
-  return {
+  // Legal pages previously set only a title + canonical. A missing
+  // description leaves Google to invent the snippet from the page body,
+  // which on a terms page is a wall of clauses.
+  return buildPageMetadata({
+    locale,
+    path: '/privacy',
     title: `${t('title')} · Digitip`,
-    alternates: pageAlternates(locale, '/privacy'),
-  };
+    description: t('intro').slice(0, 155),
+  });
 }
 
 export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
