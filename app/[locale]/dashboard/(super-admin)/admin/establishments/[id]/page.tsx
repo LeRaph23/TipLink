@@ -95,12 +95,17 @@ export default async function EstablishmentDetailPage({
   // ── Core establishment data ─────────────────────────────────────────────
   const { data: est } = await supabase
     .from('establishments')
-    .select('*, groups(id, name)')
+    .select('*, groups(id, name, onboarding_completed_at)')
     .eq('id', id)
     .is('deleted_at', null)
     .single();
 
   if (!est) notFound();
+
+  // Source of truth for "has this establishment finished onboarding".
+  const estGroup = Array.isArray(est.groups) ? est.groups[0] : est.groups;
+  const groupOnboarded = !!(estGroup as { onboarding_completed_at?: string | null } | null)
+    ?.onboarding_completed_at;
 
   const group = est.groups as { id: string; name: string } | null;
 
@@ -195,7 +200,11 @@ export default async function EstablishmentDetailPage({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em' }}>{est.name}</h1>
-              <StatusBadge status={est.onboarding_status} />
+              {/* establishments.onboarding_status is written once at INSERT
+                  and never updated by any code path, so it reported
+                  "not_started" for every establishment forever. The marker that
+                  is actually maintained is groups.onboarding_completed_at. */}
+              <StatusBadge status={groupOnboarded ? 'complete' : 'not_started'} />
               <span style={{
                 padding: '3px 9px', borderRadius: 100, fontSize: 11, fontWeight: 600,
                 background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border)',
@@ -255,7 +264,7 @@ export default async function EstablishmentDetailPage({
               : <span style={{ color: 'var(--text-3)' }}>Non configuré</span>
             } />
             <KV label="Créé le" value={fmtDatetime(est.created_at, locale)} />
-            <KV label="Onboarding" value={<StatusBadge status={est.onboarding_status} />} />
+            <KV label="Onboarding" value={<StatusBadge status={groupOnboarded ? 'complete' : 'not_started'} />} />
             <KV label="Avis Google" value={est.google_review_url
               ? <a href={est.google_review_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 12, wordBreak: 'break-all' }}>Configuré ↗</a>
               : <span style={{ color: 'var(--text-3)' }}>Non configuré</span>
