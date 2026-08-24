@@ -47,6 +47,28 @@ function googleReviewPatch(input: { googlePlaceId?: string; googleReviewUrl?: st
   };
 }
 
+/**
+ * Mints the Connect-step token, but never at the cost of the provisioning that
+ * just succeeded.
+ *
+ * By the time this is called the group, establishment, roles and staff already
+ * exist. Letting a signing failure (a misconfigured secret, say) propagate would
+ * turn a completed provisioning into a generic error on the wizard's last step,
+ * with no way forward: retrying re-runs sign-up against an email that now
+ * exists, and every other path duplicates the group. The token is optional in
+ * `ProvisionResult` for exactly this reason — the Connect step falls back to the
+ * user's session when it is absent.
+ */
+function mintOnboardingToken(groupId: string, email: string | undefined): string | undefined {
+  if (!email) return undefined;
+  try {
+    return signOnboardingToken(groupId, email);
+  } catch (err) {
+    console.error('[action-error] onboarding.token — provisioning kept, Connect step falls back to the session', err);
+    return undefined;
+  }
+}
+
 const ColleagueSchema = z.object({
   fullName: z.string().min(1).max(200),
   email: z.string().email().optional().or(z.literal('')),
@@ -462,7 +484,7 @@ export async function completeNfcOnboarding(
   return {
     success: true,
     establishmentId: est.id,
-    onboardingToken: user.email ? signOnboardingToken(group.id, user.email) : undefined,
+    onboardingToken: mintOnboardingToken(group.id, user.email),
   };
 }
 
