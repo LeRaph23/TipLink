@@ -1335,15 +1335,15 @@
     },
     "reviewIntro": {
       "title": "Transformez vos pourboires en avis",
-      "subtitle": "Voici ce que verra votre client, juste après vous avoir laissé un pourboire.",
+      "subtitle": "Ce que voit votre client juste après avoir laissé un pourboire.",
       "demoName": "votre équipe",
       "demoThanks": "Merci pour le pourboire !",
       "demoQuestion": "Vous avez apprécié {name} ?",
       "demoBody": "Aidez l'équipe en laissant un avis Google — ça prend 10 secondes.",
       "demoCta": "Laisser un avis Google →",
-      "timing": "Vous le demandez au meilleur moment : juste après un geste positif, pas par email deux jours plus tard.",
-      "oneTap": "Votre client est déjà connecté à son compte Google. Il note, il valide, c'est terminé.",
-      "ranking": "Les avis récents pèsent le plus lourd dans le référencement local. Un flux régulier vous fait remonter."
+      "timing": "Demandé au bon moment : juste après un geste positif.",
+      "oneTap": "Déjà connecté à Google, il note et valide. Deux taps.",
+      "ranking": "Un flux d'avis récents vous fait remonter sur Maps."
     },
     "googleReview": {
       "title": "Avis Google",
@@ -1357,7 +1357,7 @@
       "manualIntro": "Collez le lien « Demander des avis » de votre fiche Google Business.",
       "manualSave": "Enregistrer le lien",
       "backToSearch": "← Revenir à la recherche",
-      "manualHelp": "Vous le trouvez sur votre fiche Google Business → « Demander des avis ». Un identifiant de lieu (place ID) ou un lien g.page fonctionne aussi.",
+      "manualHelp": "Pas de fiche Google Business ? Cherchez votre établissement sur Google Maps, ouvrez sa fiche et copiez l'adresse de la page — un identifiant de lieu (place ID) fonctionne aussi.",
       "manualInvalid": "Saisissez un lien d’avis Google valide.",
       "linked": "Fiche Google reliée",
       "change": "Changer",
@@ -1365,7 +1365,10 @@
       "reviewCount": "{count} avis",
       "fieldLabel": "Lien d’avis Google",
       "fieldHint": "Avec Digitip Pro, le client pourra laisser un avis Google en un clic juste après son pourboire. Le lien est enregistré dès maintenant, vous n'aurez rien à refaire.",
-      "searchUnavailable": "La recherche Google est indisponible pour le moment. Ajoutez le lien manuellement ci-dessous, ou passez cette étape — vous pourrez le renseigner plus tard depuis vos réglages."
+      "searchUnavailable": "La recherche Google est momentanément indisponible. Rien de bloquant : collez directement votre lien ci-dessous.",
+      "guide1": "Ouvrez votre fiche dans l'app Google Maps ou Google Business Profile, avec le compte de l'établissement.",
+      "guide2": "Touchez « Demander des avis ». Google affiche un lien court du type g.page/r/…/review.",
+      "guide3": "Copiez ce lien et collez-le ci-dessous."
     },
     "connect": {
       "title": "Recevoir vos pourboires",

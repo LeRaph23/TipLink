@@ -798,6 +798,9 @@ export function OnboardingWizard(props: Props) {
   // Google review is soft-required: the primary CTA stays disabled until a link
   // is chosen, but a discreet skip link lets the manager move on.
   const reviewBlocking = currentStep === 'google-review' && state.googleReviewUrl.trim().length === 0;
+  // Steps whose body is tall and cannot shrink; the header is tightened so the
+  // step still fits one phone screen. See the header comment below.
+  const dense = currentStep === 'review-intro';
 
   function renderStepBody() {
     switch (currentStep) {
@@ -956,57 +959,57 @@ export function OnboardingWizard(props: Props) {
         return (
           <div>
             <div style={{
-              borderRadius: 18, overflow: 'hidden', border: '1px solid var(--border)',
-              background: 'var(--surface)', maxWidth: 320, margin: '0 auto 22px',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.10)',
+              borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)',
+              background: 'var(--surface)', maxWidth: 268, margin: '0 auto 16px',
+              boxShadow: '0 10px 26px rgba(0,0,0,0.10)',
             }}>
               <div style={{
                 background: 'linear-gradient(135deg, #F2A8B7 0%, #C96CC1 52%, #7C3AED 100%)',
-                padding: '20px 18px', textAlign: 'center', color: '#fff',
+                padding: '13px 14px', textAlign: 'center', color: '#fff',
               }}>
                 <div style={{
-                  width: 40, height: 40, borderRadius: '50%', margin: '0 auto 10px',
+                  width: 28, height: 28, borderRadius: '50%', margin: '0 auto 7px',
                   background: 'rgba(255,255,255,0.22)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '-0.02em' }}>
                   {t('reviewIntro.demoThanks')}
                 </div>
               </div>
 
-              <div style={{ padding: '18px 18px 20px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 3, marginBottom: 10 }}>
+              <div style={{ padding: '12px 14px 14px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 3, marginBottom: 7 }}>
                   {[0, 1, 2, 3, 4].map((i) => (
-                    <svg key={i} width="17" height="17" viewBox="0 0 24 24" fill="#f5a623" aria-hidden>
+                    <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#f5a623" aria-hidden>
                       <path d="M12 2l2.9 6.2 6.6.9-4.8 4.7 1.2 6.7L12 17.3 6.1 20.5l1.2-6.7L2.5 9.1l6.6-.9L12 2z" />
                     </svg>
                   ))}
                 </div>
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)', marginBottom: 5 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
                   {t('reviewIntro.demoQuestion', { name: demoName })}
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55, marginBottom: 14 }}>
+                <div style={{ fontSize: 11.5, color: 'var(--text-3)', lineHeight: 1.45, marginBottom: 10 }}>
                   {t('reviewIntro.demoBody')}
                 </div>
                 <div style={{
-                  padding: '10px 14px', borderRadius: 10,
+                  padding: '8px 12px', borderRadius: 9,
                   background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
-                  color: '#fff', fontSize: 13, fontWeight: 700,
+                  color: '#fff', fontSize: 12, fontWeight: 700,
                 }}>
                   {t('reviewIntro.demoCta')}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(['timing', 'oneTap', 'ranking'] as const).map((k) => (
-                <div key={k} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <span style={{ color: 'var(--accent)', fontSize: 14, lineHeight: 1.5, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                <div key={k} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+                  <span style={{ color: 'var(--accent)', fontSize: 13, lineHeight: 1.5, flexShrink: 0 }}>✓</span>
+                  <span style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
                     {t(`reviewIntro.${k}`)}
                   </span>
                 </div>
@@ -1103,23 +1106,28 @@ export function OnboardingWizard(props: Props) {
         {t('stepOf', { current: stepIndex + 1, total: totalSteps })}
       </p>
 
-      {/* Step header + body */}
+      {/* Step header + body.
+
+          `review-intro` is the one step whose body is a fixed-height picture
+          rather than a form: it cannot reflow, so at the default header size the
+          card and its three points fell below the fold on a phone and the whole
+          argument had to be scrolled for. The header gives up the difference. */}
       <div key={currentStep} style={{ animation: 'onbSlideIn 220ms ease-out' }}>
         <h1 style={{
-          fontSize: 28,
+          fontSize: dense ? 23 : 28,
           fontWeight: 800,
           color: 'var(--text)',
           letterSpacing: '-0.03em',
-          marginBottom: 8,
+          marginBottom: dense ? 6 : 8,
           lineHeight: 1.2,
         }}>
           {config.title}
         </h1>
         <p style={{
-          fontSize: 15,
+          fontSize: dense ? 13.5 : 15,
           color: 'var(--text-3)',
-          lineHeight: 1.6,
-          marginBottom: 28,
+          lineHeight: dense ? 1.5 : 1.6,
+          marginBottom: dense ? 16 : 28,
         }}>
           {config.subtitle}
         </p>

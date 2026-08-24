@@ -60,6 +60,57 @@ type SearchTextResponse = {
   }>;
 };
 
+/**
+ * Turns a Google error body into something a human can act on.
+ *
+ * Google splits its 403s into two very different shapes, and telling them apart
+ * is the whole diagnosis:
+ *
+ *  - A KEY problem carries `error.details[].reason` — API_KEY_HTTP_REFERRER_BLOCKED,
+ *    API_KEY_IP_ADDRESS_BLOCKED, API_KEY_SERVICE_BLOCKED, API_KEY_INVALID,
+ *    SERVICE_DISABLED. Fix it on the key or the API.
+ *  - A bare `"The caller does not have permission"` with NO details is the
+ *    generic consumer denial. On Maps Platform that means the project itself is
+ *    not allowed to call the API — in practice: no active billing account.
+ *    Editing the key cannot fix it, which is why key-level changes appear to do
+ *    nothing.
+ *
+ * The key's last 4 characters are included so the key actually in use can be
+ * compared with the one being edited in the Cloud console — two keys in the same
+ * project produce identical metrics, so that is otherwise unfalsifiable. Server
+ * logs only; never returned to the browser.
+ */
+function describeGoogleError(status: number, body: string, apiKey: string): string {
+  const tail = apiKey.length >= 4 ? `…${apiKey.slice(-4)}` : '(vide)';
+  let reason: string | null = null;
+  let message: string | null = null;
+  try {
+    const parsed = JSON.parse(body) as {
+      error?: { message?: string; details?: Array<{ reason?: string }> };
+    };
+    message = parsed.error?.message ?? null;
+    reason = parsed.error?.details?.find((d) => d.reason)?.reason ?? null;
+  } catch {
+    // Not JSON — fall through with the raw body.
+  }
+
+  const hint = reason
+    ? `reason=${reason}`
+    : status === 403
+      ? 'aucun details[].reason → refus au niveau du PROJET, pas de la clé ' +
+        '(vérifier la facturation Google Cloud avant de retoucher la clé)'
+      : '';
+
+  return [
+    `Google Places HTTP ${status}`,
+    `key=${tail}`,
+    hint,
+    message ?? body.slice(0, 400),
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
 function haversineMeters(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
   const R = 6371000;
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -101,7 +152,7 @@ export async function findGooglePlaceForSalon(input: {
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 1200)}`);
+      throw new Error(describeGoogleError(res.status, text, apiKey!));
     }
     return (await res.json()) as SearchTextResponse;
   }
@@ -265,7 +316,7 @@ export async function searchEstablishmentCandidates(input: {
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 1200)}`);
+    throw new Error(describeGoogleError(res.status, text, apiKey));
   }
 
   const data = (await res.json()) as SearchTextResponse;

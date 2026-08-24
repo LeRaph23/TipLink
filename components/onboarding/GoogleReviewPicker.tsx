@@ -75,13 +75,19 @@ export function GoogleReviewPicker({
         setUnconfigured(true);
         setManual(true);
       } else if (!res.ok || data.failed) {
+        // Drop straight into manual entry rather than leaving the manager on a
+        // search box that cannot succeed. Google being down is our problem, not
+        // theirs, and the pasted "Demander des avis" link is just as good — it
+        // is the same deep link we would have built from the place id.
         setFailed(true);
+        setManual(true);
       }
     } catch {
       setCandidates([]);
       // The request itself never landed — offline, timeout, blocked. Same
       // consequence for the manager as a Google-side failure.
       setFailed(true);
+      setManual(true);
     } finally {
       setLoading(false);
     }
@@ -192,11 +198,60 @@ export function GoogleReviewPicker({
   if (manual) {
     return (
       <div>
+        {failed && (
+          <p style={{
+            fontSize: compact ? 12 : 13,
+            color: 'var(--text-2)',
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            padding: '10px 12px',
+            marginBottom: 12,
+            lineHeight: 1.55,
+          }}>
+            {t('searchUnavailable')}
+          </p>
+        )}
+
         {unconfigured ? null : (
           <p style={{ fontSize: compact ? 12.5 : 14, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.6 }}>
             {t('manualIntro')}
           </p>
         )}
+
+        {/* Where the link actually comes from. This used to be an 11.5px
+            footnote under the field, which is unreadable on a phone and is the
+            only instruction that matters once the search is unavailable. */}
+        {!compact && (
+          <ol style={{
+            margin: '0 0 14px',
+            padding: 0,
+            listStyle: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 9,
+            counterReset: 'gstep',
+          }}>
+            {(['guide1', 'guide2', 'guide3'] as const).map((k) => (
+              <li key={k} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{
+                  flexShrink: 0,
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'var(--accent)', color: '#fff',
+                  fontSize: 11, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginTop: 1,
+                }}>
+                  {k.slice(-1)}
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.55 }}>
+                  {t(k)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+
         <input
           type="url"
           inputMode="url"

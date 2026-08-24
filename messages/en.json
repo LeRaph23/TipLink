@@ -1335,15 +1335,15 @@
     },
     "reviewIntro": {
       "title": "Turn your tips into reviews",
-      "subtitle": "Here is what your customer sees, right after tipping you.",
+      "subtitle": "What your customer sees right after leaving a tip.",
       "demoName": "your team",
       "demoThanks": "Thanks for the tip!",
       "demoQuestion": "Did you enjoy {name}?",
       "demoBody": "Help the team out with a Google review — it takes 10 seconds.",
       "demoCta": "Leave a Google review →",
-      "timing": "You ask at the best possible moment: right after a positive gesture, not by email two days later.",
-      "oneTap": "Your customer is already signed in to Google. They rate, they confirm, done.",
-      "ranking": "Recent reviews carry the most weight in local search. A steady flow moves you up."
+      "timing": "Asked at the right moment: straight after a kind gesture.",
+      "oneTap": "Already signed in to Google — they rate, they submit. Two taps.",
+      "ranking": "A steady flow of recent reviews lifts you on Maps."
     },
     "googleReview": {
       "title": "Google reviews",
@@ -1357,7 +1357,7 @@
       "manualIntro": "Paste the “Ask for reviews” link from your Google Business profile.",
       "manualSave": "Save link",
       "backToSearch": "← Back to search",
-      "manualHelp": "Find it on your Google Business profile → “Ask for reviews”. A place ID or a g.page link also works.",
+      "manualHelp": "No Google Business listing? Find your business on Google Maps, open its page and copy the page address — a place ID works too.",
       "manualInvalid": "Enter a valid Google review link.",
       "linked": "Google listing linked",
       "change": "Change",
@@ -1365,7 +1365,10 @@
       "reviewCount": "{count} reviews",
       "fieldLabel": "Google review link",
       "fieldHint": "With Digitip Pro, customers can leave a Google review in one tap right after tipping. The link is saved now, so there is nothing to redo later.",
-      "searchUnavailable": "Google search is unavailable right now. Add the link manually below, or skip this step — you can set it later from your settings."
+      "searchUnavailable": "Google search is temporarily unavailable. Nothing is blocked: paste your link below instead.",
+      "guide1": "Open your listing in the Google Maps or Google Business Profile app, signed in with the business account.",
+      "guide2": "Tap \"Ask for reviews\". Google shows a short link like g.page/r/…/review.",
+      "guide3": "Copy that link and paste it below."
     },
     "connect": {
       "title": "Receiving your tips",
