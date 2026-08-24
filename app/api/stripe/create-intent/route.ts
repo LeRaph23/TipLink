@@ -5,11 +5,11 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
+import { computeTipFee, computeTipTotal, resolveTipFeeConfig } from '@/lib/pricing/tip-fees';
 
 export const runtime = 'nodejs';
 
 const RATE_LIMIT = { limit: 5, windowMs: 60_000 };
-const SERVICE_FEE = 25;
 
 const BodySchema = z.object({
   staffId: z.string().uuid(),
@@ -52,9 +52,8 @@ export async function POST(request: NextRequest) {
   }
   const { staffId, amount, tipAmount, currency, nonce, customerEmail, expectedEstablishmentId } = parsed.data;
 
-  if (amount !== tipAmount + SERVICE_FEE) {
-    return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
-  }
+  // The amount is validated further down, once the establishment's fee config
+  // is known — a group on a non-default rate charges a different total.
 
   const supabase = createServiceClient();
 
@@ -83,8 +82,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Resolve the platform commission rate: establishment -> group -> default.
-  let platformFeeBps = 500;
+  // Resolve the service fee config: group -> default.
+  let feeConfig = resolveTipFeeConfig(null);
   if (staff.establishment_id) {
     const { data: estab } = await supabase
       .from('establishments')
@@ -95,20 +94,29 @@ export async function POST(request: NextRequest) {
     if (estab?.group_id) {
       const { data: group } = await supabase
         .from('groups')
-        .select('platform_fee_bps')
+        .select('platform_fee_bps, platform_fixed_fee_cents')
         .eq('id', estab.group_id)
         .is('deleted_at', null)
         .maybeSingle();
-      if (group && typeof group.platform_fee_bps === 'number') {
-        platformFeeBps = group.platform_fee_bps;
+      if (group) {
+        feeConfig = resolveTipFeeConfig({
+          bps: group.platform_fee_bps,
+          fixedCents: group.platform_fixed_fee_cents,
+        });
       }
     }
   }
-  // Platform keeps the commission + the fixed service fee; the staff member
-  // receives the remainder. With deferred onboarding we capture on the platform
-  // (separate charge) and transfer this net amount later.
-  const platformFee = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000));
-  const netForStaff = tipAmount - platformFee;
+
+  // The tipper pays the tip they chose PLUS the whole service fee, so the
+  // recipient keeps 100 % of the tip and the platform's revenue is the fee.
+  // Recomputed server-side and compared to what the browser asked to charge —
+  // a mismatch means a tampered or stale client.
+  const serviceFee = computeTipFee(tipAmount, feeConfig);
+  const netForStaff = tipAmount;
+
+  if (amount !== computeTipTotal(tipAmount, feeConfig)) {
+    return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
+  }
 
   const idempotencyKey = generateIdempotencyKey({ staffId, amount, nonce });
 
@@ -124,9 +132,14 @@ export async function POST(request: NextRequest) {
       metadata: {
         source: 'nfc',
         tip_amount: tipAmount,
-        service_fee: SERVICE_FEE,
-        platform_fee_bps: platformFeeBps,
-        platform_fee: platformFee,
+        // Whole fee paid by the tipper on top of the tip — the platform's
+        // gross revenue on this transaction, out of which Stripe is paid.
+        service_fee: serviceFee,
+        fee_bps: feeConfig.bps,
+        fee_fixed_cents: feeConfig.fixedCents,
+        // Deliberately no `platform_fee` key: nothing is deducted from the tip
+        // any more. The webhook treats its absence as zero, which is what makes
+        // the recipient's share the full tip.
         net_for_staff: netForStaff,
       },
     })
@@ -174,9 +187,9 @@ export async function POST(request: NextRequest) {
           transaction_id: transactionId,
           staff_id: staffId,
           tip_amount: String(tipAmount),
-          service_fee: String(SERVICE_FEE),
-          platform_fee_bps: String(platformFeeBps),
-          platform_fee: String(platformFee),
+          service_fee: String(serviceFee),
+          fee_bps: String(feeConfig.bps),
+          fee_fixed_cents: String(feeConfig.fixedCents),
           net_for_staff: String(netForStaff),
           transfer_group: transferGroup,
         },

@@ -58,6 +58,11 @@ const serverSchema = z.object({
   // propagates without an env change. Logs an error if missing.
   STRIPE_PRODUCT_PACK_SOLO: z.string().min(3),
   STRIPE_PRODUCT_PACK_DUO: z.string().min(3),
+  // Digitip Pro recurring prices (price_...). Optional: without them the
+  // subscribe route returns a clean 503 and the rest of the app keeps working
+  // on the free plan, rather than refusing to boot.
+  STRIPE_PRICE_PRO_MONTHLY: z.string().min(3).optional(),
+  STRIPE_PRICE_PRO_YEARLY: z.string().min(3).optional(),
   // Dev-only routes (seed-demo) gated by an explicit boolean rather than
   // NODE_ENV so a preview deployment with NODE_ENV=production can't be tricked
   // into exposing them.
@@ -94,6 +99,8 @@ export function serverEnv() {
     ONBOARDING_TOKEN_SECRET: process.env.ONBOARDING_TOKEN_SECRET,
     STRIPE_PRODUCT_PACK_SOLO: process.env.STRIPE_PRODUCT_PACK_SOLO,
     STRIPE_PRODUCT_PACK_DUO: process.env.STRIPE_PRODUCT_PACK_DUO,
+    STRIPE_PRICE_PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
+    STRIPE_PRICE_PRO_YEARLY: process.env.STRIPE_PRICE_PRO_YEARLY,
     SEED_DEMO_ENABLED: process.env.SEED_DEMO_ENABLED,
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
     TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,

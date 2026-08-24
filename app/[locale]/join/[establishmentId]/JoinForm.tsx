@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Icon, type IconName } from '@/components/ambassadeur/icons';
-import { StripeOnboardingPrimer } from '@/components/payment/StripeOnboardingPrimer';
 
 interface UnclaimedProfile {
   id: string;
@@ -13,7 +12,7 @@ interface UnclaimedProfile {
   email?: string;
 }
 
-type Step = 'welcome' | 'identity' | 'name-photo' | 'payment-intro' | 'email' | 'password' | 'pre-stripe';
+type Step = 'welcome' | 'identity' | 'name-photo' | 'email' | 'password';
 
 const inp: React.CSSProperties = {
   width: '100%',
@@ -58,7 +57,7 @@ const btnSecondary: React.CSSProperties = {
 };
 
 // Light reassurance bullet: a line-style icon + one short sentence. Replaces the
-// dense reassurance paragraphs on the welcome / payment-intro steps.
+// dense reassurance paragraphs on the welcome step.
 function Bullet({ icon, children }: { icon: IconName; children: React.ReactNode }) {
   return (
     <li style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -108,7 +107,6 @@ export function JoinForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const [onboardingUrl, setOnboardingUrl] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasSessionEmail, setHasSessionEmail] = useState(false);
 
@@ -195,16 +193,9 @@ export function JoinForm({
       return;
     }
 
-    // Before handing off to Stripe's hosted onboarding, walk the staff member
-    // through the same pre-onboarding primer as the dashboard banking setup.
-    const body = (await res.json().catch(() => ({}))) as { onboardingUrl?: string };
-    if (body.onboardingUrl) {
-      setOnboardingUrl(body.onboardingUrl);
-      setStep('pre-stripe');
-      setLoading(false);
-    } else {
-      window.location.href = `/${locale}/dashboard`;
-    }
+    // Nothing left to do here: employees have no Stripe account to set up, so
+    // joining is complete as soon as the profile exists.
+    window.location.href = `/${locale}/dashboard`;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -479,64 +470,6 @@ export function JoinForm({
             {t('continue')}
           </button>
           <button type="button" onClick={() => setStep(unclaimedProfiles.length > 0 ? 'identity' : 'welcome')} style={btnSecondary}>
-            {t('back')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Step: pre-stripe (the shared pre-onboarding primer before Stripe) ─────
-
-  if (step === 'pre-stripe') {
-    return (
-      <StripeOnboardingPrimer
-        onContinue={() => { window.location.href = onboardingUrl ?? `/${locale}/dashboard`; }}
-        error={error}
-      />
-    );
-  }
-
-  // ─── Step: payment-intro ──────────────────────────────────────────────────
-
-  if (step === 'payment-intro') {
-    return (
-      <div style={{ textAlign: 'center' }}>
-        <div style={{
-          width: 56, height: 56, borderRadius: '50%',
-          background: 'var(--surface-2)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px', color: 'var(--accent)',
-        }}><Icon name="bank" size={26} /></div>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          {t('payment.title')}
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 20 }}>
-          {t.rich('payment.subtitle', { b: (c) => <strong>{c}</strong> })}
-        </p>
-
-        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
-          <Bullet icon="bank">{t('payment.bullet1')}</Bullet>
-          <Bullet icon="lock">{t('payment.bullet2')}</Bullet>
-          <Bullet icon="checkCircle">{t('payment.bullet3')}</Bullet>
-        </ul>
-        {error && (
-          <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>
-            {error}
-          </div>
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-              setStep(isAuthenticated ? 'password' : 'email');
-            }}
-            style={btnPrimary}
-          >
-            {t('continue')}
-          </button>
-          <button type="button" onClick={() => setStep('name-photo')} style={btnSecondary}>
             {t('back')}
           </button>
         </div>

@@ -38,7 +38,7 @@ export default async function SettingsPage({
 
   const { data: group } = await supabase
     .from('groups')
-    .select('id, name, logo_url, legal_name, vat_number, settings')
+    .select('id, name, logo_url, legal_name, vat_number, accountant_email, settings')
     .eq('id', groupId)
     .single();
 
@@ -71,6 +71,7 @@ export default async function SettingsPage({
           logoUrl: group.logo_url,
           legalName: group.legal_name,
           vatNumber: group.vat_number,
+          accountantEmail: group.accountant_email,
           tipThresholds: tipThresholds as number[],
         }}
         labels={{
@@ -83,6 +84,8 @@ export default async function SettingsPage({
           sectionLegal: t('sectionLegal'),
           legalName: t('legalName'),
           vatNumber: t('vatNumber'),
+          accountantEmail: t('accountantEmail'),
+          accountantEmailHelp: t('accountantEmailHelp'),
           save: t('save'),
           saving: t('saving'),
           saved: t('saved'),

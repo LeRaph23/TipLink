@@ -21,8 +21,6 @@ import {
   sendStaffMissingEmailNudge,
   sendActivationNudge,
   sendStaffInviteReminder,
-  sendStaffBankingNudge,
-  sendUnclaimedTipsReminder,
   sendReEngagementEmail,
   sendWeeklyTipRecap,
 } from '@/lib/email';
@@ -326,122 +324,6 @@ async function runStaffInviteReminders(service: Db, dryRun: boolean): Promise<Ta
   return t;
 }
 
-// ─── Staff: account claimed, Stripe banking not started (J+1/3/7) ────────────
-async function runStaffBankingNudges(service: Db, dryRun: boolean): Promise<Tally> {
-  const t = newTally();
-  const now = Date.now();
-  const { data: staff } = await service
-    .from('staff_profiles')
-    .select('id, created_at, establishment_id')
-    .eq('is_active', true)
-    // 'pending' means a Stripe account exists but KYC was never finished — the
-    // single most valuable person to nudge, and previously the one excluded.
-    // The filter was `.eq('onboarding_status', 'not_started')`, so anyone who
-    // clicked through to Stripe and bailed was never emailed again.
-    .in('onboarding_status', ['not_started', 'pending'])
-    .is('deleted_at', null)
-    .lt('created_at', new Date(now - 1 * DAY).toISOString())
-    .gt('created_at', new Date(now - 30 * DAY).toISOString())
-    .limit(LIMIT);
-
-  if (dryRun) { t.considered = (staff ?? []).length; return t; }
-
-  for (const s of staff ?? []) {
-    t.considered++;
-    try {
-      const recipient = await resolveStaffRecipient(service, s.id);
-      if (!recipient) { t.skipped++; continue; }
-      const ageDays = (now - new Date(s.created_at).getTime()) / DAY;
-      const step: 1 | 2 | 3 = ageDays >= 7 ? 3 : ageDays >= 3 ? 2 : 1;
-      const unsub = lifecycleUnsubUrl('staff', s.id);
-
-      const r = await dispatchLifecycleEmail(service, {
-        def: LIFECYCLE.staff_banking_nudge,
-        staffId: s.id,
-        establishmentId: s.establishment_id,
-        to: recipient.email,
-        locale: recipient.locale,
-        occurrenceSalt: `step${step}`,
-        send: () => sendStaffBankingNudge({
-          to: recipient.email,
-          firstName: firstNameFrom(recipient.fullName, 'Bonjour'),
-          bankingUrl: `${getBaseUrl()}/dashboard/banking`,
-          step,
-          unsubscribeUrl: unsub,
-        }),
-      });
-      t[r]++;
-    } catch (e) {
-      t.failed++;
-      console.error('[lifecycle] staff banking nudge failed', s.id, e);
-    }
-  }
-  return t;
-}
-
-// ─── Staff: tips captured but HELD (not onboarded) — J+7/30/60, before the
-//     90-day auto-refund. Driven by the age of the OLDEST held tip. ───────────
-async function runUnclaimedTipsReminders(service: Db, dryRun: boolean): Promise<Tally> {
-  const t = newTally();
-  const now = Date.now();
-
-  const { data: rows } = await service
-    .from('group_tip_transfers')
-    .select('staff_id, amount, created_at, staff_profiles!inner(onboarding_status)')
-    .eq('status', 'pending')
-    .lt('created_at', new Date(now - 7 * DAY).toISOString())
-    .limit(5000);
-
-  type Held = { total: number; oldest: number; onboarded: boolean };
-  const byStaff = new Map<string, Held>();
-  for (const r of (rows ?? []) as unknown as Array<{ staff_id: string; amount: number; created_at: string; staff_profiles: { onboarding_status: string } | null }>) {
-    const ts = new Date(r.created_at).getTime();
-    const cur = byStaff.get(r.staff_id) ?? { total: 0, oldest: ts, onboarded: r.staff_profiles?.onboarding_status === 'complete' };
-    cur.total += r.amount;
-    cur.oldest = Math.min(cur.oldest, ts);
-    byStaff.set(r.staff_id, cur);
-  }
-
-  if (dryRun) { t.considered = byStaff.size; return t; }
-
-  for (const [staffId, held] of byStaff) {
-    t.considered++;
-    // Onboarded staff are paid out automatically — no reminder needed.
-    if (held.onboarded || held.total <= 0) { t.skipped++; continue; }
-    try {
-      const recipient = await resolveStaffRecipient(service, staffId);
-      if (!recipient) { t.skipped++; continue; }
-      const ageDays = (now - held.oldest) / DAY;
-      const step: 1 | 2 | 3 = ageDays >= 60 ? 3 : ageDays >= 30 ? 2 : 1;
-      const amount = new Intl.NumberFormat(recipient.locale === 'en' ? 'en-US' : 'fr-FR', {
-        style: 'currency', currency: 'EUR', minimumFractionDigits: 2,
-      }).format(held.total / 100);
-      const unsub = lifecycleUnsubUrl('staff', staffId);
-
-      const r = await dispatchLifecycleEmail(service, {
-        def: LIFECYCLE.staff_unclaimed_tips,
-        staffId,
-        to: recipient.email,
-        locale: recipient.locale,
-        occurrenceSalt: `step${step}`,
-        send: () => sendUnclaimedTipsReminder({
-          to: recipient.email,
-          firstName: firstNameFrom(recipient.fullName, 'Bonjour'),
-          amount,
-          bankingUrl: `${getBaseUrl()}/dashboard/banking`,
-          step,
-          unsubscribeUrl: unsub,
-        }),
-      });
-      t[r]++;
-    } catch (e) {
-      t.failed++;
-      console.error('[lifecycle] unclaimed tips reminder failed', staffId, e);
-    }
-  }
-  return t;
-}
-
 // ─── Group admin: establishment was active then went quiet (recurring) ───────
 async function runReEngagementNudges(service: Db, dryRun: boolean): Promise<Tally> {
   const t = newTally();
@@ -658,8 +540,6 @@ export async function GET(req: NextRequest) {
   // Priority order: conversion-critical sequences first so the per-recipient
   // frequency cap gives the slot to the most important email.
   results.groupOnboarding = await runGroupOnboardingNudges(service, dryRun);
-  results.staffBanking = await runStaffBankingNudges(service, dryRun);
-  results.unclaimedTips = await runUnclaimedTipsReminders(service, dryRun);
   results.staffInvite = await runStaffInviteReminders(service, dryRun);
   results.staffMissingEmail = await runStaffMissingEmailNudges(service, dryRun);
   results.tagDelivered = await runTagDeliveredNudges(service, dryRun);

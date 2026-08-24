@@ -6,7 +6,7 @@
  * the server-side flows). This guards against a policy regression that would
  * let an ordinary authenticated user (here: a group_admin) read them.
  *
- * The ambassador_sales / commercial_sales / group_tip_transfers tables share
+ * The ambassador_sales / commercial_sales / tip_allocations tables share
  * the same super-admin-only SELECT policy; the four checked here are
  * representative (top-level identity + payout amounts) and need the least
  * fixture scaffolding.

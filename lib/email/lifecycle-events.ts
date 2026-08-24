@@ -8,13 +8,11 @@ import {
   resolveStaffRecipient,
   firstNameFrom,
   lifecycleUnsubUrl,
-  dayWindowBucket,
 } from '@/lib/email/lifecycle';
 import {
   sendFirstTipCelebration,
   sendEarningsMilestone,
   sendStaffBankingComplete,
-  sendPayoutFailedAlert,
 } from '@/lib/email';
 
 // Event-triggered lifecycle emails dispatched inline from the Stripe webhook.
@@ -121,22 +119,3 @@ export async function onStaffBankingComplete(service: Db, staffId: string): Prom
   });
 }
 
-/** A Stripe payout to a staff member failed. */
-export async function onPayoutFailed(service: Db, staffId: string): Promise<void> {
-  const recipient = await resolveStaffRecipient(service, staffId);
-  if (!recipient) return;
-  await dispatchLifecycleEmail(service, {
-    def: LIFECYCLE.payout_failed_alert,
-    staffId,
-    to: recipient.email,
-    locale: recipient.locale,
-    // Recurring per 7-day window: re-alert on a fresh failure, never spam.
-    periodBucket: dayWindowBucket(new Date(), 7),
-    send: () =>
-      sendPayoutFailedAlert({
-        to: recipient.email,
-        firstName: firstNameFrom(recipient.fullName, 'Bonjour'),
-        bankingUrl: `${getBaseUrl()}/dashboard/banking`,
-      }),
-  });
-}

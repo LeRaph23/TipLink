@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { hasPro } from '@/lib/billing/entitlements';
 import { MonthPicker } from './MonthPicker';
 
 export const dynamic = 'force-dynamic';
@@ -71,7 +72,7 @@ export default async function StatementsPage({
   const fmt = new Intl.NumberFormat(intl, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
 
   const rows: Row[] = [];
-  let heldTotal = 0;
+  const isPro = roleRow?.group_id ? await hasPro(createServiceClient(), roleRow.group_id) : false;
   if (roleRow?.group_id) {
     const service = createServiceClient();
     const { data: ests } = await service
@@ -85,28 +86,25 @@ export default async function StatementsPage({
       const staffIds = [...byId.keys()];
 
       if (staffIds.length > 0) {
-        // Statement figures = tips actually PAID OUT (received) in the month.
-        const { data: paid } = await service
-          .from('group_tip_transfers')
+        // Statement figures = tips attributed to each employee in the month.
+        // The money itself reached the establishment's account at the same
+        // moment; this is the record of who earned it, for payroll.
+        const { data: allocated } = await service
+          .from('tip_allocations')
           .select('amount, staff_id')
           .in('staff_id', staffIds)
-          .eq('status', 'succeeded')
-          .gte('transferred_at', start)
-          .lt('transferred_at', end);
+          .eq('status', 'allocated')
+          .gte('allocated_at', start)
+          .lt('allocated_at', end);
 
         const agg = new Map<string, Row>();
-        for (const a of (paid ?? []) as Array<{ amount: number; staff_id: string }>) {
+        for (const a of (allocated ?? []) as Array<{ amount: number; staff_id: string }>) {
           const r = agg.get(a.staff_id) ?? { staffId: a.staff_id, name: byId.get(a.staff_id) ?? '—', count: 0, amount: 0 };
           r.count += 1;
           r.amount += a.amount;
           agg.set(a.staff_id, r);
         }
         rows.push(...[...agg.values()].sort((a, b) => b.amount - a.amount));
-
-        // Currently-held tips (not yet withdrawn) — shown only as an info note.
-        const { data: held } = await service
-          .from('group_tip_transfers').select('amount').in('staff_id', staffIds).eq('status', 'pending');
-        heldTotal = (held ?? []).reduce((s, r) => s + (r.amount ?? 0), 0);
       }
     }
   }
@@ -139,7 +137,25 @@ export default async function StatementsPage({
           background: 'var(--accent)', color: 'var(--accent-fg)', fontSize: 14,
           fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
         }}>{t('export')}</a>
+        {isPro && (
+          <a href={`/api/statements/export.csv?month=${month}&scope=journal`} style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            minHeight: 44, padding: '0 18px', borderRadius: 'var(--radius)',
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            color: 'var(--text-2)', fontSize: 14,
+            fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
+          }}>{t('exportJournal')}</a>
+        )}
       </div>
+
+      {/* The free plan exports the current month only, so a manager picking an
+          older month gets an explanation rather than a file that silently
+          ignores their choice. */}
+      {!isPro && (
+        <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 14, lineHeight: 1.6 }}>
+          {t('freeLimit')}
+        </p>
+      )}
 
       <div style={{ ...card, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
@@ -174,11 +190,6 @@ export default async function StatementsPage({
         </div>
       </div>
 
-      {heldTotal > 0 && (
-        <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 12, lineHeight: 1.5 }}>
-          {t('heldNote', { amount: fmt.format(heldTotal / 100) })}
-        </p>
-      )}
     </div>
   );
 }

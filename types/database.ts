@@ -1212,6 +1212,53 @@ export type Database = {
         }
         Relationships: []
       }
+      establishment_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          establishment_id: string
+          failed_at: string | null
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          paid_at: string | null
+          status: string
+          stripe_payout_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          establishment_id: string
+          failed_at?: string | null
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          paid_at?: string | null
+          status: string
+          stripe_payout_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          establishment_id?: string
+          failed_at?: string | null
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          paid_at?: string | null
+          status?: string
+          stripe_payout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_payouts_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           address: string | null
@@ -1229,6 +1276,11 @@ export type Database = {
           onboarding_status: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug: string
           stripe_account_id: string | null
+          stripe_charges_enabled: boolean
+          stripe_details_submitted: boolean
+          stripe_payouts_enabled: boolean
+          stripe_requirements: Json | null
+          stripe_synced_at: string | null
         }
         Insert: {
           address?: string | null
@@ -1246,6 +1298,11 @@ export type Database = {
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug: string
           stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
+          stripe_details_submitted?: boolean
+          stripe_payouts_enabled?: boolean
+          stripe_requirements?: Json | null
+          stripe_synced_at?: string | null
         }
         Update: {
           address?: string | null
@@ -1263,6 +1320,11 @@ export type Database = {
           onboarding_status?: Database["public"]["Enums"]["stripe_onboarding_status"]
           slug?: string
           stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
+          stripe_details_submitted?: boolean
+          stripe_payouts_enabled?: boolean
+          stripe_requirements?: Json | null
+          stripe_synced_at?: string | null
         }
         Relationships: [
           {
@@ -1274,65 +1336,9 @@ export type Database = {
           },
         ]
       }
-      group_tip_transfers: {
-        Row: {
-          amount: number
-          attempts: number
-          created_at: string
-          error: string | null
-          id: string
-          reversed_at: string | null
-          staff_id: string
-          status: string
-          stripe_transfer_id: string | null
-          transaction_id: string
-          transferred_at: string | null
-        }
-        Insert: {
-          amount: number
-          attempts?: number
-          created_at?: string
-          error?: string | null
-          id?: string
-          reversed_at?: string | null
-          staff_id: string
-          status?: string
-          stripe_transfer_id?: string | null
-          transaction_id: string
-          transferred_at?: string | null
-        }
-        Update: {
-          amount?: number
-          attempts?: number
-          created_at?: string
-          error?: string | null
-          id?: string
-          reversed_at?: string | null
-          staff_id?: string
-          status?: string
-          stripe_transfer_id?: string | null
-          transaction_id?: string
-          transferred_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_tip_transfers_staff_id_fkey"
-            columns: ["staff_id"]
-            isOneToOne: false
-            referencedRelation: "staff_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_tip_transfers_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       groups: {
         Row: {
+          accountant_email: string | null
           billing_address: Json | null
           created_at: string
           deleted_at: string | null
@@ -1342,13 +1348,20 @@ export type Database = {
           logo_url: string | null
           name: string
           onboarding_completed_at: string | null
+          plan: string
           platform_fee_bps: number
+          platform_fixed_fee_cents: number
           settings: Json
           shipping_address: Json | null
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_current_period_end: string | null
+          subscription_status: string | null
+          trial_ends_at: string | null
           vat_number: string | null
         }
         Insert: {
+          accountant_email?: string | null
           billing_address?: Json | null
           created_at?: string
           deleted_at?: string | null
@@ -1358,13 +1371,20 @@ export type Database = {
           logo_url?: string | null
           name: string
           onboarding_completed_at?: string | null
+          plan?: string
           platform_fee_bps?: number
+          platform_fixed_fee_cents?: number
           settings?: Json
           shipping_address?: Json | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
           vat_number?: string | null
         }
         Update: {
+          accountant_email?: string | null
           billing_address?: Json | null
           created_at?: string
           deleted_at?: string | null
@@ -1374,10 +1394,16 @@ export type Database = {
           logo_url?: string | null
           name?: string
           onboarding_completed_at?: string | null
+          plan?: string
           platform_fee_bps?: number
+          platform_fixed_fee_cents?: number
           settings?: Json
           shipping_address?: Json | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
           vat_number?: string | null
         }
         Relationships: []
@@ -1523,10 +1549,10 @@ export type Database = {
           amount_owed: number
           created_at: string
           dispute_id: string | null
+          establishment_id: string
           id: string
           notes: string | null
           resolved_at: string | null
-          staff_id: string
           status: string
           transaction_id: string | null
         }
@@ -1534,10 +1560,10 @@ export type Database = {
           amount_owed: number
           created_at?: string
           dispute_id?: string | null
+          establishment_id: string
           id?: string
           notes?: string | null
           resolved_at?: string | null
-          staff_id: string
           status?: string
           transaction_id?: string | null
         }
@@ -1545,19 +1571,19 @@ export type Database = {
           amount_owed?: number
           created_at?: string
           dispute_id?: string | null
+          establishment_id?: string
           id?: string
           notes?: string | null
           resolved_at?: string | null
-          staff_id?: string
           status?: string
           transaction_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "negative_balance_events_staff_id_fkey"
-            columns: ["staff_id"]
+            foreignKeyName: "negative_balance_events_establishment_id_fkey"
+            columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "staff_profiles"
+            referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
           {
@@ -2052,53 +2078,6 @@ export type Database = {
           },
         ]
       }
-      staff_payouts: {
-        Row: {
-          amount: number
-          created_at: string
-          failed_at: string | null
-          failure_code: string | null
-          failure_message: string | null
-          id: string
-          paid_at: string | null
-          staff_id: string
-          status: string
-          stripe_payout_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          failed_at?: string | null
-          failure_code?: string | null
-          failure_message?: string | null
-          id?: string
-          paid_at?: string | null
-          staff_id: string
-          status: string
-          stripe_payout_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          failed_at?: string | null
-          failure_code?: string | null
-          failure_message?: string | null
-          id?: string
-          paid_at?: string | null
-          staff_id?: string
-          status?: string
-          stripe_payout_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "staff_payouts_staff_id_fkey"
-            columns: ["staff_id"]
-            isOneToOne: false
-            referencedRelation: "staff_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       staff_profiles: {
         Row: {
           avatar_url: string | null
@@ -2158,6 +2137,54 @@ export type Database = {
           },
         ]
       }
+      tip_allocations: {
+        Row: {
+          allocated_at: string | null
+          amount: number
+          created_at: string
+          id: string
+          reversed_at: string | null
+          staff_id: string
+          status: string
+          transaction_id: string
+        }
+        Insert: {
+          allocated_at?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          reversed_at?: string | null
+          staff_id: string
+          status?: string
+          transaction_id: string
+        }
+        Update: {
+          allocated_at?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          reversed_at?: string | null
+          staff_id?: string
+          status?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_tip_transfers_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_tip_transfers_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -2178,6 +2205,9 @@ export type Database = {
           stripe_session_id: string | null
           stripe_transfer_id: string | null
           succeeded_at: string | null
+          transfer_attempts: number
+          transfer_error: string | null
+          transfer_status: string | null
         }
         Insert: {
           amount: number
@@ -2198,6 +2228,9 @@ export type Database = {
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           succeeded_at?: string | null
+          transfer_attempts?: number
+          transfer_error?: string | null
+          transfer_status?: string | null
         }
         Update: {
           amount?: number
@@ -2218,6 +2251,9 @@ export type Database = {
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           succeeded_at?: string | null
+          transfer_attempts?: number
+          transfer_error?: string | null
+          transfer_status?: string | null
         }
         Relationships: [
           {
@@ -2348,6 +2384,18 @@ export type Database = {
         }[]
       }
       cleanup_orphan_groups: { Args: never; Returns: number }
+      commercial_pilotage_summary: {
+        Args: never
+        Returns: {
+          commissions_30d: number
+          duo_count: number
+          paid_total: number
+          sales_30d_count: number
+          sales_count: number
+          solo_count: number
+          total_commissions: number
+        }[]
+      }
       get_establishment_report: {
         Args: { p_establishment_id: string; p_from: string; p_to: string }
         Returns: {
@@ -2362,6 +2410,13 @@ export type Database = {
       get_my_managed_establishment_ids: { Args: never; Returns: string[] }
       get_my_staff_establishment_id: { Args: never; Returns: string }
       get_my_staff_profile_id: { Args: never; Returns: string }
+      get_public_establishment_review: {
+        Args: { p_establishment_id: string }
+        Returns: {
+          establishment_name: string
+          establishment_review_url: string
+        }[]
+      }
       get_public_group_staff: {
         Args: { p_establishment_id: string }
         Returns: {
@@ -2370,18 +2425,13 @@ export type Database = {
           establishment_id: string
           establishment_is_demo: boolean
           establishment_name: string
+          fee_bps: number
+          fee_fixed_cents: number
           full_name: string
           group_logo_url: string
           is_payable: boolean
           staff_id: string
           tip_thresholds: Json
-        }[]
-      }
-      get_public_establishment_review: {
-        Args: { p_establishment_id: string }
-        Returns: {
-          establishment_name: string
-          establishment_review_url: string
         }[]
       }
       get_public_staff: {
@@ -2392,7 +2442,10 @@ export type Database = {
           establishment_is_demo: boolean
           establishment_name: string
           establishment_review_url: string
+          fee_bps: number
+          fee_fixed_cents: number
           full_name: string
+          group_logo_url: string
           id: string
           is_payable: boolean
           tip_thresholds: Json
@@ -2417,6 +2470,14 @@ export type Database = {
         Args: { p_ambassador_id: string }
         Returns: undefined
       }
+      resolve_sticker_establishment: {
+        Args: { p_short_id: string }
+        Returns: {
+          establishment_id: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       try_advisory_lock_commercial_payout: {
         Args: { p_commercial_id: string }
         Returns: boolean

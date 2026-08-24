@@ -5,10 +5,29 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendStaffInviteLink } from '@/lib/staff-invite';
-import { verifyOnboardingToken } from '@/lib/auth/onboarding-token';
+import { signOnboardingToken, verifyOnboardingToken } from '@/lib/auth/onboarding-token';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 import { normalizeGoogleReviewUrl } from '@/lib/google-places';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
+import { authorizeEstablishmentAccess } from '@/lib/auth/establishment-access';
+import { syncEstablishmentAccountStatus } from '@/lib/stripe/establishment-account';
+
+/**
+ * What the three provisioning actions return.
+ *
+ * Provisioning no longer finishes onboarding: it creates the group,
+ * establishment, roles and staff, then hands back the establishment so the
+ * wizard can run its Connect step. `finalizeOnboarding` is what actually marks
+ * the group complete — and it refuses to until Stripe says the account's
+ * onboarding form was submitted.
+ *
+ * `onboardingToken` is present only in the flows that have no session at that
+ * point (scan and express both sign the user out pending email confirmation);
+ * it lets the embedded Connect components authenticate.
+ */
+export type ProvisionResult =
+  | { success: true; establishmentId: string; onboardingToken?: string }
+  | { error: string };
 
 // Shared review-link fields collected by the onboarding wizard's Google step.
 const GoogleReviewFields = {
@@ -113,7 +132,7 @@ export async function validateSmartTagCode(
 // Updates the existing establishment + group, invites colleagues.
 export async function completePostPurchaseOnboarding(
   input: z.infer<typeof PostPurchaseSchema>
-): Promise<{ success: true } | { error: string }> {
+): Promise<ProvisionResult> {
   const parsed = PostPurchaseSchema.safeParse(input);
   if (!parsed.success) return actionError('validation', parsed.error, 'completePostPurchaseOnboarding');
 
@@ -198,16 +217,10 @@ export async function completePostPurchaseOnboarding(
     }
   }
 
-  // Mark onboarding complete
-  const { error: doneErr } = await service
-    .from('groups')
-    .update({ onboarding_completed_at: new Date().toISOString() })
-    .eq('id', roleRow.group_id);
-
-  if (doneErr) return actionError(classifyDbError(doneErr), doneErr, 'completePostPurchaseOnboarding.done');
-
   revalidatePath('/dashboard');
-  return { success: true };
+  // Completion is deferred to finalizeOnboarding(), after the Connect step.
+  // This caller is authenticated, so no onboarding token is minted.
+  return { success: true, establishmentId: est.id };
 }
 
 const ExpressOnboardingSchema = z.object({
@@ -232,7 +245,7 @@ const ExpressOnboardingSchema = z.object({
 // new user to the pre-existing group created by the Stripe webhook.
 export async function completeExpressOnboarding(
   input: z.infer<typeof ExpressOnboardingSchema>
-): Promise<{ success: true } | { error: string }> {
+): Promise<ProvisionResult> {
   const parsed = ExpressOnboardingSchema.safeParse(input);
   if (!parsed.success) return actionError('validation', parsed.error, 'completeExpressOnboarding');
 
@@ -346,16 +359,11 @@ export async function completeExpressOnboarding(
     }
   }
 
-  // Mark onboarding complete
-  const { error: doneErr } = await service
-    .from('groups')
-    .update({ onboarding_completed_at: new Date().toISOString() })
-    .eq('id', groupId);
-
-  if (doneErr) return actionError(classifyDbError(doneErr), doneErr, 'completeExpressOnboarding.done');
-
   revalidatePath('/dashboard');
-  return { success: true };
+  // Completion is deferred to finalizeOnboarding(), after the Connect step.
+  // The caller already holds a valid token for this group — hand it back so the
+  // embedded onboarding can authenticate without a session.
+  return { success: true, establishmentId: est.id, onboardingToken: token };
 }
 
 // For the unauthenticated NFC scan flow.
@@ -363,7 +371,7 @@ export async function completeExpressOnboarding(
 // so the session cookie is set and createClient() can read the new user.
 export async function completeNfcOnboarding(
   input: z.infer<typeof NfcOnboardingSchema>
-): Promise<{ success: true } | { error: string }> {
+): Promise<ProvisionResult> {
   const parsed = NfcOnboardingSchema.safeParse(input);
   if (!parsed.success) return actionError('validation', parsed.error, 'completeNfcOnboarding');
 
@@ -383,7 +391,9 @@ export async function completeNfcOnboarding(
     .insert({
       name: establishmentName,
       settings: { tip_thresholds: [5, 10, 20] },
-      onboarding_completed_at: new Date().toISOString(),
+      // Deliberately NOT marked complete here: the wizard still has to take the
+      // manager through the Connect step. finalizeOnboarding() sets it once
+      // Stripe confirms the onboarding form was submitted.
     })
     .select('id')
     .single();
@@ -460,5 +470,92 @@ export async function completeNfcOnboarding(
   }
 
   revalidatePath('/dashboard');
-  return { success: true };
+  // The scan flow signs the user out pending email confirmation, so the Connect
+  // step has no session to authenticate with. Mint the same signed token the
+  // express flow uses — scoped to this group, and to the email that just
+  // created it.
+  return {
+    success: true,
+    establishmentId: est.id,
+    onboardingToken: user.email ? signOnboardingToken(group.id, user.email) : undefined,
+  };
+}
+
+const FinalizeSchema = z.object({
+  establishmentId: z.string().uuid(),
+  // Present in the scan / express flows, where the user has no session yet.
+  token: z.string().min(10).optional(),
+});
+
+export type FinalizeResult =
+  | { success: true; chargesEnabled: boolean; payoutsEnabled: boolean }
+  // `code` lets the wizard tell "you still have to finish the Stripe form"
+  // apart from a generic failure; the localized `error` stays the fallback.
+  | { error: string; code?: 'connect_missing' | 'connect_incomplete' };
+
+/**
+ * Closes the onboarding wizard.
+ *
+ * The Connect step is meant to be blocking, so this refuses to mark the group
+ * complete until Stripe confirms the account exists and its onboarding form was
+ * submitted. The check reads Stripe directly rather than trusting the embedded
+ * component's client-side "done" callback, which anyone could fire from the
+ * console to skip setup entirely.
+ *
+ * Two distinct thresholds, deliberately:
+ *   - `details_submitted` — the form is filled in. Enough to finish the wizard.
+ *   - `charges_enabled && payouts_enabled` — Stripe finished verifying. Gates
+ *     the public tip pages (see get_public_staff in 00074).
+ *
+ * Requiring the second one here would strand a manager in the wizard for as
+ * long as Stripe's review takes, so the caller gets both flags back and tells
+ * them where they stand instead.
+ */
+export async function finalizeOnboarding(
+  input: z.infer<typeof FinalizeSchema>
+): Promise<FinalizeResult> {
+  const parsed = FinalizeSchema.safeParse(input);
+  if (!parsed.success) return actionError('validation', parsed.error, 'finalizeOnboarding');
+
+  const service = createServiceClient();
+  const { establishmentId, token } = parsed.data;
+
+  const access = await authorizeEstablishmentAccess(service, establishmentId, token);
+  if (!access.ok) return actionError(access.status === 404 ? 'notFound' : 'forbidden');
+
+  const { data: est } = await service
+    .from('establishments')
+    .select('stripe_account_id')
+    .eq('id', establishmentId)
+    .maybeSingle();
+
+  if (!est?.stripe_account_id) {
+    return { ...(await actionError('validation', 'connect_account_missing')), code: 'connect_missing' as const };
+  }
+
+  let status;
+  try {
+    status = await syncEstablishmentAccountStatus(service, { accountId: est.stripe_account_id });
+  } catch (err) {
+    return actionError('network', err, 'finalizeOnboarding.stripe');
+  }
+  if (!status) return actionError('notFound');
+  if (!status.detailsSubmitted) {
+    return { ...(await actionError('validation', 'connect_incomplete')), code: 'connect_incomplete' as const };
+  }
+
+  const { error: doneErr } = await service
+    .from('groups')
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq('id', access.groupId)
+    .is('onboarding_completed_at', null);
+
+  if (doneErr) return actionError(classifyDbError(doneErr), doneErr, 'finalizeOnboarding.done');
+
+  revalidatePath('/dashboard');
+  return {
+    success: true,
+    chargesEnabled: status.chargesEnabled,
+    payoutsEnabled: status.payoutsEnabled,
+  };
 }

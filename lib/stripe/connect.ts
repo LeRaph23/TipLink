@@ -1,24 +1,19 @@
 import 'server-only';
 import type Stripe from 'stripe';
 import { stripe, CONNECT_BUSINESS_PROFILE, CONNECT_STATEMENT_DESCRIPTOR } from './client';
-import { getBaseUrl } from '@/lib/env';
 
-// Helpers for Stripe **Standard** connected accounts. Standard accounts carry
-// no per-account monthly fee and no per-payout fee (unlike Express/Custom),
-// and Stripe pays the account holder automatically. Onboarding — identity,
-// bank details, terms — is fully Stripe-hosted via Account Links.
+// Connected-account helpers.
+//
+// Two populations, two very different setups:
+//
+//  - Ambassadors and commerciaux keep **Standard** accounts with Stripe-hosted
+//    onboarding (createStandardAccount / createOnboardingLink below). They are
+//    paid commissions, they pick their own legal status, and there is no reason
+//    to own their KYC.
+//  - Establishments use white-label controller-based accounts with embedded
+//    onboarding (createEstablishmentAccount). See the block comment there.
 
 export type AccountLinkUrls = { refresh_url: string; return_url: string };
-
-// Where Stripe sends the staff member back after the hosted onboarding.
-// Pass the caller's locale so a non-French user lands on their own dashboard.
-export function staffBankingReturnUrls(locale: string = 'fr'): AccountLinkUrls {
-  const base = getBaseUrl();
-  return {
-    refresh_url: `${base}/${locale}/dashboard/banking?stripe=refresh`,
-    return_url: `${base}/${locale}/dashboard/banking?stripe=return`,
-  };
-}
 
 // Creates a Standard connected account and returns its id. The account holder
 // fills in everything else through the hosted onboarding.
@@ -70,6 +65,112 @@ export async function createStandardAccount(opts: {
     const account = await stripe.accounts.create(base);
     return account.id;
   }
+}
+
+// ── Establishment accounts ───────────────────────────────────────────────────
+//
+// One connected account per establishment, holding every tip collected there.
+// Deliberately NOT a Standard account: Standard accounts can only be onboarded
+// through Stripe's hosted flow, and the whole point here is to keep the manager
+// inside Digitip's own UI (see components/stripe/ConnectProvider.tsx).
+//
+// Controller properties, and why each one:
+//   stripe_dashboard.type: 'none'       — fully white-label; the establishment
+//                                         never sees a Stripe surface.
+//   requirement_collection: 'stripe'    — Stripe owns KYC and chases missing
+//                                         documents itself. Forced by the two
+//                                         choices above; we set it explicitly
+//                                         so the intent is readable.
+//   losses.payments: 'stripe'           — Stripe carries negative balances on
+//                                         connected accounts.
+//   fees.payer: 'application'           — the platform pays Stripe's processing
+//                                         fees, which is what lets the tipper's
+//                                         service fee cover them.
+//
+// Two consequences of this configuration worth remembering:
+//
+//  1. `stripe_dashboard.type` is IMMUTABLE. Changing it later means creating a
+//     new Account object and re-onboarding the establishment from scratch.
+//  2. Because Stripe carries the losses, the platform cannot pause payouts on a
+//     connected account. That is fine for our funds flow: tips are captured on
+//     the platform and moved with an explicit transfer, so withholding a
+//     transfer is the lever we actually use.
+//
+// Note also that tips are separate charges (an *indirect* charge in Stripe's
+// vocabulary): the charge lives on the platform balance, so refunds and
+// chargebacks on tips hit Digitip regardless of `losses.payments`.
+export async function createEstablishmentAccount(opts: {
+  establishmentId: string;
+  name: string;
+  email?: string;
+  country?: string;
+}): Promise<string> {
+  const account = await stripe.accounts.create(
+    {
+      country: (opts.country ?? 'FR').toUpperCase(),
+      ...(opts.email ? { email: opts.email } : {}),
+      controller: {
+        stripe_dashboard: { type: 'none' },
+        requirement_collection: 'stripe',
+        losses: { payments: 'stripe' },
+        fees: { payer: 'application' },
+      },
+      // Request only what a tip recipient needs. Every extra capability drags
+      // in extra verification requirements.
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      business_profile: {
+        ...CONNECT_BUSINESS_PROFILE,
+        name: opts.name,
+      },
+      // Weekly rather than Stripe's default daily rolling payouts: Connect
+      // bills a fixed fee per payout, so 4 a month instead of ~30 keeps the
+      // per-establishment cost down without the money sitting around.
+      settings: {
+        payouts: { schedule: { interval: 'weekly', weekly_anchor: 'monday' } },
+      },
+      metadata: { establishment_id: opts.establishmentId },
+    },
+    // Idempotent per establishment: a double-submit in the wizard, or a retry
+    // after a timeout, must never leave two accounts behind — the unique index
+    // on establishments.stripe_account_id would then reject the second write
+    // and strand a real Stripe account with no row pointing at it.
+    { idempotencyKey: `establishment-account:${opts.establishmentId}` },
+  );
+  return account.id;
+}
+
+// Snapshot of everything the app needs to know about a connected account's
+// readiness, mirrored into `establishments` here and by the account.updated
+// webhook. `details_submitted` gates finishing onboarding; the two enabled
+// flags gate the public tip pages.
+export type EstablishmentAccountStatus = {
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  requirements: {
+    currently_due: string[];
+    past_due: string[];
+    pending_verification: string[];
+    disabled_reason: string | null;
+  };
+};
+
+export function readAccountStatus(account: Stripe.Account): EstablishmentAccountStatus {
+  const req = account.requirements;
+  return {
+    detailsSubmitted: account.details_submitted === true,
+    chargesEnabled: account.charges_enabled === true,
+    payoutsEnabled: account.payouts_enabled === true,
+    requirements: {
+      currently_due: req?.currently_due ?? [],
+      past_due: req?.past_due ?? [],
+      pending_verification: req?.pending_verification ?? [],
+      disabled_reason: req?.disabled_reason ?? null,
+    },
+  };
 }
 
 // Creates a hosted onboarding (or update) link for a connected account.

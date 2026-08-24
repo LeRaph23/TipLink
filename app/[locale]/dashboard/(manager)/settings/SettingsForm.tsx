@@ -10,6 +10,7 @@ interface Initial {
   logoUrl: string | null;
   legalName: string | null;
   vatNumber: string | null;
+  accountantEmail: string | null;
   tipThresholds: number[];
 }
 
@@ -23,6 +24,8 @@ interface Labels {
   sectionLegal: string;
   legalName: string;
   vatNumber: string;
+  accountantEmail: string;
+  accountantEmailHelp: string;
   save: string;
   saving: string;
   saved: string;
@@ -72,6 +75,7 @@ export function SettingsForm({
   const [logoUrl, setLogoUrl] = useState<string | null>(initial.logoUrl);
   const [legalName, setLegalName] = useState(initial.legalName ?? '');
   const [vatNumber, setVatNumber] = useState(initial.vatNumber ?? '');
+  const [accountantEmail, setAccountantEmail] = useState(initial.accountantEmail ?? '');
   const [thresholds, setThresholds] = useState<string[]>(
     initial.tipThresholds.map((v) => String(v))
   );
@@ -99,6 +103,7 @@ export function SettingsForm({
       logoUrl,
       legalName: legalName.trim() || null,
       vatNumber: vatNumber.trim() || null,
+      accountantEmail: accountantEmail.trim() || null,
       tipThresholds: parsed,
     });
     setSaving(false);
@@ -186,6 +191,21 @@ export function SettingsForm({
             onFocus={() => setFocus('vat')}
             onBlur={() => setFocus(null)}
           />
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <label style={labelStyle}>{labels.accountantEmail}</label>
+          <input
+            type="email"
+            value={accountantEmail}
+            onChange={(e) => setAccountantEmail(e.target.value)}
+            placeholder="comptable@cabinet.fr"
+            style={fieldStyle(focus === 'accountant')}
+            onFocus={() => setFocus('accountant')}
+            onBlur={() => setFocus(null)}
+          />
+          <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.5 }}>
+            {labels.accountantEmailHelp}
+          </p>
         </div>
       </section>
 

@@ -157,12 +157,12 @@ export default async function StaffListPage({
                 Vous aussi, recevez des pourboires directement
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 14 }}>
-                En tant qu&apos;administrateur, vous pouvez apparaître dans la liste de l&apos;équipe et recevoir des pourboires sur votre compte personnel. Il suffit de renseigner votre IBAN une seule fois.
+                En tant qu&apos;administrateur, vous pouvez apparaître dans la liste de l&apos;équipe et recevoir des pourboires. Ils arrivent sur le compte de l&apos;établissement, comme pour le reste de l&apos;équipe.
               </div>
               <form action={async () => {
                 'use server';
                 const result = await joinAsStaffMember();
-                if ('ok' in result) redirect('/dashboard/banking');
+                if ('ok' in result) redirect('/dashboard/staff');
               }}>
                 <button type="submit" style={{
                   padding: '10px 18px', borderRadius: 10, border: 'none',
@@ -170,7 +170,7 @@ export default async function StaffListPage({
                   color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   fontFamily: 'var(--font)', boxShadow: '0 4px 14px rgba(229,122,151,0.3)',
                 }}>
-                  Configurer mes virements →
+                  M&apos;ajouter à l&apos;équipe →
                 </button>
               </form>
             </div>

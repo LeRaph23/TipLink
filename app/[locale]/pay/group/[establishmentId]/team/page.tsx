@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { GroupAmountSelector } from '@/components/payment/GroupAmountSelector';
+import { resolveTipFeeConfig } from '@/lib/pricing/tip-fees';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,8 @@ interface PublicGroupStaffRow {
   staff_id: string | null;
   is_payable: boolean | null;
   establishment_is_demo?: boolean | null;
+  fee_fixed_cents?: number | null;
+  fee_bps?: number | null;
 }
 
 async function fetchGroupStaff(establishmentId: string): Promise<PublicGroupStaffRow[] | null> {
@@ -128,6 +131,10 @@ export default async function TeamTipPage({
             thresholds={thresholds}
             staffCount={payableStaff.length}
             isDemo={header.establishment_is_demo ?? false}
+            feeConfig={resolveTipFeeConfig({
+              fixedCents: header.fee_fixed_cents ?? undefined,
+              bps: header.fee_bps ?? undefined,
+            })}
           />
         </Suspense>
 

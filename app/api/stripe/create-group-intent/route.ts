@@ -4,11 +4,11 @@ import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { computeTipFee, computeTipTotal, resolveTipFeeConfig } from '@/lib/pricing/tip-fees';
 
 export const runtime = 'nodejs';
 
 const RATE_LIMIT = { limit: 5, windowMs: 60_000 };
-const SERVICE_FEE = 25;
 
 const BodySchema = z.object({
   establishmentId: z.string().uuid(),
@@ -42,9 +42,8 @@ export async function POST(request: NextRequest) {
   }
   const { establishmentId, amount, tipAmount, currency, nonce, customerEmail } = parsed.data;
 
-  if (amount !== tipAmount + SERVICE_FEE) {
-    return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
-  }
+  // The amount is validated further down, once the establishment's fee config
+  // is known — a group on a non-default rate charges a different total.
 
   const supabase = createServiceClient();
 
@@ -73,20 +72,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No active staff in this establishment' }, { status: 404 });
   }
 
-  let platformFeeBps = 500;
+  let feeConfig = resolveTipFeeConfig(null);
   if (estab.group_id) {
     const { data: group } = await supabase
       .from('groups')
-      .select('platform_fee_bps')
+      .select('platform_fee_bps, platform_fixed_fee_cents')
       .eq('id', estab.group_id)
       .is('deleted_at', null)
       .maybeSingle();
-    if (group && typeof group.platform_fee_bps === 'number') {
-      platformFeeBps = group.platform_fee_bps;
+    if (group) {
+      feeConfig = resolveTipFeeConfig({
+        bps: group.platform_fee_bps,
+        fixedCents: group.platform_fixed_fee_cents,
+      });
     }
   }
 
-  const platformFee = Math.max(0, Math.floor((tipAmount * platformFeeBps) / 10_000));
+  // The tipper pays the tip plus the whole service fee; the team shares 100 %
+  // of the tip. Recomputed server-side and compared to the requested amount.
+  const serviceFee = computeTipFee(tipAmount, feeConfig);
+
+  if (amount !== computeTipTotal(tipAmount, feeConfig)) {
+    return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
+  }
 
   const idempotencyKey = generateIdempotencyKey({ staffId: establishmentId, amount, nonce });
 
@@ -102,9 +110,11 @@ export async function POST(request: NextRequest) {
       metadata: {
         source: 'group_tip',
         tip_amount: tipAmount,
-        service_fee: SERVICE_FEE,
-        platform_fee_bps: platformFeeBps,
-        platform_fee: platformFee,
+        // Whole fee paid by the tipper on top of the tip — the platform's
+        // gross revenue. No `platform_fee` key: nothing is taken from the tip.
+        service_fee: serviceFee,
+        fee_bps: feeConfig.bps,
+        fee_fixed_cents: feeConfig.fixedCents,
       },
     })
     .select('id')
@@ -128,7 +138,7 @@ export async function POST(request: NextRequest) {
   }
 
   const transferGroup = `grp_${transactionId}`;
-  const netForStaff = tipAmount - platformFee;
+  const netForStaff = tipAmount;
   const staffIds = activeStaff.map((s) => s.id).join(',');
 
   const intent = await stripe.paymentIntents.create(
@@ -146,9 +156,9 @@ export async function POST(request: NextRequest) {
         group_tip: 'true',
         establishment_id: establishmentId,
         tip_amount: String(tipAmount),
-        service_fee: String(SERVICE_FEE),
-        platform_fee_bps: String(platformFeeBps),
-        platform_fee: String(platformFee),
+        service_fee: String(serviceFee),
+        fee_bps: String(feeConfig.bps),
+        fee_fixed_cents: String(feeConfig.fixedCents),
         net_for_staff: String(netForStaff),
         staff_ids: staffIds,
         transfer_group: transferGroup,

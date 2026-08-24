@@ -35,6 +35,7 @@ function supabaseMock(opts: {
   insertError?: { code: string } | null;
   existingTxnId?: string | null;
   platformFeeBps?: number;
+  platformFixedFeeCents?: number;
 }) {
   const staffChain = {
     select: vi.fn().mockReturnThis(),
@@ -47,9 +48,10 @@ function supabaseMock(opts: {
     }),
   };
 
-  // Platform fee defaults to 0 so tests that check application_fee_amount
-  // is absent remain valid (fee is only added when > 0).
+  // The variable part defaults to 0 so most cases can keep charging
+  // tip + the 25 c fixed fee; the fee-model cases set it explicitly.
   const feeBps = opts.platformFeeBps ?? 0;
+  const feeFixedCents = opts.platformFixedFeeCents ?? 25;
 
   let txnCall = 0;
   return {
@@ -72,7 +74,7 @@ function supabaseMock(opts: {
           eq: vi.fn().mockReturnThis(),
           is: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({
-            data: { platform_fee_bps: feeBps },
+            data: { platform_fee_bps: feeBps, platform_fixed_fee_cents: feeFixedCents },
             error: null,
           }),
         };
@@ -250,5 +252,79 @@ describe('POST /api/stripe/create-intent', () => {
     }
     const limited = await POST(mkReq(6));
     expect(limited.status).toBe(429);
+  });
+
+  // ── Fee model (see lib/pricing/tip-fees.ts) ────────────────────────────────
+  // The tipper pays tip + fixed + variable; the recipient keeps 100 % of the
+  // tip. The server recomputes the total and refuses anything else.
+
+  it('charges tip + fixed + variable fee, and keeps nothing from the tip', async () => {
+    const { createServiceClient } = await import('@/lib/supabase/service');
+    vi.mocked(createServiceClient).mockReturnValue(
+      supabaseMock({
+        staff: {
+          stripe_account_id: 'acct_1',
+          onboarding_status: 'complete',
+          establishment_id: 'est-1',
+        },
+        platformFeeBps: 500,
+        platformFixedFeeCents: 25,
+      }) as never
+    );
+
+    const { stripe } = await import('@/lib/stripe/client');
+    vi.mocked(stripe.paymentIntents.create).mockResolvedValue({
+      id: 'pi_fee',
+      client_secret: 'pi_fee_secret',
+    } as never);
+
+    const { POST } = await import('@/app/api/stripe/create-intent/route');
+    // 5,00 € tip → 0,25 € + 5 % = 0,50 € of fee → 5,50 € debited.
+    const res = await POST(
+      buildRequest(
+        { staffId: '550e8400-e29b-41d4-a716-446655440001', amount: 550, tipAmount: 500, currency: 'EUR', nonce: 'nonce-fee-model-ok' },
+        '10.0.0.6'
+      )
+    );
+    expect(res.status).toBe(200);
+
+    const callArg = vi.mocked(stripe.paymentIntents.create).mock.calls[0][0] as unknown as {
+      amount: number;
+      metadata: Record<string, string>;
+    };
+    expect(callArg.amount).toBe(550);
+    expect(callArg.metadata.tip_amount).toBe('500');
+    expect(callArg.metadata.service_fee).toBe('50');
+    // The whole tip goes to the recipient — nothing is deducted from it.
+    expect(callArg.metadata.net_for_staff).toBe('500');
+    // The legacy "commission taken out of the tip" key must not come back:
+    // the webhook reads its absence as zero deduction.
+    expect(callArg.metadata.platform_fee).toBeUndefined();
+  });
+
+  it('400 when the requested amount omits the variable fee', async () => {
+    const { createServiceClient } = await import('@/lib/supabase/service');
+    vi.mocked(createServiceClient).mockReturnValue(
+      supabaseMock({
+        staff: {
+          stripe_account_id: 'acct_1',
+          onboarding_status: 'complete',
+          establishment_id: 'est-1',
+        },
+        platformFeeBps: 500,
+        platformFixedFeeCents: 25,
+      }) as never
+    );
+
+    const { POST } = await import('@/app/api/stripe/create-intent/route');
+    // A stale client still sending the old "tip + 25 c" total.
+    const res = await POST(
+      buildRequest(
+        { staffId: '550e8400-e29b-41d4-a716-446655440001', amount: 525, tipAmount: 500, currency: 'EUR', nonce: 'nonce-fee-model-stale' },
+        '10.0.0.7'
+      )
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('Amount mismatch');
   });
 });

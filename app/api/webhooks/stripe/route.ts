@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
-import { onTipSucceeded, onStaffBankingComplete, onPayoutFailed } from '@/lib/email/lifecycle-events';
+import { onTipSucceeded } from '@/lib/email/lifecycle-events';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
-import { releaseStaffPendingTransfers } from '@/lib/stripe/tip-transfers';
 import { createPackInvoiceForPaymentIntent } from '@/lib/stripe/pack-invoice';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
-import { staffTipTag, establishmentTipTag } from '@/lib/cache/pay-tags';
+import { readAccountStatus } from '@/lib/stripe/connect';
+import { planForSubscriptionStatus } from '@/lib/billing/entitlements';
+import { splitEqually, allocateToOne, type Allocation } from '@/lib/tips/allocation';
+import { revalidateEstablishmentTipPages } from '@/lib/stripe/establishment-account';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -144,17 +145,19 @@ async function handleEvent(
         .single();
       const curMeta = (curTxn?.metadata ?? {}) as Record<string, unknown>;
       const dbTip = Number(curMeta.tip_amount);
-      const dbPlatformFee = Number(curMeta.platform_fee);
       const dbServiceFee = Number(curMeta.service_fee);
-      const netForStaff = Number.isFinite(dbTip) && Number.isFinite(dbPlatformFee)
-        ? Math.max(0, dbTip - dbPlatformFee)
-        : 0;
-      // The platform keeps the commission + the fixed service fee; everything
-      // else is owed to staff. With separate charges there is no Stripe
-      // application fee object — what we keep is simply what we don't transfer.
-      const keptFee = Number.isFinite(dbPlatformFee)
-        ? dbPlatformFee + (Number.isFinite(dbServiceFee) ? dbServiceFee : 0)
-        : null;
+      // Legacy rows (created before the 00073 fee model) carry a `platform_fee`
+      // that was deducted FROM the tip. Rows created since omit the key, so the
+      // fallback of 0 is what makes the recipient's share the whole tip — the
+      // tipper already paid the fee on top.
+      const dbDeducted = Number(curMeta.platform_fee);
+      const deducted = Number.isFinite(dbDeducted) ? Math.max(0, dbDeducted) : 0;
+      const netForStaff = Number.isFinite(dbTip) ? Math.max(0, dbTip - deducted) : 0;
+      // What the platform keeps: the service fee the tipper paid on top, plus
+      // whatever an old-model row still took out of the tip. With separate
+      // charges there is no Stripe application fee object — what we keep is
+      // simply what we don't transfer.
+      const keptFee = Number.isFinite(dbServiceFee) ? dbServiceFee + deducted : null;
 
       // Mark the transaction succeeded. Persist transfer_group into metadata so
       // the reconcile cron can replay held transfers later. Idempotent: the
@@ -172,17 +175,20 @@ async function handleEvent(
         .eq('id', transactionId)
         .eq('status', 'pending');
 
-      // ── Held allocations: one group_tip_transfers row per staff member ──
-      // Solo = a single recipient; group = split across EVERY active staff
-      // member (onboarded or not). Each row starts `pending` and is transferred
-      // once that staff member's Stripe account is ready — here if already
-      // onboarded, otherwise on account.updated or via the reconcile cron.
-      // The rounding remainder goes to the first staff member so the whole net
-      // is always distributed (no centimes stranded on the platform).
+      // ── Attribution + one transfer to the establishment ──────────────────
+      // Two separate things happen here, and keeping them apart matters:
+      //
+      //  1. `tip_allocations` records WHO earned the tip. Solo = the scanned
+      //     staff member; group = every active colleague, split equally. These
+      //     rows never move money — they are what the payroll export reads.
+      //  2. A single transfer moves the WHOLE tip to the establishment's
+      //     connected account. There is no per-employee transfer any more, and
+      //     nothing is deducted: the tipper already paid the service fee.
       if (chargeId && netForStaff > 0) {
-        let recipients: Array<{ staff_id: string; amount: number }> = [];
+        const establishmentId = curTxn?.establishment_id ?? intent.metadata?.establishment_id ?? null;
+
+        let recipients: Allocation[] = [];
         if (isGroup) {
-          const establishmentId = curTxn?.establishment_id ?? intent.metadata?.establishment_id ?? null;
           if (establishmentId) {
             const { data: staffMembers } = await supabase
               .from('staff_profiles')
@@ -190,97 +196,94 @@ async function handleEvent(
               .eq('establishment_id', establishmentId)
               .eq('is_active', true)
               .is('deleted_at', null)
-              .order('id'); // deterministic remainder recipient
-            if (staffMembers && staffMembers.length > 0) {
-              const n = staffMembers.length;
-              const baseShare = Math.floor(netForStaff / n);
-              const remainder = netForStaff - baseShare * n;
-              recipients = staffMembers.map((s, i) => ({
-                staff_id: s.id,
-                amount: baseShare + (i === 0 ? remainder : 0),
-              }));
-            }
+              .order('id'); // deterministic remainder recipient across replays
+            recipients = splitEqually(netForStaff, (staffMembers ?? []).map((m) => m.id));
           }
         } else if (curTxn?.staff_id) {
-          recipients = [{ staff_id: curTxn.staff_id, amount: netForStaff }];
+          recipients = allocateToOne(netForStaff, curTxn.staff_id);
         }
 
-        // Idempotency: a unique (transaction_id, staff_id) index makes a
+        // Idempotency: the unique (transaction_id, staff_id) index makes a
         // re-delivered OR concurrently-delivered webhook a no-op instead of
-        // creating duplicate allocation rows (the old check-then-insert had a
-        // race between two parallel deliveries). ON CONFLICT DO NOTHING.
+        // creating duplicate rows. ON CONFLICT DO NOTHING.
         if (recipients.length > 0) {
-          await supabase.from('group_tip_transfers').upsert(
+          await supabase.from('tip_allocations').upsert(
             recipients.map((r) => ({
               transaction_id: transactionId,
-              staff_id: r.staff_id,
+              staff_id: r.staffId,
               amount: r.amount,
-              status: 'pending',
+              status: 'allocated',
+              allocated_at: new Date().toISOString(),
             })) as never,
             { onConflict: 'transaction_id,staff_id', ignoreDuplicates: true }
           );
-        }
-
-        // Transfer to staff who are already onboarded; the rest stays held.
-        const { data: rowsRaw } = await supabase
-          .from('group_tip_transfers')
-          .select('id, staff_id, amount, status')
-          .eq('transaction_id', transactionId);
-        const pendingRows = ((rowsRaw ?? []) as Array<{ id: string; staff_id: string; amount: number; status?: string }>)
-          .filter((r) => (r.status ?? 'pending') === 'pending');
-
-        // Safety net: a positive net owed but zero allocation rows means every
-        // active staff member was removed between intent creation and this
-        // webhook. The funds would otherwise sit on the platform with nothing
-        // for the reconcile cron to replay — surface it for admin review.
-        if (recipients.length === 0 && (rowsRaw ?? []).length === 0) {
-          console.error('[webhook] tip net owed but no recipients — funds stranded on platform', {
+        } else {
+          // The money still reaches the establishment below, but nobody is
+          // credited for it — the payroll export would silently under-report.
+          // Happens when every active staff member was removed between intent
+          // creation and this webhook.
+          console.error('[webhook] tip settled with no one to attribute it to', {
             transactionId,
             netForStaff,
             isGroup,
-            establishmentId: curTxn?.establishment_id ?? null,
+            establishmentId,
           });
         }
 
-        if (pendingRows.length > 0) {
-          const { data: staffAccts } = await supabase
-            .from('staff_profiles')
-            .select('id, stripe_account_id, onboarding_status')
-            .in('id', pendingRows.map((r) => r.staff_id));
-          const readyAccountById = new Map<string, string>();
-          for (const s of staffAccts ?? []) {
-            if (s.stripe_account_id && s.onboarding_status === 'complete') {
-              readyAccountById.set(s.id, s.stripe_account_id);
-            }
-          }
+        // ── The transfer ────────────────────────────────────────────────────
+        const { data: estab } = establishmentId
+          ? await supabase
+              .from('establishments')
+              .select('stripe_account_id')
+              .eq('id', establishmentId)
+              .maybeSingle()
+          : { data: null };
 
-          for (const row of pendingRows) {
-            const account = readyAccountById.get(row.staff_id);
-            if (!account) continue; // held until this staff member finishes onboarding
-            try {
-              const transfer = await stripe.transfers.create(
-                {
-                  amount: row.amount,
-                  currency: intent.currency,
-                  destination: account,
-                  description: 'Pourboire',
-                  ...(transferGroup ? { transfer_group: transferGroup } : {}),
-                  source_transaction: chargeId,
-                },
-                { idempotencyKey: `gtt:${row.id}` }
-              );
-              await supabase
-                .from('group_tip_transfers')
-                .update({ status: 'succeeded', stripe_transfer_id: transfer.id, attempts: 1, error: null, transferred_at: new Date().toISOString() } as never)
-                .eq('id', row.id);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : 'unknown';
-              console.error('tip transfer create failed', { rowId: row.id, err });
-              await supabase
-                .from('group_tip_transfers')
-                .update({ status: 'failed', error: msg, attempts: 1 } as never)
-                .eq('id', row.id);
-            }
+        if (!estab?.stripe_account_id) {
+          // The tip pages refuse to charge for an unverified establishment, so
+          // this means the account was detached between charge and webhook.
+          // The funds sit on the platform; the reconcile cron retries.
+          console.error('[webhook] tip charged but establishment has no Connect account', {
+            transactionId,
+            establishmentId,
+          });
+          await supabase
+            .from('transactions')
+            .update({ transfer_status: 'failed', transfer_error: 'no_connect_account' } as never)
+            .eq('id', transactionId)
+            .is('stripe_transfer_id', null);
+        } else {
+          try {
+            const transfer = await stripe.transfers.create(
+              {
+                amount: netForStaff,
+                currency: intent.currency,
+                destination: estab.stripe_account_id,
+                description: 'Pourboire',
+                ...(transferGroup ? { transfer_group: transferGroup } : {}),
+                // Caps the transfer at this charge and ties the two together,
+                // so a refund can reverse it and the platform balance can never
+                // be drawn on before the funds have actually settled.
+                source_transaction: chargeId,
+              },
+              { idempotencyKey: `tip:${transactionId}` }
+            );
+            await supabase
+              .from('transactions')
+              .update({
+                stripe_transfer_id: transfer.id,
+                transfer_status: 'succeeded',
+                transfer_error: null,
+              } as never)
+              .eq('id', transactionId);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'unknown';
+            console.error('tip transfer create failed', { transactionId, err });
+            await supabase
+              .from('transactions')
+              .update({ transfer_status: 'failed', transfer_error: msg } as never)
+              .eq('id', transactionId)
+              .is('stripe_transfer_id', null);
           }
         }
       }
@@ -433,13 +436,10 @@ async function handleEvent(
         .update({ status: 'disputed', dispute_id: dispute.id } as never)
         .eq('id', txn.id);
 
-      // Freeze payouts for this staff member until the dispute is resolved.
-      if (txn.staff_id) {
-        await supabase
-          .from('staff_profiles')
-          .update({ payouts_frozen: true } as never)
-          .eq('id', txn.staff_id);
-      }
+      // Nothing to freeze: employees hold no account, and Stripe carries the
+      // losses on the establishment's, so the platform cannot pause its payouts
+      // either. The lever we do have is withholding the transfer, which
+      // reverseTransactionTransfers handles if the dispute is lost.
 
       break;
     }
@@ -474,20 +474,6 @@ async function handleEvent(
           .update({ status: 'succeeded', dispute_id: null } as never)
           .eq('id', txn.id);
 
-        if (txn.staff_id) {
-          const { data: stillDisputed } = await supabase
-            .from('transactions')
-            .select('id')
-            .eq('staff_id', txn.staff_id)
-            .eq('status', 'disputed')
-            .limit(1);
-          if (!stillDisputed || stillDisputed.length === 0) {
-            await supabase
-              .from('staff_profiles')
-              .update({ payouts_frozen: false } as never)
-              .eq('id', txn.staff_id);
-          }
-        }
       } else if (dispute.status === 'lost') {
         // Funds permanently withdrawn — make sure the transfer is reversed.
         try {
@@ -517,20 +503,20 @@ async function handleEvent(
 
       const { data: txn } = await supabase
         .from('transactions')
-        .select('id, staff_id, amount')
+        .select('id, establishment_id, amount')
         .eq('stripe_payment_intent_id', paymentIntentId)
         .maybeSingle();
       if (!txn) break;
 
-      if (event.type === 'charge.dispute.funds_withdrawn' && txn.staff_id) {
+      if (event.type === 'charge.dispute.funds_withdrawn' && txn.establishment_id) {
         await supabase.from('negative_balance_events').insert({
-          staff_id: txn.staff_id,
+          establishment_id: txn.establishment_id,
           transaction_id: txn.id,
           amount_owed: dispute.amount,
           dispute_id: dispute.id,
           status: 'owed',
         } as never);
-      } else if (event.type === 'charge.dispute.funds_reinstated' && txn.staff_id) {
+      } else if (event.type === 'charge.dispute.funds_reinstated') {
         await supabase
           .from('negative_balance_events')
           .update({ status: 'recovered', resolved_at: new Date().toISOString() } as never)
@@ -572,11 +558,21 @@ async function handleEvent(
         .eq('stripe_transfer_id', transfer.id)
         .is('reversed_at', null);
 
-      await supabase
-        .from('group_tip_transfers')
-        .update({ reversed_at: now } as never)
+      // The attribution rows follow the transaction, not the transfer — they
+      // carry no Stripe id of their own since 00075.
+      const { data: reversedTxn } = await supabase
+        .from('transactions')
+        .select('id')
         .eq('stripe_transfer_id', transfer.id)
-        .is('reversed_at', null);
+        .maybeSingle();
+
+      if (reversedTxn) {
+        await supabase
+          .from('tip_allocations')
+          .update({ status: 'reversed', reversed_at: now } as never)
+          .eq('transaction_id', reversedTxn.id)
+          .is('reversed_at', null);
+      }
 
       break;
     }
@@ -589,24 +585,24 @@ async function handleEvent(
       const accountId = (event as Stripe.Event & { account?: string }).account ?? null;
       if (!accountId) break;
 
-      const { data: staff } = await supabase
-        .from('staff_profiles')
+      const { data: estab } = await supabase
+        .from('establishments')
         .select('id')
         .eq('stripe_account_id', accountId)
         .maybeSingle();
-      if (!staff) break;
+      if (!estab) break;
 
       if (event.type === 'payout.paid') {
-        await supabase.from('staff_payouts').upsert({
-          staff_id: staff.id,
+        await supabase.from('establishment_payouts').upsert({
+          establishment_id: estab.id,
           stripe_payout_id: payout.id,
           amount: payout.amount,
           status: 'paid',
           paid_at: new Date().toISOString(),
         } as never, { onConflict: 'stripe_payout_id' });
       } else {
-        await supabase.from('staff_payouts').upsert({
-          staff_id: staff.id,
+        await supabase.from('establishment_payouts').upsert({
+          establishment_id: estab.id,
           stripe_payout_id: payout.id,
           amount: payout.amount,
           status: 'failed',
@@ -615,16 +611,14 @@ async function handleEvent(
           failed_at: new Date().toISOString(),
         } as never, { onConflict: 'stripe_payout_id' });
 
-        await supabase
-          .from('staff_profiles')
-          .update({
-            last_payout_failure_code: payout.failure_code,
-            last_payout_failure_at: new Date().toISOString(),
-          } as never)
-          .eq('id', staff.id);
-
-        await onPayoutFailed(supabase, staff.id).catch((err) =>
-          console.error('[lifecycle] onPayoutFailed failed', err));
+        // A failed payout means the establishment's bank details need fixing,
+        // which it does from /dashboard/paiements through the embedded account
+        // management component.
+        console.error('[stripe] establishment payout failed', {
+          establishmentId: estab.id,
+          code: payout.failure_code,
+          message: payout.failure_message,
+        });
       }
 
       break;
@@ -634,27 +628,24 @@ async function handleEvent(
       const accountId = (event as Stripe.Event & { account?: string }).account ?? null;
       if (!accountId) break;
 
-      // `onboarding_status` is a Postgres enum of ('not_started','pending',
-      // 'complete'). This used to write 'deauthorized' behind an `as never`
-      // cast, so the whole UPDATE failed on an invalid enum value — which also
-      // meant `payouts_frozen` was never set and a revoked account stayed
-      // payable. 'not_started' is both valid and accurate: the connection is
-      // gone and onboarding has to be redone from scratch.
-      const { data: deauthorized, error: deauthErr } = await supabase
-        .from('staff_profiles')
-        .update({ payouts_frozen: true, onboarding_status: 'not_started' })
+      // An establishment that revoked the connection can no longer be paid.
+      // Clear the capability flags rather than the account id: keeping the id
+      // means a reconnection lands on the same Stripe account instead of
+      // silently creating a second one.
+      const { data: deauthEstab } = await supabase
+        .from('establishments')
+        .update({
+          stripe_charges_enabled: false,
+          stripe_payouts_enabled: false,
+          stripe_synced_at: new Date().toISOString(),
+        } as never)
         .eq('stripe_account_id', accountId)
-        .select('id, establishment_id');
+        .select('id')
+        .maybeSingle();
 
-      if (deauthErr) {
-        console.error('[stripe] failed to freeze deauthorized account', accountId, deauthErr);
-      }
-
-      // Account revoked → staff is no longer payable; refresh the public pages.
-      for (const row of deauthorized ?? []) {
-        const s = row as { id: string; establishment_id: string | null };
-        revalidateTag(staffTipTag(s.id), 'max');
-        if (s.establishment_id) revalidateTag(establishmentTipTag(s.establishment_id), 'max');
+      if (deauthEstab) {
+        await revalidateEstablishmentTipPages(supabase, deauthEstab.id);
+        break;
       }
 
       break;
@@ -662,31 +653,36 @@ async function handleEvent(
 
     case 'account.updated': {
       const account = event.data.object as Stripe.Account;
-      if (account.details_submitted && account.charges_enabled) {
-        const { data: staffRow } = await supabase
-          .from('staff_profiles')
-          .select('id, establishment_id, onboarding_status')
-          .eq('stripe_account_id', account.id)
-          .maybeSingle();
-        // Only act on the actual transition into 'complete'.
-        if (staffRow && staffRow.onboarding_status !== 'complete') {
-          await supabase
-            .from('staff_profiles')
-            .update({ onboarding_status: 'complete' })
-            .eq('id', staffRow.id);
-          // Staff just became payable — refresh the public tip pages.
-          revalidateTag(staffTipTag(staffRow.id), 'max');
-          if (staffRow.establishment_id) {
-            revalidateTag(establishmentTipTag(staffRow.establishment_id), 'max');
-          }
-          await onStaffBankingComplete(supabase, staffRow.id).catch((err) =>
-            console.error('[lifecycle] onStaffBankingComplete failed', err));
-          // Deferred onboarding: pay out every tip that accumulated (held) while
-          // this staff member was completing their Stripe onboarding.
-          await releaseStaffPendingTransfers(supabase, staffRow.id).catch((err) =>
-            console.error('[release] releaseStaffPendingTransfers failed', err));
-        }
+
+      // ── Establishment account ────────────────────────────────────────────
+      // Mirror the capability flags onto the row and refresh every tip page in
+      // the establishment: payability is now an establishment-level property,
+      // so one account.updated flips the whole team at once.
+      const { data: estabRow } = await supabase
+        .from('establishments')
+        .select('id')
+        .eq('stripe_account_id', account.id)
+        .maybeSingle();
+
+      if (estabRow) {
+        const status = readAccountStatus(account);
+        await supabase
+          .from('establishments')
+          .update({
+            stripe_details_submitted: status.detailsSubmitted,
+            stripe_charges_enabled: status.chargesEnabled,
+            stripe_payouts_enabled: status.payoutsEnabled,
+            stripe_requirements: status.requirements as never,
+            stripe_synced_at: new Date().toISOString(),
+          } as never)
+          .eq('id', estabRow.id);
+
+        await revalidateEstablishmentTipPages(supabase, estabRow.id);
       }
+
+      // No staff branch: employees no longer hold a connected account, so any
+      // other account.updated on this endpoint belongs to an ambassador or a
+      // commercial, whose status is read on demand rather than mirrored here.
       break;
     }
 
@@ -695,7 +691,23 @@ async function handleEvent(
     // ============================================================
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      // Legacy subscription sessions are ignored; everything is one-shot now.
+
+      // Digitip Pro. The subscription's own events do the real work; this
+      // branch just links the subscription to the group immediately, so the
+      // dashboard reflects the purchase on the redirect back rather than
+      // whenever customer.subscription.created happens to land.
+      if (session.mode === 'subscription') {
+        const groupId = session.metadata?.group_id;
+        const subscriptionId = typeof session.subscription === 'string'
+          ? session.subscription
+          : (session.subscription as Stripe.Subscription | null)?.id ?? null;
+        if (groupId && subscriptionId) {
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          await syncSubscription(sub, supabase, groupId);
+        }
+        break;
+      }
+
       if (session.mode !== 'payment') break;
 
       // Persist the PaymentIntent id on the order so a later refund/dispute
@@ -1024,13 +1036,23 @@ business_type: 'beauty',
       break;
     }
 
-    // Legacy subscription events — kept as no-ops so historical customers
-    // on the old model don't trigger webhook errors. Safe to remove once
-    // all legacy subs are canceled.
+    // ============================================================
+    // Digitip Pro subscription
+    // ============================================================
+    case 'customer.subscription.created':
     case 'customer.subscription.updated':
-    case 'customer.subscription.deleted':
-    case 'invoice.payment_failed':
-    case 'invoice.paid': {
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object as Stripe.Subscription;
+      await syncSubscription(sub, supabase);
+      break;
+    }
+
+    // Billing outcomes only move the plan through the subscription's status,
+    // which Stripe updates and delivers as customer.subscription.updated. These
+    // stay handled so a failed renewal is greppable in webhook_events rather
+    // than landing in the `default` bucket.
+    case 'invoice.paid':
+    case 'invoice.payment_failed': {
       break;
     }
 
@@ -1038,6 +1060,67 @@ business_type: 'beauty',
       // Unknown event types are logged but not errored
       break;
   }
+}
+
+// ─── Digitip Pro subscription ────────────────────────────────────────────────
+
+/**
+ * Mirrors a Stripe subscription onto its group.
+ *
+ * The plan is derived from the subscription status rather than from which event
+ * fired, so an out-of-order delivery — Stripe makes no ordering guarantee —
+ * still lands on the right answer instead of, say, a `deleted` arriving after a
+ * re-subscription and downgrading a paying customer.
+ */
+async function syncSubscription(
+  sub: Stripe.Subscription,
+  supabase: ReturnType<typeof createServiceClient>,
+  knownGroupId?: string,
+): Promise<void> {
+  let groupId: string | null = knownGroupId ?? sub.metadata?.group_id ?? null;
+
+  if (!groupId) {
+    const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null;
+    if (!customerId) return;
+    const { data: group } = await supabase
+      .from('groups')
+      .select('id')
+      .eq('stripe_customer_id', customerId)
+      .is('deleted_at', null)
+      .maybeSingle();
+    groupId = group?.id ?? null;
+  }
+  if (!groupId) {
+    // Not ours. This Stripe account also bills other products, so their
+    // subscription events land on this endpoint too — a customer that matches
+    // no Digitip group is the normal case for those, not an error worth
+    // paging on. Only a subscription that claims to be ours and still fails to
+    // resolve is a genuine problem.
+    if (sub.metadata?.group_id) {
+      console.error('[stripe] Digitip subscription with an unknown group', {
+        subscription: sub.id,
+        groupId: sub.metadata.group_id,
+      });
+    }
+    return;
+  }
+
+  const plan = planForSubscriptionStatus(sub.status);
+  const item = sub.items?.data?.[0];
+  const periodEnd = item?.current_period_end ?? null;
+
+  await supabase
+    .from('groups')
+    .update({
+      plan,
+      stripe_subscription_id: sub.id,
+      subscription_status: sub.status,
+      subscription_current_period_end: periodEnd
+        ? new Date(periodEnd * 1000).toISOString()
+        : null,
+      trial_ends_at: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+    } as never)
+    .eq('id', groupId);
 }
 
 // ─── Hardware pack express (embedded /checkout) ──────────────────────────────

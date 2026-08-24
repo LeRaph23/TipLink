@@ -101,7 +101,7 @@ export async function findGooglePlaceForSalon(input: {
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 300)}`);
+      throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 1200)}`);
     }
     return (await res.json()) as SearchTextResponse;
   }
@@ -265,7 +265,7 @@ export async function searchEstablishmentCandidates(input: {
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 300)}`);
+    throw new Error(`Google Places HTTP ${res.status}: ${text.slice(0, 1200)}`);
   }
 
   const data = (await res.json()) as SearchTextResponse;

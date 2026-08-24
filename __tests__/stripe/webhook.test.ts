@@ -492,25 +492,37 @@ describe('Stripe Webhook Handler', () => {
     expect(orderUpsert).not.toHaveBeenCalled();
   });
 
-  it('customer.subscription.updated is a no-op (legacy event kept for backward compat)', async () => {
+  it('customer.subscription.updated promotes the group to the Pro plan', async () => {
     const mockEvent = {
       id: 'evt_sub_updated',
       type: 'customer.subscription.updated',
-      data: { object: { id: 'sub_123', status: 'active', customer: 'cus_123' } },
+      data: {
+        object: {
+          id: 'sub_123',
+          status: 'active',
+          customer: 'cus_123',
+          metadata: { group_id: 'group-1' },
+          items: { data: [{ current_period_end: 1893456000 }] },
+        },
+      },
     };
 
     const { stripe } = await import('@/lib/stripe/client');
     vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as never);
 
     const { createServiceClient } = await import('@/lib/supabase/service');
-    const groupUpdate = vi.fn();
+    const groupUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
     const mockSupabase = {
-      from: vi.fn(() => ({
+      from: vi.fn((table: string) => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         upsert: vi.fn().mockResolvedValue({ error: null }),
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        update: table === 'groups'
+          ? groupUpdate
+          : vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
       })),
     };
     vi.mocked(createServiceClient).mockReturnValue(mockSupabase as never);
@@ -524,9 +536,58 @@ describe('Stripe Webhook Handler', () => {
       })
     );
 
-    // Legacy subscription events are accepted but do nothing
     expect(res.status).toBe(200);
-    expect(groupUpdate).not.toHaveBeenCalled();
+    expect(groupUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: 'pro', stripe_subscription_id: 'sub_123', subscription_status: 'active' })
+    );
+  });
+
+  it('a canceled subscription drops the group back to the free plan', async () => {
+    const mockEvent = {
+      id: 'evt_sub_deleted',
+      type: 'customer.subscription.deleted',
+      data: {
+        object: {
+          id: 'sub_123',
+          status: 'canceled',
+          customer: 'cus_123',
+          metadata: { group_id: 'group-1' },
+          items: { data: [] },
+        },
+      },
+    };
+
+    const { stripe } = await import('@/lib/stripe/client');
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as never);
+
+    const { createServiceClient } = await import('@/lib/supabase/service');
+    const groupUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    const mockSupabase = {
+      from: vi.fn((table: string) => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        update: table === 'groups'
+          ? groupUpdate
+          : vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      })),
+    };
+    vi.mocked(createServiceClient).mockReturnValue(mockSupabase as never);
+
+    const { POST } = await import('@/app/api/webhooks/stripe/route');
+    const res = await POST(
+      new NextRequest('https://test.example.com/api/webhooks/stripe', {
+        method: 'POST',
+        body: JSON.stringify(mockEvent),
+        headers: { 'stripe-signature': 'valid-sig' },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(groupUpdate).toHaveBeenCalledWith(expect.objectContaining({ plan: 'free' }));
   });
 
   it('invoice.payment_failed is a no-op (legacy event kept for backward compat)', async () => {

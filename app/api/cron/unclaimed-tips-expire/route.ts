@@ -5,17 +5,18 @@ import { isAuthorizedCronRequest } from '@/lib/auth/require-cron';
 
 export const runtime = 'nodejs';
 
-// Tips are captured on the platform and HELD until the staff member finishes
-// onboarding. If they never do, we must not sit on the money indefinitely — it
-// is refunded to the customer after this many days. 90 keeps us safely within
-// Stripe's ~180-day card-refund window (a refund to an expired/closed card
+// This used to refund tips held for a staff member who never finished their
+// own Stripe onboarding. That can no longer happen — the establishment is
+// verified before its tip pages open — but a tip can still get stuck: an
+// account restricted between the charge and the transfer, or a transfer that
+// burned every retry in the reconcile cron.
+//
+// Sitting on a customer's money indefinitely is not an option, so anything
+// still undelivered after this many days goes back to them. 90 keeps us safely
+// inside Stripe's ~180-day card-refund window (a refund to an expired card
 // fails beyond that). Configurable via env to tune without a deploy.
 const EXPIRY_DAYS = Number(process.env.UNCLAIMED_TIP_EXPIRY_DAYS ?? 90);
 
-// Refund each still-held allocation whose tip was captured before the cutoff.
-// Partial refunds per allocation (idempotency key `expire:<rowId>`) keep group
-// tips correct: only the unclaimed shares are returned; shares already
-// transferred to onboarded colleagues are untouched.
 export async function POST(req: Request) {
   if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,26 +26,32 @@ export async function POST(req: Request) {
   const cutoff = new Date(Date.now() - EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: rowsRaw } = await service
-    .from('group_tip_transfers')
-    .select('id, amount, transactions!inner(id, stripe_charge_id, succeeded_at, refunded_amount)')
-    .eq('status', 'pending')
+    .from('transactions')
+    .select('id, stripe_charge_id, refunded_amount, metadata')
+    .eq('status', 'succeeded')
     .is('stripe_transfer_id', null)
-    .lt('transactions.succeeded_at', cutoff)
-    .not('transactions.stripe_charge_id', 'is', null)
+    .in('transfer_status', ['pending', 'failed'])
+    .lt('succeeded_at', cutoff)
+    .not('stripe_charge_id', 'is', null)
     .limit(200);
 
   const rows = (rowsRaw ?? []) as unknown as Array<{
     id: string;
-    amount: number;
-    transactions: { id: string; stripe_charge_id: string | null; refunded_amount: number | null } | null;
+    stripe_charge_id: string | null;
+    refunded_amount: number | null;
+    metadata: { tip_amount?: number } | null;
   }>;
 
   let refunded = 0;
   let failed = 0;
 
   for (const r of rows) {
-    const chargeId = r.transactions?.stripe_charge_id;
-    if (!chargeId) {
+    const chargeId = r.stripe_charge_id;
+    // Refund only the tip. The service fee covered Stripe's own cost on a
+    // charge that did go through, and refunding it would leave the platform out
+    // of pocket on a failure it did not cause.
+    const amount = Number(r.metadata?.tip_amount);
+    if (!chargeId || !Number.isFinite(amount) || amount <= 0) {
       failed++;
       continue;
     }
@@ -52,25 +59,28 @@ export async function POST(req: Request) {
       await stripe.refunds.create(
         {
           charge: chargeId,
-          amount: r.amount,
-          metadata: { reason: 'unclaimed_tip_expired', allocation: r.id },
+          amount,
+          metadata: { reason: 'undelivered_tip_expired', transaction: r.id },
         },
         { idempotencyKey: `expire:${r.id}` }
       );
       await service
-        .from('group_tip_transfers')
-        .update({ status: 'reversed', reversed_at: new Date().toISOString(), error: 'unclaimed_tip_expired' } as never)
-        .eq('id', r.id);
-      // Keep the parent transaction's refunded_amount roughly in sync for the
-      // admin views (best-effort; Stripe remains the source of truth).
-      const prev = r.transactions?.refunded_amount ?? 0;
-      await service
         .from('transactions')
-        .update({ refunded_amount: prev + r.amount } as never)
-        .eq('id', r.transactions!.id);
+        .update({
+          transfer_status: 'reversed',
+          transfer_error: 'undelivered_tip_expired',
+          refunded_amount: (r.refunded_amount ?? 0) + amount,
+        } as never)
+        .eq('id', r.id);
+      // The employee was credited for a tip that is going back to the customer,
+      // so the payroll export must stop counting it.
+      await service
+        .from('tip_allocations')
+        .update({ status: 'reversed', reversed_at: new Date().toISOString() } as never)
+        .eq('transaction_id', r.id);
       refunded++;
     } catch (err) {
-      console.error('unclaimed tip expiry refund failed', { rowId: r.id, err });
+      console.error('undelivered tip expiry refund failed', { transactionId: r.id, err });
       failed++;
     }
   }

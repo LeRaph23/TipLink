@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { AmountSelector } from '@/components/payment/AmountSelector';
 import { Icon } from '@/components/ambassadeur/icons';
 import { staffTipTag } from '@/lib/cache/pay-tags';
+import { resolveTipFeeConfig } from '@/lib/pricing/tip-fees';
 
 // Edge-safe: uses raw PostgREST fetch against a SECURITY DEFINER RPC
 // that only exposes whitelisted columns. No Supabase SDK import here.
@@ -26,6 +27,8 @@ interface PublicStaffRow {
   is_payable: boolean;
   group_logo_url: string | null;
   establishment_is_demo?: boolean | null;
+  fee_fixed_cents?: number | null;
+  fee_bps?: number | null;
 }
 
 async function fetchPublicStaff(staffId: string): Promise<PublicStaffRow | null> {
@@ -273,6 +276,10 @@ export default async function StaffTipPage({
             thresholds={tipThresholds}
             expectedEstablishmentId={establishmentId ?? undefined}
             isDemo={staff.establishment_is_demo ?? false}
+            feeConfig={resolveTipFeeConfig({
+              fixedCents: staff.fee_fixed_cents ?? undefined,
+              bps: staff.fee_bps ?? undefined,
+            })}
           />
         </Suspense>
 

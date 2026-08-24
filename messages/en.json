@@ -95,11 +95,11 @@
       "s2Title": "2. Eligibility",
       "s2Body": "You must be at least 18, have the authority to bind your business, and operate a lawful hospitality or service activity in a country where Stripe Connect is available.",
       "s3Title": "3. Orders",
-      "s3Body": "SmartTag packs are sold as a one-time hardware purchase. There is no subscription and no monthly fee: once the plaque is paid for, no recurring amount is charged. The Digitip platform earns revenue solely through a 5% commission on tips actually collected (see section 5). With no tips, nothing is owed. Hardware is non-refundable once shipped, without prejudice to the legal warranties and the right of withdrawal set out in the terms of sale.",
+      "s3Body": "SmartTag packs are sold as a one-time hardware purchase. There is no subscription and no monthly fee: once the plaque is paid for, no recurring amount is charged. The Digitip platform earns revenue solely through a service fee added on top of the tip and paid by the person leaving it (see section 5). Nothing is taken out of the tip itself: the recipient receives the full amount chosen. With no tips, nothing is owed. Hardware is non-refundable once shipped, without prejudice to the legal warranties and the right of withdrawal set out in the terms of sale.",
       "s4Title": "4. Payments",
       "s4Body": "All payments are processed by Stripe. VAT is applied automatically according to your country. Hardware is paid for once, at the time of the order; no recurring charge is made. A 30-day grace period applies to SmartTags before full deactivation if the account is closed.",
       "s5Title": "5. Tips, collection and payout",
-      "s5Body": "Digitip acts as a technical payment facilitator. Each tip is attributed to the staff member chosen by the customer. Funds are first collected via Stripe, then paid out to the recipient's connected bank account as soon as they complete the identity verification required by anti-money-laundering rules. Until that verification is complete, the tip is held securely and paid out automatically once the recipient is verified. Digitip charges a 5% commission plus a fixed per-transaction service fee to cover infrastructure and payment costs; the balance goes to the recipient. Digitip only holds funds for as long as needed to pay them out.",
+      "s5Body": "Digitip acts as a technical payment facilitator. Each tip is attributed to the staff member chosen by the customer. Funds are first collected via Stripe, then paid out to the recipient's connected bank account as soon as they complete the identity verification required by anti-money-laundering rules. Until that verification is complete, the tip is held securely and paid out automatically once the recipient is verified. Digitip takes nothing out of the tip: its revenue comes from the service fee added on top of the chosen amount and paid by the customer, who is shown the exact figure before confirming payment. That fee covers bank processing costs and running the service. Digitip only holds funds for as long as needed to pay them out.",
       "s6Title": "6. Your responsibilities",
       "s6Body": "You must provide accurate information, keep credentials safe, use the service lawfully, inform your staff and customers appropriately, and comply with applicable tax and employment laws regarding tips.",
       "s7Title": "7. Acceptable use",
@@ -157,8 +157,8 @@
     "s7Body": "SmartTags benefit from the statutory warranty of conformity (Articles L217-3 et seq. of the French Consumer Code — 2 years from delivery for non-professional buyers) and the warranty against hidden defects (Articles 1641 et seq. of the French Civil Code). In addition, YUZU LABS SAS offers a lifetime commercial warranty: any SmartTag showing a manufacturing defect or failure under normal use will be replaced free of charge upon sending a photo to contact@digitip.app.",
     "s8Title": "8. After-sales service",
     "s8Body": "For any after-sales request, contact contact@digitip.app with your order number. YUZU LABS SAS will respond within 48 business hours and process any guaranteed replacement within 5 business days of confirmation.",
-    "s9Title": "9. Tip commission",
-    "s9Body": "Using the Digitip platform to collect tips triggers an automatic 5% commission on each tip collected. This commission, deducted by Stripe at the time of payout, covers payment processing fees (Stripe), infrastructure hosting, fraud prevention and service maintenance. No commission is due if no tips are collected.",
+    "s9Title": "9. Service fee on tips",
+    "s9Body": "Using the Digitip platform to collect tips does not result in any deduction from the tips collected: the recipient receives the full amount chosen by the customer. The service fee — a fixed part of €0.25 per transaction and a variable part of 5% of the tip — is added on top of the tip and paid by the person leaving it, who is shown the exact figure before confirming payment. That fee covers payment processing (Stripe), infrastructure hosting, fraud prevention and service maintenance. No fee is due if no tips are collected.",
     "s10Title": "10. Liability",
     "s10Body": "YUZU LABS SAS cannot be held liable for indirect damages (lost profits, loss of customers, data loss) related to the use or inability to use SmartTags or the platform. The liability of YUZU LABS SAS is limited to amounts actually paid by the buyer in the 12 months preceding the loss.",
     "s11Title": "11. Disputes and mediation",
@@ -211,7 +211,7 @@
       "packMLabel": "2 spots",
       "packLLabel": "3+ locations",
       "bullet1": "One-time purchase, no monthly fee",
-      "bullet2": "5% commission on tips only",
+      "bullet2": "0% taken from tips",
       "bullet3": "Premium high-density epoxy resin — built to last",
       "bullet4": "French company",
       "bullet5": "Lifetime hardware replacement",
@@ -252,7 +252,7 @@
     "grid": {
       "kicker": "Our packs",
       "title": "Choose your pack",
-      "sub": "Pre-programmed epoxy plaques, ready to place. 5% commission on tips only.",
+      "sub": "Pre-programmed epoxy plaques, ready to place. 0% taken from tips.",
       "packS": "Solo",
       "packSTag": "1 epoxy NFC plaque",
       "packM": "Duo",
@@ -295,7 +295,7 @@
       "warranty": "Lifetime hardware guarantee",
       "warrantySub": "Broken or faulty plaque? We replace it free of charge, with no time limit.",
       "noSubscription": "No subscription",
-      "noSubscriptionSub": "You pay for the plaque once. After that, 5% commission on collected tips only.",
+      "noSubscriptionSub": "You pay for the plaque once. After that, nothing: the service fee is paid by the customer, not by you.",
       "stripe": "Payments secured by Stripe",
       "stripeSub": "No card data ever touches our servers. Apple Pay and Google Pay accepted.",
       "directPayout": "Paid to the recipient's own account",
@@ -324,10 +324,10 @@
       "a4": "Yes. A single Digitip account can manage unlimited venues and teams, each with their own SmartTags and analytics.",
       "q5": "My plaque is damaged or defective — what do I do?",
       "a5": "No problem. Lifetime hardware replacement is included with every pack. Email us a photo and we'll ship a new one free of charge.",
-      "q6": "Do I need a business registration?",
-      "a6": "Not to order SmartTags. However, to receive tips via Stripe Connect, your staff will need to create a Stripe account (standard identity verification).",
+      "q6": "Do I need a company number or a specific status?",
+      "a6": "Not to order SmartTags. To collect tips, the business verifies itself once, right inside Digitip (the manager's identity and bank details) — the check anti-money-laundering rules require. Your employees have no account to create and nothing to do: tips are attributed to them by name and you pass them on through payroll.",
       "q7": "How does Digitip make money?",
-      "a7": "For a €10 tip, the client pays €10.25 in total. The breakdown is as follows: €9.50 goes directly to you; €0.45 goes to Stripe (€0.25 fixed fee per transaction + 2% of the amount — standard banking fees, the same for everyone); €0.30 goes to Digitip to cover infrastructure, hosting, support and service development. No subscription, no fixed monthly fees — you only pay when you earn."
+      "a7": "From the service fee, paid by the person leaving the tip — never from the tip itself. For a €10 tip the customer pays €10.75 in total: €0.25 fixed plus 5% of the tip. You receive the full €10. Of the 75 cents of fees, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount charged) and €0.34 goes to Digitip for infrastructure, support and ongoing development. No subscription, no monthly fee, and nothing out of your pocket."
     },
     "doubleGuarantee": {
       "g1title": "Premium quality guaranteed",
@@ -362,17 +362,36 @@
     "pricing": {
       "kicker": "Full transparency",
       "title": "Where does each euro go?",
-      "sub": "For a €10 tip, your client pays €10.25. Here is the exact breakdown.",
+      "sub": "For a €10 tip, your client pays €10.75. You receive the full €10. Here is where the 75 cents go.",
       "row1label": "You",
-      "row1amount": "€9.50",
-      "row1detail": "Paid directly to your bank account, with nothing to advance.",
+      "row1amount": "€10.00",
+      "row1detail": "The tip as chosen, in full. Nothing is taken out of it.",
       "row2label": "Stripe (secure payment)",
-      "row2amount": "€0.45",
-      "row2detail": "€0.25 fixed fee per transaction + 2% of the amount — unavoidable banking fees.",
+      "row2amount": "€0.41",
+      "row2detail": "€0.25 fixed per transaction + 1.5% of the amount charged — unavoidable bank fees, which Digitip pays for you.",
       "row3label": "Digitip",
-      "row3amount": "€0.30",
+      "row3amount": "€0.34",
       "row3detail": "Infrastructure, hosting, support and ongoing service improvements.",
-      "footer": "No subscription, no fixed monthly fees."
+      "footer": "No subscription, no monthly fee — and nothing on your side: the fee is paid by the customer."
+    },
+    "reviews": {
+      "kicker": "Right after the tip",
+      "title": "Turn every tip into",
+      "titleAccent": "a Google review",
+      "body": "Your customer has just tipped you. That is exactly the moment they are most willing to recommend you — and Digitip asks them right there on the confirmation screen, in a single tap.",
+      "timing": {
+        "title": "At the right moment",
+        "body": "Not an email two days later, once the goodwill has faded. Right after a positive gesture, phone still in hand."
+      },
+      "oneTap": {
+        "title": "One tap, no form",
+        "body": "Your customer is already signed in to their Google account. They rate, they confirm, done. Nothing to install."
+      },
+      "ranking": {
+        "title": "Where it counts",
+        "body": "Recent reviews carry the most weight in local search. A steady trickle beats a handful of old ones."
+      },
+      "proNote": "Google reviews are part of Digitip Pro. The plaque and the tips themselves work with no subscription and no commitment — you switch reviews on from your dashboard whenever you decide to."
     }
   },
   "pricing": {
@@ -394,11 +413,11 @@
       "dashboard": "Full manager dashboard included",
       "app": "Manager mobile app included",
       "prioritySupport": "Priority support",
-      "noSubscription": "No subscription, no commitment",
+      "noSubscription": "Tips with no subscription, no commitment",
       "vatInvoice": "Auto-generated VAT invoices"
     },
-    "commissionLabel": "5% commission",
-    "commissionBody": "Charged only on tips collected. No tips = you pay nothing.",
+    "commissionLabel": "0% taken from your tips",
+    "commissionBody": "The service fee is added on top of the tip and paid by the customer. You receive the full amount chosen.",
     "packs": {
       "solo": {
         "name": "Solo",
@@ -540,8 +559,8 @@
       "subtitle": "Review your order below, then proceed to secure payment via Stripe.",
       "orderSummary": "Order summary",
       "hardware": "Hardware (one-time)",
-      "commission": "Tip commission",
-      "commissionValue": "5% per tip",
+      "commission": "Fee on tips",
+      "commissionValue": "0% — paid by the customer",
       "shippingTo": "Shipping to",
       "billedTo": "Billed to",
       "account": "Account",
@@ -557,8 +576,8 @@
       "title": "Your order",
       "pack": "Pack {pack}",
       "hardware": "Hardware",
-      "commission": "Commission",
-      "commissionValue": "5% per tip",
+      "commission": "Fee on tips",
+      "commissionValue": "0% — paid by the customer",
       "shipping": "Shipping",
       "free": "Free",
       "total": "Total today",
@@ -633,7 +652,7 @@
     "receiptByEmail": "Get a receipt by email",
     "tipHeadline": "Want to say thanks?",
     "tipSubhead": "Leave a tip in a tap",
-    "feeInfo": "These few cents only cover part of the bank transaction fees we pay on every tip. We do our best to keep them as low as possible.",
+    "feeInfo": "This fee covers the bank transaction cost and the Digitip service. The whole tip you chose is passed on — we take nothing out of it.",
     "successBodyNamed": "Your tip is on its way — {name} has been notified.",
     "sentTo": "Sent to",
     "reviewTitle": "Did you have a great time?",
@@ -677,17 +696,18 @@
       "roleAdmin": "Admin",
       "roleManager": "Manager",
       "roleSuperAdmin": "Super admin",
-      "statements": "Statements"
+      "statements": "Statements",
+      "payments": "Payment account"
     },
     "billing": {
       "title": "Billing & commission",
-      "subtitle": "Track the commission withheld from your tips and manage your SmartTag orders.",
-      "commissionRate": "Commission rate",
-      "commissionRateHint": "Withheld from every tip collected.",
+      "subtitle": "Track the service fees paid by your customers and manage your SmartTag orders.",
+      "commissionRate": "Service fee",
+      "commissionRateHint": "Added on top of the tip and paid by the customer. Nothing is taken from your tips.",
       "tipsCollected30d": "Tips (30 days)",
       "txnCount": "{count, plural, one {# transaction} other {# transactions}}",
-      "commissionPaid30d": "Commission (30 days)",
-      "commissionPaidHint": "Amount withheld by Digitip over the period.",
+      "commissionPaid30d": "Fees collected (30 days)",
+      "commissionPaidHint": "Amount paid by customers on top of tips over the period.",
       "orderMoreTitle": "Need more SmartTags?",
       "orderMoreBody": "Place an order, we hand-program them and ship within 3 business days.",
       "orderMoreCta": "Order more",
@@ -905,7 +925,9 @@
       "save": "Save changes",
       "saving": "Saving…",
       "saved": "Saved.",
-      "noGroup": "No group associated with your account yet."
+      "noGroup": "No group associated with your account yet.",
+      "accountantEmail": "Accountant's email",
+      "accountantEmailHelp": "The monthly tip statement is sent here automatically, alongside your own address. Pro plan only."
     },
     "admin": {
       "nav": {
@@ -1146,7 +1168,34 @@
       "total": "Total",
       "empty": "No payout this month.",
       "export": "Export as CSV",
-      "heldNote": "{amount} awaiting withdrawal by your employees — not yet paid, excluded from the statement."
+      "heldNote": "{amount} awaiting withdrawal by your employees — not yet paid, excluded from the statement.",
+      "exportJournal": "Detailed journal",
+      "freeLimit": "The free plan exports the current month. Go Pro for the full history, the detailed journal and automatic delivery to your accountant."
+    },
+    "payments": {
+      "title": "Payment account",
+      "subtitle": "Your establishment's tips land here, then get paid out to your bank account.",
+      "statusReady": "Your establishment is verified and can collect tips.",
+      "statusPending": "Stripe is still verifying. Your tip page switches on automatically once that clears.",
+      "requirements": "Action needed",
+      "details": "Business details",
+      "payouts": "Payouts",
+      "loadFailed": "Your payment account could not be loaded. Reload the page or try again in a moment.",
+      "noEstablishment": "No establishment is linked to your account yet."
+    },
+    "pro": {
+      "upsellTitle": "Upgrade to Digitip Pro",
+      "feature1": "A Google review invitation after every tip",
+      "feature2": "Payroll statement emailed monthly to you and your accountant",
+      "feature3": "Detailed payroll export, unlimited history, CSV and Excel",
+      "ctaMonthly": "Go Pro — €19/month excl. VAT",
+      "ctaYearly": "Pay yearly (2 months free)",
+      "opening": "Opening…",
+      "activeTitle": "Digitip Pro is active",
+      "activeBody": "Google reviews and the full payroll export are switched on. You can change or cancel your subscription at any time.",
+      "manage": "Manage subscription",
+      "unavailable": "Pro isn't available yet. Please try again later.",
+      "failed": "The payment page could not be opened. Try again in a moment."
     }
   },
   "join": {
@@ -1221,9 +1270,8 @@
       "title": "Your space is ready!",
       "body": "{name} is set up. You can now manage your team and track your tips.",
       "cta": "Go to dashboard →",
-      "ctaBanking": "Set up my payouts →",
-      "payoutTitle": "Finish your payouts",
-      "payoutBody": "After confirming your email, go to <b>Dashboard → Payouts</b> to set up your payouts with Stripe and start receiving tips."
+      "payoutsPendingTitle": "Verification in progress",
+      "payoutsPendingBody": "Stripe has your details and is reviewing them. Your tip page switches on automatically once that clears — usually within 24 hours. Nothing else is needed from you."
     },
     "emailVerification": {
       "title": "Check your email",
@@ -1285,14 +1333,21 @@
       "yes": "Yes, I want to receive tips",
       "no": "No, I only manage my team"
     },
-    "banking": {
-      "title": "Receiving your tips",
-      "subtitle": "Your payouts are set up afterwards from your dashboard, via Stripe.",
-      "body": "Perfect — you'll be able to receive tips personally. Setting up your payouts takes a few clicks from your dashboard (the <b>Payouts</b> section), via <b>Stripe</b>, our secure payment partner. Stripe collects and encrypts your details — your banking information never passes through Digitip."
+    "reviewIntro": {
+      "title": "Turn your tips into reviews",
+      "subtitle": "Here is what your customer sees, right after tipping you.",
+      "demoName": "your team",
+      "demoThanks": "Thanks for the tip!",
+      "demoQuestion": "Did you enjoy {name}?",
+      "demoBody": "Help the team out with a Google review — it takes 10 seconds.",
+      "demoCta": "Leave a Google review →",
+      "timing": "You ask at the best possible moment: right after a positive gesture, not by email two days later.",
+      "oneTap": "Your customer is already signed in to Google. They rate, they confirm, done.",
+      "ranking": "Recent reviews carry the most weight in local search. A steady flow moves you up."
     },
     "googleReview": {
       "title": "Google reviews",
-      "subtitle": "Link your Google listing so customers can leave a review right after tipping.",
+      "subtitle": "Link your Google listing now. The review invitation shown after each tip is part of Digitip Pro — switch it on whenever you like.",
       "skip": "Skip for now",
       "searchPlaceholder": "Your business name",
       "searchButton": "Search",
@@ -1309,7 +1364,17 @@
       "unknownPlace": "Business",
       "reviewCount": "{count} reviews",
       "fieldLabel": "Google review link",
-      "fieldHint": "After each tip, the customer can leave a Google review in one tap."
+      "fieldHint": "With Digitip Pro, customers can leave a Google review in one tap right after tipping. The link is saved now, so there is nothing to redo later.",
+      "searchUnavailable": "Google search is unavailable right now. Add the link manually below, or skip this step — you can set it later from your settings."
+    },
+    "connect": {
+      "title": "Receiving your tips",
+      "subtitle": "Last step: verify your business so you can get paid.",
+      "body": "Tips land in <b>{name}</b>'s account, then reach your team through payroll. Regulations require verifying the recipient's identity: the form below is <b>Stripe</b>'s, our payment partner, embedded right here. Your bank details are encrypted by Stripe and never pass through Digitip.",
+      "preparing": "Setting up your payment account…",
+      "loadFailed": "The verification form could not be loaded. Reload the page or try again in a moment.",
+      "incomplete": "The verification form isn't finished yet. Complete it above to finish signing up.",
+      "exited": "All done above? Hit “Finish” to complete your setup."
     }
   }
 }

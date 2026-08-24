@@ -33,14 +33,11 @@ export const LIFECYCLE: Record<string, LifecycleEmailDef> = {
   staff_missing_email:    { key: 'staff_missing_email',    audience: 'group_admin', recurrence: 'recurring', transactional: false },
   activation_no_tips:     { key: 'activation_no_tips',     audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   staff_invite_reminder:  { key: 'staff_invite_reminder',  audience: 'staff',       recurrence: 'one_shot',  transactional: false },
-  staff_banking_nudge:    { key: 'staff_banking_nudge',    audience: 'staff',       recurrence: 'one_shot',  transactional: false },
-  staff_unclaimed_tips:   { key: 'staff_unclaimed_tips',   audience: 'staff',       recurrence: 'one_shot',  transactional: false },
   staff_banking_complete: { key: 'staff_banking_complete', audience: 'staff',       recurrence: 'one_shot',  transactional: true },
   first_tip_celebration:  { key: 'first_tip_celebration',  audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   earnings_milestone:     { key: 'earnings_milestone',     audience: 'staff',       recurrence: 'one_shot',  transactional: false },
   re_engagement:          { key: 're_engagement',          audience: 'group_admin', recurrence: 'recurring', transactional: false },
   weekly_tip_recap:       { key: 'weekly_tip_recap',       audience: 'group_admin', recurrence: 'recurring', transactional: false },
-  payout_failed_alert:    { key: 'payout_failed_alert',    audience: 'staff',       recurrence: 'recurring', transactional: true },
 };
 
 // No more than one non-transactional lifecycle email per recipient per N days.

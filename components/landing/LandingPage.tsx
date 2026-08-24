@@ -298,6 +298,61 @@ function KeyAdvantagesSection() {
   );
 }
 
+// ─── Google reviews ───────────────────────────────────────────────────────────
+// The second reason to own a Digitip plaque, and the one that carries the Pro
+// subscription. Deliberately placed after "how it works": the visitor has to
+// understand the tip flow before the review that follows it means anything.
+function GoogleReviewsSection() {
+  const t = useTranslations('landing');
+  const points = [
+    { key: 'timing', icon: <BoltIcon size={17} color="#E57A97" /> },
+    { key: 'oneTap', icon: <CheckIcon size={17} color="#E57A97" /> },
+    { key: 'ranking', icon: <MessageIcon size={17} color="#E57A97" /> },
+  ] as const;
+
+  return (
+    <section id="avis-google" style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <Reveal style={{ marginBottom: 44, maxWidth: 640 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>
+            {t('reviews.kicker')}
+          </div>
+          <h2 style={{ fontSize: 'clamp(28px,3.8vw,44px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1.08, marginBottom: 18 }}>
+            {t('reviews.title')}<br />
+            <span style={{ color: '#E57A97' }}>{t('reviews.titleAccent')}</span>
+          </h2>
+          <p style={{ fontSize: 15.5, color: '#74748a', lineHeight: 1.8, margin: 0 }}>{t('reviews.body')}</p>
+        </Reveal>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+          {points.map((pt, i) => (
+            <Reveal key={pt.key} delay={i * 90}>
+              <div style={{ background: '#f9f9f7', border: '1px solid #e4e4ec', borderRadius: 16, padding: '22px 22px 24px', height: '100%' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FEF1F4', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                  {pt.icon}
+                </div>
+                <div style={{ fontSize: 15.5, fontWeight: 800, color: '#111118', letterSpacing: '-0.02em', marginBottom: 7 }}>
+                  {t(`reviews.${pt.key}.title`)}
+                </div>
+                <div style={{ fontSize: 14, color: '#74748a', lineHeight: 1.7 }}>
+                  {t(`reviews.${pt.key}.body`)}
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* The honest framing: tips never need a subscription, reviews do. */}
+        <Reveal delay={280}>
+          <p style={{ fontSize: 13.5, color: '#74748a', lineHeight: 1.7, marginTop: 26, marginBottom: 0, maxWidth: 640 }}>
+            {t('reviews.proNote')}
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 // ─── Product section (Digifeel-style full e-commerce) ─────────────────────────
 function ProductSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo' | 'duo') => void; pricing: PricingMap | null }) {
   const t = useTranslations('landing');
@@ -785,6 +840,7 @@ export function LandingPage({ pricing }: { pricing: PricingMap | null }) {
       <KeyAdvantagesSection />
       <ProductSection onOrderClick={openCart} pricing={pricing} />
       <HowItWorksSection />
+      <GoogleReviewsSection />
       <ShippingSection />
       <GuaranteeSection />
       <ProductGridSection onOrderClick={openCart} pricing={pricing} />

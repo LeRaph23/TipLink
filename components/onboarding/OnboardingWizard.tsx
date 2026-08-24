@@ -4,16 +4,25 @@ import { useCallback, useEffect, useReducer, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import dynamic from 'next/dynamic';
 import {
   completePostPurchaseOnboarding,
   completeNfcOnboarding,
   completeExpressOnboarding,
+  finalizeOnboarding,
 } from '@/actions/onboarding';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { GoogleReviewPicker } from './GoogleReviewPicker';
 import { getBaseUrl } from '@/lib/env';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { trackEvent } from '@/lib/analytics';
+
+// Connect.js reaches for `window` and `getComputedStyle` as it boots, and the
+// embedded iframe has nothing to prerender, so this stays out of SSR.
+const EstablishmentOnboarding = dynamic(
+  () => import('@/components/stripe/EstablishmentOnboarding').then((m) => m.EstablishmentOnboarding),
+  { ssr: false },
+);
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -35,13 +44,13 @@ interface WizardState {
   colleagues: Colleague[];
 }
 
-type ScanStep = 'codes' | 'salon' | 'business-type' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
-type AuthStep = 'salon' | 'business-type' | 'address' | 'google-review' | 'admin-name' | 'team' | 'tips-opt-in' | 'banking';
-type ExpressStep = 'salon' | 'business-type' | 'address' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'banking';
+type ScanStep = 'codes' | 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'connect';
+type AuthStep = 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'team' | 'tips-opt-in' | 'connect';
+type ExpressStep = 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'connect';
 
-const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'business-type', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
-const AUTH_STEPS: AuthStep[] = ['salon', 'business-type', 'address', 'google-review', 'admin-name', 'team', 'tips-opt-in', 'banking'];
-const EXPRESS_STEPS: ExpressStep[] = ['salon', 'business-type', 'address', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'banking'];
+const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'business-type', 'address', 'review-intro', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'connect'];
+const AUTH_STEPS: AuthStep[] = ['salon', 'business-type', 'address', 'review-intro', 'google-review', 'admin-name', 'team', 'tips-opt-in', 'connect'];
+const EXPRESS_STEPS: ExpressStep[] = ['salon', 'business-type', 'address', 'review-intro', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'connect'];
 
 type Props =
   | {
@@ -366,8 +375,24 @@ export function OnboardingWizard(props: Props) {
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
 
   // Whether the admin wants to receive tips personally (tips-opt-in step).
-  // Banking itself is set up afterwards on the dashboard, via Stripe.
+  // This no longer affects payouts — the establishment's Connect account
+  // collects everything either way; it only decides whether the admin gets a
+  // staff profile of their own.
   const [wantsTips, setWantsTips] = useState<boolean | null>(null);
+
+  // Set once the group / establishment / roles exist, which is what the Connect
+  // step needs before it can attach a Stripe account to anything.
+  const [provisioned, setProvisioned] = useState<{
+    establishmentId: string;
+    onboardingToken?: string;
+  } | null>(null);
+  const [provisioning, setProvisioning] = useState(false);
+  // Stripe accepted the form but is still verifying. Onboarding is done; the
+  // tip pages just stay closed until charges and payouts light up.
+  const [payoutsPending, setPayoutsPending] = useState(false);
+  // The embedded component told us the account holder left the form. Only a
+  // hint that it is worth re-asking Stripe — never proof of completion.
+  const [connectExited, setConnectExited] = useState(false);
 
   const goTo = useCallback(
     (step: string) => {
@@ -386,6 +411,8 @@ export function OnboardingWizard(props: Props) {
         case 'codes': return state.nfcCodes.length > 0 && state.nfcCodes.every((c) => c.trim().length > 0);
         case 'salon': return state.establishmentName.trim().length > 0;
         case 'address': return state.address.trim().length > 0;
+        // Purely demonstrative — nothing to fill in.
+        case 'review-intro': return true;
         // Soft-required: never blocks navigation (a discreet "skip" link exists),
         // so the bounce-back guard treats it as satisfied.
         case 'google-review': return true;
@@ -395,7 +422,9 @@ export function OnboardingWizard(props: Props) {
         case 'team': return true;
         case 'business-type': return true;
         case 'tips-opt-in': return wantsTips !== null;
-        case 'banking': return true;
+        // Navigation-wise always reachable; the finish button is what enforces
+        // that Stripe actually got the onboarding form (see handleFinish).
+        case 'connect': return true;
         default: return true;
       }
     },
@@ -423,38 +452,44 @@ export function OnboardingWizard(props: Props) {
     }
   }, [stepIndex, steps, isStepComplete, done, needsEmailVerification, router, locale, searchParams]);
 
-  // In postpurchase mode, skip banking step if admin said no
   const next = () => {
     // Steps live in the query string and advance via router.replace, so they
     // never produce a pageview — without this event the whole wizard is a
     // single row in analytics and the drop-off step is unknowable.
     trackEvent('onboarding_step_completed', { mode, step: currentStep, index: stepIndex });
-    let nextIdx = stepIndex + 1;
-    const s = steps[nextIdx];
-    // Skip 'banking' if wantsTips is false
-    if (s === 'banking' && wantsTips === false) {
-      nextIdx += 1;
-      const s2 = steps[nextIdx];
-      if (s2) goTo(s2);
+    // Entering the Connect step needs an establishment to attach the account
+    // to, so that transition provisions first and navigates on success.
+    if (steps[stepIndex + 1] === 'connect') {
+      void provisionThenAdvance();
       return;
     }
+    const s = steps[stepIndex + 1];
     if (s) goTo(s);
   };
 
   const back = () => {
-    let prevIdx = stepIndex - 1;
-    const s = steps[prevIdx];
-    // Skip 'banking' going backwards if wantsTips is false
-    if (s === 'banking' && wantsTips === false) {
-      prevIdx -= 1;
-      const s2 = steps[prevIdx];
-      if (s2) goTo(s2);
-      return;
-    }
+    const s = steps[stepIndex - 1];
     if (s) goTo(s);
   };
 
-  async function handleSubmit() {
+  /**
+   * Creates everything on our side — group, establishment, roles, colleagues —
+   * and moves to the Connect step.
+   *
+   * This used to be the end of the wizard. It is now the second-to-last act:
+   * onboarding is not complete until Stripe has the establishment's details,
+   * which `handleFinish` verifies.
+   */
+  async function provisionThenAdvance() {
+    // Re-entrant guard: the Connect step is reachable by browser back, and a
+    // second run would create a duplicate group in scan mode.
+    if (provisioned) {
+      goTo('connect');
+      return;
+    }
+    if (provisioning) return;
+
+    setProvisioning(true);
     setSubmitting(true);
     setError(null);
 
@@ -495,11 +530,17 @@ export function OnboardingWizard(props: Props) {
       if ('error' in result) {
         setError(result.error);
         setSubmitting(false);
+        setProvisioning(false);
         return;
       }
 
-      setNeedsEmailVerification(true);
-      if (signUpData.session) await supabase.auth.signOut();
+      // Stay signed in through the Connect step; the sign-out that used to
+      // happen here now waits until handleFinish, so the embedded component
+      // has a session (and, as a fallback, the signed token below).
+      setProvisioned({
+        establishmentId: result.establishmentId,
+        onboardingToken: result.onboardingToken,
+      });
     } else if (mode === 'express') {
       // Express flow: account created here, group already exists in DB
       const supabase = createClient();
@@ -539,11 +580,14 @@ export function OnboardingWizard(props: Props) {
       if ('error' in result) {
         setError(result.error);
         setSubmitting(false);
+        setProvisioning(false);
         return;
       }
 
-      if (signUpData.session) await supabase.auth.signOut();
-      setNeedsEmailVerification(true);
+      setProvisioned({
+        establishmentId: result.establishmentId,
+        onboardingToken: result.onboardingToken,
+      });
     } else {
       const result = await completePostPurchaseOnboarding({
         establishmentName: state.establishmentName,
@@ -559,18 +603,68 @@ export function OnboardingWizard(props: Props) {
       if ('error' in result) {
         setError(result.error);
         setSubmitting(false);
+        setProvisioning(false);
         return;
       }
 
+      setProvisioned({ establishmentId: result.establishmentId });
     }
 
-    trackEvent('onboarding_submitted', { mode, wantsTips: wantsTips ?? false });
-    setDone(true);
     setSubmitting(false);
+    setProvisioning(false);
+    goTo('connect');
     } catch (err) {
       // Without this, a thrown error (server action 500, network failure)
       // would leave the button stuck on "Finalisation…" forever.
-      console.error('onboarding submit failed', err);
+      console.error('onboarding provisioning failed', err);
+      setError(tAuth('errorGeneric'));
+      setSubmitting(false);
+      setProvisioning(false);
+    }
+  }
+
+  /**
+   * Closes the wizard, but only if Stripe confirms the establishment submitted
+   * its onboarding details. The server re-reads the account rather than
+   * trusting anything the browser claims about it.
+   */
+  async function handleFinish() {
+    if (!provisioned) return;
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await finalizeOnboarding({
+        establishmentId: provisioned.establishmentId,
+        token: provisioned.onboardingToken,
+      });
+
+      if ('error' in result) {
+        setError(result.code === 'connect_incomplete' ? t('connect.incomplete') : result.error);
+        setSubmitting(false);
+        return;
+      }
+
+      trackEvent('onboarding_submitted', {
+        mode,
+        wantsTips: wantsTips ?? false,
+        payoutsEnabled: result.payoutsEnabled,
+      });
+
+      // Scan and express both created the account here, so the user is signed
+      // in but unconfirmed. Sign them out and tell them to check their inbox.
+      if (mode === 'scan' || mode === 'express') {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        if (data.session) await supabase.auth.signOut();
+        setNeedsEmailVerification(true);
+      }
+
+      setPayoutsPending(!result.chargesEnabled || !result.payoutsEnabled);
+      setDone(true);
+      setSubmitting(false);
+    } catch (err) {
+      console.error('onboarding finalize failed', err);
       setError(tAuth('errorGeneric'));
       setSubmitting(false);
     }
@@ -652,38 +746,31 @@ export function OnboardingWizard(props: Props) {
         <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 24 }}>
           {t('done.body', { name: state.establishmentName })}
         </p>
-        {wantsTips && (
+        {/* Stripe accepted the form but is still verifying: the wizard is over,
+            the tip pages just stay closed until charges and payouts light up.
+            Nothing is asked of the manager — say so, so they don't go hunting
+            for a step they missed. */}
+        {payoutsPending && (
           <div style={{
             background: 'var(--surface-2)', border: '1px solid rgba(229,122,151,0.25)',
             borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'left',
           }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
-              {t('done.payoutTitle')}
+              {t('done.payoutsPendingTitle')}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
-              {t.rich('done.payoutBody', { b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong> })}
+              {t('done.payoutsPendingBody')}
             </div>
           </div>
         )}
-        {/* The wizard's `banking` step is only a reassurance panel — it never
-            touches Stripe. Finishing onboarding therefore leaves the account
-            with no payout capability, and the user had to find
-            /dashboard/banking on their own. When they said they want to receive
-            tips and they already have a session (postpurchase), send them
-            straight there instead. In scan/express mode they are signed out
-            pending email confirmation, so the dashboard is the only honest
-            destination and the note above explains the remaining step. */}
+        {/* Payouts are configured during the wizard now, so there is no
+            leftover banking step to send anyone to — the dashboard is the
+            destination in every mode. */}
         <button
-          onClick={() =>
-            router.push(
-              wantsTips && mode === 'postpurchase'
-                ? `/${locale}/dashboard/banking`
-                : `/${locale}/dashboard`
-            )
-          }
+          onClick={() => router.push(`/${locale}/dashboard`)}
           style={{ ...btnPrimary, maxWidth: 320, margin: '0 auto', display: 'block' }}
         >
-          {wantsTips && mode === 'postpurchase' ? t('done.ctaBanking') : t('done.cta')}
+          {t('done.cta')}
         </button>
       </div>
     );
@@ -695,20 +782,18 @@ export function OnboardingWizard(props: Props) {
   // (the dashed step ids differ from the camelCase message keys).
   const STEP_I18N: Record<string, string> = {
     codes: 'codes', salon: 'salon', address: 'address',
+    'review-intro': 'reviewIntro',
     'google-review': 'googleReview',
     'admin-name': 'adminName', email: 'email', password: 'password',
-    team: 'team', 'tips-opt-in': 'tipsOptIn', banking: 'banking',
+    team: 'team', 'tips-opt-in': 'tipsOptIn', connect: 'connect',
     'business-type': 'businessType',
   };
   const i18nKey = STEP_I18N[currentStep];
   const config = i18nKey
     ? { title: t(`${i18nKey}.title`), subtitle: t(`${i18nKey}.subtitle`) }
     : { title: '', subtitle: '' };
-  // If admin declined tips, last real step is tips-opt-in (skip banking)
-  const effectiveLastIdx = (wantsTips === false)
-    ? steps.indexOf('tips-opt-in' as never)
-    : steps.length - 1;
-  const isLastStep = stepIndex === effectiveLastIdx;
+  // Connect is mandatory for everyone, so it is always the final step.
+  const isLastStep = stepIndex === steps.length - 1;
   const totalSteps = steps.length;
   // Google review is soft-required: the primary CTA stays disabled until a link
   // is chosen, but a discreet skip link lets the manager move on.
@@ -731,7 +816,7 @@ export function OnboardingWizard(props: Props) {
             type="text"
             value={state.establishmentName}
             onChange={(e) => dispatch({ establishmentName: e.target.value })}
-            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleSubmit() : next())}
+            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleFinish() : next())}
             style={inp}
           />
         );
@@ -741,7 +826,7 @@ export function OnboardingWizard(props: Props) {
           <AddressAutocomplete
             value={state.address}
             onChange={(address) => dispatch({ address })}
-            onConfirm={() => canAdvance() && (isLastStep ? handleSubmit() : next())}
+            onConfirm={() => canAdvance() && (isLastStep ? handleFinish() : next())}
             style={inp}
           />
         );
@@ -766,7 +851,7 @@ export function OnboardingWizard(props: Props) {
             type="text"
             value={state.adminFullName}
             onChange={(e) => dispatch({ adminFullName: e.target.value })}
-            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleSubmit() : next())}
+            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleFinish() : next())}
             style={inp}
           />
         );
@@ -791,7 +876,7 @@ export function OnboardingWizard(props: Props) {
               type="password"
               value={state.password}
               onChange={(e) => dispatch({ password: e.target.value })}
-              onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleSubmit() : next())}
+              onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleFinish() : next())}
               style={inp}
             />
             <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8 }}>{t('password.hint')}</p>
@@ -862,17 +947,123 @@ export function OnboardingWizard(props: Props) {
           </div>
         );
 
-      case 'banking':
+      case 'review-intro': {
+        // A replica of the post-tip screen, built from the same strings the pay
+        // page uses. Showing the manager the actual thing beats describing it —
+        // and it is the only moment in the wizard where they see what their own
+        // customers will see.
+        const demoName = state.adminFullName.trim().split(/\s+/)[0] || t('reviewIntro.demoName');
         return (
-          <div style={{
-            display: 'flex', gap: 12, padding: '16px',
-            borderRadius: 12, background: 'var(--surface-2)',
-            border: '1px solid var(--border-subtle)',
-          }}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>🔒</span>
-            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
-              {t.rich('banking.body', { b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong> })}
+          <div>
+            <div style={{
+              borderRadius: 18, overflow: 'hidden', border: '1px solid var(--border)',
+              background: 'var(--surface)', maxWidth: 320, margin: '0 auto 22px',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.10)',
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #F2A8B7 0%, #C96CC1 52%, #7C3AED 100%)',
+                padding: '20px 18px', textAlign: 'center', color: '#fff',
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: '50%', margin: '0 auto 10px',
+                  background: 'rgba(255,255,255,0.22)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                  {t('reviewIntro.demoThanks')}
+                </div>
+              </div>
+
+              <div style={{ padding: '18px 18px 20px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 3, marginBottom: 10 }}>
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <svg key={i} width="17" height="17" viewBox="0 0 24 24" fill="#f5a623" aria-hidden>
+                      <path d="M12 2l2.9 6.2 6.6.9-4.8 4.7 1.2 6.7L12 17.3 6.1 20.5l1.2-6.7L2.5 9.1l6.6-.9L12 2z" />
+                    </svg>
+                  ))}
+                </div>
+                <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)', marginBottom: 5 }}>
+                  {t('reviewIntro.demoQuestion', { name: demoName })}
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55, marginBottom: 14 }}>
+                  {t('reviewIntro.demoBody')}
+                </div>
+                <div style={{
+                  padding: '10px 14px', borderRadius: 10,
+                  background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
+                  color: '#fff', fontSize: 13, fontWeight: 700,
+                }}>
+                  {t('reviewIntro.demoCta')}
+                </div>
+              </div>
             </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {(['timing', 'oneTap', 'ranking'] as const).map((k) => (
+                <div key={k} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <span style={{ color: 'var(--accent)', fontSize: 14, lineHeight: 1.5, flexShrink: 0 }}>✓</span>
+                  <span style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                    {t(`reviewIntro.${k}`)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case 'connect':
+        // Everything above this step only wrote rows in our own database. This
+        // one is where the establishment actually becomes able to receive
+        // money, and it is deliberately blocking: `handleFinish` asks Stripe
+        // whether the form was really submitted before completing onboarding.
+        return (
+          <div>
+            <div style={{
+              display: 'flex', gap: 12, padding: '16px', marginBottom: 16,
+              borderRadius: 12, background: 'var(--surface-2)',
+              border: '1px solid var(--border-subtle)',
+            }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>🔒</span>
+              <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
+                {t.rich('connect.body', {
+                  name: state.establishmentName,
+                  b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong>,
+                })}
+              </div>
+            </div>
+
+            {provisioning && (
+              <div style={{ fontSize: 13, color: 'var(--text-3)', textAlign: 'center', padding: '24px 0' }}>
+                {t('connect.preparing')}
+              </div>
+            )}
+
+            {provisioned && (
+              <EstablishmentOnboarding
+                establishmentId={provisioned.establishmentId}
+                token={provisioned.onboardingToken}
+                onExit={() => setConnectExited(true)}
+                errorFallback={
+                  <div style={{ fontSize: 13, color: 'var(--error)', lineHeight: 1.6 }}>
+                    {t('connect.loadFailed')}
+                  </div>
+                }
+              />
+            )}
+
+            {connectExited && (
+              <p style={{
+                marginTop: 14, fontSize: 12.5, color: 'var(--text-3)',
+                textAlign: 'center', lineHeight: 1.6,
+              }}>
+                {t('connect.exited')}
+              </p>
+            )}
           </div>
         );
 
@@ -956,7 +1147,7 @@ export function OnboardingWizard(props: Props) {
         {isLastStep ? (
           <button
             type="button"
-            onClick={() => handleSubmit()}
+            onClick={() => handleFinish()}
             disabled={submitting || !canAdvance()}
             style={{ ...btnPrimary, opacity: (submitting || !canAdvance()) ? 0.5 : 1 }}
           >
@@ -981,17 +1172,19 @@ export function OnboardingWizard(props: Props) {
           </p>
         )}
 
-        {/* Soft-required Google review step: a deliberately small, low-contrast
-            "skip" link — we want most managers to set this up, but never trap
-            someone who doesn't have their link handy (they can add it later). */}
+        {/* Soft-required Google review step. Still visually secondary — we want
+            most managers to set this up — but readable: the Google search can be
+            unavailable for reasons the manager cannot do anything about, and at
+            11.5px with 0.7 opacity this was an exit nobody could find. */}
         {currentStep === 'google-review' && reviewBlocking && (
           <button
             type="button"
             onClick={next}
             style={{
               background: 'none', border: 'none', color: 'var(--text-3)',
-              fontSize: 11.5, cursor: 'pointer', fontFamily: 'var(--font)',
-              opacity: 0.7, textAlign: 'center', padding: 0, marginTop: 2,
+              fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+              textDecoration: 'underline', textUnderlineOffset: 3,
+              textAlign: 'center', padding: 0, marginTop: 2,
             }}
           >
             {t('googleReview.skip')}

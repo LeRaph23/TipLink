@@ -5,8 +5,7 @@ import { useTranslations } from 'next-intl';
 import { GroupTipCheckout } from './GroupTipCheckout';
 import { DemoPayButton } from './DemoPayButton';
 import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
-
-const SERVICE_FEE_CENTS = 25;
+import { computeTipFee, computeTipTotal, type TipFeeConfig } from '@/lib/pricing/tip-fees';
 
 interface Props {
   establishmentId: string;
@@ -14,9 +13,12 @@ interface Props {
   thresholds: number[];
   staffCount: number;
   isDemo?: boolean;
+  /** Group's service fee config. Omitted falls back to the platform default —
+   *  the server recomputes it and rejects a mismatched total either way. */
+  feeConfig?: TipFeeConfig;
 }
 
-export function GroupAmountSelector({ establishmentId, currency, thresholds, staffCount, isDemo }: Props) {
+export function GroupAmountSelector({ establishmentId, currency, thresholds, staffCount, isDemo, feeConfig }: Props) {
   const t = useTranslations('pay');
   const cur = (currency || 'EUR').toUpperCase();
   // 5 is pre-selected by default (falls back to the first preset).
@@ -34,6 +36,11 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
     : selectedAmount;
 
   const hasAmount = tipAmount !== null && tipAmount >= 50;
+
+  // The tipper covers the whole cost of the transaction on top of their tip, so
+  // the team shares 100 % of what was chosen.
+  const serviceFee = computeTipFee(tipAmount ?? 0, feeConfig);
+  const totalAmount = computeTipTotal(tipAmount ?? 0, feeConfig);
 
   const currencySymbol = cur === 'EUR' ? '€' : cur === 'GBP' ? '£' : cur === 'USD' ? '$' : '';
   const fmt = new Intl.NumberFormat(undefined, {
@@ -120,7 +127,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
       {hasAmount && tipAmount && (
         <div style={{ textAlign: 'center', margin: '-4px 0 0' }}>
           <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: 0 }}>
-            {fmt.format(tipAmount / 100)} pourboire{perPerson ? ` (${perPerson} / pers.)` : ''}&nbsp;+&nbsp;{fmtCents.format(SERVICE_FEE_CENTS / 100)} frais de service{' '}
+            {fmt.format(tipAmount / 100)} pourboire{perPerson ? ` (${perPerson} / pers.)` : ''}&nbsp;+&nbsp;{fmtCents.format(serviceFee / 100)} frais de service{' '}
             <button
               type="button"
               onClick={() => setShowFeeInfo((v) => !v)}
@@ -138,7 +145,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
             </button>
             {' = '}
             <strong style={{ color: 'var(--text-2)', fontWeight: 700 }}>
-              {fmtCents.format((tipAmount + SERVICE_FEE_CENTS) / 100)} débités
+              {fmtCents.format(totalAmount / 100)} débités
             </strong>
           </p>
           {showFeeInfo && (
@@ -170,7 +177,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
           <DemoPayButton
             kind="group"
             targetId={establishmentId}
-            amount={tipAmount + SERVICE_FEE_CENTS}
+            amount={totalAmount}
             currency={currency}
           />
         ) : (
@@ -188,7 +195,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
             <GroupTipCheckout
               establishmentId={establishmentId}
               tipAmount={tipAmount}
-              amount={tipAmount + SERVICE_FEE_CENTS}
+              amount={totalAmount}
               currency={currency}
             />
           </CheckoutErrorBoundary>

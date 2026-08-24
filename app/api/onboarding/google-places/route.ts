@@ -32,7 +32,11 @@ export async function GET(req: Request) {
     const candidates = await searchEstablishmentCandidates({ name, address });
     return NextResponse.json({ candidates });
   } catch (err) {
+    // `failed` matters: an empty list because Google errored is not the same as
+    // an empty list because the place isn't listed. Without the distinction the
+    // UI tells the manager "no match, try another name" and sends them typing
+    // variations at an endpoint that is down, with no way to tell.
     console.error('[google-places] search failed', err);
-    return NextResponse.json({ candidates: [] }, { status: 502 });
+    return NextResponse.json({ candidates: [], failed: true }, { status: 502 });
   }
 }

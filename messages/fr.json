@@ -95,11 +95,11 @@
       "s2Title": "2. Éligibilité",
       "s2Body": "Vous devez avoir au moins 18 ans, être habilité à engager votre entreprise, et exploiter une activité légale d'hôtellerie, de restauration ou de service dans un pays où Stripe Connect est disponible.",
       "s3Title": "3. Commandes",
-      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique. Il n'existe aucun abonnement ni frais mensuel : une fois la plaque payée, aucune somme récurrente n'est prélevée. La plateforme Digitip se rémunère exclusivement par une commission de 5 % prélevée sur les pourboires effectivement encaissés (voir article 5). En l'absence de pourboire, aucun montant n'est dû. Le matériel n'est pas remboursable une fois expédié, sous réserve des garanties légales et du droit de rétractation prévus aux CGV.",
+      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique. Il n'existe aucun abonnement ni frais mensuel : une fois la plaque payée, aucune somme récurrente n'est prélevée. La plateforme Digitip se rémunère exclusivement par des frais de service ajoutés au pourboire et réglés par la personne qui le laisse (voir article 5). Aucun montant n'est prélevé sur le pourboire lui-même : le bénéficiaire perçoit l'intégralité de la somme choisie. En l'absence de pourboire, aucun montant n'est dû. Le matériel n'est pas remboursable une fois expédié, sous réserve des garanties légales et du droit de rétractation prévus aux CGV.",
       "s4Title": "4. Paiements",
       "s4Body": "Tous les paiements sont traités par Stripe. La TVA est appliquée automatiquement selon votre pays. Le paiement du matériel est unique et intervient à la commande ; aucun prélèvement récurrent n'est effectué. Une période de grâce de 30 jours s'applique aux SmartTags avant désactivation complète en cas de résiliation du compte.",
       "s5Title": "5. Pourboires, encaissement et versement",
-      "s5Body": "Digitip agit comme facilitateur technique de paiement. Chaque pourboire est attribué au membre du personnel sélectionné par le client. Les fonds sont d'abord encaissés via Stripe, puis reversés au bénéficiaire sur son compte bancaire connecté dès qu'il a finalisé la vérification d'identité imposée par la réglementation (lutte contre le blanchiment). Tant que cette vérification n'est pas terminée, le pourboire est conservé de façon sécurisée, puis versé automatiquement une fois le bénéficiaire vérifié. Digitip prélève une commission de 5 % et des frais de service fixes par transaction pour couvrir l'infrastructure et les frais de paiement ; le solde revient au bénéficiaire. Digitip ne conserve les fonds que le temps nécessaire à leur versement.",
+      "s5Body": "Digitip agit comme facilitateur technique de paiement. Chaque pourboire est attribué au membre du personnel sélectionné par le client. Les fonds sont d'abord encaissés via Stripe, puis reversés au bénéficiaire sur son compte bancaire connecté dès qu'il a finalisé la vérification d'identité imposée par la réglementation (lutte contre le blanchiment). Tant que cette vérification n'est pas terminée, le pourboire est conservé de façon sécurisée, puis versé automatiquement une fois le bénéficiaire vérifié. Digitip ne prélève rien sur le pourboire : sa rémunération provient des frais de service ajoutés au montant choisi et réglés par le client, qui en est informé avant de valider son paiement. Ces frais couvrent les frais de traitement bancaire et le fonctionnement du service. Digitip ne conserve les fonds que le temps nécessaire à leur versement.",
       "s6Title": "6. Vos responsabilités",
       "s6Body": "Vous devez fournir des informations exactes, garder vos identifiants en sécurité, utiliser le service de manière légale, informer votre personnel et vos clients de façon appropriée, et respecter les lois fiscales et sociales applicables aux pourboires.",
       "s7Title": "7. Utilisation acceptable",
@@ -157,8 +157,8 @@
     "s7Body": "Les SmartTags bénéficient de la garantie légale de conformité (articles L217-3 et suivants du Code de la consommation — 2 ans à compter de la livraison pour les acheteurs non professionnels) et de la garantie légale contre les vices cachés (articles 1641 et suivants du Code civil). En complément, YUZU LABS SAS offre une garantie commerciale à vie sur le matériel : tout SmartTag présentant un défaut de fabrication ou une défaillance dans le cadre d'une utilisation normale est remplacé gratuitement sur simple envoi d'une photo à contact@digitip.app.",
     "s8Title": "8. Service après-vente",
     "s8Body": "Pour toute demande SAV, contactez contact@digitip.app en précisant votre numéro de commande. YUZU LABS SAS s'engage à répondre dans un délai de 48 heures ouvrées et à traiter tout remplacement garanti dans les 5 jours ouvrés suivant la confirmation.",
-    "s9Title": "9. Commission sur pourboires",
-    "s9Body": "L'utilisation de la plateforme Digitip pour encaisser des pourboires donne lieu au prélèvement automatique d'une commission de 5 % sur chaque pourboire collecté. Cette commission, prélevée par Stripe au moment du versement, couvre les frais de traitement des paiements (Stripe), d'hébergement de l'infrastructure, de lutte contre la fraude et de maintien du service. Aucune commission n'est due en l'absence de pourboire encaissé.",
+    "s9Title": "9. Frais de service sur les pourboires",
+    "s9Body": "L'utilisation de la plateforme Digitip pour encaisser des pourboires ne donne lieu à aucun prélèvement sur les pourboires collectés : le bénéficiaire perçoit l'intégralité du montant choisi par le client. Les frais de service — une part fixe de 0,25 € par transaction et une part variable de 5 % du pourboire — sont ajoutés au montant du pourboire et réglés par la personne qui le laisse, qui en est informée du montant exact avant de valider son paiement. Ces frais couvrent le traitement des paiements (Stripe), l'hébergement de l'infrastructure, la lutte contre la fraude et le maintien du service. En l'absence de pourboire, aucun frais n'est dû.",
     "s10Title": "10. Responsabilité",
     "s10Body": "YUZU LABS SAS ne saurait être tenue responsable des dommages indirects (manque à gagner, perte de clientèle, perte de données) liés à l'utilisation ou à l'impossibilité d'utilisation des SmartTags ou de la plateforme. La responsabilité de YUZU LABS SAS est limitée au montant effectivement payé par l'acheteur au cours des 12 mois précédant le dommage.",
     "s11Title": "11. Médiation et litiges",
@@ -211,7 +211,7 @@
       "packMLabel": "2 emplacements",
       "packLLabel": "3+ emplacements",
       "bullet1": "Paiement unique, 0 frais mensuel",
-      "bullet2": "5 % de commission sur les pourboires uniquement",
+      "bullet2": "0 % prélevé sur les pourboires",
       "bullet3": "Résine époxy haute densité — conçue pour durer",
       "bullet4": "Entreprise française",
       "bullet5": "Remplacement à vie du matériel",
@@ -252,7 +252,7 @@
     "grid": {
       "kicker": "Nos packs",
       "title": "Choisissez votre pack",
-      "sub": "Plaques époxy pré-programmées, livrées prêtes à l'emploi. 5 % de commission sur les pourboires uniquement.",
+      "sub": "Plaques époxy pré-programmées, livrées prêtes à l'emploi. 0 % prélevé sur les pourboires.",
       "packS": "Solo",
       "packSTag": "1 plaque époxy NFC",
       "packM": "Duo",
@@ -295,7 +295,7 @@
       "warranty": "Garantie matériel à vie",
       "warrantySub": "Plaque cassée ou défectueuse ? On la remplace gratuitement, sans limite de durée.",
       "noSubscription": "Aucun abonnement",
-      "noSubscriptionSub": "Vous payez la plaque une fois. Ensuite, 5 % de commission uniquement sur les pourboires encaissés.",
+      "noSubscriptionSub": "Vous payez la plaque une fois. Ensuite plus rien : les frais de service sont réglés par le client, pas par vous.",
       "stripe": "Paiements sécurisés par Stripe",
       "stripeSub": "Aucune donnée bancaire ne transite par nos serveurs. Apple Pay et Google Pay acceptés.",
       "directPayout": "Versé sur le compte du bénéficiaire",
@@ -325,9 +325,9 @@
       "q5": "Ma plaque est abîmée ou défectueuse, que faire ?",
       "a5": "Aucun souci. La garantie à vie du matériel est incluse dans chaque pack. Contactez-nous par email avec une photo et on vous en expédie une nouvelle gratuitement.",
       "q6": "Ai-je besoin d'un SIRET ou d'un statut particulier ?",
-      "a6": "Non pour commander les SmartTags. En revanche, pour recevoir les pourboires via Stripe Connect, votre personnel devra créer un compte Stripe (vérification d'identité standard).",
+      "a6": "Pas pour commander les SmartTags. Pour encaisser les pourboires, c'est l'établissement qui se vérifie une seule fois, directement dans Digitip (identité du gérant et coordonnées bancaires) — la vérification imposée par la réglementation anti-blanchiment. Vos employés, eux, n'ont aucun compte à créer et aucune démarche à faire : les pourboires leur sont attribués nominativement et vous les reversez avec la paie.",
       "q7": "Comment Digitip se rémunère-t-il ?",
-      "a7": "Pour un pourboire de 10 €, le client règle 10,25 € au total. La répartition est la suivante : 9,50 € vous reviennent directement ; 0,45 € vont à Stripe (0,25 € de frais fixes par transaction + 2 % du montant — des frais bancaires standards, identiques pour tous) ; 0,30 € reviennent à Digitip pour couvrir l'infrastructure, l'hébergement, le support et le développement du service. Aucun abonnement, aucun frais fixe mensuel — vous ne payez que lorsque vous encaissez."
+      "a7": "Sur les frais de service, réglés par la personne qui laisse le pourboire — jamais sur le pourboire lui-même. Pour un pourboire de 10 €, le client règle 10,75 € au total : 0,25 € de frais fixes plus 5 % du pourboire. Vous, vous touchez les 10 € en entier. Sur les 75 centimes de frais, environ 0,41 € part chez Stripe (0,25 € fixes + 1,5 % du montant réglé) et 0,34 € revient à Digitip pour l'infrastructure, le support et le développement du service. Aucun abonnement, aucun frais mensuel, et rien qui sorte de votre poche."
     },
     "doubleGuarantee": {
       "g1title": "Qualité premium garantie",
@@ -362,17 +362,36 @@
     "pricing": {
       "kicker": "Transparence totale",
       "title": "Où va chaque euro ?",
-      "sub": "Pour un pourboire de 10 €, votre client règle 10,25 €. Voici la répartition exacte.",
+      "sub": "Pour un pourboire de 10 €, votre client règle 10,75 €. Vous touchez les 10 € en entier. Voici où vont les 75 centimes.",
       "row1label": "Vous",
-      "row1amount": "9,50 €",
-      "row1detail": "Versés directement sur votre compte bancaire, sans rien avancer.",
+      "row1amount": "10,00 €",
+      "row1detail": "Le pourboire choisi, intégralement. Rien n'est prélevé dessus.",
       "row2label": "Stripe (paiement sécurisé)",
-      "row2amount": "0,45 €",
-      "row2detail": "0,25 € de frais fixes par transaction + 2 % du montant — frais bancaires incompressibles.",
+      "row2amount": "0,41 €",
+      "row2detail": "0,25 € de frais fixes par transaction + 1,5 % du montant réglé — frais bancaires incompressibles, que Digitip règle pour vous.",
       "row3label": "Digitip",
-      "row3amount": "0,30 €",
+      "row3amount": "0,34 €",
       "row3detail": "Infrastructure, hébergement, support et amélioration continue du service.",
-      "footer": "Aucun abonnement, aucun frais fixe mensuel."
+      "footer": "Aucun abonnement, aucun frais mensuel — et rien à votre charge : les frais sont réglés par le client."
+    },
+    "reviews": {
+      "kicker": "Après le pourboire",
+      "title": "Chaque pourboire devient",
+      "titleAccent": "un avis Google",
+      "body": "Le client vient de vous laisser un pourboire. C'est précisément le moment où il est le plus disposé à vous recommander — et Digitip le lui propose sur l'écran de confirmation, en un seul geste.",
+      "timing": {
+        "title": "Au bon moment",
+        "body": "Pas un email deux jours plus tard, quand l'enthousiasme est retombé. Juste après un geste positif, le téléphone encore en main."
+      },
+      "oneTap": {
+        "title": "En un clic, sans formulaire",
+        "body": "Le client est déjà connecté à son compte Google. Il note, il valide, c'est terminé. Aucune application à installer."
+      },
+      "ranking": {
+        "title": "Là où ça compte",
+        "body": "Les avis récents pèsent le plus lourd dans le référencement local. Un flux régulier vaut mieux qu'une poignée d'avis anciens."
+      },
+      "proNote": "Les avis Google font partie de Digitip Pro. La plaque et les pourboires, eux, fonctionnent sans abonnement ni engagement — vous activez les avis depuis votre tableau de bord le jour où vous le décidez."
     }
   },
   "pricing": {
@@ -394,11 +413,11 @@
       "dashboard": "Dashboard manager complet inclus",
       "app": "Application mobile manager incluse",
       "prioritySupport": "Support prioritaire",
-      "noSubscription": "Aucun abonnement, aucun engagement",
+      "noSubscription": "Pourboires sans abonnement ni engagement",
       "vatInvoice": "Factures TVA automatiques"
     },
-    "commissionLabel": "5 % de commission",
-    "commissionBody": "Prélevés uniquement sur les pourboires reçus. Pas de pourboire = vous ne payez rien.",
+    "commissionLabel": "0 % prélevé sur vos pourboires",
+    "commissionBody": "Les frais de service sont ajoutés au pourboire et réglés par le client. Vous recevez l'intégralité du montant choisi.",
     "packs": {
       "solo": {
         "name": "Solo",
@@ -540,8 +559,8 @@
       "subtitle": "Vérifiez votre commande ci-dessous, puis procédez au paiement sécurisé via Stripe.",
       "orderSummary": "Récapitulatif de commande",
       "hardware": "Matériel (une fois)",
-      "commission": "Commission sur pourboires",
-      "commissionValue": "5 % par pourboire",
+      "commission": "Frais sur pourboires",
+      "commissionValue": "0 % — réglés par le client",
       "shippingTo": "Livré à",
       "billedTo": "Facturé à",
       "account": "Compte",
@@ -557,8 +576,8 @@
       "title": "Votre commande",
       "pack": "Pack {pack}",
       "hardware": "Matériel",
-      "commission": "Commission",
-      "commissionValue": "5 % par pourboire",
+      "commission": "Frais sur pourboires",
+      "commissionValue": "0 % — réglés par le client",
       "shipping": "Livraison",
       "free": "Offerte",
       "total": "Total aujourd'hui",
@@ -633,7 +652,7 @@
     "receiptByEmail": "Recevoir un reçu par email",
     "tipHeadline": "Envie de dire merci ?",
     "tipSubhead": "Laissez un pourboire en un clin d’œil",
-    "feeInfo": "Ces quelques centimes ne couvrent qu’une partie des frais de transaction bancaire que nous payons sur chaque pourboire. On fait notre maximum pour les limiter.",
+    "feeInfo": "Ces frais couvrent le coût de la transaction bancaire et le service Digitip. La totalité du pourboire que vous avez choisi est reversée — nous ne prélevons rien dessus.",
     "successBodyNamed": "Votre pourboire est bien parti — {name} en a été informé·e.",
     "sentTo": "Envoyé à",
     "reviewTitle": "Vous avez passé un bon moment ?",
@@ -677,17 +696,18 @@
       "roleAdmin": "Administrateur",
       "roleManager": "Manager",
       "roleSuperAdmin": "Super admin",
-      "statements": "Relevés"
+      "statements": "Relevés",
+      "payments": "Compte de paiement"
     },
     "billing": {
       "title": "Facturation & commissions",
-      "subtitle": "Suivez les commissions prélevées sur vos pourboires et gérez vos commandes de SmartTags.",
-      "commissionRate": "Taux de commission",
-      "commissionRateHint": "Prélevé sur chaque pourboire reçu.",
+      "subtitle": "Suivez les frais de service réglés par vos clients et gérez vos commandes de SmartTags.",
+      "commissionRate": "Frais de service",
+      "commissionRateHint": "Ajoutés au pourboire et réglés par le client. Rien n'est prélevé sur vos pourboires.",
       "tipsCollected30d": "Pourboires 30 jours",
       "txnCount": "{count, plural, one {# transaction} other {# transactions}}",
-      "commissionPaid30d": "Commission 30 jours",
-      "commissionPaidHint": "Montant prélevé par Digitip sur la période.",
+      "commissionPaid30d": "Frais collectés 30 jours",
+      "commissionPaidHint": "Montant réglé par les clients en plus des pourboires, sur la période.",
       "orderMoreTitle": "Besoin de SmartTags supplémentaires ?",
       "orderMoreBody": "Passez commande, nous les programmons à la main et expédions sous 3 jours.",
       "orderMoreCta": "Commander",
@@ -905,7 +925,9 @@
       "save": "Enregistrer",
       "saving": "Enregistrement…",
       "saved": "Enregistré.",
-      "noGroup": "Aucun groupe n'est encore associé à votre compte."
+      "noGroup": "Aucun groupe n'est encore associé à votre compte.",
+      "accountantEmail": "Email du comptable",
+      "accountantEmailHelp": "Le relevé mensuel de pourboires y est envoyé automatiquement, en plus de votre adresse. Réservé à l'abonnement Pro."
     },
     "admin": {
       "nav": {
@@ -1146,7 +1168,34 @@
       "total": "Total",
       "empty": "Aucun versement ce mois-ci.",
       "export": "Exporter en CSV",
-      "heldNote": "{amount} en attente de retrait par vos employés — non encore versé, hors relevé."
+      "heldNote": "{amount} en attente de retrait par vos employés — non encore versé, hors relevé.",
+      "exportJournal": "Journal détaillé",
+      "freeLimit": "L'offre gratuite exporte le mois en cours. Passez au Pro pour l'historique complet, le journal détaillé et l'envoi automatique à votre comptable."
+    },
+    "payments": {
+      "title": "Compte de paiement",
+      "subtitle": "Les pourboires de votre établissement arrivent ici, puis sont virés sur votre compte bancaire.",
+      "statusReady": "Votre établissement est vérifié et peut encaisser des pourboires.",
+      "statusPending": "Vérification en cours chez Stripe. Votre page de pourboire s'activera automatiquement dès que c'est validé.",
+      "requirements": "À compléter",
+      "details": "Informations de l'établissement",
+      "payouts": "Virements",
+      "loadFailed": "Impossible de charger votre compte de paiement. Rechargez la page ou réessayez dans quelques instants.",
+      "noEstablishment": "Aucun établissement n'est encore rattaché à votre compte."
+    },
+    "pro": {
+      "upsellTitle": "Passez à Digitip Pro",
+      "feature1": "Invitation à laisser un avis Google après chaque pourboire",
+      "feature2": "Relevé de paie envoyé chaque mois à vous et à votre comptable",
+      "feature3": "Export comptable détaillé, historique illimité, CSV et Excel",
+      "ctaMonthly": "Passer au Pro — 19 € HT/mois",
+      "ctaYearly": "Payer à l'année (2 mois offerts)",
+      "opening": "Ouverture…",
+      "activeTitle": "Digitip Pro est actif",
+      "activeBody": "Les avis Google et l'export comptable complet sont activés. Vous pouvez modifier ou résilier votre abonnement à tout moment.",
+      "manage": "Gérer mon abonnement",
+      "unavailable": "L'abonnement Pro n'est pas encore disponible. Réessayez plus tard.",
+      "failed": "Impossible d'ouvrir la page de paiement. Réessayez dans quelques instants."
     }
   },
   "join": {
@@ -1221,9 +1270,8 @@
       "title": "Votre espace est prêt !",
       "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
       "cta": "Accéder au dashboard →",
-      "ctaBanking": "Configurer mes virements →",
-      "payoutTitle": "Finalisez vos virements",
-      "payoutBody": "Après avoir confirmé votre email, rendez-vous dans <b>Dashboard → Virements</b> pour configurer vos virements avec Stripe et commencer à recevoir des pourboires."
+      "payoutsPendingTitle": "Vérification en cours",
+      "payoutsPendingBody": "Stripe a bien reçu vos informations et les vérifie. Votre page de pourboire s'activera automatiquement dès que c'est validé — en général sous 24 h. Vous n'avez rien d'autre à faire."
     },
     "emailVerification": {
       "title": "Vérifiez votre email",
@@ -1285,14 +1333,21 @@
       "yes": "Oui, je veux recevoir des pourboires",
       "no": "Non, je gère uniquement mon équipe"
     },
-    "banking": {
-      "title": "Recevoir vos pourboires",
-      "subtitle": "Vos virements se configurent ensuite depuis votre tableau de bord, via Stripe.",
-      "body": "Parfait — vous pourrez recevoir des pourboires personnellement. La configuration de vos virements se fait en quelques clics depuis votre tableau de bord (rubrique <b>Virements</b>), via <b>Stripe</b>, notre partenaire de paiement sécurisé. C'est Stripe qui collecte et chiffre vos coordonnées — vos informations bancaires ne transitent jamais par Digitip."
+    "reviewIntro": {
+      "title": "Transformez vos pourboires en avis",
+      "subtitle": "Voici ce que verra votre client, juste après vous avoir laissé un pourboire.",
+      "demoName": "votre équipe",
+      "demoThanks": "Merci pour le pourboire !",
+      "demoQuestion": "Vous avez apprécié {name} ?",
+      "demoBody": "Aidez l'équipe en laissant un avis Google — ça prend 10 secondes.",
+      "demoCta": "Laisser un avis Google →",
+      "timing": "Vous le demandez au meilleur moment : juste après un geste positif, pas par email deux jours plus tard.",
+      "oneTap": "Votre client est déjà connecté à son compte Google. Il note, il valide, c'est terminé.",
+      "ranking": "Les avis récents pèsent le plus lourd dans le référencement local. Un flux régulier vous fait remonter."
     },
     "googleReview": {
       "title": "Avis Google",
-      "subtitle": "Reliez votre fiche Google pour proposer aux clients de laisser un avis juste après leur pourboire.",
+      "subtitle": "Reliez votre fiche Google dès maintenant. L'invitation à laisser un avis après chaque pourboire fait partie de Digitip Pro — vous l'activerez quand vous voudrez.",
       "skip": "Passer pour l’instant",
       "searchPlaceholder": "Nom de votre établissement",
       "searchButton": "Rechercher",
@@ -1309,7 +1364,17 @@
       "unknownPlace": "Établissement",
       "reviewCount": "{count} avis",
       "fieldLabel": "Lien d’avis Google",
-      "fieldHint": "Après chaque pourboire, le client pourra laisser un avis Google en un clic."
+      "fieldHint": "Avec Digitip Pro, le client pourra laisser un avis Google en un clic juste après son pourboire. Le lien est enregistré dès maintenant, vous n'aurez rien à refaire.",
+      "searchUnavailable": "La recherche Google est indisponible pour le moment. Ajoutez le lien manuellement ci-dessous, ou passez cette étape — vous pourrez le renseigner plus tard depuis vos réglages."
+    },
+    "connect": {
+      "title": "Recevoir vos pourboires",
+      "subtitle": "Dernière étape : vérifiez votre établissement pour pouvoir encaisser.",
+      "body": "Les pourboires arrivent sur le compte de <b>{name}</b>, puis sont reversés à votre équipe via la paie. La réglementation impose de vérifier l'identité du bénéficiaire : le formulaire ci-dessous est celui de <b>Stripe</b>, notre partenaire de paiement, intégré directement ici. Vos coordonnées bancaires sont chiffrées par Stripe et ne transitent jamais par Digitip.",
+      "preparing": "Préparation de votre compte de paiement…",
+      "loadFailed": "Impossible de charger le formulaire de vérification. Rechargez la page ou réessayez dans quelques instants.",
+      "incomplete": "Le formulaire de vérification n'est pas encore complété. Terminez-le ci-dessus pour finaliser votre inscription.",
+      "exited": "Formulaire terminé ? Cliquez sur « Terminer » pour finaliser votre inscription."
     }
   }
 }

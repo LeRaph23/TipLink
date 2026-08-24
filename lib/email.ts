@@ -1798,3 +1798,68 @@ export async function sendPayoutFailedAlert(opts: {
       note: 'Vos pourboires restent en sécurité — ils seront versés dès que votre compte sera à jour.',
     }));
 }
+
+// ─── Monthly payroll statement (Digitip Pro) ──────────────────────────────────
+
+/**
+ * The monthly statement, delivered rather than downloaded.
+ *
+ * This is the shape of the Pro promise: an export the manager has to remember
+ * to run every month is still a chore. One that lands in their accountant's
+ * inbox on its own is not — same data, different product.
+ */
+export async function sendMonthlyStatement(opts: {
+  to: string[];
+  establishmentName: string;
+  monthLabel: string;
+  staffCount: number;
+  totalFormatted: string;
+  summaryCsv: string;
+  journalCsv: string;
+  month: string;
+  locale: 'fr' | 'en';
+}): Promise<void> {
+  if (!resend) return;
+  const { to, establishmentName, monthLabel, staffCount, totalFormatted, month, locale } = opts;
+
+  const fr = locale === 'fr';
+  const subject = fr
+    ? `Relevé de pourboires ${monthLabel} — ${establishmentName}`
+    : `Tip statement for ${monthLabel} — ${establishmentName}`;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject,
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Relevé mensuel' : 'Monthly statement'}</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px">
+      <div class="text-primary" style="font-size:18px;font-weight:700;color:#0f0f12;margin-bottom:10px">${establishmentName} — ${monthLabel}</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">
+        ${fr
+          ? `<strong class="text-strong" style="color:#0f0f12">${totalFormatted}</strong> de pourboires à répartir entre ${staffCount} ${staffCount > 1 ? 'personnes' : 'personne'} ce mois-ci.`
+          : `<strong class="text-strong" style="color:#0f0f12">${totalFormatted}</strong> in tips to distribute across ${staffCount} ${staffCount > 1 ? 'people' : 'person'} this month.`}
+      </div>
+    </td></tr>
+    <tr><td style="padding:0 32px 28px">
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6">
+        ${fr
+          ? 'Deux fichiers sont joints : le récapitulatif par employé, à passer en paie, et le journal détaillé de chaque pourboire pour le rapprochement bancaire.'
+          : 'Two files are attached: the per-employee summary for payroll, and the detailed journal of every tip for bank reconciliation.'}
+      </div>
+    </td></tr>`),
+    attachments: [
+      {
+        filename: `releve-pourboires-${month}.csv`,
+        content: Buffer.from(opts.summaryCsv, 'utf8').toString('base64'),
+      },
+      {
+        filename: `journal-pourboires-${month}.csv`,
+        content: Buffer.from(opts.journalCsv, 'utf8').toString('base64'),
+      },
+    ],
+  });
+}

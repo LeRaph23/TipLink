@@ -14,7 +14,6 @@ interface Props {
   userRoles: Pick<UserRole, 'role' | 'group_id' | 'establishment_id'>[];
   userEmail: string;
   userName: string;
-  hasStaffProfile?: boolean;
 }
 
 
@@ -114,7 +113,7 @@ function Avatar({ name, size = 28 }: { name: string; size?: number }) {
   );
 }
 
-export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile = false }: Props) {
+export function DashboardNav({ userRoles, userEmail, userName }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const tn = useTranslations('dashboard.nav');
@@ -152,7 +151,9 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
   const links = [
     { href: '/dashboard',               label: tn('overview'),     icon: <HomeIcon />,   always: true },
     { href: '/dashboard/transactions',  label: tn('transactions'), icon: <TxIcon />,     always: true },
-    { href: '/dashboard/banking',       label: tn('payouts'),      icon: <PayoutIcon />, roles: ['staff', 'group_admin'] as UserRole['role'][], staffProfile: true },
+    // The establishment's Connect account, not a per-employee one: staff no
+    // longer hold a Stripe account, so this is group-admin territory.
+    { href: '/dashboard/paiements',     label: tn('payments'),     icon: <PayoutIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/billing',       label: tn('billing'),      icon: <InvoiceIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/statements',    label: tn('statements'),   icon: <InvoiceIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
@@ -179,11 +180,8 @@ export function DashboardNav({ userRoles, userEmail, userName, hasStaffProfile =
     { href: '/dashboard/admin/cold-email',    label: ta('prospects'),    icon: <MailIcon /> },
   ];
 
-  // `staffProfile` links show for anyone with a staff profile — e.g. a manager
-  // who also receives tips, and so has no separate `staff` role row.
   const visibleLinks = links.filter(l =>
     l.always ||
-    (l.staffProfile && hasStaffProfile) ||
     (l.roles && l.roles.some(r => hasRole(r)))
   );
   const isSuperAdmin = hasRole('super_admin');

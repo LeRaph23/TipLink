@@ -41,7 +41,6 @@ export default async function DashboardLayout({
       userRoles={roles ?? []}
       userEmail={user.email ?? ''}
       userName={userName}
-      hasStaffProfile={!!staffProfile}
     >
       {children}
     </DashboardShell>

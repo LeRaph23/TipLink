@@ -11,11 +11,10 @@ interface Props {
   userRoles: Pick<UserRole, 'role' | 'group_id' | 'establishment_id'>[];
   userEmail: string;
   userName: string;
-  hasStaffProfile?: boolean;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ userRoles, userEmail, userName, hasStaffProfile = false, children }: Props) {
+export function DashboardShell({ userRoles, userEmail, userName, children }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const [shownPath, setShownPath] = useState(pathname);
@@ -42,7 +41,7 @@ export function DashboardShell({ userRoles, userEmail, userName, hasStaffProfile
 
       {/* Sidebar — becomes fixed overlay on mobile via .dash-sidebar CSS */}
       <div className={`dash-sidebar${open ? ' is-open' : ''}`}>
-        <DashboardNav userRoles={userRoles} userEmail={userEmail} userName={userName} hasStaffProfile={hasStaffProfile} />
+        <DashboardNav userRoles={userRoles} userEmail={userEmail} userName={userName} />
       </div>
 
       {/* Main content */}

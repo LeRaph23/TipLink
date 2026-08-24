@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { createStandardAccount, createOnboardingLink, staffBankingReturnUrls } from '@/lib/stripe/connect';
 
 export const runtime = 'nodejs';
 
-// Joins a staff member to an establishment, then creates their Stripe Standard
-// connected account and returns a hosted-onboarding URL. Banking details
-// (identity, IBAN, terms) are collected by Stripe — not by this endpoint.
+// Joins a staff member to an establishment.
+//
+// This used to also create a Stripe Standard account for them and hand back a
+// hosted-onboarding URL. Employees no longer hold a Stripe account at all: tips
+// land in the establishment's single connected account and reach the employee
+// through payroll, so there is nothing to verify here and no KYC to sit
+// through before their tag works.
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -21,7 +24,6 @@ export async function POST(req: Request) {
     locale?: string;
   };
   const { establishmentId, fullName, selectedProfileId, avatarUrl } = body;
-  const locale = body.locale === 'en' ? 'en' : 'fr';
 
   if (!establishmentId) return NextResponse.json({ error: 'Missing establishmentId' }, { status: 400 });
 
@@ -35,8 +37,6 @@ export async function POST(req: Request) {
     .single();
 
   if (!est) return NextResponse.json({ error: 'Establishment not found' }, { status: 404 });
-
-  let staffProfileId: string;
 
   if (selectedProfileId) {
     // Claiming an existing pending profile. The UPDATE is guarded by
@@ -68,7 +68,6 @@ export async function POST(req: Request) {
     if (!claimed || claimed.length === 0) {
       return NextResponse.json({ error: 'Profil introuvable ou déjà réclamé.' }, { status: 409 });
     }
-    staffProfileId = selectedProfileId;
   } else {
     // Creating a new profile
     if (!fullName?.trim()) return NextResponse.json({ error: 'Missing fullName' }, { status: 400 });
@@ -102,7 +101,6 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ error: insertErr?.message ?? 'Insert failed' }, { status: 500 });
     }
-    staffProfileId = newProfile.id;
   }
 
   // Ensure staff role exists
@@ -121,28 +119,5 @@ export async function POST(req: Request) {
     });
   }
 
-  // Create the Stripe Standard connected account + hosted-onboarding link.
-  try {
-    const accountId = await createStandardAccount({
-      email: user.email ?? undefined,
-      businessType: 'individual',
-      fullName: fullName?.trim() || undefined,
-      metadata: { staff_profile_id: staffProfileId },
-    });
-    await service
-      .from('staff_profiles')
-      .update({ stripe_account_id: accountId, onboarding_status: 'pending' })
-      .eq('id', staffProfileId);
-    const url = await createOnboardingLink(accountId, staffBankingReturnUrls(locale));
-    return NextResponse.json({ ok: true, onboardingUrl: url });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Création du compte Stripe échouée';
-    console.error('staff/join: Stripe account creation failed', err);
-    // Rollback: deactivate the profile we just created/claimed.
-    await service
-      .from('staff_profiles')
-      .update({ is_active: false, user_id: null, onboarding_status: 'not_started' })
-      .eq('id', staffProfileId);
-    return NextResponse.json({ error: msg }, { status: 422 });
-  }
+  return NextResponse.json({ ok: true });
 }

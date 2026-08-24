@@ -22,10 +22,14 @@ export async function reverseTransferIfNeeded(transferId: string): Promise<boole
   }
 }
 
-// Reverse every transfer attached to a transaction:
-//  - solo tips: the single transfer stored on transactions.stripe_transfer_id
-//  - group tips: every row in group_tip_transfers
-// Updates DB to record reversal timestamps. Idempotent.
+// Reverse the transfer attached to a transaction and cancel its attribution.
+//
+// There is exactly one transfer per tip now — to the establishment — so this
+// no longer walks a per-employee ledger. The `tip_allocations` rows still have
+// to be flipped to `reversed`, otherwise the payroll export would keep
+// crediting employees for money that went back to the customer.
+//
+// Idempotent: safe to call on a re-delivered webhook.
 export async function reverseTransactionTransfers(
   transactionId: string,
   supabase: Supabase,
@@ -44,34 +48,10 @@ export async function reverseTransactionTransfers(
       .eq('id', transactionId);
   }
 
-  const { data: groupTransfers } = await supabase
-    .from('group_tip_transfers')
-    .select('id, stripe_transfer_id, reversed_at')
-    .eq('transaction_id', transactionId)
-    .is('reversed_at', null);
-
-  for (const gt of groupTransfers ?? []) {
-    if (!gt.stripe_transfer_id) continue;
-    try {
-      await reverseTransferIfNeeded(gt.stripe_transfer_id);
-      await supabase
-        .from('group_tip_transfers')
-        .update({ reversed_at: new Date().toISOString() })
-        .eq('id', gt.id);
-    } catch (err) {
-      console.error('group transfer reversal failed', { id: gt.id, err });
-    }
-  }
-
-  // Deferred onboarding: allocations still HELD (no transfer created yet) must
-  // be cancelled on refund/dispute, otherwise the deferred-transfer path
-  // (account.updated / reconcile cron) would later pay out money that was
-  // already refunded to the customer. Mark them reversed so they're skipped.
   await supabase
-    .from('group_tip_transfers')
+    .from('tip_allocations')
     .update({ status: 'reversed', reversed_at: new Date().toISOString() } as never)
     .eq('transaction_id', transactionId)
-    .is('stripe_transfer_id', null)
     .is('reversed_at', null);
 }
 
@@ -110,8 +90,9 @@ export async function refundTransactionFull(
     return { ok: false, error: msg };
   }
 
-  // For group tips, reverse_transfer:true on a destination-charge refund
-  // doesn't cover separately-created transfers — handle them explicitly.
+  // `reverse_transfer: true` only covers destination charges; tips are
+  // separate charges, so the transfer to the establishment is reversed
+  // explicitly here — as are the employees' attributions.
   await reverseTransactionTransfers(transactionId, supabase);
 
   return { ok: true };

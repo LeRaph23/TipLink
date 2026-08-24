@@ -46,6 +46,9 @@ export function GoogleReviewPicker({
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [unconfigured, setUnconfigured] = useState(false);
+  // Google answered with an error rather than an empty result. Distinct from
+  // `unconfigured` (no API key at all) and from a genuine no-match.
+  const [failed, setFailed] = useState(false);
   const [manual, setManual] = useState(false);
   const [manualUrl, setManualUrl] = useState(value);
   const [manualError, setManualError] = useState<string | null>(null);
@@ -57,18 +60,28 @@ export function GoogleReviewPicker({
     if (q.trim().length < 2) return;
     setLoading(true);
     setSearched(true);
+    setFailed(false);
     try {
       const params = new URLSearchParams({ name: q.trim() });
       if (addr) params.set('address', addr);
       const res = await fetch(`/api/onboarding/google-places?${params.toString()}`);
-      const data = (await res.json()) as { candidates?: Candidate[]; unconfigured?: boolean };
+      const data = (await res.json()) as {
+        candidates?: Candidate[];
+        unconfigured?: boolean;
+        failed?: boolean;
+      };
       setCandidates(data.candidates ?? []);
       if (data.unconfigured) {
         setUnconfigured(true);
         setManual(true);
+      } else if (!res.ok || data.failed) {
+        setFailed(true);
       }
     } catch {
       setCandidates([]);
+      // The request itself never landed — offline, timeout, blocked. Same
+      // consequence for the manager as a Google-side failure.
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -319,8 +332,13 @@ export function GoogleReviewPicker({
       </div>
 
       {searched && !loading && candidates.length === 0 && (
-        <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 12, lineHeight: 1.6 }}>
-          {t('noResults')}
+        <p style={{
+          fontSize: 12.5,
+          color: failed ? 'var(--warning)' : 'var(--text-3)',
+          marginTop: 12,
+          lineHeight: 1.6,
+        }}>
+          {failed ? t('searchUnavailable') : t('noResults')}
         </p>
       )}
 

@@ -13,6 +13,8 @@ interface UpdateGroupInput {
   tipThresholds?: number[];
   legalName?: string | null;
   vatNumber?: string | null;
+  /** Second recipient of the monthly payroll statement (Pro). */
+  accountantEmail?: string | null;
 }
 
 export async function updateGroup(
@@ -37,6 +39,13 @@ export async function updateGroup(
   if (input.logoUrl !== undefined) patch.logo_url = input.logoUrl;
   if (input.legalName !== undefined) patch.legal_name = input.legalName;
   if (input.vatNumber !== undefined) patch.vat_number = input.vatNumber;
+  if (input.accountantEmail !== undefined) {
+    const email = input.accountantEmail?.trim() ?? '';
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { error: 'Adresse email du comptable invalide.' };
+    }
+    patch.accountant_email = email || null;
+  }
 
   if (input.tipThresholds !== undefined) {
     const currentSettings = (current?.settings as Record<string, unknown> | null) ?? {};

@@ -140,7 +140,7 @@ export default async function DashboardPage({
               {t('home.adminReceiveTipsBody')}
             </div>
           </div>
-          <Link href="/dashboard/banking" style={{
+          <Link href="/dashboard/paiements" style={{
             padding: '9px 16px', borderRadius: 10, border: 'none',
             background: 'var(--accent)', color: '#fff',
             fontSize: 13, fontWeight: 600, textDecoration: 'none',
@@ -151,33 +151,6 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {/* Staff profile exists but banking not set up */}
-      {staffProfile && !staffProfile.stripe_account_id && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 14,
-          background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.05))',
-          border: '1px solid rgba(229,122,151,0.25)',
-          borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 20,
-        }}>
-          <div style={{ display: 'flex', flexShrink: 0, color: 'var(--accent)' }}><CardIcon size={22} /></div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
-              {isGroupAdmin ? t('home.bankingSetupTitleAdmin') : t('home.bankingSetupTitleStaff')}
-            </div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-              {t('home.bankingSetupBody')}
-            </div>
-          </div>
-          <Link href="/dashboard/banking" style={{
-            padding: '8px 14px', borderRadius: 10, border: 'none',
-            background: 'var(--accent)', color: '#fff',
-            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            whiteSpace: 'nowrap', flexShrink: 0,
-          }}>
-            {t('home.bankingSetupCta')}
-          </Link>
-        </div>
-      )}
 
       <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
         <StatCard label={t('totalEarned')} value={totalEarnings / 100} format="currency" currency={currency} locale={locale} sub={t('allTime')} />

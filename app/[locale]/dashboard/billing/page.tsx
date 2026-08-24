@@ -2,6 +2,8 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
+import { ProCard } from './ProCard';
+import { getPlan } from '@/lib/billing/entitlements';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -57,6 +59,11 @@ export default async function BillingPage({
       ? await ordersQuery.in('group_id', ownedGroupIds)
       : { data: [] };
 
+  // The upsell card needs a group; a super admin browsing every order has none
+  // of their own, so it is simply not shown to them.
+  const primaryGroupId = ownedGroupIds[0] ?? null;
+  const plan = primaryGroupId ? await getPlan(service, primaryGroupId) : 'free';
+
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
@@ -67,6 +74,14 @@ export default async function BillingPage({
           Commandes et factures SmartTags.
         </p>
       </div>
+
+      {primaryGroupId && (
+        <ProCard
+          groupId={primaryGroupId}
+          isPro={plan === 'pro'}
+          locale={locale === 'en' ? 'en' : 'fr'}
+        />
+      )}
 
       {/* Actions row */}
       <div style={{

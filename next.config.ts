@@ -5,14 +5,17 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 const CSP = [
   "default-src 'self'",
-  // Next.js inline scripts + Stripe.js
-  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://connect.stripe.com",
-  // Stripe Elements / Connect iframes
-  "frame-src https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com",
+  // Next.js inline scripts + Stripe.js. connect-js.stripe.com serves the
+  // Connect embedded components loader (@stripe/connect-js).
+  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://connect.stripe.com https://connect-js.stripe.com",
+  // Stripe Elements / Connect iframes. The embedded onboarding, account
+  // management, payouts and notification banner components all render inside
+  // an iframe served from connect-js.stripe.com.
+  "frame-src https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com https://connect-js.stripe.com",
   // Supabase REST/Realtime + Stripe API calls (from browser SDK). The address
   // autocomplete hits the IGN geocoder through our own /api/onboarding/geocode
   // proxy, so it stays under 'self' and needs no extra host here.
-  "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co",
+  "connect-src 'self' https://api.stripe.com https://connect.stripe.com https://connect-js.stripe.com https://*.supabase.co wss://*.supabase.co",
   // Avatars and logos live in Supabase Storage (public-media bucket).
   // Carto tiles power the salon map.
   "img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com",
