@@ -107,26 +107,11 @@ const NfcOnboardingSchema = z.object({
   ...GoogleReviewFields,
 });
 
-// Validates a single NFC short_id and returns its DB id if it's unassigned.
-export async function validateSmartTagCode(
-  code: string
-): Promise<{ valid: boolean; id?: string }> {
-  const normalized = code.trim().toLowerCase();
-  if (normalized.length < 4 || !/^[a-z0-9_-]+$/.test(normalized)) {
-    return { valid: false };
-  }
-  const service = createServiceClient();
-  // `staff_id` was dropped in migration 00014 — a sticker is "unassigned"
-  // (in stock) purely when establishment_id IS NULL.
-  const { data } = await service
-    .from('nfc_stickers')
-    .select('id')
-    .eq('short_id', normalized)
-    .is('establishment_id', null)
-    .maybeSingle();
-
-  return data ? { valid: true, id: data.id } : { valid: false };
-}
+// `validateSmartTagCode` lived here and had no caller — the wizard has always
+// gone through GET /api/onboarding/validate-code. It carried the same
+// case-sensitivity bug that route just lost, so it is removed rather than
+// fixed twice: one definition of "is this tag claimable", in the route, and
+// one definition of "claim it", in the claim_nfc_stickers RPC.
 
 // For authenticated group_admin who just completed the post-purchase wizard.
 // Updates the existing establishment + group, invites colleagues.

@@ -27,13 +27,18 @@ export async function GET(req: Request) {
   // to an establishment. `staff_id` was dropped in migration 00014 — a tag is
   // now scoped to an establishment only — so establishment_id IS NULL is the
   // sole stock/unassigned check.
+  //
+  // Resolved through the RPC rather than `.eq('short_id', code)`: short_ids are
+  // stored mixed-case (197 of the 200 printed tags contain a capital), and the
+  // code is lower-cased above — an exact match rejected almost every real tag.
+  // The RPC compares on lower(short_id), the same way proxy.ts and
+  // claim_nfc_stickers already do, so all three agree on what a code means.
+  // It returns no row for an unknown tag, and one row whose establishment_id is
+  // NULL for a tag still in stock.
   const service = createServiceClient();
-  const { data } = await service
-    .from('nfc_stickers')
-    .select('id')
-    .eq('short_id', code)
-    .is('establishment_id', null)
-    .maybeSingle();
+  const { data } = await service.rpc('resolve_sticker_establishment', { p_short_id: code });
 
-  return NextResponse.json({ valid: !!data });
+  const valid = Array.isArray(data) && data.length === 1 && data[0].establishment_id === null;
+
+  return NextResponse.json({ valid });
 }
