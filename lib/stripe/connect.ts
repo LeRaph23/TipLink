@@ -114,6 +114,21 @@ const MCC_BY_BUSINESS_TYPE: Record<string, string> = {
   beauty: '7230',
 };
 
+/**
+ * First token as the given name, the rest as the family name.
+ *
+ * Crude, and deliberately so: this is a prefill the account holder sees and can
+ * correct on the same screen, and the same split already runs for staff
+ * accounts above. Returns nothing at all rather than a half-filled name, so a
+ * single-word entry never lands someone with an empty surname field they have
+ * to notice.
+ */
+function splitName(full?: string | null): { first_name?: string; last_name?: string } {
+  const parts = (full ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return {};
+  return { first_name: parts[0], last_name: parts.slice(1).join(' ') };
+}
+
 export async function createEstablishmentAccount(opts: {
   establishmentId: string;
   name: string;
@@ -125,6 +140,12 @@ export async function createEstablishmentAccount(opts: {
   legalForm?: 'company' | 'individual' | null;
   /** The establishment's address, split into the fields Stripe asks for. */
   address?: { line1: string; postalCode: string; city: string } | null;
+  /** The establishment's own website, from its Google listing. */
+  websiteUrl?: string | null;
+  /** The establishment's public phone number, from its Google listing. */
+  phone?: string | null;
+  /** The group admin's name — the account holder themselves for a sole trader. */
+  fullName?: string | null;
 }): Promise<string> {
   const mcc = opts.businessType
     ? MCC_BY_BUSINESS_TYPE[opts.businessType] ?? CONNECT_BUSINESS_PROFILE.mcc
@@ -146,16 +167,28 @@ export async function createEstablishmentAccount(opts: {
       }
     : undefined;
 
+  const phone = opts.phone?.trim() || undefined;
+
   const identity: Partial<Stripe.AccountCreateParams> = {};
   if (opts.legalForm === 'company') {
     identity.business_type = 'company';
-    identity.company = { name: opts.name, ...(address ? { address } : {}) };
+    identity.company = {
+      name: opts.name,
+      ...(address ? { address } : {}),
+      ...(phone ? { phone } : {}),
+    };
   } else if (opts.legalForm === 'individual') {
     identity.business_type = 'individual';
-    // No name here: an individual's legal name is their own, not the trading
-    // name the wizard collected, and guessing it wrong sends the manager into a
+    // A sole trader IS the group admin, so their own name and email belong
+    // here. Note this is the person, never `opts.name` — that is the trading
+    // name, and putting it on the individual is what sends someone into a
     // verification mismatch.
-    if (address) identity.individual = { address };
+    identity.individual = {
+      ...splitName(opts.fullName),
+      ...(opts.email ? { email: opts.email } : {}),
+      ...(address ? { address } : {}),
+      ...(phone ? { phone } : {}),
+    };
   }
 
   const account = await stripe.accounts.create(
@@ -179,6 +212,15 @@ export async function createEstablishmentAccount(opts: {
         ...CONNECT_BUSINESS_PROFILE,
         mcc,
         name: opts.name,
+        // The establishment's own site, never the platform's — see the note on
+        // CONNECT_BUSINESS_PROFILE. Omitted when the Google listing has none,
+        // which is the case product_description exists to cover.
+        // support_phone is deliberately left as Digitip's: tips are charged by
+        // the platform under the Digitip descriptor, so a customer querying the
+        // charge reaches us, not the salon. The establishment's own number goes
+        // on company.phone / individual.phone instead, which is where Stripe
+        // asks for it.
+        ...(opts.websiteUrl?.trim() ? { url: opts.websiteUrl.trim() } : {}),
       },
       // Weekly rather than Stripe's default daily rolling payouts: Connect
       // bills a fixed fee per payout, so 4 a month instead of ~30 keeps the

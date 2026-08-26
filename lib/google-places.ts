@@ -330,6 +330,86 @@ export async function searchEstablishmentCandidates(input: {
   }));
 }
 
+/** Contact details for one place, used to prefill Stripe's onboarding form. */
+export type GooglePlaceContact = {
+  websiteUri: string | null;
+  phoneNumber: string | null;
+};
+
+/**
+ * Pulls a place's website and phone number, one place at a time.
+ *
+ * Deliberately not folded into `searchEstablishmentCandidates`: that call runs
+ * on every keystroke of the manager's search, and Places bills a request at the
+ * tier of the most expensive field in its mask. Contact data sits a tier above
+ * what the search asks for today, so adding it there would re-price every
+ * search to prefill a place the manager has not chosen yet. One Details call,
+ * once, for the place they did choose, is both cheaper and enough.
+ *
+ * Returns null on any failure — a missing website costs the manager one field
+ * to type, while a throw here would cost them their Connect account.
+ */
+export async function getPlaceContactDetails(placeId: string): Promise<GooglePlaceContact | null> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey || !placeId) return null;
+
+  try {
+    const res = await fetch(
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?languageCode=fr`,
+      {
+        headers: {
+          'X-Goog-Api-Key': apiKey,
+          // No `places.` prefix on the Details endpoint — the mask addresses the
+          // place resource itself rather than a list of them.
+          'X-Goog-FieldMask': 'websiteUri,internationalPhoneNumber',
+        },
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('[google-places] details failed', describeGoogleError(res.status, text, apiKey));
+      return null;
+    }
+
+    const data = (await res.json()) as {
+      websiteUri?: string;
+      internationalPhoneNumber?: string;
+    };
+
+    return {
+      websiteUri: data.websiteUri ?? null,
+      phoneNumber: data.internationalPhoneNumber ?? null,
+    };
+  } catch (err) {
+    console.error('[google-places] details threw', err);
+    return null;
+  }
+}
+
+/**
+ * The place id behind whatever the onboarding wizard managed to store.
+ *
+ * `google_place_id` is only written when the manager picked a result from
+ * search; someone who pasted a review link by hand has the id sitting inside
+ * `google_review_url` instead. Reading both is the difference between
+ * prefilling most accounts and prefilling only the tidy half.
+ */
+export function resolveGooglePlaceId(
+  placeId: string | null | undefined,
+  reviewUrl: string | null | undefined,
+): string | null {
+  const direct = placeId?.trim();
+  if (direct) return direct;
+
+  // Both separators occur in the wild: `?placeid=` on a writereview link, and
+  // `?q=place_id:` on the canonical Maps place URL. normalizeGoogleReviewUrl
+  // stores the latter untouched, so reading only `=` would drop it.
+  const match = reviewUrl?.match(/place[_]?id[=:]([A-Za-z0-9_-]+)/i);
+  return match ? match[1] : null;
+}
+
 /**
  * Best-effort enrich for a batch. Sequential to play nice with Google's
  * QPS limits — no manual throttle needed (they allow 10 QPS by default).
