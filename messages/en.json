@@ -59,7 +59,8 @@
     "unknown": "Something went wrong. Please try again.",
     "network": "Network error. Check your connection and try again.",
     "initFailed": "Couldn't start the payment. Please try again.",
-    "staffPendingTips": "This member has pending payments. Try again once they're settled."
+    "staffPendingTips": "This member has pending payments. Try again once they're settled.",
+    "smartTagTaken": "This SmartTag is already attached to a business. If it's yours, sign in to your account; otherwise, get in touch."
   },
   "legal": {
     "lastUpdated": "Last updated",

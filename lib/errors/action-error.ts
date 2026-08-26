@@ -11,7 +11,12 @@ export type ActionErrorCode =
   | 'notFound'
   | 'forbidden'
   | 'unknown'
-  | 'network';
+  | 'network'
+  // A SmartTag that is already attached to another establishment. Distinct
+  // from 'validation' because there is nothing about the manager's input to
+  // fix: the tag genuinely belongs elsewhere, and "check your entry" sends
+  // them looking for a typo that does not exist.
+  | 'smartTagTaken';
 
 // Maps a thrown/returned database error to a safe code. Postgres unique
 // violations (23505) become 'duplicate'; everything else stays 'unknown'.
