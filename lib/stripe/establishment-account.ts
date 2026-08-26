@@ -8,6 +8,7 @@ import {
 } from './connect';
 import type { createServiceClient } from '@/lib/supabase/service';
 import { establishmentTipTag, staffTipTag } from '@/lib/cache/pay-tags';
+import { parseFrenchAddress } from '@/lib/address';
 
 type Service = ReturnType<typeof createServiceClient>;
 
@@ -22,10 +23,16 @@ type Service = ReturnType<typeof createServiceClient>;
 export async function ensureEstablishmentAccount(
   supabase: Service,
   establishmentId: string,
+  /**
+   * Company or sole trader, asked in our own UI just before the embedded form
+   * mounts. Only read on the call that actually creates the account — after
+   * that the account holder owns the answer and edits it through Stripe.
+   */
+  legalForm?: 'company' | 'individual' | null,
 ): Promise<{ accountId: string } | { error: 'not_found' | 'stripe_failed' }> {
   const { data: estab } = await supabase
     .from('establishments')
-    .select('id, name, country, business_type, stripe_account_id, group_id')
+    .select('id, name, address, country, business_type, stripe_account_id, group_id')
     .eq('id', establishmentId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -58,6 +65,8 @@ export async function ensureEstablishmentAccount(
       name: estab.name,
       country: estab.country ?? 'FR',
       businessType: estab.business_type,
+      legalForm,
+      address: parseFrenchAddress(estab.address),
       email,
     });
   } catch (err) {

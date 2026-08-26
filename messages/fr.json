@@ -1381,7 +1381,11 @@
       "exited": "Formulaire terminé ? Cliquez sur « Terminer » pour finaliser votre inscription.",
       "checking": "Vérification auprès de Stripe…",
       "incompleteHint": "Complétez le formulaire ci-dessus pour activer ce bouton.",
-      "recheck": "J'ai terminé — vérifier à nouveau"
+      "recheck": "J'ai terminé — vérifier à nouveau",
+      "legalTitle": "Votre structure juridique",
+      "legalSubtitle": "Pour préremplir la vérification et vous éviter de le ressaisir.",
+      "legalCompany": "Une société (SAS, SARL, SA…)",
+      "legalIndividual": "Une entreprise individuelle ou auto-entreprise"
     }
   }
 }
