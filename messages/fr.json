@@ -1196,7 +1196,13 @@
       "activeBody": "Les avis Google et l'export comptable complet sont activés. Vous pouvez modifier ou résilier votre abonnement à tout moment.",
       "manage": "Gérer mon abonnement",
       "unavailable": "L'abonnement Pro n'est pas encore disponible. Réessayez plus tard.",
-      "failed": "Impossible d'ouvrir la page de paiement. Réessayez dans quelques instants."
+      "failed": "Impossible d'ouvrir la page de paiement. Réessayez dans quelques instants.",
+      "reviewTeaserTitle": "{count, plural, one {# pourboire reçu ce mois-ci} other {# pourboires reçus ce mois-ci}}",
+      "reviewTeaserBody": "Autant de clients qui auraient pu laisser un avis Google. Avec Digitip Pro, l'invitation s'affiche juste après le pourboire — au moment précis où le client est content.",
+      "reviewTeaserCta": "Voir Digitip Pro",
+      "exportTitle": "Export comptable complet",
+      "exportBody": "Le plan gratuit exporte le mois en cours. Digitip Pro ouvre l'historique complet, le journal détaillé, et envoie le relevé chaque mois à votre comptable.",
+      "exportCta": "Passer au Pro"
     }
   },
   "join": {

@@ -1,5 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
+import { hasPro } from '@/lib/billing/entitlements';
+import { getReviewTeaser } from '@/lib/billing/review-teaser';
+import { ProUpsell } from '@/components/billing/ProUpsell';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -49,11 +53,25 @@ export default async function DashboardPage({
       .maybeSingle(),
     supabase
       .from('user_roles')
-      .select('role')
+      .select('role, group_id')
       .eq('user_id', user!.id),
   ]);
 
   const isGroupAdmin = roles?.some((r) => r.role === 'group_admin' || r.role === 'super_admin') ?? false;
+
+  // The Pro teaser is a group-admin concern: nobody else can act on it, and
+  // showing an employee an upsell for their manager's subscription is noise.
+  const adminGroupId =
+    roles?.find((r) => (r.role === 'group_admin' || r.role === 'super_admin') && r.group_id)?.group_id ?? null;
+
+  const reviewTeaser = adminGroupId
+    ? await (async () => {
+        const service = createServiceClient();
+        // Skipped outright for Pro groups — they already have the feature.
+        if (await hasPro(service, adminGroupId)) return null;
+        return getReviewTeaser(service, adminGroupId);
+      })()
+    : null;
 
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
@@ -121,6 +139,18 @@ export default async function DashboardPage({
 
       {staffProfile && staffProfile.onboarding_status === 'complete' && (
         <DigitipCard staffId={staffProfile.id} locale={locale} />
+      )}
+
+      {/* The count is the pitch: every tip this month was a customer who would
+          have been asked for a review at the moment they were demonstrably
+          happy. Shown only when the group actually has a review link and
+          actually took tips — see getReviewTeaser for why both matter. */}
+      {reviewTeaser && (
+        <ProUpsell
+          title={t('pro.reviewTeaserTitle', { count: reviewTeaser.tipCount })}
+          body={t('pro.reviewTeaserBody')}
+          cta={t('pro.reviewTeaserCta')}
+        />
       )}
 
       {/* Group admin without any staff profile yet → invite them to join as staff */}

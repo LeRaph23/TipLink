@@ -1196,7 +1196,13 @@
       "activeBody": "Google reviews and the full payroll export are switched on. You can change or cancel your subscription at any time.",
       "manage": "Manage subscription",
       "unavailable": "Pro isn't available yet. Please try again later.",
-      "failed": "The payment page could not be opened. Try again in a moment."
+      "failed": "The payment page could not be opened. Try again in a moment.",
+      "reviewTeaserTitle": "{count, plural, one {# tip this month} other {# tips this month}}",
+      "reviewTeaserBody": "That's as many customers who could have left a Google review. With Digitip Pro, the invitation shows right after the tip — at the exact moment they're happy.",
+      "reviewTeaserCta": "See Digitip Pro",
+      "exportTitle": "Full accounting export",
+      "exportBody": "The free plan exports the current month. Digitip Pro opens the full history and the detailed journal, and emails the statement to your accountant every month.",
+      "exportCta": "Upgrade to Pro"
     }
   },
   "join": {

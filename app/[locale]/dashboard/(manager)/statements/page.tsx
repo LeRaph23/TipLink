@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { hasPro } from '@/lib/billing/entitlements';
+import { ProUpsell } from '@/components/billing/ProUpsell';
 import { MonthPicker } from './MonthPicker';
 
 export const dynamic = 'force-dynamic';
@@ -49,6 +50,7 @@ export default async function StatementsPage({
   setRequestLocale(locale);
   const sp = await searchParams;
   const t = await getTranslations('dashboard.statements');
+  const tPro = await getTranslations('dashboard.pro');
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -148,13 +150,18 @@ export default async function StatementsPage({
         )}
       </div>
 
-      {/* The free plan exports the current month only, so a manager picking an
-          older month gets an explanation rather than a file that silently
-          ignores their choice. */}
+      {/* The free plan exports the current month only. This used to be a grey
+          sentence stating the limit with nothing to click — a manager who had
+          just picked an older month learned they could not have it and was left
+          there. It is the highest-intent moment in the product, so it carries a
+          way out now. */}
       {!isPro && (
-        <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 14, lineHeight: 1.6 }}>
-          {t('freeLimit')}
-        </p>
+        <ProUpsell
+          title={tPro('exportTitle')}
+          body={tPro('exportBody')}
+          cta={tPro('exportCta')}
+          emphasis="quiet"
+        />
       )}
 
       <div style={{ ...card, overflow: 'hidden' }}>
