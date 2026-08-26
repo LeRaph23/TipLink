@@ -65,6 +65,20 @@ const nextConfig: NextConfig = {
         source: '/(.*)',
         headers: securityHeaders,
       },
+      {
+        // Stripe's Connect components render in an iframe on their own origin,
+        // and are handed this file directly (see components/stripe/
+        // ConnectProvider.tsx). A cross-origin font load is CORS-checked, so
+        // without this header the embedded form silently falls back to a
+        // system font instead of matching the rest of the wizard.
+        source: '/fonts/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          // Content-hashed by nothing, but the file only changes when the brand
+          // font does — and then under a new name.
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
     ];
   },
 };

@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js';
+import {
+  loadConnectAndInitialize,
+  type CustomFontSource,
+  type StripeConnectInstance,
+} from '@stripe/connect-js';
 import { ConnectComponentsProvider } from '@stripe/react-connect-js';
 
 // Connect embedded components render inside a Stripe-hosted iframe, so they
@@ -26,6 +30,39 @@ function cssVar(styles: CSSStyleDeclaration, name: string, fallback: string): st
   return raw.length > 0 ? raw : fallback;
 }
 
+// The font the rest of the wizard is set in.
+//
+// This used to be read from the `--font` custom property, which does not work:
+// custom properties resolve lazily, so `getPropertyValue('--font')` hands back
+// the literal token stream `var(--font-jakarta, …)` rather than the family it
+// resolves to. Inside Stripe's iframe that variable does not exist, the whole
+// declaration is invalid, and the form falls back to the browser default — which
+// is why the embedded onboarding rendered in Times. Naming the family outright
+// is both correct and deterministic.
+const BRAND_FONT_STACK =
+  "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+// next/font serves Plus Jakarta Sans under a hashed, build-specific URL that the
+// iframe has no way to guess, so a stable copy lives in /public/fonts and is
+// handed to Connect.js explicitly. It needs `Access-Control-Allow-Origin` to be
+// readable from Stripe's origin — see the /fonts rule in next.config.ts.
+//
+// One variable woff2 covers the whole range; each entry below pins a weight
+// against that same file, exactly as Google Fonts does for this family. The
+// browser fetches the 27 KB once and instantiates the rest.
+const FONT_FILE = '/fonts/plus-jakarta-sans-latin.woff2';
+const FONT_WEIGHTS = ['400', '500', '600', '700'];
+
+function brandFonts(): CustomFontSource[] {
+  const src = `url(${window.location.origin}${FONT_FILE})`;
+  return FONT_WEIGHTS.map((weight) => ({
+    family: 'Plus Jakarta Sans',
+    src,
+    weight,
+    display: 'swap',
+  }));
+}
+
 function readAppearance(): Appearance {
   const s = getComputedStyle(document.documentElement);
   return {
@@ -38,11 +75,11 @@ function readAppearance(): Appearance {
     buttonPrimaryColorBackground: cssVar(s, '--accent', FALLBACK.colorPrimary),
     buttonPrimaryColorText: '#ffffff',
     formHighlightColorBorder: cssVar(s, '--accent', FALLBACK.colorPrimary),
-    // Matches the wizard's own inputs and buttons (12–14px radii, Plus Jakarta
-    // Sans) so the embedded form does not read as a foreign widget.
+    // Matches the wizard's own inputs and buttons (12–14px radii) so the
+    // embedded form does not read as a foreign widget.
     borderRadius: '12px',
     buttonBorderRadius: '14px',
-    fontFamily: cssVar(s, '--font', 'system-ui, sans-serif'),
+    fontFamily: BRAND_FONT_STACK,
     spacingUnit: '9px',
   };
 }
@@ -100,6 +137,7 @@ export function ConnectProvider({
         publishableKey,
         fetchClientSecret,
         appearance: { variables: readAppearance() },
+        fonts: brandFonts(),
       });
     } catch (err) {
       console.error('[connect] initialisation failed', err);
