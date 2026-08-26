@@ -1190,11 +1190,8 @@ export function OnboardingWizard(props: Props) {
 
             {provisioned && !legalForm && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
                   {t('connect.legalTitle')}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 2 }}>
-                  {t('connect.legalSubtitle')}
                 </div>
                 {[
                   { value: 'company' as const, label: t('connect.legalCompany'), icon: '🏢' },
