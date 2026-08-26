@@ -99,12 +99,33 @@ export async function createStandardAccount(opts: {
 // Note also that tips are separate charges (an *indirect* charge in Stripe's
 // vocabulary): the charge lives on the platform balance, so refunds and
 // chargebacks on tips hit Digitip regardless of `losses.payments`.
+// Stripe asks the account holder to confirm their line of business, and
+// defaults to guessing from the MCC. We already asked — it is the wizard's
+// second question — so answering with the generic "miscellaneous personal
+// services" code puts the question back in front of them for no reason.
+//
+//   5812 — Eating Places, Restaurants
+//   7230 — Beauty and Barber Shops
+//
+// The platform default stays for anything unrecognised: a wrong MCC is worse
+// than a vague one, since it feeds the risk review.
+const MCC_BY_BUSINESS_TYPE: Record<string, string> = {
+  restaurant: '5812',
+  beauty: '7230',
+};
+
 export async function createEstablishmentAccount(opts: {
   establishmentId: string;
   name: string;
   email?: string;
   country?: string;
+  /** The wizard's restaurant/beauty answer, used to pick a precise MCC. */
+  businessType?: string | null;
 }): Promise<string> {
+  const mcc = opts.businessType
+    ? MCC_BY_BUSINESS_TYPE[opts.businessType] ?? CONNECT_BUSINESS_PROFILE.mcc
+    : CONNECT_BUSINESS_PROFILE.mcc;
+
   const account = await stripe.accounts.create(
     {
       country: (opts.country ?? 'FR').toUpperCase(),
@@ -123,6 +144,7 @@ export async function createEstablishmentAccount(opts: {
       },
       business_profile: {
         ...CONNECT_BUSINESS_PROFILE,
+        mcc,
         name: opts.name,
       },
       // Weekly rather than Stripe's default daily rolling payouts: Connect

@@ -1325,10 +1325,17 @@ export function OnboardingWizard(props: Props) {
           <button
             type="button"
             onClick={next}
-            disabled={!canAdvance() || reviewBlocking}
-            style={{ ...btnPrimary, opacity: (canAdvance() && !reviewBlocking) ? 1 : 0.4 }}
+            // `submitting` matters on the step before Connect: that transition
+            // provisions the whole account server-side, which takes seconds. The
+            // button used to sit there looking idle and clickable throughout, so
+            // the wizard read as frozen.
+            disabled={!canAdvance() || reviewBlocking || submitting}
+            style={{
+              ...btnPrimary,
+              opacity: (canAdvance() && !reviewBlocking && !submitting) ? 1 : 0.4,
+            }}
           >
-            {t('continue')}
+            {submitting ? t('creating') : t('continue')}
           </button>
         )}
 

@@ -25,7 +25,7 @@ export async function ensureEstablishmentAccount(
 ): Promise<{ accountId: string } | { error: 'not_found' | 'stripe_failed' }> {
   const { data: estab } = await supabase
     .from('establishments')
-    .select('id, name, country, stripe_account_id, group_id')
+    .select('id, name, country, business_type, stripe_account_id, group_id')
     .eq('id', establishmentId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -57,6 +57,7 @@ export async function ensureEstablishmentAccount(
       establishmentId: estab.id,
       name: estab.name,
       country: estab.country ?? 'FR',
+      businessType: estab.business_type,
       email,
     });
   } catch (err) {
