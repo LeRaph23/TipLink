@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
@@ -380,6 +380,15 @@ export function OnboardingWizard(props: Props) {
   // staff profile of their own.
   const [wantsTips, setWantsTips] = useState<boolean | null>(null);
 
+  // The auth user created by a previous provisioning attempt.
+  //
+  // Sign-up and the server action are two steps, and only the second one is
+  // rolled back on failure. Without this, retrying after a failure that struck
+  // between them replays signUp() against an address that now exists, and the
+  // manager is stuck on "un compte existe déjà" with no way to finish. A ref,
+  // not state: the retry reads it in the same tick it is written.
+  const createdUserId = useRef<string | null>(null);
+
   // Set once the group / establishment / roles exist, which is what the Connect
   // step needs before it can attach a Stripe account to anything.
   const [provisioned, setProvisioned] = useState<{
@@ -495,27 +504,34 @@ export function OnboardingWizard(props: Props) {
 
     try {
     if (mode === 'scan') {
-      // 1. Create Supabase account client-side
-      const supabase = createClient();
-      const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/login?verified=true`)}`;
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-        email: state.adminEmail,
-        password: state.password,
-        options: {
-          data: { full_name: state.adminFullName },
-          emailRedirectTo: redirectTo,
-        },
-      });
+      // 1. Create the Supabase account client-side, unless a previous attempt
+      //    already did (see createdUserId).
+      let userId = createdUserId.current;
+      if (!userId) {
+        const supabase = createClient();
+        const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/login?verified=true`)}`;
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: state.adminEmail,
+          password: state.password,
+          options: {
+            data: { full_name: state.adminFullName },
+            emailRedirectTo: redirectTo,
+          },
+        });
 
-      if (signUpErr || !signUpData.user) {
-        setError(signUpErr ? mapAuthError(signUpErr.message, tAuth) : tAuth('errorGeneric'));
-        setSubmitting(false);
-        return;
+        if (signUpErr || !signUpData.user) {
+          setError(signUpErr ? mapAuthError(signUpErr.message, tAuth) : tAuth('errorGeneric'));
+          setSubmitting(false);
+          setProvisioning(false);
+          return;
+        }
+        userId = signUpData.user.id;
+        createdUserId.current = userId;
       }
 
       // 2. Call server action — passes userId so it works even before email confirmation
       const result = await completeNfcOnboarding({
-        userId: signUpData.user.id,
+        userId,
         nfcCodes: state.nfcCodes,
         establishmentName: state.establishmentName,
         address: state.address,
@@ -543,21 +559,27 @@ export function OnboardingWizard(props: Props) {
       });
     } else if (mode === 'express') {
       // Express flow: account created here, group already exists in DB
-      const supabase = createClient();
-      const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/login?verified=true`)}`;
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-        email: state.adminEmail,
-        password: state.password,
-        options: {
-          data: { full_name: state.adminFullName },
-          emailRedirectTo: redirectTo,
-        },
-      });
+      let userId = createdUserId.current;
+      if (!userId) {
+        const supabase = createClient();
+        const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/login?verified=true`)}`;
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: state.adminEmail,
+          password: state.password,
+          options: {
+            data: { full_name: state.adminFullName },
+            emailRedirectTo: redirectTo,
+          },
+        });
 
-      if (signUpErr) {
-        setError(mapAuthError(signUpErr.message, tAuth));
-        setSubmitting(false);
-        return;
+        if (signUpErr) {
+          setError(mapAuthError(signUpErr.message, tAuth));
+          setSubmitting(false);
+          setProvisioning(false);
+          return;
+        }
+        userId = signUpData.user?.id ?? null;
+        createdUserId.current = userId;
       }
 
       // Run the express onboarding action up-front so the group_admin role is
@@ -574,7 +596,7 @@ export function OnboardingWizard(props: Props) {
         colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         businessType: state.businessType,
         locale: locale as 'fr' | 'en',
-        userId: signUpData.user?.id,
+        userId: userId ?? undefined,
       });
 
       if ('error' in result) {
