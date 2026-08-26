@@ -28,7 +28,9 @@ import { syncEstablishmentAccountStatus } from '@/lib/stripe/establishment-accou
  */
 export type ProvisionResult =
   | { success: true; establishmentId: string; onboardingToken?: string }
-  | { error: string };
+  // `code` lets the wizard react to a failure it can route around, rather than
+  // only display it. The localized `error` stays the thing shown either way.
+  | { error: string; code?: 'smart_tag_taken' };
 
 // Shared review-link fields collected by the onboarding wizard's Google step.
 const GoogleReviewFields = {
@@ -482,7 +484,14 @@ export async function completeNfcOnboarding(
     // Roll back everything — the user must restart with valid codes.
     await service.from('establishments').update({ deleted_at: new Date().toISOString() }).eq('id', est.id);
     await service.from('groups').update({ deleted_at: new Date().toISOString() }).eq('id', group.id);
-    return actionError('validation', `invalid/duplicate codes: ${missing.join(', ')}`, 'completeNfcOnboarding.codes');
+    // Not 'validation': the codes step already checked these against
+    // resolve_sticker_establishment, so reaching here means a tag was claimed
+    // in the meantime or belongs to someone else. "Check your entry" would send
+    // the manager hunting for a typo on a step that has no field to correct.
+    return {
+      ...(await actionError('smartTagTaken', `unclaimable codes: ${missing.join(', ')}`, 'completeNfcOnboarding.codes')),
+      code: 'smart_tag_taken' as const,
+    };
   }
 
   // Create group_admin role for the new user

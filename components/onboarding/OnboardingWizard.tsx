@@ -653,6 +653,12 @@ export function OnboardingWizard(props: Props) {
       });
 
       if ('error' in result) {
+        // An unusable SmartTag is the one provisioning failure the manager can
+        // act on, and the codes step is the only place it can be acted on — so
+        // land them there rather than leaving the message on a step whose only
+        // controls are "continue" and "back". goTo clears the error, hence the
+        // ordering: both calls batch into one render, and the last write wins.
+        if (result.code === 'smart_tag_taken') goTo('codes');
         setError(result.error);
         setSubmitting(false);
         setProvisioning(false);

@@ -59,7 +59,8 @@
     "unknown": "Une erreur est survenue. Réessayez.",
     "network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
     "initFailed": "Impossible de démarrer le paiement. Réessayez.",
-    "staffPendingTips": "Ce membre a des paiements en attente. Réessayez une fois qu'ils sont réglés."
+    "staffPendingTips": "Ce membre a des paiements en attente. Réessayez une fois qu'ils sont réglés.",
+    "smartTagTaken": "Ce SmartTag est déjà rattaché à un établissement. Si c'est le vôtre, connectez-vous à votre compte ; sinon, contactez-nous."
   },
   "legal": {
     "lastUpdated": "Dernière mise à jour",
