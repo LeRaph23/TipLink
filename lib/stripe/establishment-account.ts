@@ -9,6 +9,7 @@ import {
 import type { createServiceClient } from '@/lib/supabase/service';
 import { establishmentTipTag, staffTipTag } from '@/lib/cache/pay-tags';
 import { parseFrenchAddress } from '@/lib/address';
+import { getPlaceContactDetails, resolveGooglePlaceId } from '@/lib/google-places';
 
 type Service = ReturnType<typeof createServiceClient>;
 
@@ -32,7 +33,9 @@ export async function ensureEstablishmentAccount(
 ): Promise<{ accountId: string } | { error: 'not_found' | 'stripe_failed' }> {
   const { data: estab } = await supabase
     .from('establishments')
-    .select('id, name, address, country, business_type, stripe_account_id, group_id')
+    .select(
+      'id, name, address, country, business_type, google_place_id, google_review_url, stripe_account_id, group_id',
+    )
     .eq('id', establishmentId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -40,8 +43,11 @@ export async function ensureEstablishmentAccount(
   if (!estab) return { error: 'not_found' };
   if (estab.stripe_account_id) return { accountId: estab.stripe_account_id };
 
-  // Prefill the manager's email so Stripe doesn't ask for what we already know.
+  // Prefill the manager's name and email so Stripe doesn't ask for what we
+  // already know. For a sole trader these are the account holder's own details;
+  // for a company they are only the contact.
   let email: string | undefined;
+  let fullName: string | undefined;
   const { data: adminRole } = await supabase
     .from('user_roles')
     .select('user_id')
@@ -53,10 +59,19 @@ export async function ensureEstablishmentAccount(
     try {
       const { data } = await supabase.auth.admin.getUserById(adminRole.user_id);
       email = data.user?.email ?? undefined;
+      const name = data.user?.user_metadata?.full_name;
+      fullName = typeof name === 'string' && name.trim() ? name.trim() : undefined;
     } catch {
       /* prefill only — never block account creation on this */
     }
   }
+
+  // The establishment's own website and phone, straight from the Google listing
+  // the manager already picked during onboarding. Stripe's business website
+  // field wants the connected account's own presence, and this is the only
+  // place we know it — asking again would be asking twice.
+  const placeId = resolveGooglePlaceId(estab.google_place_id, estab.google_review_url);
+  const contact = placeId ? await getPlaceContactDetails(placeId) : null;
 
   let accountId: string;
   try {
@@ -67,7 +82,10 @@ export async function ensureEstablishmentAccount(
       businessType: estab.business_type,
       legalForm,
       address: parseFrenchAddress(estab.address),
+      websiteUrl: contact?.websiteUri ?? null,
+      phone: contact?.phoneNumber ?? null,
       email,
+      fullName,
     });
   } catch (err) {
     console.error('[connect] establishment account creation failed', { establishmentId, err });

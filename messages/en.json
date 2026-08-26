@@ -1390,7 +1390,6 @@
       "incompleteHint": "Complete the form above to enable this button.",
       "recheck": "I'm done — check again",
       "legalTitle": "Your legal structure",
-      "legalSubtitle": "So the verification comes prefilled and you don't type it twice.",
       "legalCompany": "A company (SAS, SARL, SA…)",
       "legalIndividual": "A sole trader or self-employed business"
     }
