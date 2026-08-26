@@ -1377,7 +1377,10 @@
       "preparing": "Préparation de votre compte de paiement…",
       "loadFailed": "Impossible de charger le formulaire de vérification. Rechargez la page ou réessayez dans quelques instants.",
       "incomplete": "Le formulaire de vérification n'est pas encore complété. Terminez-le ci-dessus pour finaliser votre inscription.",
-      "exited": "Formulaire terminé ? Cliquez sur « Terminer » pour finaliser votre inscription."
+      "exited": "Formulaire terminé ? Cliquez sur « Terminer » pour finaliser votre inscription.",
+      "checking": "Vérification auprès de Stripe…",
+      "incompleteHint": "Complétez le formulaire ci-dessus pour activer ce bouton.",
+      "recheck": "J'ai terminé — vérifier à nouveau"
     }
   }
 }

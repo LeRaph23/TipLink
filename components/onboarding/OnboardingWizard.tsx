@@ -44,6 +44,9 @@ interface WizardState {
   colleagues: Colleague[];
 }
 
+/** How far Stripe says the establishment's account has got. */
+type ConnectReadiness = 'unknown' | 'checking' | 'incomplete' | 'submitted';
+
 type ScanStep = 'codes' | 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'connect';
 type AuthStep = 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'team' | 'tips-opt-in' | 'connect';
 type ExpressStep = 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'connect';
@@ -403,6 +406,19 @@ export function OnboardingWizard(props: Props) {
   // hint that it is worth re-asking Stripe — never proof of completion.
   const [connectExited, setConnectExited] = useState(false);
 
+  // What Stripe actually says about the establishment's account.
+  //
+  // 'unknown' covers both "not asked yet" and "the check failed", and both let
+  // the finish button through on purpose: finalizeOnboarding re-reads Stripe
+  // server-side and refuses a half-finished account anyway, so a failed poll
+  // must never be the thing that strands a manager on the last step. Disabling
+  // the button is a courtesy on top of that gate, not the gate itself.
+  //
+  // Starts at 'checking' so the last step never flashes an enabled button in the
+  // window before the first answer comes back.
+  const [connectReady, setConnectReady] =
+    useState<ConnectReadiness>('checking');
+
   const goTo = useCallback(
     (step: string) => {
       setError(null);
@@ -480,6 +496,49 @@ export function OnboardingWizard(props: Props) {
     const s = steps[stepIndex - 1];
     if (s) goTo(s);
   };
+
+  /**
+   * Asks our server what Stripe thinks of the account, so the last step can
+   * tell "the form is still half-filled" apart from "ready to finish".
+   *
+   * Deliberately not driven by the embedded component's own completion
+   * callback: anything the browser claims about its own progress can be faked
+   * from the console, and this decides whether onboarding may close.
+   */
+  const fetchConnectStatus = useCallback(async (): Promise<ConnectReadiness> => {
+    if (!provisioned) return 'unknown';
+    try {
+      const q = new URLSearchParams({ establishmentId: provisioned.establishmentId });
+      if (provisioned.onboardingToken) q.set('token', provisioned.onboardingToken);
+      const res = await fetch(`/api/stripe/account-session?${q.toString()}`);
+      if (!res.ok) return 'unknown';
+      const data = (await res.json()) as { detailsSubmitted?: boolean };
+      return data.detailsSubmitted ? 'submitted' : 'incomplete';
+    } catch {
+      return 'unknown';
+    }
+  }, [provisioned]);
+
+  // Ask on arrival, and again every time the embedded form reports an exit. The
+  // state is set from the promise callback rather than the effect body so this
+  // reads as subscribing to an external system, not as a cascading render.
+  useEffect(() => {
+    if (currentStep !== 'connect' || !provisioned) return;
+    let cancelled = false;
+    void fetchConnectStatus().then((status) => {
+      if (!cancelled) setConnectReady(status);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStep, provisioned, connectExited, fetchConnectStatus]);
+
+  // Same question, asked by hand: the embedded form does not reliably announce
+  // that it is finished, so the manager needs a way to re-ask without reloading.
+  async function recheckConnectStatus() {
+    setConnectReady('checking');
+    setConnectReady(await fetchConnectStatus());
+  }
 
   /**
    * Creates everything on our side — group, establishment, roles, colleagues —
@@ -823,6 +882,10 @@ export function OnboardingWizard(props: Props) {
   // Steps whose body is tall and cannot shrink; the header is tightened so the
   // step still fits one phone screen. See the header comment below.
   const dense = currentStep === 'review-intro';
+  // Stripe has not been told enough yet — finishing would only earn a rejection
+  // from finalizeOnboarding, so the button says so instead of inviting the click.
+  const connectBlocking =
+    currentStep === 'connect' && (connectReady === 'incomplete' || connectReady === 'checking');
 
   function renderStepBody() {
     switch (currentStep) {
@@ -1081,7 +1144,7 @@ export function OnboardingWizard(props: Props) {
               />
             )}
 
-            {connectExited && (
+            {connectExited && connectReady !== 'incomplete' && connectReady !== 'checking' && (
               <p style={{
                 marginTop: 14, fontSize: 12.5, color: 'var(--text-3)',
                 textAlign: 'center', lineHeight: 1.6,
@@ -1175,14 +1238,48 @@ export function OnboardingWizard(props: Props) {
       {/* Navigation */}
       <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {isLastStep ? (
-          <button
-            type="button"
-            onClick={() => handleFinish()}
-            disabled={submitting || !canAdvance()}
-            style={{ ...btnPrimary, opacity: (submitting || !canAdvance()) ? 0.5 : 1 }}
-          >
-            {submitting ? t('finishing') : t('finish')}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => handleFinish()}
+              disabled={submitting || !canAdvance() || connectBlocking}
+              style={{
+                ...btnPrimary,
+                opacity: (submitting || !canAdvance() || connectBlocking) ? 0.5 : 1,
+                cursor: connectBlocking ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {submitting ? t('finishing') : t('finish')}
+            </button>
+
+            {currentStep === 'connect' && connectReady === 'checking' && (
+              <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
+                {t('connect.checking')}
+              </p>
+            )}
+
+            {currentStep === 'connect' && connectReady === 'incomplete' && (
+              <>
+                <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
+                  {t('connect.incompleteHint')}
+                </p>
+                {/* The embedded form does not always announce that it is done,
+                    so there has to be a way to re-ask without reloading. */}
+                <button
+                  type="button"
+                  onClick={() => void recheckConnectStatus()}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--text-3)',
+                    fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+                    textDecoration: 'underline', textUnderlineOffset: 3,
+                    textAlign: 'center', padding: 0,
+                  }}
+                >
+                  {t('connect.recheck')}
+                </button>
+              </>
+            )}
+          </>
         ) : (
           <button
             type="button"

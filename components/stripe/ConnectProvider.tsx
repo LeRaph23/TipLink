@@ -26,6 +26,23 @@ function cssVar(styles: CSSStyleDeclaration, name: string, fallback: string): st
   return raw.length > 0 ? raw : fallback;
 }
 
+// Custom properties resolve lazily: `getPropertyValue('--font')` hands back the
+// literal token stream — `var(--font-jakarta, 'Plus Jakarta Sans', …)` — not the
+// family it eventually resolves to. Inside Stripe's iframe `--font-jakarta` does
+// not exist, so the whole declaration is invalid and the form falls back to the
+// browser default, which is a serif. That is why the embedded onboarding used to
+// render in Times while the rest of the wizard was Plus Jakarta Sans.
+//
+// Reading `font-family` off <body> instead gives a stack that is already
+// resolved. Its first entries are next/font's generated names, which mean
+// nothing in the iframe and are skipped harmlessly; what matters is that a real
+// family — `-apple-system` and friends — now terminates the list.
+function resolveFontStack(): string {
+  const computed = getComputedStyle(document.body).fontFamily.trim();
+  if (computed.length > 0 && !computed.includes('var(')) return computed;
+  return "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+}
+
 function readAppearance(): Appearance {
   const s = getComputedStyle(document.documentElement);
   return {
@@ -38,11 +55,11 @@ function readAppearance(): Appearance {
     buttonPrimaryColorBackground: cssVar(s, '--accent', FALLBACK.colorPrimary),
     buttonPrimaryColorText: '#ffffff',
     formHighlightColorBorder: cssVar(s, '--accent', FALLBACK.colorPrimary),
-    // Matches the wizard's own inputs and buttons (12–14px radii, Plus Jakarta
-    // Sans) so the embedded form does not read as a foreign widget.
+    // Matches the wizard's own inputs and buttons (12–14px radii) so the
+    // embedded form does not read as a foreign widget.
     borderRadius: '12px',
     buttonBorderRadius: '14px',
-    fontFamily: cssVar(s, '--font', 'system-ui, sans-serif'),
+    fontFamily: resolveFontStack(),
     spacingUnit: '9px',
   };
 }

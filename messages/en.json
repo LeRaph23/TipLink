@@ -1377,7 +1377,10 @@
       "preparing": "Setting up your payment account…",
       "loadFailed": "The verification form could not be loaded. Reload the page or try again in a moment.",
       "incomplete": "The verification form isn't finished yet. Complete it above to finish signing up.",
-      "exited": "All done above? Hit “Finish” to complete your setup."
+      "exited": "All done above? Hit “Finish” to complete your setup.",
+      "checking": "Checking with Stripe…",
+      "incompleteHint": "Complete the form above to enable this button.",
+      "recheck": "I'm done — check again"
     }
   }
 }
