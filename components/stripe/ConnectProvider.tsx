@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js';
+import {
+  loadConnectAndInitialize,
+  type CustomFontSource,
+  type StripeConnectInstance,
+} from '@stripe/connect-js';
 import { ConnectComponentsProvider } from '@stripe/react-connect-js';
 
 // Connect embedded components render inside a Stripe-hosted iframe, so they
@@ -26,21 +30,37 @@ function cssVar(styles: CSSStyleDeclaration, name: string, fallback: string): st
   return raw.length > 0 ? raw : fallback;
 }
 
-// Custom properties resolve lazily: `getPropertyValue('--font')` hands back the
-// literal token stream — `var(--font-jakarta, 'Plus Jakarta Sans', …)` — not the
-// family it eventually resolves to. Inside Stripe's iframe `--font-jakarta` does
-// not exist, so the whole declaration is invalid and the form falls back to the
-// browser default, which is a serif. That is why the embedded onboarding used to
-// render in Times while the rest of the wizard was Plus Jakarta Sans.
+// The font the rest of the wizard is set in.
 //
-// Reading `font-family` off <body> instead gives a stack that is already
-// resolved. Its first entries are next/font's generated names, which mean
-// nothing in the iframe and are skipped harmlessly; what matters is that a real
-// family — `-apple-system` and friends — now terminates the list.
-function resolveFontStack(): string {
-  const computed = getComputedStyle(document.body).fontFamily.trim();
-  if (computed.length > 0 && !computed.includes('var(')) return computed;
-  return "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+// This used to be read from the `--font` custom property, which does not work:
+// custom properties resolve lazily, so `getPropertyValue('--font')` hands back
+// the literal token stream `var(--font-jakarta, …)` rather than the family it
+// resolves to. Inside Stripe's iframe that variable does not exist, the whole
+// declaration is invalid, and the form falls back to the browser default — which
+// is why the embedded onboarding rendered in Times. Naming the family outright
+// is both correct and deterministic.
+const BRAND_FONT_STACK =
+  "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+// next/font serves Plus Jakarta Sans under a hashed, build-specific URL that the
+// iframe has no way to guess, so a stable copy lives in /public/fonts and is
+// handed to Connect.js explicitly. It needs `Access-Control-Allow-Origin` to be
+// readable from Stripe's origin — see the /fonts rule in next.config.ts.
+//
+// One variable woff2 covers the whole range; each entry below pins a weight
+// against that same file, exactly as Google Fonts does for this family. The
+// browser fetches the 27 KB once and instantiates the rest.
+const FONT_FILE = '/fonts/plus-jakarta-sans-latin.woff2';
+const FONT_WEIGHTS = ['400', '500', '600', '700'];
+
+function brandFonts(): CustomFontSource[] {
+  const src = `url(${window.location.origin}${FONT_FILE})`;
+  return FONT_WEIGHTS.map((weight) => ({
+    family: 'Plus Jakarta Sans',
+    src,
+    weight,
+    display: 'swap',
+  }));
 }
 
 function readAppearance(): Appearance {
@@ -59,7 +79,7 @@ function readAppearance(): Appearance {
     // embedded form does not read as a foreign widget.
     borderRadius: '12px',
     buttonBorderRadius: '14px',
-    fontFamily: resolveFontStack(),
+    fontFamily: BRAND_FONT_STACK,
     spacingUnit: '9px',
   };
 }
@@ -117,6 +137,7 @@ export function ConnectProvider({
         publishableKey,
         fetchClientSecret,
         appearance: { variables: readAppearance() },
+        fonts: brandFonts(),
       });
     } catch (err) {
       console.error('[connect] initialisation failed', err);

@@ -519,17 +519,58 @@ export function OnboardingWizard(props: Props) {
     }
   }, [provisioned]);
 
-  // Ask on arrival, and again every time the embedded form reports an exit. The
-  // state is set from the promise callback rather than the effect body so this
-  // reads as subscribing to an external system, not as a cascading render.
+  // Ask on arrival, then keep asking until Stripe says the form was submitted.
+  //
+  // Polling rather than waiting for a click: the embedded component finishes
+  // inside its own iframe and does not reliably tell us so, and a manager who
+  // has just filled in a KYC form should find the way out already open rather
+  // than have to hunt for a "check again" link. The state is set from callbacks
+  // rather than the effect body so this stays a subscription to an external
+  // system instead of a cascading render.
   useEffect(() => {
     if (currentStep !== 'connect' || !provisioned) return;
     let cancelled = false;
-    void fetchConnectStatus().then((status) => {
-      if (!cancelled) setConnectReady(status);
-    });
+    let polls = 0;
+    // Submitted is terminal for this step, so the loop stops asking.
+    let settled = false;
+
+    const read = () => {
+      void fetchConnectStatus().then((status) => {
+        if (cancelled) return;
+        setConnectReady(status);
+        if (status === 'submitted') settled = true;
+      });
+    };
+
+    read();
+
+    // GET /api/stripe/account-session allows 10 calls a minute per IP and each
+    // one reaches Stripe, so this stays well under that and only runs while the
+    // tab is in front. POLL_CAP stops an abandoned tab polling for ever; the
+    // manual re-check below is the way back after that.
+    const POLL_MS = 10_000;
+    const POLL_CAP = 40;
+    const timer = setInterval(() => {
+      if (settled || polls >= POLL_CAP) {
+        clearInterval(timer);
+        return;
+      }
+      if (document.visibilityState !== 'visible') return;
+      polls += 1;
+      read();
+    }, POLL_MS);
+
+    // Coming back from another tab or app — fetching an ID document, say — is
+    // the moment the answer is most likely to have changed.
+    const onVisible = () => {
+      if (!settled && document.visibilityState === 'visible') read();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [currentStep, provisioned, connectExited, fetchConnectStatus]);
 
@@ -1333,7 +1374,12 @@ export function OnboardingWizard(props: Props) {
           </button>
         )}
 
-        {stepIndex > 0 && (
+        {/* No way back out of the Connect step. Everything the earlier steps
+            collected has already been written by the time it is reached, and
+            provisionThenAdvance short-circuits on the second pass — so going
+            back, editing, and coming forward again silently discards the edit.
+            An exit that quietly loses work is worse than no exit. */}
+        {stepIndex > 0 && currentStep !== 'connect' && (
           <button
             type="button"
             onClick={back}
