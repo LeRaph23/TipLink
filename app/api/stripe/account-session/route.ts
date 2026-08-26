@@ -20,6 +20,9 @@ const BodySchema = z.object({
   // has a session (scan and express modes sign the user out pending email
   // confirmation). Omitted when an authenticated admin is calling.
   token: z.string().min(8).max(512).optional(),
+  // Company or sole trader, asked in our own UI rather than left to Stripe's
+  // embedded form. Only consulted on the request that creates the account.
+  legalForm: z.enum(['company', 'individual']).optional(),
 });
 
 /**
@@ -121,7 +124,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
   }
-  const { establishmentId, token } = parsed.data;
+  const { establishmentId, token, legalForm } = parsed.data;
 
   const supabase = createServiceClient();
 
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const ensured = await ensureEstablishmentAccount(supabase, establishmentId);
+  const ensured = await ensureEstablishmentAccount(supabase, establishmentId, legalForm);
   if ('error' in ensured) {
     const status = ensured.error === 'not_found' ? 404 : 502;
     return NextResponse.json({ error: ensured.error }, { status });

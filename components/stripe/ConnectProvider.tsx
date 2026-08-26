@@ -88,6 +88,11 @@ type Props = {
   establishmentId: string;
   /** Signed onboarding token, for wizard steps that run without a session. */
   token?: string;
+  /**
+   * Company or sole trader. Forwarded on every session request but only read by
+   * the one that creates the account, which is this component mounting.
+   */
+  legalForm?: 'company' | 'individual';
   children: React.ReactNode;
   /** Rendered when Connect.js cannot be initialised at all. */
   errorFallback?: React.ReactNode;
@@ -108,6 +113,7 @@ type Props = {
 export function ConnectProvider({
   establishmentId,
   token,
+  legalForm,
   children,
   errorFallback = null,
 }: Props) {
@@ -117,13 +123,17 @@ export function ConnectProvider({
     const res = await fetch('/api/stripe/account-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ establishmentId, ...(token ? { token } : {}) }),
+      body: JSON.stringify({
+        establishmentId,
+        ...(token ? { token } : {}),
+        ...(legalForm ? { legalForm } : {}),
+      }),
     });
     if (!res.ok) throw new Error(`account-session failed with ${res.status}`);
     const data = (await res.json()) as { clientSecret?: string };
     if (!data.clientSecret) throw new Error('account-session returned no client secret');
     return data.clientSecret;
-  }, [establishmentId, token]);
+  }, [establishmentId, token, legalForm]);
 
   // Initialised once per establishment, during render. Re-creating the instance
   // would tear down a half-filled onboarding form, so `fetchClientSecret` is

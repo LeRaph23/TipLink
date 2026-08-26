@@ -7,6 +7,8 @@ type Props = {
   establishmentId: string;
   /** Signed onboarding token, for wizard steps that run without a session. */
   token?: string;
+  /** Company or sole trader, collected in our own UI and prefilled on the account. */
+  legalForm?: 'company' | 'individual';
   /** Fired when the account holder finishes (or leaves) the embedded form. */
   onExit?: () => void;
   errorFallback?: React.ReactNode;
@@ -23,11 +25,12 @@ type Props = {
  * server-side. It is never treated as proof that onboarding is done, because
  * anything the browser reports about its own completion can be faked.
  */
-export function EstablishmentOnboarding({ establishmentId, token, onExit, errorFallback }: Props) {
+export function EstablishmentOnboarding({ establishmentId, token, legalForm, onExit, errorFallback }: Props) {
   return (
     <ConnectProvider
       establishmentId={establishmentId}
       token={token}
+      legalForm={legalForm}
       errorFallback={errorFallback}
     >
       <ConnectAccountOnboarding

@@ -1264,6 +1264,7 @@
     "skip": "Skip this step",
     "finish": "Finish setup →",
     "finishing": "Finalizing…",
+    "creating": "Creating your account…",
     "back": "← Back",
     "fillField": "Fill in this field to continue.",
     "done": {
@@ -1380,7 +1381,11 @@
       "exited": "All done above? Hit “Finish” to complete your setup.",
       "checking": "Checking with Stripe…",
       "incompleteHint": "Complete the form above to enable this button.",
-      "recheck": "I'm done — check again"
+      "recheck": "I'm done — check again",
+      "legalTitle": "Your legal structure",
+      "legalSubtitle": "So the verification comes prefilled and you don't type it twice.",
+      "legalCompany": "A company (SAS, SARL, SA…)",
+      "legalIndividual": "A sole trader or self-employed business"
     }
   }
 }

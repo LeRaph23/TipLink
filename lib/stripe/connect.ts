@@ -99,16 +99,70 @@ export async function createStandardAccount(opts: {
 // Note also that tips are separate charges (an *indirect* charge in Stripe's
 // vocabulary): the charge lives on the platform balance, so refunds and
 // chargebacks on tips hit Digitip regardless of `losses.payments`.
+// Stripe asks the account holder to confirm their line of business, and
+// defaults to guessing from the MCC. We already asked — it is the wizard's
+// second question — so answering with the generic "miscellaneous personal
+// services" code puts the question back in front of them for no reason.
+//
+//   5812 — Eating Places, Restaurants
+//   7230 — Beauty and Barber Shops
+//
+// The platform default stays for anything unrecognised: a wrong MCC is worse
+// than a vague one, since it feeds the risk review.
+const MCC_BY_BUSINESS_TYPE: Record<string, string> = {
+  restaurant: '5812',
+  beauty: '7230',
+};
+
 export async function createEstablishmentAccount(opts: {
   establishmentId: string;
   name: string;
   email?: string;
   country?: string;
+  /** The wizard's restaurant/beauty answer, used to pick a precise MCC. */
+  businessType?: string | null;
+  /** Company or sole trader, asked in our own UI on the Connect step. */
+  legalForm?: 'company' | 'individual' | null;
+  /** The establishment's address, split into the fields Stripe asks for. */
+  address?: { line1: string; postalCode: string; city: string } | null;
 }): Promise<string> {
+  const mcc = opts.businessType
+    ? MCC_BY_BUSINESS_TYPE[opts.businessType] ?? CONNECT_BUSINESS_PROFILE.mcc
+    : CONNECT_BUSINESS_PROFILE.mcc;
+
+  const country = (opts.country ?? 'FR').toUpperCase();
+
+  // Stripe skips a question exactly when the answer is already on the account,
+  // and it files the address under `company` or `individual` depending on the
+  // business type — which is why asking company-or-sole-trader in our own UI is
+  // what unlocks prefilling the address at all. Without that answer there is no
+  // hash to put it in, and sending the wrong one is worse than sending nothing.
+  const address = opts.address
+    ? {
+        line1: opts.address.line1,
+        postal_code: opts.address.postalCode,
+        city: opts.address.city,
+        country,
+      }
+    : undefined;
+
+  const identity: Partial<Stripe.AccountCreateParams> = {};
+  if (opts.legalForm === 'company') {
+    identity.business_type = 'company';
+    identity.company = { name: opts.name, ...(address ? { address } : {}) };
+  } else if (opts.legalForm === 'individual') {
+    identity.business_type = 'individual';
+    // No name here: an individual's legal name is their own, not the trading
+    // name the wizard collected, and guessing it wrong sends the manager into a
+    // verification mismatch.
+    if (address) identity.individual = { address };
+  }
+
   const account = await stripe.accounts.create(
     {
-      country: (opts.country ?? 'FR').toUpperCase(),
+      country,
       ...(opts.email ? { email: opts.email } : {}),
+      ...identity,
       controller: {
         stripe_dashboard: { type: 'none' },
         requirement_collection: 'stripe',
@@ -123,6 +177,7 @@ export async function createEstablishmentAccount(opts: {
       },
       business_profile: {
         ...CONNECT_BUSINESS_PROFILE,
+        mcc,
         name: opts.name,
       },
       // Weekly rather than Stripe's default daily rolling payouts: Connect

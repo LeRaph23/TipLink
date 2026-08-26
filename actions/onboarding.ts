@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendStaffInviteLink } from '@/lib/staff-invite';
@@ -73,6 +74,39 @@ const ColleagueSchema = z.object({
   fullName: z.string().min(1).max(200),
   email: z.string().email().optional().or(z.literal('')),
 });
+
+/**
+ * Queues the colleagues' staff profiles and invite emails to run once the
+ * response is out.
+ *
+ * Each invite is a Supabase insert plus an email send, and awaiting them was
+ * the bulk of the wait between the last question and the Connect step — a
+ * manager who invited four colleagues paid four round trips to the mail
+ * provider before the page moved. Nothing downstream reads these rows: the
+ * wizard only needs the establishment id, and the Connect step only cares about
+ * Stripe. Failures are already swallowed per-colleague (allSettled), so moving
+ * them off the critical path changes no outcome, only when it happens.
+ */
+function inviteColleaguesAfterResponse(
+  service: ReturnType<typeof createServiceClient>,
+  colleagues: Array<{ fullName: string; email?: string }>,
+  ctx: { establishmentId: string; establishmentName: string; locale: 'fr' | 'en' },
+) {
+  if (colleagues.length === 0) return;
+  after(async () => {
+    await Promise.allSettled(
+      colleagues.map((c) =>
+        addColleague(service, {
+          fullName: c.fullName,
+          email: c.email,
+          establishmentId: ctx.establishmentId,
+          establishmentName: ctx.establishmentName,
+          locale: ctx.locale,
+        }),
+      ),
+    );
+  });
+}
 
 async function addColleague(
   service: ReturnType<typeof createServiceClient>,
@@ -194,14 +228,11 @@ export async function completePostPurchaseOnboarding(
   // Update auth user display name
   await supabase.auth.updateUser({ data: { full_name: adminFullName } });
 
-  // Invite colleagues (best-effort, don't block on failure)
-  if (colleagues.length > 0) {
-    await Promise.allSettled(
-      colleagues.map((c) =>
-        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, establishmentName, locale })
-      )
-    );
-  }
+  inviteColleaguesAfterResponse(service, colleagues, {
+    establishmentId: est.id,
+    establishmentName,
+    locale,
+  });
 
   // Auto-assign encoded SmartTags from this group's orders to the establishment
   const { data: orderIds } = await service
@@ -336,14 +367,11 @@ export async function completeExpressOnboarding(
     await service.auth.admin.updateUserById(user.id, { user_metadata: { full_name: adminFullName } });
   }
 
-  // Invite colleagues (best-effort)
-  if (colleagues.length > 0) {
-    await Promise.allSettled(
-      colleagues.map((c) =>
-        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, establishmentName, locale })
-      )
-    );
-  }
+  inviteColleaguesAfterResponse(service, colleagues, {
+    establishmentId: est.id,
+    establishmentName,
+    locale,
+  });
 
   // Auto-assign encoded SmartTags from this group's orders to the establishment
   const { data: orderIds } = await service
@@ -467,14 +495,11 @@ export async function completeNfcOnboarding(
   // Update user display name via admin API (works without active session)
   await service.auth.admin.updateUserById(user.id, { user_metadata: { full_name: adminFullName } });
 
-  // Invite colleagues (best-effort)
-  if (colleagues.length > 0) {
-    await Promise.allSettled(
-      colleagues.map((c) =>
-        addColleague(service, { fullName: c.fullName, email: c.email, establishmentId: est.id, establishmentName, locale })
-      )
-    );
-  }
+  inviteColleaguesAfterResponse(service, colleagues, {
+    establishmentId: est.id,
+    establishmentName,
+    locale,
+  });
 
   revalidatePath('/dashboard');
   // The scan flow signs the user out pending email confirmation, so the Connect

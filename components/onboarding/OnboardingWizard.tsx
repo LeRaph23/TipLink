@@ -413,6 +413,15 @@ export function OnboardingWizard(props: Props) {
   // server-side and refuses a half-finished account anyway, so a failed poll
   // must never be the thing that strands a manager on the last step. Disabling
   // the button is a courtesy on top of that gate, not the gate itself.
+  // Company or sole trader, asked here rather than inside Stripe's form.
+  //
+  // Stripe only skips a question when the answer is already on the account, and
+  // it files the address under `company` or `individual` depending on this — so
+  // one question in our own UI is what lets the address, the trading name and
+  // the business type all arrive prefilled. The embedded form is mounted only
+  // once it is answered, because the account is created on its first request.
+  const [legalForm, setLegalForm] = useState<'company' | 'individual' | null>(null);
+
   //
   // Starts at 'checking' so the last step never flashes an enabled button in the
   // window before the first answer comes back.
@@ -926,7 +935,8 @@ export function OnboardingWizard(props: Props) {
   // Stripe has not been told enough yet — finishing would only earn a rejection
   // from finalizeOnboarding, so the button says so instead of inviting the click.
   const connectBlocking =
-    currentStep === 'connect' && (connectReady === 'incomplete' || connectReady === 'checking');
+    currentStep === 'connect' &&
+    (!legalForm || connectReady === 'incomplete' || connectReady === 'checking');
 
   function renderStepBody() {
     switch (currentStep) {
@@ -1172,10 +1182,43 @@ export function OnboardingWizard(props: Props) {
               </div>
             )}
 
-            {provisioned && (
+            {provisioned && !legalForm && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                  {t('connect.legalTitle')}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 2 }}>
+                  {t('connect.legalSubtitle')}
+                </div>
+                {[
+                  { value: 'company' as const, label: t('connect.legalCompany'), icon: '🏢' },
+                  { value: 'individual' as const, label: t('connect.legalIndividual'), icon: '🧑‍🍳' },
+                ].map(({ value, label, icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setLegalForm(value)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '16px 18px', borderRadius: 14,
+                      border: '1.5px solid var(--border)',
+                      background: 'var(--surface)',
+                      cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
+                      transition: 'border-color 150ms, background 150ms',
+                    }}
+                  >
+                    <span style={{ fontSize: 22 }}>{icon}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {provisioned && legalForm && (
               <EstablishmentOnboarding
                 establishmentId={provisioned.establishmentId}
                 token={provisioned.onboardingToken}
+                legalForm={legalForm}
                 onExit={() => setConnectExited(true)}
                 errorFallback={
                   <div style={{ fontSize: 13, color: 'var(--error)', lineHeight: 1.6 }}>
@@ -1293,13 +1336,13 @@ export function OnboardingWizard(props: Props) {
               {submitting ? t('finishing') : t('finish')}
             </button>
 
-            {currentStep === 'connect' && connectReady === 'checking' && (
+            {currentStep === 'connect' && legalForm && connectReady === 'checking' && (
               <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
                 {t('connect.checking')}
               </p>
             )}
 
-            {currentStep === 'connect' && connectReady === 'incomplete' && (
+            {currentStep === 'connect' && legalForm && connectReady === 'incomplete' && (
               <>
                 <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
                   {t('connect.incompleteHint')}
@@ -1325,10 +1368,17 @@ export function OnboardingWizard(props: Props) {
           <button
             type="button"
             onClick={next}
-            disabled={!canAdvance() || reviewBlocking}
-            style={{ ...btnPrimary, opacity: (canAdvance() && !reviewBlocking) ? 1 : 0.4 }}
+            // `submitting` matters on the step before Connect: that transition
+            // provisions the whole account server-side, which takes seconds. The
+            // button used to sit there looking idle and clickable throughout, so
+            // the wizard read as frozen.
+            disabled={!canAdvance() || reviewBlocking || submitting}
+            style={{
+              ...btnPrimary,
+              opacity: (canAdvance() && !reviewBlocking && !submitting) ? 1 : 0.4,
+            }}
           >
-            {t('continue')}
+            {submitting ? t('creating') : t('continue')}
           </button>
         )}
 
