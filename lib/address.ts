@@ -11,31 +11,44 @@ export type ParsedAddress = {
 };
 
 /**
- * Splits a French address label into the fields Stripe's onboarding asks for.
+ * Splits a French address line into the fields Stripe's onboarding asks for.
  *
- * The wizard stores one string, because that is what the IGN geocoder hands
- * back and what a manager typing by hand produces. Stripe wants line1, postal
- * code and city separately, and only skips the question when it has all three.
+ * The wizard stores one string, because that is what its two sources produce.
+ * They do not agree on punctuation, which is the whole difficulty:
  *
- * The IGN label format is stable — "12 Rue de la Paix, 75002 Paris" — so this
- * reads the last comma-separated chunk as "<5 digits> <city>" and treats
- * everything before it as the street. Anything that does not match that shape
- * returns null rather than a guess: an address is verification material, and a
- * mangled one costs the manager more than an empty one.
+ *   IGN geocoder    9 Impasse Saint-léger 68130 Jettingen     (no commas)
+ *   Google Places   2 Rue du Général Leclerc, 68170 Rixheim   (commas, sometimes
+ *                                                              a trailing country)
+ *
+ * An earlier version of this keyed on comma structure and so returned null for
+ * every address picked from the autocomplete — which is the path nearly every
+ * manager takes. Anchoring on the postal code instead is what both formats
+ * actually have in common.
+ *
+ * The LAST five-digit group is the postal code: a street number can be five
+ * digits too, but never after it. Whatever follows is the city, up to a comma,
+ * so a trailing ", France" does not end up as the town.
+ *
+ * Returns null rather than a guess when there is no postal code, no street or
+ * no city. An address is verification material Stripe acts on, so a mangled one
+ * costs the manager more than an empty one.
  */
 export function parseFrenchAddress(raw: string | null | undefined): ParsedAddress | null {
-  if (!raw) return null;
+  const value = raw?.trim();
+  if (!value) return null;
 
-  const parts = raw.split(',').map((p) => p.trim()).filter(Boolean);
-  if (parts.length < 2) return null;
+  let postal: RegExpMatchArray | undefined;
+  for (const m of value.matchAll(/\b\d{5}\b/g)) postal = m;
+  if (!postal || postal.index === undefined) return null;
 
-  const tail = parts[parts.length - 1];
-  const match = /^(\d{5})\s+(.+)$/.exec(tail);
-  if (!match) return null;
+  const line1 = value.slice(0, postal.index).replace(/[\s,]+$/, '').trim();
+  const city = value
+    .slice(postal.index + postal[0].length)
+    .replace(/^[\s,]+/, '')
+    .split(',')[0]
+    .trim();
 
-  const [, postalCode, city] = match;
-  const line1 = parts.slice(0, -1).join(', ').trim();
-  if (!line1 || !city.trim()) return null;
+  if (!line1 || !city) return null;
 
-  return { line1, postalCode, city: city.trim() };
+  return { line1, postalCode: postal[0], city };
 }
