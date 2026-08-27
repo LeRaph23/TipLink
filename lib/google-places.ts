@@ -57,6 +57,7 @@ type SearchTextResponse = {
     internationalPhoneNumber?: string;
     websiteUri?: string;
     location?: { latitude: number; longitude: number };
+    types?: string[];
   }>;
 };
 
@@ -234,6 +235,27 @@ export type GooglePlaceCandidate = {
 };
 
 /**
+ * Whether a Places result is a business rather than a map location.
+ *
+ * Text Search answers with whatever best matches the query, and when no
+ * business does, that includes plain geocoded addresses — a search for "Test"
+ * came back with "12 Rue de Rivoli, 59800 Lille". Those carry a place id, so
+ * they look pickable, and the review link built from one opens on nothing: an
+ * address has no listing, so it can never receive a review.
+ *
+ * Google marks the difference with `establishment`, which every business
+ * listing carries and no address does.
+ *
+ * `undefined` types means the field did not come back at all — a mask problem
+ * on our side, not Google calling it a street. Keeping the result there is the
+ * difference between one bad row and an empty picker for everyone.
+ */
+export function isBusinessPlace(types: string[] | undefined): boolean {
+  if (types === undefined) return true;
+  return types.includes('establishment');
+}
+
+/**
  * Canonical "write a review" deep link. Opening this drops the customer
  * straight on the 5-star review form for the place — no search, no app.
  */
@@ -303,6 +325,10 @@ export async function searchEstablishmentCandidates(input: {
         'places.formattedAddress',
         'places.rating',
         'places.userRatingCount',
+        // Tells a business listing apart from a geocoded address — see
+        // isBusinessPlace. No billing consequence: rating and userRatingCount
+        // above already put this call in the higher tier.
+        'places.types',
       ].join(','),
     },
     body: JSON.stringify({
@@ -320,14 +346,16 @@ export async function searchEstablishmentCandidates(input: {
   }
 
   const data = (await res.json()) as SearchTextResponse;
-  return (data.places ?? []).map((p) => ({
-    placeId: p.id,
-    displayName: p.displayName?.text ?? null,
-    formattedAddress: p.formattedAddress ?? null,
-    rating: p.rating ?? null,
-    userRatingCount: p.userRatingCount ?? null,
-    reviewUrl: buildGoogleReviewUrl(p.id),
-  }));
+  return (data.places ?? [])
+    .filter((p) => isBusinessPlace(p.types))
+    .map((p) => ({
+      placeId: p.id,
+      displayName: p.displayName?.text ?? null,
+      formattedAddress: p.formattedAddress ?? null,
+      rating: p.rating ?? null,
+      userRatingCount: p.userRatingCount ?? null,
+      reviewUrl: buildGoogleReviewUrl(p.id),
+    }));
 }
 
 /** Contact details for one place, used to prefill Stripe's onboarding form. */
