@@ -62,8 +62,11 @@ export async function proxy(request: NextRequest) {
     }
 
     if (!rows[0].establishment_id) {
-      // Tag exists but is not yet assigned to a salon — launch onboarding wizard
-      const destination = `/${preferredLocale}/onboarding?code=${encodeURIComponent(shortId)}`;
+      // Tag exists but is not yet assigned to a salon — launch onboarding wizard.
+      // `tag`, not `code`: supabase-js claims any `?code=` as a PKCE
+      // authorization code once a verifier is in storage, which the wizard
+      // creates when it signs the manager up. See lib/supabase/client.ts.
+      const destination = `/${preferredLocale}/onboarding?tag=${encodeURIComponent(shortId)}`;
       return NextResponse.redirect(new URL(destination, request.url), 302);
     }
 
