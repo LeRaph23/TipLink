@@ -12,18 +12,24 @@ export default async function OnboardingPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ code?: string; step?: string; group?: string; email?: string; token?: string }>;
+  searchParams: Promise<{ tag?: string; code?: string; step?: string; group?: string; email?: string; token?: string }>;
 }) {
   const { locale } = await params;
-  const { code, group: groupParam, email: emailParam, token } = await searchParams;
+  const { tag, code, group: groupParam, email: emailParam, token } = await searchParams;
   setRequestLocale(locale);
 
-  // NFC scan mode (unauthenticated allowed)
-  if (code) {
+  // NFC scan mode (unauthenticated allowed).
+  //
+  // `tag` is the parameter the proxy now redirects to; `code` is still read for
+  // the links already in circulation. It was renamed because supabase-js treats
+  // any `?code=` as a PKCE authorization code once a verifier exists — see
+  // lib/supabase/client.ts, where the guard for those old links lives.
+  const scanned = tag ?? code;
+  if (scanned) {
     return (
       <OnboardingWizard
         mode="scan"
-        initialCode={code.trim().toLowerCase()}
+        initialCode={scanned.trim().toLowerCase()}
         locale={locale}
       />
     );
