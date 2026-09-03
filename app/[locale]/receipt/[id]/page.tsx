@@ -63,13 +63,13 @@ export default async function ReceiptPage({
         title: 'Reçu de pourboire', sentTo: 'Pourboire versé à', at: establishment ? ` — ${establishment.name}` : '',
         date: 'Date', ref: 'Référence', status: 'Statut', method: 'Mode de paiement',
         back: '← Retour', print: 'Imprimer / PDF',
-        note: 'Paiement traité par Stripe. Digitip ne conserve jamais vos fonds — le montant est versé directement au bénéficiaire.',
+        note: "Paiement traité par Stripe. Le pourboire est encaissé par Digitip, puis reversé à l'établissement bénéficiaire.",
       }
     : {
         title: 'Tip receipt', sentTo: 'Tip paid to', at: establishment ? ` — ${establishment.name}` : '',
         date: 'Date', ref: 'Reference', status: 'Status', method: 'Payment method',
         back: '← Back', print: 'Print / PDF',
-        note: 'Payment processed by Stripe. Digitip never holds your funds — the amount goes straight to the recipient.',
+        note: 'Payment processed by Stripe. The tip is collected by Digitip, then paid out to the receiving business.',
       };
 
   return (
