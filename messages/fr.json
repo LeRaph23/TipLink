@@ -1268,7 +1268,6 @@
   "onboarding": {
     "stepOf": "Étape {current} sur {total}",
     "continue": "Continuer →",
-    "skip": "Passer cette étape",
     "finish": "Terminer la configuration →",
     "finishing": "Finalisation…",
     "creating": "Création de votre compte…",
@@ -1286,29 +1285,11 @@
       "sent": "Un lien de confirmation a été envoyé à <strong>{email}</strong>.",
       "activate": "Cliquez dessus pour activer votre compte et accéder à votre espace <strong>{name}</strong>."
     },
-    "codes": {
-      "title": "Vos SmartTags",
-      "subtitle": "Votre SmartTag est prêt à être configuré. Avez-vous d'autres tags à associer maintenant ?",
-      "add": "Ajouter",
-      "validating": "…",
-      "placeholder": "ex: a3f2b9c1",
-      "invalidCode": "Code invalide ou déjà utilisé",
-      "networkError": "Erreur réseau, vérifiez votre connexion et réessayez.",
-      "hint": "Les codes se trouvent sous le QR code imprimé sur chaque SmartTag."
-    },
-    "salon": {
-      "title": "Nom de l'établissement",
-      "subtitle": "Comment s'appelle votre établissement ?"
-    },
     "businessType": {
-      "title": "Votre activité",
-      "subtitle": "Cela nous aide à adapter les montants de pourboire suggérés à vos clients.",
       "restaurant": "Restaurant, bar ou café",
       "beauty": "Coiffure, beauté ou bien-être"
     },
     "address": {
-      "title": "Adresse",
-      "subtitle": "À quelle adresse se trouve votre établissement ?",
       "searching": "Recherche…",
       "manualHint": "Aucune suggestion ? Saisissez votre adresse manuellement."
     },
@@ -1325,38 +1306,10 @@
       "subtitle": "Choisissez un mot de passe sécurisé.",
       "hint": "8 caractères minimum"
     },
-    "team": {
-      "title": "Votre équipe",
-      "subtitle": "Invitez vos collègues pour qu'ils puissent eux aussi recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard.",
-      "intro": "Vos collègues recevront un email pour créer leur compte et commencer à recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard depuis votre dashboard.",
-      "namePlaceholder": "Prénom du collègue",
-      "emailPlaceholder": "Email du collègue (obligatoire pour l'inviter)",
-      "emailRequiredHint": "Sans email, ce collègue n'aura pas de compte et ne pourra pas recevoir de pourboires. Vous pourrez ajouter son adresse plus tard depuis le dashboard.",
-      "add": "+ Ajouter un collègue",
-      "remove": "Retirer"
-    },
-    "tipsOptIn": {
-      "title": "Et vous ?",
-      "subtitle": "Souhaitez-vous aussi recevoir des pourboires personnellement ?",
-      "yes": "Oui, je veux recevoir des pourboires",
-      "no": "Non, je gère uniquement mon équipe"
-    },
-    "reviewIntro": {
-      "title": "Transformez vos pourboires en avis",
-      "subtitle": "Ce que voit votre client juste après avoir laissé un pourboire.",
-      "demoName": "votre équipe",
-      "demoThanks": "Merci pour le pourboire !",
-      "demoQuestion": "Vous avez apprécié {name} ?",
-      "demoBody": "Aidez l'équipe en laissant un avis Google, ça prend 10 secondes.",
-      "demoCta": "Laisser un avis Google →",
-      "timing": "Demandé au bon moment : juste après un geste positif.",
-      "oneTap": "Déjà connecté à Google, il note et valide. Deux taps.",
-      "ranking": "Un flux d'avis récents vous fait remonter sur Maps."
-    },
     "googleReview": {
-      "title": "Avis Google",
-      "subtitle": "Reliez votre fiche Google dès maintenant. L'invitation à laisser un avis après chaque pourboire fait partie de Digitip Pro, vous l'activerez quand vous voudrez.",
-      "skip": "Passer pour l’instant",
+      "title": "Votre établissement",
+      "subtitle": "Cherchez votre fiche Google : elle nous donne votre nom, votre adresse et votre lien d'avis d'un seul coup.",
+      "skip": "Mon établissement n'est pas sur Google",
       "searchPlaceholder": "Nom de votre établissement",
       "searchButton": "Rechercher",
       "searching": "Recherche…",
@@ -1377,6 +1330,13 @@
       "guide1": "Ouvrez votre fiche dans l'app Google Maps ou Google Business Profile, avec le compte de l'établissement.",
       "guide2": "Touchez « Demander des avis ». Google affiche un lien court du type g.page/r/…/review.",
       "guide3": "Copiez ce lien et collez-le ci-dessous."
+    },
+    "confirm": {
+      "title": "Vérifiez ces informations",
+      "subtitle": "Nous avons pré-rempli ce que Google sait de votre établissement. Corrigez ce qui ne va pas.",
+      "nameLabel": "Nom de l'établissement",
+      "addressLabel": "Adresse",
+      "typeLabel": "Votre activité"
     },
     "connect": {
       "title": "Recevoir vos pourboires",

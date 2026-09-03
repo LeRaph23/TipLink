@@ -232,6 +232,8 @@ export type GooglePlaceCandidate = {
   rating: number | null;
   userRatingCount: number | null;
   reviewUrl: string;
+  /** Our own trade split, guessed from Google's types. Null when unrecognised. */
+  businessType: 'restaurant' | 'beauty' | null;
 };
 
 /**
@@ -253,6 +255,37 @@ export type GooglePlaceCandidate = {
 export function isBusinessPlace(types: string[] | undefined): boolean {
   if (types === undefined) return true;
   return types.includes('establishment');
+}
+
+/** Google types that mean "people eat or drink here". */
+const RESTAURANT_TYPES = new Set([
+  'restaurant', 'bar', 'cafe', 'coffee_shop', 'bakery', 'meal_takeaway',
+  'meal_delivery', 'fast_food_restaurant', 'pizza_restaurant', 'brunch_restaurant',
+  'breakfast_restaurant', 'ice_cream_shop', 'sandwich_shop', 'wine_bar', 'pub',
+  'night_club', 'food',
+]);
+
+/** Google types that mean "people are groomed or cared for here". */
+const BEAUTY_TYPES = new Set([
+  'beauty_salon', 'hair_salon', 'hair_care', 'barber_shop', 'nail_salon',
+  'spa', 'massage', 'skin_care_clinic', 'tanning_studio', 'wellness_center',
+  'makeup_artist', 'day_spa',
+]);
+
+/**
+ * Which of our two trades a Google listing belongs to.
+ *
+ * Only a hint: the confirmation screen shows the answer and lets the manager
+ * change it, so a wrong guess costs one tap and a missing one costs nothing.
+ * Restaurant is tested first because a hotel restaurant carries both sets.
+ */
+export function inferBusinessType(
+  types: string[] | undefined
+): 'restaurant' | 'beauty' | null {
+  if (!types) return null;
+  if (types.some((t) => RESTAURANT_TYPES.has(t))) return 'restaurant';
+  if (types.some((t) => BEAUTY_TYPES.has(t))) return 'beauty';
+  return null;
 }
 
 /**
@@ -355,6 +388,7 @@ export async function searchEstablishmentCandidates(input: {
       rating: p.rating ?? null,
       userRatingCount: p.userRatingCount ?? null,
       reviewUrl: buildGoogleReviewUrl(p.id),
+      businessType: inferBusinessType(p.types),
     }));
 }
 

@@ -1268,7 +1268,6 @@
   "onboarding": {
     "stepOf": "Step {current} of {total}",
     "continue": "Continue →",
-    "skip": "Skip this step",
     "finish": "Finish setup →",
     "finishing": "Finalizing…",
     "creating": "Creating your account…",
@@ -1286,29 +1285,11 @@
       "sent": "A confirmation link has been sent to <strong>{email}</strong>.",
       "activate": "Click it to activate your account and access your <strong>{name}</strong> space."
     },
-    "codes": {
-      "title": "Your SmartTags",
-      "subtitle": "Your SmartTag is ready to be set up. Do you have other tags to configure at the same time?",
-      "add": "Add",
-      "validating": "…",
-      "placeholder": "e.g. a3f2b9c1",
-      "invalidCode": "Invalid or already assigned code",
-      "networkError": "Network error, check your connection and try again.",
-      "hint": "Codes are printed under the QR code on each SmartTag."
-    },
-    "salon": {
-      "title": "Establishment name",
-      "subtitle": "What is your establishment called?"
-    },
     "businessType": {
-      "title": "Your business",
-      "subtitle": "This helps us tailor the suggested tip amounts to your customers.",
       "restaurant": "Restaurant, bar or café",
       "beauty": "Hair, beauty or wellness"
     },
     "address": {
-      "title": "Address",
-      "subtitle": "Where is your establishment located?",
       "searching": "Searching…",
       "manualHint": "No suggestions? Enter your address manually."
     },
@@ -1325,38 +1306,10 @@
       "subtitle": "Choose a secure password.",
       "hint": "At least 8 characters"
     },
-    "team": {
-      "title": "Your team",
-      "subtitle": "Invite your colleagues so they can also receive tips. You can skip this step and invite them later from your dashboard.",
-      "intro": "Your colleagues will receive an email to create their account and start receiving tips. You can skip this step and invite them later from your dashboard.",
-      "namePlaceholder": "Colleague's first name",
-      "emailPlaceholder": "Colleague email (required to invite them)",
-      "emailRequiredHint": "Without an email this colleague gets no account and cannot receive tips. You can add their address later from the dashboard.",
-      "add": "+ Add a colleague",
-      "remove": "Remove"
-    },
-    "tipsOptIn": {
-      "title": "And you?",
-      "subtitle": "Would you also like to receive tips personally?",
-      "yes": "Yes, I want to receive tips",
-      "no": "No, I only manage my team"
-    },
-    "reviewIntro": {
-      "title": "Turn your tips into reviews",
-      "subtitle": "What your customer sees right after leaving a tip.",
-      "demoName": "your team",
-      "demoThanks": "Thanks for the tip!",
-      "demoQuestion": "Did you enjoy {name}?",
-      "demoBody": "Help the team out with a Google review, it takes 10 seconds.",
-      "demoCta": "Leave a Google review →",
-      "timing": "Asked at the right moment: straight after a kind gesture.",
-      "oneTap": "Already signed in to Google: they rate, they submit. Two taps.",
-      "ranking": "A steady flow of recent reviews lifts you on Maps."
-    },
     "googleReview": {
-      "title": "Google reviews",
-      "subtitle": "Link your Google listing now. The review invitation shown after each tip is part of Digitip Pro, switch it on whenever you like.",
-      "skip": "Skip for now",
+      "title": "Your business",
+      "subtitle": "Search for your Google listing: it gives us your name, your address and your review link in one go.",
+      "skip": "My business is not on Google",
       "searchPlaceholder": "Your business name",
       "searchButton": "Search",
       "searching": "Searching…",
@@ -1377,6 +1330,13 @@
       "guide1": "Open your listing in the Google Maps or Google Business Profile app, signed in with the business account.",
       "guide2": "Tap \"Ask for reviews\". Google shows a short link like g.page/r/…/review.",
       "guide3": "Copy that link and paste it below."
+    },
+    "confirm": {
+      "title": "Check these details",
+      "subtitle": "We prefilled what Google knows about your business. Correct anything that looks wrong.",
+      "nameLabel": "Business name",
+      "addressLabel": "Address",
+      "typeLabel": "Your trade"
     },
     "connect": {
       "title": "Receiving your tips",

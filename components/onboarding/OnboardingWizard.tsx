@@ -26,11 +26,6 @@ const EstablishmentOnboarding = dynamic(
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-interface Colleague {
-  fullName: string;
-  email: string; // optional — empty string means no email invite
-}
-
 interface WizardState {
   nfcCodes: string[];
   establishmentName: string;
@@ -41,19 +36,22 @@ interface WizardState {
   adminFullName: string;
   adminEmail: string;
   password: string;
-  colleagues: Colleague[];
 }
 
 /** How far Stripe says the establishment's account has got. */
 type ConnectReadiness = 'unknown' | 'checking' | 'incomplete' | 'submitted';
 
-type ScanStep = 'codes' | 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'connect';
-type AuthStep = 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'team' | 'tips-opt-in' | 'connect';
-type ExpressStep = 'salon' | 'business-type' | 'address' | 'review-intro' | 'google-review' | 'admin-name' | 'email' | 'password' | 'team' | 'tips-opt-in' | 'connect';
+// The Google listing comes first on purpose: picking it answers the name, the
+// address and the trade in one search, so `confirm` is a screen the manager
+// reads rather than fills in. Without a listing it falls back to the empty
+// fields it replaced, which is exactly the old three steps minus two taps.
+type ScanStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password' | 'connect';
+type AuthStep = 'google-review' | 'confirm' | 'admin-name' | 'connect';
+type ExpressStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password' | 'connect';
 
-const SCAN_STEPS: ScanStep[] = ['codes', 'salon', 'business-type', 'address', 'review-intro', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'connect'];
-const AUTH_STEPS: AuthStep[] = ['salon', 'business-type', 'address', 'review-intro', 'google-review', 'admin-name', 'team', 'tips-opt-in', 'connect'];
-const EXPRESS_STEPS: ExpressStep[] = ['salon', 'business-type', 'address', 'review-intro', 'google-review', 'admin-name', 'email', 'password', 'team', 'tips-opt-in', 'connect'];
+const SCAN_STEPS: ScanStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password', 'connect'];
+const AUTH_STEPS: AuthStep[] = ['google-review', 'confirm', 'admin-name', 'connect'];
+const EXPRESS_STEPS: ExpressStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password', 'connect'];
 
 type Props =
   | {
@@ -97,6 +95,15 @@ const inp: React.CSSProperties = {
   outline: 'none',
 };
 
+const fieldLabel: React.CSSProperties = {
+  display: 'block',
+  fontSize: 12.5,
+  fontWeight: 600,
+  color: 'var(--text-2)',
+  marginBottom: 7,
+  letterSpacing: '0.01em',
+};
+
 const btnPrimary: React.CSSProperties = {
   width: '100%',
   padding: '15px 20px',
@@ -125,219 +132,6 @@ const btnSecondary: React.CSSProperties = {
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-
-function StepCodesContent({
-  codes,
-  onChange,
-}: {
-  codes: string[];
-  onChange: (codes: string[]) => void;
-}) {
-  const t = useTranslations('onboarding.codes');
-  const [inputVal, setInputVal] = useState('');
-  const [validating, setValidating] = useState(false);
-  const [codeError, setCodeError] = useState<string | null>(null);
-
-  async function addCode() {
-    const c = inputVal.trim().toLowerCase();
-    if (!c) return;
-    if (codes.includes(c)) {
-      setInputVal('');
-      return;
-    }
-    setValidating(true);
-    setCodeError(null);
-    try {
-      const res = await fetch(`/api/onboarding/validate-code?code=${encodeURIComponent(c)}`);
-      const { valid } = (await res.json()) as { valid: boolean };
-      if (!valid) {
-        setCodeError(t('invalidCode'));
-        setValidating(false);
-        return;
-      }
-      onChange([...codes, c]);
-      setInputVal('');
-    } catch (err) {
-      // Distinguish a network failure from a genuinely invalid code so the
-      // user doesn't think a valid tag was rejected.
-      console.error('[onboarding] code validation failed', err);
-      setCodeError(t('networkError'));
-    }
-    setValidating(false);
-  }
-
-  return (
-    <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-        {codes.map((c, i) => (
-          <div
-            key={c}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '7px 14px',
-              borderRadius: 999,
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
-              fontFamily: 'monospace',
-              fontSize: 14,
-              fontWeight: 700,
-              color: 'var(--text)',
-            }}
-          >
-            {c}
-            {i > 0 && (
-              <button
-                type="button"
-                onClick={() => onChange(codes.filter((_, j) => j !== i))}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-3)',
-                  fontSize: 16,
-                  lineHeight: 1,
-                  padding: 0,
-                }}
-              >
-                ×
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-        <input
-          value={inputVal}
-          onChange={(e) => setInputVal(e.target.value.toLowerCase())}
-          onKeyDown={(e) => e.key === 'Enter' && addCode()}
-          placeholder={t('placeholder')}
-          maxLength={32}
-          style={{ ...inp, flex: 1 }}
-        />
-        <button
-          type="button"
-          onClick={addCode}
-          disabled={!inputVal.trim() || validating}
-          style={{
-            ...btnSecondary,
-            whiteSpace: 'nowrap',
-            opacity: !inputVal.trim() || validating ? 0.5 : 1,
-          }}
-        >
-          {validating ? t('validating') : t('add')}
-        </button>
-      </div>
-
-      {codeError && (
-        <p style={{ fontSize: 13, color: 'var(--error)', marginTop: 8 }}>{codeError}</p>
-      )}
-
-      <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 14, lineHeight: 1.6 }}>
-        {t('hint')}
-      </p>
-    </div>
-  );
-}
-
-function StepTeamContent({
-  colleagues,
-  onChange,
-}: {
-  colleagues: Colleague[];
-  onChange: (c: Colleague[]) => void;
-}) {
-  const t = useTranslations('onboarding.team');
-  const add = () => onChange([...colleagues, { fullName: '', email: '' }]);
-  const remove = (i: number) => onChange(colleagues.filter((_, j) => j !== i));
-  const update = (i: number, patch: Partial<Colleague>) =>
-    onChange(colleagues.map((c, j) => (j === i ? { ...c, ...patch } : c)));
-
-  return (
-    <div>
-      <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20, lineHeight: 1.6 }}>
-        {t('intro')}
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {colleagues.map((c, i) => {
-          // A colleague added without an email gets a profile with no account,
-          // so no invite is sent and they can never connect a bank account or
-          // receive a tip. That used to happen silently; say so instead.
-          const missingEmail = c.fullName.trim() !== '' && c.email.trim() === '';
-          return (
-          <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input
-                placeholder={t('namePlaceholder')}
-                value={c.fullName}
-                onChange={(e) => update(i, { fullName: e.target.value })}
-                style={{ ...inp, fontSize: 14, padding: '11px 14px' }}
-              />
-              <input
-                type="email"
-                placeholder={t('emailPlaceholder')}
-                value={c.email}
-                onChange={(e) => update(i, { email: e.target.value })}
-                style={{
-                  ...inp, fontSize: 14, padding: '11px 14px',
-                  ...(missingEmail ? { borderColor: '#d97706' } : {}),
-                }}
-              />
-              {missingEmail && (
-                <p style={{ fontSize: 12.5, color: '#d97706', lineHeight: 1.5, margin: 0 }}>
-                  {t('emailRequiredHint')}
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => remove(i)}
-              style={{
-                marginTop: 4,
-                padding: '11px 14px',
-                borderRadius: 10,
-                border: '1px solid var(--border)',
-                background: 'none',
-                color: 'var(--text-3)',
-                fontSize: 13,
-                cursor: 'pointer',
-                fontFamily: 'var(--font)',
-              }}
-            >
-              {t('remove')}
-            </button>
-          </div>
-          );
-        })}
-      </div>
-
-      <button
-        type="button"
-        onClick={add}
-        style={{
-          marginTop: 14,
-          padding: '10px 16px',
-          borderRadius: 10,
-          border: '1px dashed var(--border)',
-          background: 'none',
-          color: 'var(--text-2)',
-          fontSize: 13,
-          fontWeight: 500,
-          cursor: 'pointer',
-          fontFamily: 'var(--font)',
-          width: '100%',
-        }}
-      >
-        {t('add')}
-      </button>
-    </div>
-  );
-}
-
-// ─── Main Wizard ──────────────────────────────────────────────────────────────
 
 export function OnboardingWizard(props: Props) {
   const { mode, locale } = props;
@@ -368,7 +162,6 @@ export function OnboardingWizard(props: Props) {
       adminFullName: '',
       adminEmail: mode === 'express' ? props.initialEmail : '',
       password: '',
-      colleagues: [],
     }
   );
 
@@ -376,12 +169,6 @@ export function OnboardingWizard(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
-
-  // Whether the admin wants to receive tips personally (tips-opt-in step).
-  // This no longer affects payouts — the establishment's Connect account
-  // collects everything either way; it only decides whether the admin gets a
-  // staff profile of their own.
-  const [wantsTips, setWantsTips] = useState<boolean | null>(null);
 
   // The auth user created by a previous provisioning attempt.
   //
@@ -441,28 +228,22 @@ export function OnboardingWizard(props: Props) {
   const isStepComplete = useCallback(
     (step: string): boolean => {
       switch (step) {
-        // Every code must be a non-empty string — the server schema rejects ''.
-        case 'codes': return state.nfcCodes.length > 0 && state.nfcCodes.every((c) => c.trim().length > 0);
-        case 'salon': return state.establishmentName.trim().length > 0;
-        case 'address': return state.address.trim().length > 0;
-        // Purely demonstrative — nothing to fill in.
-        case 'review-intro': return true;
         // Soft-required: never blocks navigation (a discreet "skip" link exists),
         // so the bounce-back guard treats it as satisfied.
         case 'google-review': return true;
+        // The trade always has a value, so the two free-text fields decide.
+        case 'confirm':
+          return state.establishmentName.trim().length > 0 && state.address.trim().length > 0;
         case 'admin-name': return state.adminFullName.trim().length > 0;
         case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
         case 'password': return state.password.length >= 8;
-        case 'team': return true;
-        case 'business-type': return true;
-        case 'tips-opt-in': return wantsTips !== null;
         // Navigation-wise always reachable; the finish button is what enforces
         // that Stripe actually got the onboarding form (see handleFinish).
         case 'connect': return true;
         default: return true;
       }
     },
-    [state, wantsTips]
+    [state]
   );
 
   const canAdvance = (): boolean => isStepComplete(currentStep);
@@ -591,8 +372,8 @@ export function OnboardingWizard(props: Props) {
   }
 
   /**
-   * Creates everything on our side — group, establishment, roles, colleagues —
-   * and moves to the Connect step.
+   * Creates everything on our side (group, establishment, roles) and moves to
+   * the Connect step.
    *
    * This used to be the end of the wizard. It is now the second-to-last act:
    * onboarding is not complete until Stripe has the establishment's details,
@@ -647,18 +428,16 @@ export function OnboardingWizard(props: Props) {
         googlePlaceId: state.googlePlaceId || undefined,
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
-        colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         businessType: state.businessType,
         locale: locale as 'fr' | 'en',
       });
 
       if ('error' in result) {
-        // An unusable SmartTag is the one provisioning failure the manager can
-        // act on, and the codes step is the only place it can be acted on — so
-        // land them there rather than leaving the message on a step whose only
-        // controls are "continue" and "back". goTo clears the error, hence the
-        // ordering: both calls batch into one render, and the last write wins.
-        if (result.code === 'smart_tag_taken') goTo('codes');
+        // A SmartTag already attached to someone else is not something the
+        // manager can fix from here: the tag id comes from the URL the sticker
+        // itself points at, and there is no longer a step that lets one be
+        // typed in. The message says to get in touch, which is the only real
+        // remedy, so it stays on the step the click came from.
         setError(result.error);
         setSubmitting(false);
         setProvisioning(false);
@@ -708,7 +487,6 @@ export function OnboardingWizard(props: Props) {
         googlePlaceId: state.googlePlaceId || undefined,
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
-        colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         businessType: state.businessType,
         locale: locale as 'fr' | 'en',
         userId: userId ?? undefined,
@@ -732,7 +510,6 @@ export function OnboardingWizard(props: Props) {
         googlePlaceId: state.googlePlaceId || undefined,
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
-        colleagues: state.colleagues.filter((c) => c.fullName.trim()),
         businessType: state.businessType,
         locale: locale as 'fr' | 'en',
       });
@@ -784,7 +561,6 @@ export function OnboardingWizard(props: Props) {
 
       trackEvent('onboarding_submitted', {
         mode,
-        wantsTips: wantsTips ?? false,
         payoutsEnabled: result.payoutsEnabled,
       });
 
@@ -918,12 +694,9 @@ export function OnboardingWizard(props: Props) {
   // Maps a step id to its i18n key prefix in the `onboarding` namespace
   // (the dashed step ids differ from the camelCase message keys).
   const STEP_I18N: Record<string, string> = {
-    codes: 'codes', salon: 'salon', address: 'address',
-    'review-intro': 'reviewIntro',
     'google-review': 'googleReview',
-    'admin-name': 'adminName', email: 'email', password: 'password',
-    team: 'team', 'tips-opt-in': 'tipsOptIn', connect: 'connect',
-    'business-type': 'businessType',
+    confirm: 'confirm',
+    'admin-name': 'adminName', email: 'email', password: 'password', connect: 'connect',
   };
   const i18nKey = STEP_I18N[currentStep];
   const config = i18nKey
@@ -935,9 +708,10 @@ export function OnboardingWizard(props: Props) {
   // Google review is soft-required: the primary CTA stays disabled until a link
   // is chosen, but a discreet skip link lets the manager move on.
   const reviewBlocking = currentStep === 'google-review' && state.googleReviewUrl.trim().length === 0;
-  // Steps whose body is tall and cannot shrink; the header is tightened so the
-  // step still fits one phone screen. See the header comment below.
-  const dense = currentStep === 'review-intro';
+  // The confirmation screen carries three fields and their labels; at the
+  // default header size it fell below the fold on a phone, so the header gives
+  // up the difference. See the header comment below.
+  const dense = currentStep === 'confirm';
   // Stripe has not been told enough yet — finishing would only earn a rejection
   // from finalizeOnboarding, so the button says so instead of inviting the click.
   const connectBlocking =
@@ -946,36 +720,6 @@ export function OnboardingWizard(props: Props) {
 
   function renderStepBody() {
     switch (currentStep) {
-      case 'codes':
-        return (
-          <StepCodesContent
-            codes={state.nfcCodes}
-            onChange={(nfcCodes) => dispatch({ nfcCodes })}
-          />
-        );
-
-      case 'salon':
-        return (
-          <input
-            autoFocus
-            type="text"
-            value={state.establishmentName}
-            onChange={(e) => dispatch({ establishmentName: e.target.value })}
-            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleFinish() : next())}
-            style={inp}
-          />
-        );
-
-      case 'address':
-        return (
-          <AddressAutocomplete
-            value={state.address}
-            onChange={(address) => dispatch({ address })}
-            onConfirm={() => canAdvance() && (isLastStep ? handleFinish() : next())}
-            style={inp}
-          />
-        );
-
       case 'google-review':
         return (
           <GoogleReviewPicker
@@ -983,10 +727,78 @@ export function OnboardingWizard(props: Props) {
             address={state.address}
             value={state.googleReviewUrl}
             placeId={state.googlePlaceId}
-            onChange={({ placeId, reviewUrl }) =>
-              dispatch({ googlePlaceId: placeId ?? '', googleReviewUrl: reviewUrl })
+            onChange={({ placeId, reviewUrl, place }) =>
+              dispatch({
+                googlePlaceId: placeId ?? '',
+                googleReviewUrl: reviewUrl,
+                // The listing is the source for the next screen. Only fill from
+                // it, never blank from it: clearing the selection to search
+                // again must not wipe what the manager already corrected.
+                ...(place?.displayName ? { establishmentName: place.displayName } : {}),
+                ...(place?.formattedAddress ? { address: place.formattedAddress } : {}),
+                ...(place?.businessType ? { businessType: place.businessType } : {}),
+              })
             }
           />
+        );
+
+      case 'confirm':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <label style={fieldLabel} htmlFor="onb-name">{t('confirm.nameLabel')}</label>
+              <input
+                id="onb-name"
+                autoFocus
+                type="text"
+                value={state.establishmentName}
+                onChange={(e) => dispatch({ establishmentName: e.target.value })}
+                style={inp}
+              />
+            </div>
+
+            <div>
+              <label style={fieldLabel} htmlFor="onb-address">{t('confirm.addressLabel')}</label>
+              <AddressAutocomplete
+                value={state.address}
+                onChange={(address) => dispatch({ address })}
+                onConfirm={() => canAdvance() && next()}
+                style={inp}
+              />
+            </div>
+
+            <div>
+              <span style={fieldLabel}>{t('confirm.typeLabel')}</span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {(
+                  [
+                    { value: 'restaurant', label: t('businessType.restaurant'), icon: '🍽️' },
+                    { value: 'beauty', label: t('businessType.beauty'), icon: '💇' },
+                  ] as const
+                ).map(({ value, label, icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => dispatch({ businessType: value })}
+                    style={{
+                      flex: 1,
+                      display: 'flex', alignItems: 'center', gap: 9,
+                      padding: '13px 14px', borderRadius: 12,
+                      border: `1.5px solid ${state.businessType === value ? 'var(--accent)' : 'var(--border)'}`,
+                      background: state.businessType === value ? 'var(--surface-2)' : 'var(--surface)',
+                      cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
+                      transition: 'border-color 150ms, background 150ms',
+                    }}
+                  >
+                    <span style={{ fontSize: 19 }}>{icon}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>
+                      {label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         );
 
       case 'admin-name':
@@ -1027,139 +839,6 @@ export function OnboardingWizard(props: Props) {
             <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8 }}>{t('password.hint')}</p>
           </div>
         );
-
-      case 'team':
-        return (
-          <StepTeamContent
-            colleagues={state.colleagues}
-            onChange={(colleagues) => dispatch({ colleagues })}
-          />
-        );
-
-      case 'business-type':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {(
-              [
-                { value: 'restaurant', label: t('businessType.restaurant'), icon: '🍽️' },
-                { value: 'beauty', label: t('businessType.beauty'), icon: '💇' },
-              ] as const
-            ).map(({ value, label, icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => dispatch({ businessType: value })}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '16px 18px', borderRadius: 14,
-                  border: `1.5px solid ${state.businessType === value ? 'var(--accent)' : 'var(--border)'}`,
-                  background: state.businessType === value ? 'var(--surface-2)' : 'var(--surface)',
-                  cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
-                  transition: 'border-color 150ms, background 150ms',
-                }}
-              >
-                <span style={{ fontSize: 22 }}>{icon}</span>
-                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
-              </button>
-            ))}
-          </div>
-        );
-
-      case 'tips-opt-in':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[
-              { value: true, label: t('tipsOptIn.yes'), icon: '💸' },
-              { value: false, label: t('tipsOptIn.no'), icon: '👔' },
-            ].map(({ value, label, icon }) => (
-              <button
-                key={String(value)}
-                type="button"
-                onClick={() => setWantsTips(value)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '16px 18px', borderRadius: 14,
-                  border: `1.5px solid ${wantsTips === value ? 'var(--accent)' : 'var(--border)'}`,
-                  background: wantsTips === value ? 'var(--surface-2)' : 'var(--surface)',
-                  cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
-                  transition: 'border-color 150ms, background 150ms',
-                }}
-              >
-                <span style={{ fontSize: 22 }}>{icon}</span>
-                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
-              </button>
-            ))}
-          </div>
-        );
-
-      case 'review-intro': {
-        // A replica of the post-tip screen, built from the same strings the pay
-        // page uses. Showing the manager the actual thing beats describing it —
-        // and it is the only moment in the wizard where they see what their own
-        // customers will see.
-        const demoName = state.adminFullName.trim().split(/\s+/)[0] || t('reviewIntro.demoName');
-        return (
-          <div>
-            <div style={{
-              borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)',
-              background: 'var(--surface)', maxWidth: 268, margin: '0 auto 16px',
-              boxShadow: '0 10px 26px rgba(0,0,0,0.10)',
-            }}>
-              <div style={{
-                background: 'linear-gradient(135deg, #F2A8B7 0%, #C96CC1 52%, #7C3AED 100%)',
-                padding: '13px 14px', textAlign: 'center', color: '#fff',
-              }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: '50%', margin: '0 auto 7px',
-                  background: 'rgba(255,255,255,0.22)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '-0.02em' }}>
-                  {t('reviewIntro.demoThanks')}
-                </div>
-              </div>
-
-              <div style={{ padding: '12px 14px 14px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 3, marginBottom: 7 }}>
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#f5a623" aria-hidden>
-                      <path d="M12 2l2.9 6.2 6.6.9-4.8 4.7 1.2 6.7L12 17.3 6.1 20.5l1.2-6.7L2.5 9.1l6.6-.9L12 2z" />
-                    </svg>
-                  ))}
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
-                  {t('reviewIntro.demoQuestion', { name: demoName })}
-                </div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-3)', lineHeight: 1.45, marginBottom: 10 }}>
-                  {t('reviewIntro.demoBody')}
-                </div>
-                <div style={{
-                  padding: '8px 12px', borderRadius: 9,
-                  background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
-                  color: '#fff', fontSize: 12, fontWeight: 700,
-                }}>
-                  {t('reviewIntro.demoCta')}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(['timing', 'oneTap', 'ranking'] as const).map((k) => (
-                <div key={k} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-                  <span style={{ color: 'var(--accent)', fontSize: 13, lineHeight: 1.5, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
-                    {t(`reviewIntro.${k}`)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      }
 
       case 'connect':
         // Everything above this step only wrote rows in our own database. This
@@ -1278,12 +957,8 @@ export function OnboardingWizard(props: Props) {
         {t('stepOf', { current: stepIndex + 1, total: totalSteps })}
       </p>
 
-      {/* Step header + body.
-
-          `review-intro` is the one step whose body is a fixed-height picture
-          rather than a form: it cannot reflow, so at the default header size the
-          card and its three points fell below the fold on a phone and the whole
-          argument had to be scrolled for. The header gives up the difference. */}
+      {/* Step header + body. The header shrinks on the tall steps — see
+          `dense` above. */}
       <div key={currentStep} style={{ animation: 'onbSlideIn 220ms ease-out' }}>
         <h1 style={{
           fontSize: dense ? 23 : 28,
@@ -1387,7 +1062,7 @@ export function OnboardingWizard(props: Props) {
 
         {/* Explain why the action button is greyed out instead of leaving the
             user guessing. Not shown on steps with no required field. */}
-        {!canAdvance() && !submitting && currentStep !== 'tips-opt-in' && (
+        {!canAdvance() && !submitting && (
           <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
             {t('fillField')}
           </p>
@@ -1409,21 +1084,6 @@ export function OnboardingWizard(props: Props) {
             }}
           >
             {t('googleReview.skip')}
-          </button>
-        )}
-
-        {/* "Skip" for team step (not last) */}
-        {currentStep === 'team' && !isLastStep && (
-          <button
-            type="button"
-            onClick={next}
-            style={{
-              background: 'none', border: 'none', color: 'var(--text-3)',
-              fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
-              textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center',
-            }}
-          >
-            {t('skip')}
           </button>
         )}
 

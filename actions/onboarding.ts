@@ -72,82 +72,10 @@ function mintOnboardingToken(groupId: string, email: string | undefined): string
   }
 }
 
-const ColleagueSchema = z.object({
-  fullName: z.string().min(1).max(200),
-  email: z.string().email().optional().or(z.literal('')),
-});
-
-/**
- * Queues the colleagues' staff profiles and invite emails to run once the
- * response is out.
- *
- * Each invite is a Supabase insert plus an email send, and awaiting them was
- * the bulk of the wait between the last question and the Connect step — a
- * manager who invited four colleagues paid four round trips to the mail
- * provider before the page moved. Nothing downstream reads these rows: the
- * wizard only needs the establishment id, and the Connect step only cares about
- * Stripe. Failures are already swallowed per-colleague (allSettled), so moving
- * them off the critical path changes no outcome, only when it happens.
- */
-function inviteColleaguesAfterResponse(
-  service: ReturnType<typeof createServiceClient>,
-  colleagues: Array<{ fullName: string; email?: string }>,
-  ctx: { establishmentId: string; establishmentName: string; locale: 'fr' | 'en' },
-) {
-  if (colleagues.length === 0) return;
-  after(async () => {
-    await Promise.allSettled(
-      colleagues.map((c) =>
-        addColleague(service, {
-          fullName: c.fullName,
-          email: c.email,
-          establishmentId: ctx.establishmentId,
-          establishmentName: ctx.establishmentName,
-          locale: ctx.locale,
-        }),
-      ),
-    );
-  });
-}
-
-async function addColleague(
-  service: ReturnType<typeof createServiceClient>,
-  { fullName, email, establishmentId, establishmentName, locale }: {
-    fullName: string; email?: string; establishmentId: string;
-    establishmentName: string; locale: 'fr' | 'en';
-  }
-) {
-  // Onboarding runs before the admin has a session, so the profile is
-  // created with the service role rather than an RLS-checked insert.
-  const { data: staff } = await service
-    .from('staff_profiles')
-    .insert({
-      full_name: fullName,
-      establishment_id: establishmentId,
-      is_active: false,
-    })
-    .select('id')
-    .single();
-
-  const trimmedEmail = email?.trim();
-  if (staff && trimmedEmail) {
-    await sendStaffInviteLink(service, {
-      staffProfileId: staff.id,
-      fullName,
-      email: trimmedEmail,
-      establishmentId,
-      establishmentName,
-      role: 'staff',
-      locale,
-    });
-  }
-}
-
 const PostPurchaseSchema = z.object({
   establishmentName: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
-  colleagues: z.array(ColleagueSchema).max(20).default([]),
   businessType: z.enum(['restaurant', 'beauty']).default('beauty'),
   locale: z.enum(['fr', 'en']).default('fr'),
   ...GoogleReviewFields,
@@ -159,7 +87,6 @@ const NfcOnboardingSchema = z.object({
   establishmentName: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
-  colleagues: z.array(ColleagueSchema).max(20).default([]),
   businessType: z.enum(['restaurant', 'beauty']).default('beauty'),
   locale: z.enum(['fr', 'en']).default('fr'),
   ...GoogleReviewFields,
@@ -172,7 +99,7 @@ const NfcOnboardingSchema = z.object({
 // one definition of "claim it", in the claim_nfc_stickers RPC.
 
 // For authenticated group_admin who just completed the post-purchase wizard.
-// Updates the existing establishment + group, invites colleagues.
+// Updates the existing establishment + group.
 export async function completePostPurchaseOnboarding(
   input: z.infer<typeof PostPurchaseSchema>
 ): Promise<ProvisionResult> {
@@ -208,7 +135,7 @@ export async function completePostPurchaseOnboarding(
 
   if (!est) return actionError('notFound');
 
-  const { establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
+  const { establishmentName, address, adminFullName, locale } = parsed.data;
   const slug = await makeUniqueEstablishmentSlug(service, establishmentName, est.id);
 
   // Update establishment
@@ -229,12 +156,6 @@ export async function completePostPurchaseOnboarding(
 
   // Update auth user display name
   await supabase.auth.updateUser({ data: { full_name: adminFullName } });
-
-  inviteColleaguesAfterResponse(service, colleagues, {
-    establishmentId: est.id,
-    establishmentName,
-    locale,
-  });
 
   // Auto-assign encoded SmartTags from this group's orders to the establishment
   const { data: orderIds } = await service
@@ -271,7 +192,6 @@ const ExpressOnboardingSchema = z.object({
   establishmentName: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
-  colleagues: z.array(ColleagueSchema).max(20).default([]),
   businessType: z.enum(['restaurant', 'beauty']).default('beauty'),
   locale: z.enum(['fr', 'en']).default('fr'),
   // Optional: when Supabase email confirmation is enabled, sign-up returns
@@ -290,7 +210,7 @@ export async function completeExpressOnboarding(
   if (!parsed.success) return actionError('validation', parsed.error, 'completeExpressOnboarding');
 
   const service = createServiceClient();
-  const { groupId, token, establishmentName, address, adminFullName, colleagues, locale, userId } = parsed.data;
+  const { groupId, token, establishmentName, address, adminFullName, locale, userId } = parsed.data;
 
   const verified = verifyOnboardingToken(token, groupId);
   if (!verified.valid) {
@@ -369,12 +289,6 @@ export async function completeExpressOnboarding(
     await service.auth.admin.updateUserById(user.id, { user_metadata: { full_name: adminFullName } });
   }
 
-  inviteColleaguesAfterResponse(service, colleagues, {
-    establishmentId: est.id,
-    establishmentName,
-    locale,
-  });
-
   // Auto-assign encoded SmartTags from this group's orders to the establishment
   const { data: orderIds } = await service
     .from('smarttag_orders')
@@ -413,7 +327,7 @@ export async function completeNfcOnboarding(
   if (!parsed.success) return actionError('validation', parsed.error, 'completeNfcOnboarding');
 
   const service = createServiceClient();
-  const { userId, nfcCodes, establishmentName, address, adminFullName, colleagues, locale } = parsed.data;
+  const { userId, nfcCodes, establishmentName, address, adminFullName, locale } = parsed.data;
 
   // Verify the user exists in Supabase auth (works even before email confirmation)
   const { data: { user }, error: userErr } = await service.auth.admin.getUserById(userId);
@@ -503,12 +417,6 @@ export async function completeNfcOnboarding(
 
   // Update user display name via admin API (works without active session)
   await service.auth.admin.updateUserById(user.id, { user_metadata: { full_name: adminFullName } });
-
-  inviteColleaguesAfterResponse(service, colleagues, {
-    establishmentId: est.id,
-    establishmentName,
-    locale,
-  });
 
   revalidatePath('/dashboard');
   // The scan flow signs the user out pending email confirmation, so the Connect
