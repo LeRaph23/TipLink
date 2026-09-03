@@ -96,7 +96,7 @@ export function AmbassadeursOverview({
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-            🏆 Challenge du mois — {Math.round(MONTHLY_CHALLENGE.bonus / 100)}€ au #1
+            🏆 Challenge du mois : {Math.round(MONTHLY_CHALLENGE.bonus / 100)}€ au #1
           </h2>
           <button
             onClick={handleToggleChallenge}
@@ -114,8 +114,8 @@ export function AmbassadeursOverview({
         </div>
         <div style={{ fontSize: 12, color: challengeActive ? 'var(--success)' : 'var(--text-3)', marginBottom: 14 }}>
           {challengeActive && monthlyChallenge
-            ? `● Actif — se termine le ${fmtDate(monthlyChallenge.endsAt)}. Visible par les ambassadeurs ; le #1 est crédité automatiquement à la fin.`
-            : '○ Inactif — masqué côté ambassadeurs. À activer quand assez d\'ambassadeurs participent.'}
+            ? `● Actif, se termine le ${fmtDate(monthlyChallenge.endsAt)}. Visible par les ambassadeurs ; le #1 est crédité automatiquement à la fin.`
+            : '○ Inactif, masqué côté ambassadeurs. À activer quand assez d\'ambassadeurs participent.'}
         </div>
         {error && (
           <div style={{ fontSize: 12.5, color: 'var(--error)', padding: '8px 12px', background: 'var(--error-bg)', borderRadius: 8, marginBottom: 10 }}>
@@ -123,7 +123,7 @@ export function AmbassadeursOverview({
           </div>
         )}
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-          {challengeActive ? 'Classement du challenge' : 'Aperçu — classement du mois civil'}
+          {challengeActive ? 'Classement du challenge' : 'Aperçu : classement du mois civil'}
         </div>
         {monthLeaderboard.length === 0 ? (
           <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Aucune vente sur la période.</div>

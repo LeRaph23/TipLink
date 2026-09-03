@@ -339,7 +339,7 @@ export function RosterManager({
                         value={a.referrerAmbassadorId ?? ''}
                         onChange={(e) => handleSetReferrer(a.id, e.target.value)}
                         disabled={isPending}
-                        title="Parrain de cet ambassadeur — il touche 25€ une fois ce filleul à 3 ventes"
+                        title="Parrain de cet ambassadeur : il touche 25€ une fois ce filleul à 3 ventes"
                         style={{
                           padding: '5px 8px', borderRadius: 6, fontSize: 12,
                           border: '1px solid var(--border)', background: 'var(--surface)',
@@ -347,7 +347,7 @@ export function RosterManager({
                           maxWidth: 140, outline: 'none',
                         }}
                       >
-                        <option value="">— Aucun —</option>
+                        <option value="">Aucun</option>
                         {referrerOptions.filter((r) => r.id !== a.id).map((r) => (
                           <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
@@ -442,7 +442,7 @@ export function RosterManager({
               Cette action est <strong>irréversible</strong> et efface aussi ses payouts, parrainages, contrats et logs email.
               {deleteTarget.salesCount > 0 && (
                 <span style={{ color: 'var(--warning)', display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
-                  <Icon name="alert" size={14} style={{ flexShrink: 0, marginTop: 1 }} /> Cet ambassadeur a {deleteTarget.salesCount} vente(s). La suppression sera refusée — désactivez-le plutôt.
+                  <Icon name="alert" size={14} style={{ flexShrink: 0, marginTop: 1 }} /> Cet ambassadeur a {deleteTarget.salesCount} vente(s). La suppression sera refusée : désactivez-le plutôt.
                 </span>
               )}
             </p>
@@ -505,7 +505,7 @@ function SetupUrlModal({ data, onClose }: { data: { name: string; url: string; e
           Nouveau lien d&apos;activation pour {data.name}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>
-          L&apos;ancien lien et le PIN sont invalidés. Envoyez ce nouveau lien à l&apos;ambassadeur (expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}) — il définira lui-même son nouveau PIN :
+          L&apos;ancien lien et le PIN sont invalidés. Envoyez ce nouveau lien à l&apos;ambassadeur (expire le {new Date(data.expiresAt).toLocaleString('fr-FR')}), il définira lui-même son nouveau PIN :
         </p>
         <code style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', wordBreak: 'break-all', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: 6 }}>
           {data.url}

@@ -18,7 +18,7 @@ export function generateStaticParams() {
   return [{ locale: 'fr' }];
 }
 
-const TITLE = 'Guides — pourboires, exonération et réglementation';
+const TITLE = 'Guides : pourboires, exonération et réglementation';
 const DESCRIPTION =
   'Des guides pratiques sur le pourboire en France : exonération jusqu\'en 2028, obligations de déclaration, et solutions de pourboire par carte.';
 

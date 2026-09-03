@@ -28,7 +28,7 @@ export async function generateMetadata({
 
 const PACK_VISUAL = {
   solo: { img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
-  duo:  { img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
+  duo:  { img: '/products/duo-double.jpg', alt: 'Pack Duo, 2 plaques époxy NFC Digitip' },
 } as const;
 
 function isValidPack(s: string | undefined): s is PackId {

@@ -387,7 +387,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
                 Bienvenue {ambassadorName}
               </div>
               <div style={{ fontSize: FONT.body, color: 'var(--text-3)', lineHeight: 1.5 }}>
-                Choisissez votre <strong>PIN à 4 chiffres</strong>. Vous l&apos;utiliserez à chaque connexion — notez-le quelque part.
+                Choisissez votre <strong>PIN à 4 chiffres</strong>. Vous l&apos;utiliserez à chaque connexion, notez-le quelque part.
               </div>
             </div>
             <PinInput onSubmit={handleSetupPin} error={pinError} loading={pinLoading} />
@@ -569,7 +569,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
             <div style={{ marginBottom: SPACE.lg }}>
               <SectionHeader title="Paliers de la semaine" />
               <div style={{ fontSize: FONT.label, color: 'var(--text-3)', fontStyle: 'italic', margin: '4px 0 10px' }}>
-                Un seul bonus — le palier le plus élevé atteint
+                Un seul bonus : le palier le plus élevé atteint
               </div>
               <div style={{ display: 'flex', gap: SPACE.sm }}>
                 {tiers.map(tier => (

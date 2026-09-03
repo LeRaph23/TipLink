@@ -13,11 +13,11 @@ const COUNTRIES = [
 ];
 
 const CURRENCIES = [
-  ['eur', 'EUR — Euro'],
-  ['gbp', 'GBP — British Pound'],
-  ['chf', 'CHF — Swiss Franc'],
-  ['usd', 'USD — US Dollar'],
-  ['cad', 'CAD — Canadian Dollar'],
+  ['eur', 'EUR (Euro)'],
+  ['gbp', 'GBP (British Pound)'],
+  ['chf', 'CHF (Swiss Franc)'],
+  ['usd', 'USD (US Dollar)'],
+  ['cad', 'CAD (Canadian Dollar)'],
 ];
 
 const fieldStyle = {

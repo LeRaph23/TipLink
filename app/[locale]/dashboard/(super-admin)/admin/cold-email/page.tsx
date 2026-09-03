@@ -31,7 +31,7 @@ export default async function ProspectsPage({
       <p style={{ fontSize: 13, color: 'var(--text-2)', margin: '0 0 24px', lineHeight: 1.5 }}>
         Scrape SIRENE pour alimenter le tableau, enrichis manuellement chaque prospect, puis lance
         une vague d&apos;envoi par programme. Les Ambassadeurs partent via Resend (digitip.app),
-        les Commerciaux Pros via Brevo (partenaires.digitip.app) — réputations isolées.
+        les Commerciaux Pros via Brevo (partenaires.digitip.app), réputations isolées.
       </p>
 
       <ColdBatchPanel

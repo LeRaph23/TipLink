@@ -71,7 +71,7 @@ const AUDIENCES: Audience[] = [
   {
     icon: 'trophy',
     title: 'Jeunes diplômés',
-    body: "Un premier revenu commercial pour étoffer un CV — prospection terrain, négociation, suivi client.",
+    body: "Un premier revenu commercial pour étoffer un CV : prospection terrain, négociation, suivi client.",
   },
   {
     icon: 'wallet',
@@ -100,7 +100,7 @@ const TRUST: Trust[] = [
   {
     icon: 'check',
     title: 'Activité 100 % déclarée',
-    body: "Vous démarchez sous statut de micro-entrepreneur. Vos commissions sont facturées à Digitip et soumises aux cotisations URSSAF — aucun travail au noir.",
+    body: "Vous démarchez sous statut de micro-entrepreneur. Vos commissions sont facturées à Digitip et soumises aux cotisations URSSAF, aucun travail au noir.",
   },
   {
     icon: 'lock',
@@ -172,7 +172,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
         <ul style={faqList}>
           <FaqBullet>Statut étudiant, bourse, congé parental.</FaqBullet>
           <FaqBullet>Contrat salarié (CDI/CDD) ou une autre activité indépendante.</FaqBullet>
-          <FaqBullet>Allocation chômage (ARE) — à déclarer mensuellement à France Travail.</FaqBullet>
+          <FaqBullet>Allocation chômage (ARE), à déclarer mensuellement à France Travail.</FaqBullet>
           <FaqBullet>Retraite.</FaqBullet>
         </ul>
         <p style={{ margin: '10px 0 0' }}>
@@ -279,7 +279,7 @@ export default async function DevenirAmbassadeurPage({
             Rejoignez le programme officiel d&apos;ambassadeurs Digitip.
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 18px' }}>
-            Vous présentez nos SmartTags NFC — un dispositif de pourboire sans contact — à des
+            Vous présentez nos SmartTags NFC (un dispositif de pourboire sans contact) à des
             établissements de proximité (restaurants, bars, cafés, salons, hôtels…), et touchez
             35 à 45 € par vente.
           </p>
@@ -369,7 +369,7 @@ export default async function DevenirAmbassadeurPage({
           <h2 style={sectionTitle}>Ouvert à tous les profils, à temps choisi.</h2>
           <p style={sectionLead}>
             Aucun prérequis de diplôme ni d&apos;âge. Le programme convient aussi bien à un premier revenu
-            qu&apos;à un complément d&apos;activité sur le temps libre — vous fixez votre rythme.
+            qu&apos;à un complément d&apos;activité sur le temps libre : vous fixez votre rythme.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>

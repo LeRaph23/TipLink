@@ -102,7 +102,7 @@ export function ArticleLayout({
                      style={{ color: 'var(--text-2)' }}>
                     {s.label}
                   </a>
-                  {' — vérifié le '}{formatFrDate(s.verifiedOn)}
+                  {', vérifié le '}{formatFrDate(s.verifiedOn)}
                 </li>
               ))}
             </ul>

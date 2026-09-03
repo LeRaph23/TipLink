@@ -116,7 +116,7 @@ export async function sendTipReceipt(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Your tip receipt — ${formatted}`,
+    subject: `Your tip receipt · ${formatted}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -160,8 +160,8 @@ export async function sendOrderConfirmation(opts: {
   const label = packLabel(pack, locale);
 
   const subject = isFr
-    ? `Votre commande Digitip est confirmée — ${label}`
-    : `Your Digitip order is confirmed — ${label}`;
+    ? `Votre commande Digitip est confirmée · ${label}`
+    : `Your Digitip order is confirmed · ${label}`;
 
   const headline = isFr ? 'Commande confirmée' : 'Order confirmed';
   const subline = isFr
@@ -269,8 +269,8 @@ export async function sendOrderShipped(opts: {
   const label = packLabel(pack, locale);
 
   const subject = isFr
-    ? `Votre commande Digitip a été expédiée — ${label}`
-    : `Your Digitip order has shipped — ${label}`;
+    ? `Votre commande Digitip a été expédiée · ${label}`
+    : `Your Digitip order has shipped · ${label}`;
 
   const headline = isFr ? 'Commande expédiée' : 'Order shipped';
   const subline = isFr
@@ -294,8 +294,8 @@ export async function sendOrderShipped(opts: {
           </div>
           <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-bottom:16px;line-height:1.6">
             ${isFr
-              ? 'Vous pouvez configurer votre espace Digitip maintenant — ou attendre la réception de vos SmartTags et simplement scanner l\'un des QR codes. Les deux fonctionnent parfaitement.'
-              : 'You can set up your Digitip space now — or wait until your SmartTags arrive and simply scan one of the QR codes. Both work perfectly.'}
+              ? 'Vous pouvez configurer votre espace Digitip maintenant, ou attendre la réception de vos SmartTags et simplement scanner l\'un des QR codes. Les deux fonctionnent parfaitement.'
+              : 'You can set up your Digitip space now, or wait until your SmartTags arrive and simply scan one of the QR codes. Both work perfectly.'}
           </div>
           <a href="${onboardingUrl}" class="neutral-btn" style="display:inline-block;padding:10px 20px;background:#0f0f12;color:#ffffff;font-size:13px;font-weight:600;border-radius:8px;text-decoration:none">
             ${isFr ? 'Configurer maintenant (optionnel) →' : 'Set up now (optional) →'}
@@ -354,7 +354,7 @@ export async function sendPaymentFailed(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Your tip payment did not go through — ${formatted}`,
+    subject: `Your tip payment did not go through · ${formatted}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -393,7 +393,7 @@ export async function sendTipRefunded(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Your tip has been refunded — ${formatted}`,
+    subject: `Your tip has been refunded · ${formatted}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -424,7 +424,7 @@ export async function sendAmbassadorApplicationConfirmation(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Candidature ambassadeur reçue — Digitip`,
+    subject: `Candidature ambassadeur reçue · Digitip`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -460,7 +460,7 @@ export async function sendAmbassadorApplicationAdmin(opts: {
     from: FROM,
     to,
     replyTo: email,
-    subject: `Nouvelle candidature ambassadeur — ${firstName} ${lastName}`,
+    subject: `Nouvelle candidature ambassadeur · ${firstName} ${lastName}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
@@ -477,7 +477,7 @@ export async function sendAmbassadorApplicationAdmin(opts: {
         ${infoRow('Ville', city)}
         ${infoRow('SIRET', siret
           ? `<span style="font-family:monospace">${siret}</span>`
-          : '<span style="color:#9ca3af">Non renseigné — à fournir avant paiement</span>')}
+          : '<span style="color:#9ca3af">Non renseigné, à fournir avant paiement</span>')}
         ${notes ? infoRow('Notes', notes) : ''}
       </table>
     </td></tr>`),
@@ -498,7 +498,7 @@ export async function sendCommercialContractInvitation(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Contrat d'apporteur d'affaires à signer — ${contractTitle}`,
+    subject: `Contrat d'apporteur d'affaires à signer · ${contractTitle}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -532,7 +532,7 @@ export async function sendSignedCommercialContractCopy(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Contrat signé — ${contractTitle}`,
+    subject: `Contrat signé · ${contractTitle}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -587,7 +587,7 @@ export async function sendCommercialApplicationConfirmation(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Candidature commerciale reçue — Digitip Partenaires`,
+    subject: `Candidature commerciale reçue · Digitip Partenaires`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -599,7 +599,7 @@ export async function sendCommercialApplicationConfirmation(opts: {
       <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.65">Votre dossier de candidature au programme partenaire B2B Digitip est bien arrivé. Notre direction commerciale l'examine et revient vers vous sous 48 h ouvrées pour, le cas échéant, la signature du contrat d'apporteur d'affaires et l'activation de votre code commercial.</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">En cas de question urgente, vous pouvez répondre directement à cet email — il atterrit chez nos équipes partenaires.</p>
+      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">En cas de question urgente, vous pouvez répondre directement à cet email : il atterrit chez nos équipes partenaires.</p>
     </td></tr>`),
   });
 }
@@ -632,7 +632,7 @@ export async function sendCommercialApplicationAdmin(opts: {
     from: FROM,
     to,
     replyTo: email,
-    subject: `Nouvelle candidature COMMERCIAL PRO — ${firstName} ${lastName} (${companyName})`,
+    subject: `Nouvelle candidature COMMERCIAL PRO · ${firstName} ${lastName} (${companyName})`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
@@ -651,7 +651,7 @@ export async function sendCommercialApplicationAdmin(opts: {
         ${infoRow('SIRET', `<span style="font-family:monospace">${siret}</span>`)}
         ${infoRow('N° TVA', vatNumber
           ? `<span style="font-family:monospace">${vatNumber}</span>`
-          : '<span style="color:#9ca3af">Non renseigné — franchise probable</span>')}
+          : '<span style="color:#9ca3af">Non renseigné, franchise probable</span>')}
         ${sector ? infoRow('Secteur géographique', sector) : ''}
         ${notes ? infoRow('Notes', notes) : ''}
       </table>
@@ -672,7 +672,7 @@ export async function sendAmbassadorBankingConfirmation(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Compte bancaire configuré — Digitip Ambassadeur`,
+    subject: `Compte bancaire configuré · Digitip Ambassadeur`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -705,12 +705,12 @@ export async function sendAmbassadorPayoutAdmin(opts: {
   const paid = status === 'paid';
   const badge = paid
     ? '<div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Virement effectué</div>'
-    : '<div style="display:inline-block;background:#ef444422;color:#ef4444;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Virement échoué — à reprendre</div>';
+    : '<div style="display:inline-block;background:#ef444422;color:#ef4444;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Virement échoué, à reprendre</div>';
 
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Virement ambassadeur — ${ambassadorName} (${amount} €)`,
+    subject: `Virement ambassadeur · ${ambassadorName} (${amount} €)`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
@@ -724,7 +724,7 @@ export async function sendAmbassadorPayoutAdmin(opts: {
     <tr><td style="padding:0 32px 32px">
       <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
         ${infoRow('Montant', `<strong>${amount} €</strong>`)}
-        ${infoRow('Statut', paid ? 'Versé sur le compte Stripe de l\'ambassadeur' : 'Échec — à reprendre depuis le dashboard admin')}
+        ${infoRow('Statut', paid ? 'Versé sur le compte Stripe de l\'ambassadeur' : 'Échec, à reprendre depuis le dashboard admin')}
       </table>
       <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Le solde ne contient que la commission de base et les bonus que tu as validés.</p>
     </td></tr>`),
@@ -753,7 +753,7 @@ export async function sendAdminNewOrder(opts: {
     from: FROM,
     to: adminEmail,
     ...(customerEmail ? { replyTo: customerEmail } : {}),
-    subject: `Nouvelle commande — ${label} · ${customerName}`,
+    subject: `Nouvelle commande · ${label} · ${customerName}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
@@ -804,8 +804,8 @@ export async function sendOrderDelivered(opts: {
     ? 'Posez votre SmartTag sur votre comptoir ou table.'
     : 'Place your SmartTag on your counter or table.';
   const step2 = isFr
-    ? 'Vos clients approchent leur téléphone — le pourboire est reçu en 3 secondes.'
-    : 'Customers tap their phone — the tip arrives in 3 seconds.';
+    ? 'Vos clients approchent leur téléphone : le pourboire est reçu en 3 secondes.'
+    : 'Customers tap their phone: the tip arrives in 3 seconds.';
   const step3 = isFr
     ? 'Suivez vos pourboires en temps réel depuis votre dashboard.'
     : 'Track your tips in real time from your dashboard.';
@@ -876,8 +876,8 @@ export async function sendOrderCanceled(opts: {
   const label = packLabel(pack, locale);
 
   const subject = isFr
-    ? `Votre commande Digitip a été annulée — ${label}`
-    : `Your Digitip order has been canceled — ${label}`;
+    ? `Votre commande Digitip a été annulée · ${label}`
+    : `Your Digitip order has been canceled · ${label}`;
   const headline = isFr ? 'Commande annulée' : 'Order canceled';
   const subline = isFr
     ? 'Le montant payé vous sera intégralement remboursé sur le moyen de paiement utilisé sous 5 à 10 jours ouvrés.'
@@ -918,7 +918,7 @@ export async function sendOrderCanceled(opts: {
   });
 }
 
-// ─── Custom order note (admin → customer, free-form) ──────────────────────────
+// ─── Custom order note (admin → customer — free-form) ──────────────────────────
 
 export async function sendOrderCustomNote(opts: {
   to: string;
@@ -1017,7 +1017,7 @@ export async function sendAmbassadorContractInvitation(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Contrat à signer — ${contractTitle}`,
+    subject: `Contrat à signer · ${contractTitle}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -1051,7 +1051,7 @@ export async function sendSignedContractCopy(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Contrat signé — ${contractTitle}`,
+    subject: `Contrat signé · ${contractTitle}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -1086,13 +1086,13 @@ export async function sendAmbassadorApplicationReminder(opts: {
   const { to, firstName, step } = opts;
   const subject = step === 1
     ? `${firstName}, ta candidature ambassadeur Digitip nous attend`
-    : `Dernière relance — ta candidature ambassadeur expire bientôt`;
+    : `Dernière relance, ta candidature ambassadeur expire bientôt`;
   const headline = step === 1
     ? `On a vu ta candidature, ${firstName}`
     : `Dernière chance, ${firstName}`;
   const body = step === 1
     ? `Ton dossier est en cours d'examen. Pour accélérer, assure-toi que ton SIRET et ton RIB sont à jour. Tu n'as pas encore de SIRET ? <a href="https://autoentrepreneur.urssaf.fr" style="color:#E57A97">Crée-le gratuitement ici</a> (10 min, c'est instantané).`
-    : `Sans nouvelle de ta part dans les prochains jours, on devra archiver ta candidature. Si tu es toujours motivé(e), réponds à cet email — un humain te recontactera dans la journée.`;
+    : `Sans nouvelle de ta part dans les prochains jours, on devra archiver ta candidature. Si tu es toujours motivé(e), réponds à cet email : un humain te recontactera dans la journée.`;
 
   await resend.emails.send({
     from: FROM,
@@ -1125,7 +1125,7 @@ export async function sendReferralWelcomeToCandidate(opts: {
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `${parrainName} t'a recommandé(e) — Bienvenue chez Digitip`,
+    subject: `${parrainName} t'a recommandé(e) · Bienvenue chez Digitip`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
@@ -1163,8 +1163,8 @@ export async function sendReferralEmailFromAmbassador(opts: {
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
       <div class="text-primary" style="font-size:24px;font-weight:800;color:#0f0f12;margin-bottom:10px">${parrainName} pense à toi</div>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip — placer des SmartTags NFC chez des restos et toucher 35 à 45 € par vente. ${parrainName} pense que tu pourrais cartonner.</p>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">Pas d'engagement, pas de stock à avancer — juste un SIRET (auto-entrepreneur) et l'envie de prospecter.</p>
+      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip : placer des SmartTags NFC chez des restos et toucher 35 à 45 € par vente. ${parrainName} pense que tu pourrais cartonner.</p>
+      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">Pas d'engagement, pas de stock à avancer, juste un SIRET (auto-entrepreneur) et l'envie de prospecter.</p>
     </td></tr>
     <tr><td style="padding:8px 32px 32px">
       <p><a href="${link}" style="display:inline-block;padding:12px 22px;background:#E57A97;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">Découvrir le programme →</a></p>
@@ -1204,7 +1204,7 @@ export async function sendReferralValidatedToParrain(
       <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">Ton filleul <strong class="text-strong" style="color:#0f0f12">${filleulName}</strong> vient de réaliser sa 2ᵉ vente. Ton bonus de parrainage est crédité sur ton solde et payable lors de ta prochaine demande de virement.</p>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">Continue à inviter des potes — 5 filleuls validés = +100€ supplémentaires. 10 filleuls = +250€.</p>
+      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">Continue à inviter des potes : 5 filleuls validés = +100€ supplémentaires. 10 filleuls = +250€.</p>
     </td></tr>`),
   });
 }
@@ -1235,12 +1235,12 @@ export async function sendColdEmailStep(opts: {
     1: {
       subject: `${firstName ? firstName + ', ' : ''}une idée pour ton activité`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je tombe sur ton SIRET dans la base SIRENE — tu es enregistré(e) en activité commerciale${cityFragment}. On lance un programme ambassadeur Digitip : tu places des SmartTags NFC (pourboires sans contact) dans les restos, et tu touches <strong class="text-strong" style="color:#0f0f12">35 à 45€ par vente</strong>. Pas de stock, pas d'avance.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je tombe sur ton SIRET dans la base SIRENE : tu es enregistré(e) en activité commerciale${cityFragment}. On lance un programme ambassadeur Digitip : tu places des SmartTags NFC (pourboires sans contact) dans les restos, et tu touches <strong class="text-strong" style="color:#0f0f12">35 à 45€ par vente</strong>. Pas de stock, pas d'avance.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si ça te dit d'en savoir plus, jette un œil :</p>
         <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Voir le programme →</a></p>`,
     },
     2: {
-      subject: `${firstName ? firstName + ', ' : ''}exemple concret — un amba a fait 12 ventes en 3 sem`,
+      subject: `${firstName ? firstName + ', ' : ''}exemple concret : un amba a fait 12 ventes en 3 sem`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Petit suivi sur mon mail précédent. Concrètement : un de nos ambassadeurs à Lyon vient de faire <strong class="text-strong" style="color:#0f0f12">12 ventes en 3 semaines</strong>, soit ~360€ de commissions. Il bosse ~5h/semaine.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si tu veux essayer, le SIRET que tu as déjà suffit :</p>
@@ -1249,7 +1249,7 @@ export async function sendColdEmailStep(opts: {
     3: {
       subject: `Dernier mail`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je te promets, c'est mon dernier mail. Si le sujet ne t'intéresse pas, pas de souci — désinscris-toi en 1 clic en bas du mail.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je te promets, c'est mon dernier mail. Si le sujet ne t'intéresse pas, pas de souci, désinscris-toi en 1 clic en bas du mail.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si tu hésites encore, voilà le lien :</p>
         <p><a href="${landingUrl}" class="outline-btn" style="display:inline-block;padding:10px 18px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #e5e7eb">Découvrir Digitip Ambassadeur</a></p>`,
     },
@@ -1272,7 +1272,7 @@ export async function sendColdEmailStep(opts: {
 // ─── Commercial Pros cold email B2B sequence (sent via Brevo) ──────────────
 
 function coldEmailFooterCommercial(unsubscribeUrl: string): string {
-  // B2B-tone unsub footer — references intérêt légitime RGPD article 6§1f and
+  // B2B-tone unsub footer, references intérêt légitime RGPD article 6§1f and
   // gives the postal address required by Loi Informatique & Libertés. Plain
   // text styling to match the sobriety of the rest of the commercial mails.
   return `<tr><td class="divider-strong text-muted" style="padding:24px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
@@ -1309,10 +1309,10 @@ export async function sendCommercialColdEmailStep(opts: {
   const variants: Record<1 | 2 | 3, { subject: string; body: string }> = {
     1: {
       subject: firstName
-        ? `${firstName}, un partenariat à étudier — apport d'affaires B2B`
-        : `Un partenariat à étudier — apport d'affaires B2B`,
+        ? `${firstName}, un partenariat à étudier, apport d'affaires B2B`
+        : `Un partenariat à étudier, apport d'affaires B2B`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je suis Raphaël Meyer, fondateur de Digitip. On édite un dispositif de pourboire sans contact (SmartTag NFC) pour les établissements de proximité — restaurants, bars, cafés, hôtels, salons, instituts. Je vois que votre activité${companyMention}${cityFragment} pourrait correspondre à un canal d'apport d'affaires que nous structurons.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je suis Raphaël Meyer, fondateur de Digitip. On édite un dispositif de pourboire sans contact (SmartTag NFC) pour les établissements de proximité : restaurants, bars, cafés, hôtels, salons, instituts. Je vois que votre activité${companyMention}${cityFragment} pourrait correspondre à un canal d'apport d'affaires que nous structurons.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Le cadre est <strong class="text-strong" style="color:#0f0f12">strictement professionnel</strong> : contrat d'apporteur d'affaires en bonne et due forme, facturation B2B, paiement Stripe Connect, sans exclusivité ni quota. Le ticket moyen côté commerçant est court (1-2 RDV) et le produit répond à un vrai manque.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si le sujet vous intéresse, voici la fiche de candidature (~2 min) :</p>
         <p><a href="${landingUrl}" style="display:inline-block;padding:11px 20px;background:#0f0f12;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Découvrir le programme partenaire →</a></p>
@@ -1325,7 +1325,7 @@ export async function sendCommercialColdEmailStep(opts: {
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je vous écris en suivi de mon précédent message. Quelques précisions concrètes sur le programme :</p>
         <ul style="font-size:14px;color:#5a5a6a;line-height:1.7;margin:8px 0 14px;padding-left:22px">
-          <li>Barème commissionnement transparent, détaillé en MP — supérieur à ce qui se pratique sur l'apport d'affaires sur ce segment</li>
+          <li>Barème commissionnement transparent, détaillé en MP, supérieur à ce qui se pratique sur l'apport d'affaires sur ce segment</li>
           <li>Pas de stock à avancer, pas d'investissement initial</li>
           <li>Paiement via Stripe Connect dès 30&nbsp;€ de solde, contrat formel</li>
           <li>Code commercial dédié + tableau de bord pour suivre vos ventes en temps réel</li>
@@ -1339,7 +1339,7 @@ export async function sendCommercialColdEmailStep(opts: {
         ? `${firstName}, dernier message`
         : `Dernier message`,
       body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Comme promis, c'est mon dernier message sur ce sujet. Si le programme partenaire Digitip ne correspond pas à votre activité actuelle, aucun souci — vous pouvez vous désinscrire en un clic depuis le pied de ce mail et je ne vous recontacterai plus.</p>
+        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Comme promis, c'est mon dernier message sur ce sujet. Si le programme partenaire Digitip ne correspond pas à votre activité actuelle, aucun souci, vous pouvez vous désinscrire en un clic depuis le pied de ce mail et je ne vous recontacterai plus.</p>
         <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si au contraire vous voulez en savoir plus, voici une dernière fois le lien vers la fiche détaillée :</p>
         <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #e5e7eb">Programme partenaire Digitip</a></p>
         <p class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6;margin-top:18px">Bien cordialement,<br/>Raphaël Meyer · Fondateur Digitip</p>`,
@@ -1395,8 +1395,8 @@ export async function sendStaffInviteEmail(opts: {
     : `<strong class="text-strong" style="color:#0f0f12">${establishmentName}</strong> is inviting you to join Digitip and receive tips straight into your bank account.`;
   const ctaLabel = isFr ? 'Créer mon compte' : 'Create my account';
   const helper = isFr
-    ? `Ce lien vous emmène directement à l'onboarding avec votre email pré-rempli (${to}). Pas besoin de mot de passe — vous choisirez le vôtre à la fin.`
-    : `This link takes you straight to onboarding with your email pre-filled (${to}). No password needed — you'll set one at the end.`;
+    ? `Ce lien vous emmène directement à l'onboarding avec votre email pré-rempli (${to}). Pas besoin de mot de passe : vous choisirez le vôtre à la fin.`
+    : `This link takes you straight to onboarding with your email pre-filled (${to}). No password needed: you'll set one at the end.`;
   const greeting = isFr ? `Bonjour ${fullName},` : `Hi ${fullName},`;
   const footer = isFr
     ? 'Si vous n\'attendiez pas cette invitation, vous pouvez ignorer ce message.'
@@ -1498,14 +1498,14 @@ async function lifecycleSend(to: string, subject: string, inner: string): Promis
   //
   // The lifecycle engine writes a `pending` row, calls this, and marks the row
   // `sent` on success or `failed` on throw. Returning { id: null } here made it
-  // record a send that never happened — and because lifecycle_email_log has a
+  // record a send that never happened, and because lifecycle_email_log has a
   // partial unique index on dedup_key WHERE status IN ('pending','sent'), that
   // row then blocked the same email to the same recipient forever, including
   // after the API key was finally configured. `failed` rows are outside the
   // index, so throwing keeps the send retryable.
   if (!resend) {
     throw new Error(
-      'RESEND_API_KEY is not configured — refusing to record a lifecycle email as sent.'
+      'RESEND_API_KEY is not configured, refusing to record a lifecycle email as sent.'
     );
   }
   const result = await resend.emails.send({ from: FROM, to, subject, html: themedLayout(inner) });
@@ -1519,7 +1519,7 @@ function money(cents: number, currency = 'EUR'): string {
   }).format(cents / 100);
 }
 
-/** Group admin — onboarding not completed (J+2 = step 1, J+5 = step 2). */
+/** Group admin, onboarding not completed (J+2 = step 1, J+5 = step 2). */
 export async function sendGroupOnboardingNudge(opts: {
   to: string; firstName: string; setupUrl: string; step: 1 | 2; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1529,14 +1529,14 @@ export async function sendGroupOnboardingNudge(opts: {
       lifecycleBody({
         badge: 'Configuration', tone: 'pink',
         title: `${firstName}, finalisez votre espace Digitip`,
-        intro: `Votre commande est validée. Dernière étape : créer votre espace Digitip — <strong class="text-strong" style="color:#0f0f12">moins de 2 minutes</strong>.`,
+        intro: `Votre commande est validée. Dernière étape : créer votre espace Digitip, <strong class="text-strong" style="color:#0f0f12">moins de 2 minutes</strong>.`,
         bullets: ['① Nommez votre établissement', '② Ajoutez vos employés', '③ Posez le SmartTag et encaissez'],
         ctaLabel: 'Configurer mon espace →', ctaUrl: setupUrl,
         note: 'Une question ? Répondez à cet email.',
         unsubscribeUrl,
       }));
   }
-  return lifecycleSend(to, `${firstName}, vos SmartTags sont prêts — mais pas encore actifs`,
+  return lifecycleSend(to, `${firstName}, vos SmartTags sont prêts · mais pas encore actifs`,
     lifecycleBody({
       badge: 'À finaliser', tone: 'amber',
       title: `${firstName}, ne laissez pas filer vos pourboires`,
@@ -1547,12 +1547,12 @@ export async function sendGroupOnboardingNudge(opts: {
     }));
 }
 
-/** Group admin — hardware delivered, no tip yet: place the tag. */
+/** Group admin, hardware delivered, no tip yet: place the tag. */
 export async function sendTagDeliveredPlaceNudge(opts: {
   to: string; firstName: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
   const { to, firstName, establishmentName, dashboardUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, vos SmartTags sont arrivés — posez-en un maintenant`,
+  return lifecycleSend(to, `${firstName}, vos SmartTags sont arrivés · posez-en un maintenant`,
     lifecycleBody({
       badge: 'Livré', tone: 'green',
       title: `${firstName}, sortez vos SmartTags de la boîte`,
@@ -1568,7 +1568,7 @@ export async function sendTagDeliveredPlaceNudge(opts: {
     }));
 }
 
-/** Group admin — onboarded but team is empty: invite staff. */
+/** Group admin, onboarded but team is empty: invite staff. */
 export async function sendInviteTeamNudge(opts: {
   to: string; firstName: string; establishmentName: string; inviteUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1577,7 +1577,7 @@ export async function sendInviteTeamNudge(opts: {
     lifecycleBody({
       badge: 'Votre équipe', tone: 'pink',
       title: `${firstName}, vos employés peuvent recevoir leurs pourboires`,
-      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> n'a pas encore d'équipe sur Digitip. Chaque employé ajouté peut recevoir ses pourboires directement sur son compte — et c'est un vrai argument pour les motiver.`,
+      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> n'a pas encore d'équipe sur Digitip. Chaque employé ajouté peut recevoir ses pourboires directement sur son compte, et c'est un vrai argument pour les motiver.`,
       ctaLabel: 'Ajouter mon équipe →', ctaUrl: inviteUrl,
       note: 'Ça prend 30 secondes par personne : un nom, un email, c\'est tout.',
       unsubscribeUrl,
@@ -1585,7 +1585,7 @@ export async function sendInviteTeamNudge(opts: {
 }
 
 /**
- * Group admin — some staff profiles have no email, so they can never be paid.
+ * Group admin, some staff profiles have no email, so they can never be paid.
  *
  * Addressed to the admin rather than the staff member on purpose: a profile
  * with user_id NULL has no address and no account, so no staff-audience email
@@ -1603,19 +1603,19 @@ export async function sendStaffMissingEmailNudge(opts: {
     lifecycleBody({
       badge: 'Équipe', tone: 'amber',
       title: `${people} ${verb} pas recevoir de pourboires`,
-      intro: `Chez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong>, ${people} a été ajoutée sans adresse email. Sans email, pas d'invitation, donc pas de compte — et un pourboire qui leur serait destiné ne peut pas leur être versé.`,
+      intro: `Chez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong>, ${people} a été ajoutée sans adresse email. Sans email, pas d'invitation, donc pas de compte, et un pourboire qui leur serait destiné ne peut pas leur être versé.`,
       ctaLabel: 'Renseigner leur email →', ctaUrl: staffUrl,
       note: 'Une adresse suffit : l\'invitation part automatiquement.',
       unsubscribeUrl,
     }));
 }
 
-/** Group admin — live for a while, still zero succeeded tips. */
+/** Group admin, live for a while, still zero succeeded tips. */
 export async function sendActivationNudge(opts: {
   to: string; firstName: string; establishmentName: string; dashboardUrl: string; daysSince: number; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
   const { to, firstName, establishmentName, dashboardUrl, daysSince, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, toujours 0 pourboire — réglons ça ensemble`,
+  return lifecycleSend(to, `${firstName}, toujours 0 pourboire · réglons ça ensemble`,
     lifecycleBody({
       badge: 'Activation', tone: 'amber',
       title: `${firstName}, votre SmartTag n'a encore rien encaissé`,
@@ -1626,12 +1626,12 @@ export async function sendActivationNudge(opts: {
         '③ Le tag n\'a jamais été testé → scannez-le pour vérifier qu\'il fonctionne',
       ],
       ctaLabel: 'Vérifier mon installation →', ctaUrl: dashboardUrl,
-      note: 'Bloqué ? Répondez à cet email — on regarde votre cas avec vous, gratuitement.',
+      note: 'Bloqué ? Répondez à cet email : on regarde votre cas avec vous, gratuitement.',
       unsubscribeUrl,
     }));
 }
 
-/** Staff — invitation not yet claimed (J+3 = step 1, J+7 = step 2). */
+/** Staff, invitation not yet claimed (J+3 = step 1, J+7 = step 2). */
 export async function sendStaffInviteReminder(opts: {
   to: string; firstName: string; establishmentName: string; joinUrl: string; step: 1 | 2; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1643,16 +1643,16 @@ export async function sendStaffInviteReminder(opts: {
     lifecycleBody({
       badge: 'Invitation', tone: 'pink',
       title: `${firstName}, activez votre compte Digitip`,
-      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> vous a invité(e) à recevoir vos pourboires directement sur votre compte bancaire. Votre compte n'est pas encore activé — il suffit d'une minute.`,
+      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> vous a invité(e) à recevoir vos pourboires directement sur votre compte bancaire. Votre compte n'est pas encore activé : il suffit d'une minute.`,
       ctaLabel: 'Activer mon compte →', ctaUrl: joinUrl,
       note: step === 2
         ? 'Sans compte activé, vos pourboires ne peuvent pas vous être versés.'
-        : 'Une minute suffit — vos pourboires arrivent ensuite directement sur votre compte.',
+        : 'Une minute suffit : vos pourboires arrivent ensuite directement sur votre compte.',
       unsubscribeUrl,
     }));
 }
 
-/** Staff — account claimed but Stripe banking not started (J+1 / J+3 / J+7). */
+/** Staff, account claimed but Stripe banking not started (J+1 / J+3 / J+7). */
 export async function sendStaffBankingNudge(opts: {
   to: string; firstName: string; bankingUrl: string; step: 1 | 2 | 3; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1668,12 +1668,12 @@ export async function sendStaffBankingNudge(opts: {
       ctaLabel: 'Relier mon compte →', ctaUrl: bankingUrl,
       note: step === 3
         ? 'Chaque pourboire reçu reste en attente tant que votre RIB n\'est pas renseigné.'
-        : 'Vos coordonnées bancaires sont gérées par Stripe — Digitip n\'y a jamais accès.',
+        : 'Vos coordonnées bancaires sont gérées par Stripe, Digitip n\'y a jamais accès.',
       unsubscribeUrl,
     }));
 }
 
-/** Staff — tips captured but HELD because identity/banking isn't set up yet.
+/** Staff, tips captured but HELD because identity/banking isn't set up yet.
  *  Escalates J+7 (1) / J+30 (2) / J+60 (3); step 3 warns before the 90-day
  *  auto-refund. `amount` is a pre-formatted currency string. */
 export async function sendUnclaimedTipsReminder(opts: {
@@ -1690,31 +1690,31 @@ export async function sendUnclaimedTipsReminder(opts: {
         ? `${firstName}, dernière étape avant expiration`
         : `${firstName}, vos pourboires vous attendent`,
       intro: step === 3
-        ? `Vous avez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires en attente. Sans vérification d'identité, ils seront <strong class="text-strong" style="color:#0f0f12">remboursés au client après 90 jours</strong>. Récupérez-les maintenant — 2 minutes, sécurisé par Stripe.`
-        : `Vous avez déjà <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires sur Digitip. Pour les recevoir sur votre compte, confirmez votre identité — 2 minutes, sécurisé par Stripe, à faire une seule fois.`,
+        ? `Vous avez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires en attente. Sans vérification d'identité, ils seront <strong class="text-strong" style="color:#0f0f12">remboursés au client après 90 jours</strong>. Récupérez-les maintenant, 2 minutes, sécurisé par Stripe.`
+        : `Vous avez déjà <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires sur Digitip. Pour les recevoir sur votre compte, confirmez votre identité, 2 minutes, sécurisé par Stripe, à faire une seule fois.`,
       ctaLabel: 'Récupérer mes pourboires →', ctaUrl: bankingUrl,
       note: step === 3
         ? 'Après 90 jours, les pourboires non réclamés sont automatiquement remboursés au client.'
-        : 'Vos coordonnées bancaires sont gérées par Stripe — Digitip n\'y a jamais accès.',
+        : 'Vos coordonnées bancaires sont gérées par Stripe, Digitip n\'y a jamais accès.',
       unsubscribeUrl,
     }));
 }
 
-/** Staff — Stripe banking just completed (transactional). */
+/** Staff, Stripe banking just completed (transactional). */
 export async function sendStaffBankingComplete(opts: {
   to: string; firstName: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName } = opts;
-  return lifecycleSend(to, `${firstName}, tout est prêt — vos pourboires arrivent`,
+  return lifecycleSend(to, `${firstName}, tout est prêt · vos pourboires arrivent`,
     lifecycleBody({
       badge: 'Compte activé', tone: 'green',
       title: `${firstName}, votre compte est prêt`,
       intro: `Votre compte bancaire est relié et vérifié. À partir de maintenant, chaque pourboire laissé sur votre SmartTag <strong class="text-strong" style="color:#0f0f12">arrive directement sur votre compte</strong>. Il ne reste plus qu'à en parler à vos clients !`,
-      note: 'Digitip ne conserve jamais vos fonds — tout passe directement par Stripe.',
+      note: 'Le pourboire est encaissé par Digitip via Stripe, puis reversé sur votre compte.',
     }));
 }
 
-/** Group admin — establishment received its very first tip. */
+/** Group admin, establishment received its very first tip. */
 export async function sendFirstTipCelebration(opts: {
   to: string; firstName: string; amount: number; currency: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1723,7 +1723,7 @@ export async function sendFirstTipCelebration(opts: {
     lifecycleBody({
       badge: 'Premier pourboire', tone: 'green',
       title: `${firstName}, ${escapeHtml(establishmentName)} vient d'encaisser son 1er pourboire !`,
-      intro: `Un client vient de laisser <strong class="text-strong" style="color:#0f0f12">${money(amount, currency)}</strong> via votre SmartTag. C'est la preuve que ça marche — maintenant, le but est d'en faire une habitude.`,
+      intro: `Un client vient de laisser <strong class="text-strong" style="color:#0f0f12">${money(amount, currency)}</strong> via votre SmartTag. C'est la preuve que ça marche : maintenant, le but est d'en faire une habitude.`,
       bullets: [
         '→ Posez un SmartTag à chaque poste / chaque caisse',
         '→ Demandez à l\'équipe de le mentionner à chaque encaissement',
@@ -1733,7 +1733,7 @@ export async function sendFirstTipCelebration(opts: {
     }));
 }
 
-/** Staff — cumulative earnings crossed a milestone (€100 / €500). */
+/** Staff, cumulative earnings crossed a milestone (€100 / €500). */
 export async function sendEarningsMilestone(opts: {
   to: string; firstName: string; milestoneAmount: number; currency: string; dashboardUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1741,14 +1741,14 @@ export async function sendEarningsMilestone(opts: {
   return lifecycleSend(to, `${firstName}, vous avez dépassé ${money(milestoneAmount, currency)} de pourboires`,
     lifecycleBody({
       badge: 'Palier atteint', tone: 'green',
-      title: `${firstName}, ${money(milestoneAmount, currency)} de pourboires — bravo !`,
-      intro: `Vos pourboires Digitip viennent de dépasser <strong class="text-strong" style="color:#0f0f12">${money(milestoneAmount, currency)}</strong> au total. Continuez à proposer le SmartTag à vos clients — le prochain palier arrive vite.`,
+      title: `${firstName}, ${money(milestoneAmount, currency)} de pourboires, bravo !`,
+      intro: `Vos pourboires Digitip viennent de dépasser <strong class="text-strong" style="color:#0f0f12">${money(milestoneAmount, currency)}</strong> au total. Continuez à proposer le SmartTag à vos clients : le prochain palier arrive vite.`,
       ctaLabel: 'Voir mon total →', ctaUrl: dashboardUrl,
       unsubscribeUrl,
     }));
 }
 
-/** Group admin — establishment was active then went quiet (recurring). */
+/** Group admin, establishment was active then went quiet (recurring). */
 export async function sendReEngagementEmail(opts: {
   to: string; firstName: string; establishmentName: string; daysQuiet: number; dashboardUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1757,19 +1757,19 @@ export async function sendReEngagementEmail(opts: {
     lifecycleBody({
       badge: 'Reprise', tone: 'amber',
       title: `${firstName}, ça fait calme du côté de ${escapeHtml(establishmentName)}`,
-      intro: `Aucun pourboire n'est passé depuis <strong class="text-strong" style="color:#0f0f12">${daysQuiet} jours</strong>. Ça arrive — et ça se règle vite. La cause la plus fréquente : le SmartTag a disparu de la vue.`,
+      intro: `Aucun pourboire n'est passé depuis <strong class="text-strong" style="color:#0f0f12">${daysQuiet} jours</strong>. Ça arrive, et ça se règle vite. La cause la plus fréquente : le SmartTag a disparu de la vue.`,
       bullets: [
         '① Le tag est-il toujours bien en place et visible ?',
         '② L\'équipe le propose-t-elle encore aux clients ?',
         '③ Un test rapide : scannez-le pour vérifier qu\'il répond',
       ],
       ctaLabel: 'Reprendre la main →', ctaUrl: dashboardUrl,
-      note: 'On peut regarder votre cas ensemble — répondez simplement à cet email.',
+      note: 'On peut regarder votre cas ensemble : répondez simplement à cet email.',
       unsubscribeUrl,
     }));
 }
 
-/** Group admin — weekly recap of tips collected (recurring, Mondays). */
+/** Group admin, weekly recap of tips collected (recurring, Mondays). */
 export async function sendWeeklyTipRecap(opts: {
   to: string; firstName: string; establishmentName: string; weekTotal: number; tipCount: number; currency: string; dashboardUrl: string; unsubscribeUrl?: string | null;
 }): Promise<{ id: string | null }> {
@@ -1778,24 +1778,24 @@ export async function sendWeeklyTipRecap(opts: {
     lifecycleBody({
       badge: 'Récap de la semaine', tone: 'green',
       title: `${firstName}, ${escapeHtml(establishmentName)} a encaissé ${money(weekTotal, currency)}`,
-      intro: `Cette semaine, vos clients ont laissé <strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${tipCount > 1 ? 's' : ''}</strong> via Digitip, pour un total de <strong class="text-strong" style="color:#0f0f12">${money(weekTotal, currency)}</strong>. Bel élan — gardez le SmartTag bien visible pour faire encore mieux.`,
+      intro: `Cette semaine, vos clients ont laissé <strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${tipCount > 1 ? 's' : ''}</strong> via Digitip, pour un total de <strong class="text-strong" style="color:#0f0f12">${money(weekTotal, currency)}</strong>. Bel élan : gardez le SmartTag bien visible pour faire encore mieux.`,
       ctaLabel: 'Voir le détail →', ctaUrl: dashboardUrl,
       unsubscribeUrl,
     }));
 }
 
-/** Staff — a Stripe payout failed (transactional). */
+/** Staff, a Stripe payout failed (transactional). */
 export async function sendPayoutFailedAlert(opts: {
   to: string; firstName: string; bankingUrl: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, bankingUrl } = opts;
-  return lifecycleSend(to, `${firstName}, action requise — un virement a échoué`,
+  return lifecycleSend(to, `${firstName}, action requise · un virement a échoué`,
     lifecycleBody({
       badge: 'Action requise', tone: 'amber',
       title: `${firstName}, un virement de vos pourboires a échoué`,
       intro: `Un virement de vos pourboires n'a pas pu aboutir. C'est presque toujours un RIB incorrect ou expiré. Vérifiez vos coordonnées bancaires pour débloquer vos paiements.`,
       ctaLabel: 'Vérifier mon RIB →', ctaUrl: bankingUrl,
-      note: 'Vos pourboires restent en sécurité — ils seront versés dès que votre compte sera à jour.',
+      note: 'Vos pourboires restent en sécurité : ils seront versés dès que votre compte sera à jour.',
     }));
 }
 
@@ -1806,7 +1806,7 @@ export async function sendPayoutFailedAlert(opts: {
  *
  * This is the shape of the Pro promise: an export the manager has to remember
  * to run every month is still a chore. One that lands in their accountant's
- * inbox on its own is not — same data, different product.
+ * inbox on its own is not, same data, different product.
  */
 export async function sendMonthlyStatement(opts: {
   to: string[];
@@ -1824,8 +1824,8 @@ export async function sendMonthlyStatement(opts: {
 
   const fr = locale === 'fr';
   const subject = fr
-    ? `Relevé de pourboires ${monthLabel} — ${establishmentName}`
-    : `Tip statement for ${monthLabel} — ${establishmentName}`;
+    ? `Relevé de pourboires ${monthLabel}, ${establishmentName}`
+    : `Tip statement for ${monthLabel}, ${establishmentName}`;
 
   await resend.emails.send({
     from: FROM,
@@ -1837,7 +1837,7 @@ export async function sendMonthlyStatement(opts: {
       <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Relevé mensuel' : 'Monthly statement'}</div>
     </td></tr>
     <tr><td style="padding:28px 32px">
-      <div class="text-primary" style="font-size:18px;font-weight:700;color:#0f0f12;margin-bottom:10px">${establishmentName} — ${monthLabel}</div>
+      <div class="text-primary" style="font-size:18px;font-weight:700;color:#0f0f12;margin-bottom:10px">${establishmentName}, ${monthLabel}</div>
       <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">
         ${fr
           ? `<strong class="text-strong" style="color:#0f0f12">${totalFormatted}</strong> de pourboires à répartir entre ${staffCount} ${staffCount > 1 ? 'personnes' : 'personne'} ce mois-ci.`

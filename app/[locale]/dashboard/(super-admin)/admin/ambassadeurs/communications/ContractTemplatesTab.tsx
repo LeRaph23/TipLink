@@ -134,7 +134,7 @@ function EditContractTemplateForm({
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
-          Corps HTML du contrat — variables : {'{{ambassador_name}}'} {'{{ambassador_siret}}'} {'{{promo_code}}'} {'{{date}}'}
+          Corps HTML du contrat, variables : {'{{ambassador_name}}'} {'{{ambassador_siret}}'} {'{{promo_code}}'} {'{{date}}'}
         </label>
         <textarea
           style={{ ...inputStyle, minHeight: 360, fontFamily: 'ui-monospace, monospace', fontSize: 12 }}

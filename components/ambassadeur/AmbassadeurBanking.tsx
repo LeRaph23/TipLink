@@ -210,7 +210,7 @@ export function AmbassadeurPayoutPanel({
 
       {!canPayout && (
         <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: SPACE.sm, textAlign: 'center' }}>
-          Minimum {fmt(minCents)} — il vous manque {fmt(minCents - available)}.
+          Minimum {fmt(minCents)}, il vous manque {fmt(minCents - available)}.
         </div>
       )}
 

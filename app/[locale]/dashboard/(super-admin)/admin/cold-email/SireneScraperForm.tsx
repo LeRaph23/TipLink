@@ -157,7 +157,7 @@ export function SireneScraperForm() {
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16, lineHeight: 1.5 }}>
         Récupère depuis la base publique SIRENE des entreprises en lien avec votre cible.
-        Les emails et sites web ne sont pas dans SIRENE — ils sont enrichis automatiquement
+        Les emails et sites web ne sont pas dans SIRENE : ils sont enrichis automatiquement
         après le scrape (api.gouv.fr Recherche d&apos;entreprises + scrape des pages contact).
         Requiert <code>INSEE_API_KEY</code> dans Vercel.
       </div>

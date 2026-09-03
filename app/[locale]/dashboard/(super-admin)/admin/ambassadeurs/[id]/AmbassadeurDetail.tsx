@@ -220,7 +220,7 @@ export function AmbassadeurDetail({ data }: { data: FicheData }) {
         )}
         {regen && (
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-2)', padding: '10px 12px', background: 'var(--success-bg)', borderRadius: 8 }}>
-            <div style={{ fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>Nouveau lien d&apos;activation — expire le {new Date(regen.expiresAt).toLocaleString('fr-FR')}</div>
+            <div style={{ fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>Nouveau lien d&apos;activation, expire le {new Date(regen.expiresAt).toLocaleString('fr-FR')}</div>
             <code style={{ wordBreak: 'break-all', display: 'block', background: 'var(--surface-2)', padding: '6px 8px', borderRadius: 4 }}>{regen.url}</code>
           </div>
         )}

@@ -77,7 +77,7 @@ export function ContractsTab({
         </button>
         {templates.length === 0 && (
           <span style={{ fontSize: 12.5, color: 'var(--warning)' }}>
-            Aucun template actif — crée d&apos;abord un template de contrat.
+            Aucun template actif : crée d&apos;abord un template de contrat.
           </span>
         )}
       </div>

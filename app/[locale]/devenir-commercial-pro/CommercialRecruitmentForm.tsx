@@ -93,7 +93,7 @@ export function CommercialRecruitmentForm() {
 
     const siretClean = siret.replace(/\s+/g, '');
     if (!/^\d{14}$/.test(siretClean)) {
-      setError('SIRET invalide — 14 chiffres requis. Le SIRET est obligatoire pour le programme Commerciaux Pros.');
+      setError('SIRET invalide : 14 chiffres requis. Le SIRET est obligatoire pour le programme Commerciaux Pros.');
       return;
     }
 
@@ -208,7 +208,7 @@ export function CommercialRecruitmentForm() {
         <div>
           <span style={label}>Forme juridique</span>
           <select style={inp} value={legalForm} onChange={e => setLegalForm(e.target.value)}>
-            <option value="">— Sélectionner —</option>
+            <option value="">Sélectionner…</option>
             {COMMERCIAL_LEGAL_FORMS.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
@@ -237,7 +237,7 @@ export function CommercialRecruitmentForm() {
       <div>
         <span style={label}>Statut commercial</span>
         <select style={inp} value={vrpStatus} onChange={e => setVrpStatus(e.target.value)}>
-          <option value="">— Sélectionner —</option>
+          <option value="">Sélectionner…</option>
           {COMMERCIAL_VRP_STATUSES.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}

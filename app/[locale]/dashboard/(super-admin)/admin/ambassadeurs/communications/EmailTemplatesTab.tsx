@@ -144,7 +144,7 @@ function EditEmailTemplateForm({
     }}>
       <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 16px', color: 'var(--text)' }}>
         {template.id ? `Modifier : ${template.name}` : 'Nouveau template'}
-        {template.is_seeded && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--accent)' }}>(seed — slug verrouillé)</span>}
+        {template.is_seeded && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--accent)' }}>(seed, slug verrouillé)</span>}
       </h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
         <div>
@@ -168,7 +168,7 @@ function EditEmailTemplateForm({
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
-          Corps HTML — variables : {'{{first_name}}'} {'{{full_name}}'} {'{{promo_code}}'} {'{{dashboard_url}}'}
+          Corps HTML, variables : {'{{first_name}}'} {'{{full_name}}'} {'{{promo_code}}'} {'{{dashboard_url}}'}
         </label>
         <textarea
           style={{ ...inputStyle, minHeight: 320, fontFamily: 'ui-monospace, monospace', fontSize: 12 }}

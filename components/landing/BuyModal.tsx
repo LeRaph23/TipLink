@@ -17,7 +17,7 @@ type Props = {
 
 const VISUALS: Record<Pack, { img: string; alt: string }> = {
   solo: { img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
-  duo:  { img: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
+  duo:  { img: '/products/duo-double.jpg', alt: 'Pack Duo, 2 plaques époxy NFC Digitip' },
 };
 
 export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
@@ -128,9 +128,9 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
               />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: '#0f1020' }}>Plaque époxy NFC — Digitip</div>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: '#0f1020' }}>Plaque époxy NFC Digitip</div>
               <div style={{ fontSize: 12.5, color: '#6b6d85', marginTop: 2 }}>
-                {selectedPack === 'solo' ? 'Solo — 1 plaque époxy NFC' : 'Duo — 2 plaques époxy NFC'}
+                {selectedPack === 'solo' ? 'Solo, 1 plaque époxy NFC' : 'Duo, 2 plaques époxy NFC'}
               </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>

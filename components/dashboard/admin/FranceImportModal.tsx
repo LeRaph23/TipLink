@@ -102,7 +102,7 @@ export function FranceImportModal({
           >×</button>
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4, marginBottom: 14, lineHeight: 1.5 }}>
-          Coche les régions à importer. Le job tourne en tâche de fond — le worker s&apos;auto-relance
+          Coche les régions à importer. Le job tourne en tâche de fond : le worker s&apos;auto-relance
           entre chaque chunk, et plusieurs crons quotidiens prennent le relais si une étape crashe
           pendant que cet onglet est fermé.
         </p>

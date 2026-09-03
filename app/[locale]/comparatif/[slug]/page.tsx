@@ -99,7 +99,7 @@ export default async function ComparisonPage({ params }: Props) {
         <p>
           Cette page compare des faits publiés, avec la source et la date de vérification
           de chaque ligne. Elle ne porte pas de jugement sur la qualité de{' '}
-          {cmp.competitor} — nous ne sommes pas neutres, et vous n&apos;auriez aucune
+          {cmp.competitor} : nous ne sommes pas neutres, et vous n&apos;auriez aucune
           raison de nous croire sur ce terrain.
         </p>
 
@@ -114,7 +114,7 @@ export default async function ComparisonPage({ params }: Props) {
           Si vous voulez uniquement rendre le pourboire possible, sans toucher à votre
           caisse ni à votre parcours de paiement, et sans engagement mensuel. La plaque
           s&apos;achète une fois, s&apos;installe en deux minutes, et la commission de 5 %
-          ne s&apos;applique qu&apos;aux pourboires réellement encaissés — sans pourboire,
+          ne s&apos;applique qu&apos;aux pourboires réellement encaissés : sans pourboire,
           vous ne payez rien.
         </p>
         <p>

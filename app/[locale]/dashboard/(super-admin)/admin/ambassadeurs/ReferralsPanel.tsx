@@ -112,7 +112,7 @@ export function ReferralsPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 28 }}>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', padding: 18 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
-          <Icon name="handshake" size={15} /> Parrainages — primes à valider
+          <Icon name="handshake" size={15} /> Parrainages : primes à valider
         </h2>
         <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 12px' }}>
           Une prime de 25 € est due au parrain dès que son filleul atteint {REFERRAL_VALIDATION_MIN_SALES} ventes

@@ -466,11 +466,11 @@ function AdminPopup({ salon }: { salon: AdminSalon }) {
               </span>
             ) : salon.visits[0].distanceM != null ? (
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--warning)' }}>
-                ⚠ Dernière visite à {salon.visits[0].distanceM} m — non vérifiée
+                ⚠ Dernière visite à {salon.visits[0].distanceM} m, non vérifiée
               </span>
             ) : (
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>
-                — Dernière visite sans GPS
+                Dernière visite sans GPS
               </span>
             )}
           </div>

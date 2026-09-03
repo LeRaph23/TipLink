@@ -108,7 +108,7 @@ export function EstablishmentDetailActions({ id, name, address, businessType, is
         <div style={modal} onClick={() => setEditing(false)}>
           <div style={modalBox} onClick={(e) => e.stopPropagation()}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
-              Modifier — {name}
+              Modifier {name}
             </h2>
             {error && <div style={{ fontSize: 12, color: 'var(--error, #ef4444)', marginBottom: 10 }}>{error}</div>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 18 }}>

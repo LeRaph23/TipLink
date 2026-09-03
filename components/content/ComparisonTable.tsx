@@ -88,7 +88,7 @@ export function ComparisonTable({
       </table>
       <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.6 }}>
         Informations relevées sur les sites et documentations publiques des éditeurs, aux
-        dates indiquées. Les offres évoluent — vérifiez auprès de l&apos;éditeur avant de
+        dates indiquées. Les offres évoluent, vérifiez auprès de l&apos;éditeur avant de
         décider.
       </p>
     </div>

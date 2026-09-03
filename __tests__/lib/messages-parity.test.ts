@@ -50,6 +50,22 @@ describe('message catalogue parity', () => {
     expect(empties(en as unknown as Tree)).toEqual([]);
   });
 
+  it('uses no em dashes in user-facing copy', () => {
+    // An em dash reads as machine-written to a French audience, and these
+    // strings are the product's voice: the landing page, the legal pages, every
+    // email and every screen. Replacements are contextual — a comma, a colon,
+    // parentheses or a full stop — so this only guards the result, never
+    // performs the swap.
+    const dashed = (tree: Tree, prefix = ''): string[] =>
+      Object.entries(tree).flatMap(([k, v]) =>
+        typeof v === 'string'
+          ? v.includes('\u2014') ? [`${prefix}${k}`] : []
+          : dashed(v, `${prefix}${k}.`)
+      );
+    expect(dashed(fr as unknown as Tree)).toEqual([]);
+    expect(dashed(en as unknown as Tree)).toEqual([]);
+  });
+
   it('no longer ships fabricated social-proof keys', () => {
     // Guards the fix that removed the invented 4.8/400 rating, the "+150 avis
     // vérifiés" counter and the three fictional testimonials. Re-adding any of

@@ -147,7 +147,7 @@ export default async function PricingPage({
                 }}>
                   <Image
                     src={id === 'duo' ? '/products/duo-double.jpg' : '/products/solo-3d.jpg'}
-                    alt={id === 'duo' ? 'Pack Duo — 2 plaques époxy NFC Digitip' : 'Plaque époxy NFC Digitip Solo'}
+                    alt={id === 'duo' ? 'Pack Duo, 2 plaques époxy NFC Digitip' : 'Plaque époxy NFC Digitip Solo'}
                     fill
                     sizes="(max-width: 900px) 100vw, 450px"
                     style={{ objectFit: 'cover' }}
