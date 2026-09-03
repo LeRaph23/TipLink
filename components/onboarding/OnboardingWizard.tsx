@@ -4,7 +4,6 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import dynamic from 'next/dynamic';
 import {
   completePostPurchaseOnboarding,
   completeNfcOnboarding,
@@ -16,13 +15,6 @@ import { GoogleReviewPicker } from './GoogleReviewPicker';
 import { getBaseUrl } from '@/lib/env';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { trackEvent } from '@/lib/analytics';
-
-// Connect.js reaches for `window` and `getComputedStyle` as it boots, and the
-// embedded iframe has nothing to prerender, so this stays out of SSR.
-const EstablishmentOnboarding = dynamic(
-  () => import('@/components/stripe/EstablishmentOnboarding').then((m) => m.EstablishmentOnboarding),
-  { ssr: false },
-);
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -38,20 +30,24 @@ interface WizardState {
   password: string;
 }
 
-/** How far Stripe says the establishment's account has got. */
-type ConnectReadiness = 'unknown' | 'checking' | 'incomplete' | 'submitted';
-
 // The Google listing comes first on purpose: picking it answers the name, the
 // address and the trade in one search, so `confirm` is a screen the manager
 // reads rather than fills in. Without a listing it falls back to the empty
 // fields it replaced, which is exactly the old three steps minus two taps.
-type ScanStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password' | 'connect';
-type AuthStep = 'google-review' | 'confirm' | 'admin-name' | 'connect';
-type ExpressStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password' | 'connect';
+//
+// Stripe's KYC form is deliberately absent. It used to be the last step and it
+// is where managers stopped: the longest, least welcome part of the setup sat
+// between them and any sign the thing worked. It now lives on
+// /dashboard/paiements, with the dashboard banner making the case for it. The
+// tag stays shut either way (get_public_staff gates on charges AND payouts), so
+// nothing about the money moved, only the order of the asking.
+type ScanStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password';
+type AuthStep = 'google-review' | 'confirm' | 'admin-name';
+type ExpressStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password';
 
-const SCAN_STEPS: ScanStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password', 'connect'];
-const AUTH_STEPS: AuthStep[] = ['google-review', 'confirm', 'admin-name', 'connect'];
-const EXPRESS_STEPS: ExpressStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password', 'connect'];
+const SCAN_STEPS: ScanStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password'];
+const AUTH_STEPS: AuthStep[] = ['google-review', 'confirm', 'admin-name'];
+const EXPRESS_STEPS: ExpressStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password'];
 
 type Props =
   | {
@@ -179,41 +175,18 @@ export function OnboardingWizard(props: Props) {
   // not state: the retry reads it in the same tick it is written.
   const createdUserId = useRef<string | null>(null);
 
-  // Set once the group / establishment / roles exist, which is what the Connect
-  // step needs before it can attach a Stripe account to anything.
-  const [provisioned, setProvisioned] = useState<{
-    establishmentId: string;
-    onboardingToken?: string;
-  } | null>(null);
-  const [provisioning, setProvisioning] = useState(false);
-  // Stripe accepted the form but is still verifying. Onboarding is done; the
-  // tip pages just stay closed until charges and payouts light up.
+  // Guards the finish button against a double submit: provisioning writes a
+  // group, an establishment and the roles, and running it twice in scan mode
+  // creates a duplicate group.
+  // Provisioning and finishing are one click, but they are two round-trips: if
+  // the second fails, a retry must not create a second group, and it must still
+  // carry the token minted by the first. Kept in a ref so the retry reads it in
+  // the same tick it was written.
+  const provisioned = useRef<{ establishmentId: string; onboardingToken?: string } | null>(null);
+  // The establishment cannot be paid yet. Always true straight out of the
+  // wizard now that Stripe is asked from the dashboard, but it is read from the
+  // server's answer rather than assumed.
   const [payoutsPending, setPayoutsPending] = useState(false);
-  // The embedded component told us the account holder left the form. Only a
-  // hint that it is worth re-asking Stripe — never proof of completion.
-  const [connectExited, setConnectExited] = useState(false);
-
-  // What Stripe actually says about the establishment's account.
-  //
-  // 'unknown' covers both "not asked yet" and "the check failed", and both let
-  // the finish button through on purpose: finalizeOnboarding re-reads Stripe
-  // server-side and refuses a half-finished account anyway, so a failed poll
-  // must never be the thing that strands a manager on the last step. Disabling
-  // the button is a courtesy on top of that gate, not the gate itself.
-  // Company or sole trader, asked here rather than inside Stripe's form.
-  //
-  // Stripe only skips a question when the answer is already on the account, and
-  // it files the address under `company` or `individual` depending on this — so
-  // one question in our own UI is what lets the address, the trading name and
-  // the business type all arrive prefilled. The embedded form is mounted only
-  // once it is answered, because the account is created on its first request.
-  const [legalForm, setLegalForm] = useState<'company' | 'individual' | null>(null);
-
-  //
-  // Starts at 'checking' so the last step never flashes an enabled button in the
-  // window before the first answer comes back.
-  const [connectReady, setConnectReady] =
-    useState<ConnectReadiness>('checking');
 
   const goTo = useCallback(
     (step: string) => {
@@ -237,9 +210,6 @@ export function OnboardingWizard(props: Props) {
         case 'admin-name': return state.adminFullName.trim().length > 0;
         case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
         case 'password': return state.password.length >= 8;
-        // Navigation-wise always reachable; the finish button is what enforces
-        // that Stripe actually got the onboarding form (see handleFinish).
-        case 'connect': return true;
         default: return true;
       }
     },
@@ -272,12 +242,6 @@ export function OnboardingWizard(props: Props) {
     // never produce a pageview — without this event the whole wizard is a
     // single row in analytics and the drop-off step is unknowable.
     trackEvent('onboarding_step_completed', { mode, step: currentStep, index: stepIndex });
-    // Entering the Connect step needs an establishment to attach the account
-    // to, so that transition provisions first and navigates on success.
-    if (steps[stepIndex + 1] === 'connect') {
-      void provisionThenAdvance();
-      return;
-    }
     const s = steps[stepIndex + 1];
     if (s) goTo(s);
   };
@@ -288,111 +252,72 @@ export function OnboardingWizard(props: Props) {
   };
 
   /**
-   * Asks our server what Stripe thinks of the account, so the last step can
-   * tell "the form is still half-filled" apart from "ready to finish".
+   * Closes the wizard: creates the account and everything it owns, then marks
+   * onboarding done.
    *
-   * Deliberately not driven by the embedded component's own completion
-   * callback: anything the browser claims about its own progress can be faked
-   * from the console, and this decides whether onboarding may close.
+   * This used to be two acts, with Stripe's KYC form between them. The form
+   * moved to /dashboard/paiements, so provisioning and finishing are the same
+   * click again, and the manager lands on a dashboard rather than on a
+   * verification chore.
    */
-  const fetchConnectStatus = useCallback(async (): Promise<ConnectReadiness> => {
-    if (!provisioned) return 'unknown';
-    try {
-      const q = new URLSearchParams({ establishmentId: provisioned.establishmentId });
-      if (provisioned.onboardingToken) q.set('token', provisioned.onboardingToken);
-      const res = await fetch(`/api/stripe/account-session?${q.toString()}`);
-      if (!res.ok) return 'unknown';
-      const data = (await res.json()) as { detailsSubmitted?: boolean };
-      return data.detailsSubmitted ? 'submitted' : 'incomplete';
-    } catch {
-      return 'unknown';
-    }
-  }, [provisioned]);
-
-  // Ask on arrival, then keep asking until Stripe says the form was submitted.
-  //
-  // Polling rather than waiting for a click: the embedded component finishes
-  // inside its own iframe and does not reliably tell us so, and a manager who
-  // has just filled in a KYC form should find the way out already open rather
-  // than have to hunt for a "check again" link. The state is set from callbacks
-  // rather than the effect body so this stays a subscription to an external
-  // system instead of a cascading render.
-  useEffect(() => {
-    if (currentStep !== 'connect' || !provisioned) return;
-    let cancelled = false;
-    let polls = 0;
-    // Submitted is terminal for this step, so the loop stops asking.
-    let settled = false;
-
-    const read = () => {
-      void fetchConnectStatus().then((status) => {
-        if (cancelled) return;
-        setConnectReady(status);
-        if (status === 'submitted') settled = true;
-      });
-    };
-
-    read();
-
-    // GET /api/stripe/account-session allows 10 calls a minute per IP and each
-    // one reaches Stripe, so this stays well under that and only runs while the
-    // tab is in front. POLL_CAP stops an abandoned tab polling for ever; the
-    // manual re-check below is the way back after that.
-    const POLL_MS = 10_000;
-    const POLL_CAP = 40;
-    const timer = setInterval(() => {
-      if (settled || polls >= POLL_CAP) {
-        clearInterval(timer);
-        return;
-      }
-      if (document.visibilityState !== 'visible') return;
-      polls += 1;
-      read();
-    }, POLL_MS);
-
-    // Coming back from another tab or app — fetching an ID document, say — is
-    // the moment the answer is most likely to have changed.
-    const onVisible = () => {
-      if (!settled && document.visibilityState === 'visible') read();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [currentStep, provisioned, connectExited, fetchConnectStatus]);
-
-  // Same question, asked by hand: the embedded form does not reliably announce
-  // that it is finished, so the manager needs a way to re-ask without reloading.
-  async function recheckConnectStatus() {
-    setConnectReady('checking');
-    setConnectReady(await fetchConnectStatus());
-  }
-
-  /**
-   * Creates everything on our side (group, establishment, roles) and moves to
-   * the Connect step.
-   *
-   * This used to be the end of the wizard. It is now the second-to-last act:
-   * onboarding is not complete until Stripe has the establishment's details,
-   * which `handleFinish` verifies.
-   */
-  async function provisionThenAdvance() {
-    // Re-entrant guard: the Connect step is reachable by browser back, and a
-    // second run would create a duplicate group in scan mode.
-    if (provisioned) {
-      goTo('connect');
-      return;
-    }
-    if (provisioning) return;
-
-    setProvisioning(true);
+  async function handleFinish() {
+    // Re-entrant guard: the button can be clicked twice, and in scan mode a
+    // second provisioning run creates a duplicate group.
+    if (submitting) return;
     setSubmitting(true);
     setError(null);
 
     try {
+      if (!provisioned.current) {
+        const result = await provision();
+        if ('error' in result) {
+          setError(result.error);
+          setSubmitting(false);
+          return;
+        }
+        provisioned.current = result;
+      }
+
+      const finalized = await finalizeOnboarding({
+        establishmentId: provisioned.current.establishmentId,
+        token: provisioned.current.onboardingToken,
+      });
+      if ('error' in finalized) {
+        setError(finalized.error);
+        setSubmitting(false);
+        return;
+      }
+
+      trackEvent('onboarding_submitted', { mode, payoutsEnabled: finalized.payoutsEnabled });
+
+      // Scan and express both created the auth account here, so the manager is
+      // signed in but unconfirmed. Sign them out and point them at their inbox.
+      if (mode === 'scan' || mode === 'express') {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        if (data.session) await supabase.auth.signOut();
+        setNeedsEmailVerification(true);
+      }
+
+      // Always true at this point in practice: the Stripe account is created
+      // from the dashboard now, so nothing can charge yet. The done screen says
+      // so rather than implying the tag is live.
+      setPayoutsPending(!finalized.chargesEnabled || !finalized.payoutsEnabled);
+      setDone(true);
+      setSubmitting(false);
+    } catch (err) {
+      // Without this, a thrown error (server action 500, network failure) would
+      // leave the button stuck on "Finalisation…" for ever.
+      console.error('onboarding finalize failed', err);
+      setError(tAuth('errorGeneric'));
+      setSubmitting(false);
+    }
+  }
+
+  /** Creates the group, the establishment and the roles for the current mode. */
+  async function provision(): Promise<
+    { establishmentId: string; onboardingToken?: string } | { error: string }
+  > {
     if (mode === 'scan') {
       // 1. Create the Supabase account client-side, unless a previous attempt
       //    already did (see createdUserId).
@@ -410,16 +335,14 @@ export function OnboardingWizard(props: Props) {
         });
 
         if (signUpErr || !signUpData.user) {
-          setError(signUpErr ? mapAuthError(signUpErr.message, tAuth) : tAuth('errorGeneric'));
-          setSubmitting(false);
-          setProvisioning(false);
-          return;
+          return { error: signUpErr ? mapAuthError(signUpErr.message, tAuth) : tAuth('errorGeneric') };
         }
         userId = signUpData.user.id;
         createdUserId.current = userId;
       }
 
-      // 2. Call server action — passes userId so it works even before email confirmation
+      // 2. Call the server action, passing userId so it works before the email
+      //    is confirmed.
       const result = await completeNfcOnboarding({
         userId,
         nfcCodes: state.nfcCodes,
@@ -431,28 +354,12 @@ export function OnboardingWizard(props: Props) {
         businessType: state.businessType,
         locale: locale as 'fr' | 'en',
       });
+      return 'error' in result
+        ? { error: result.error }
+        : { establishmentId: result.establishmentId, onboardingToken: result.onboardingToken };
+    }
 
-      if ('error' in result) {
-        // A SmartTag already attached to someone else is not something the
-        // manager can fix from here: the tag id comes from the URL the sticker
-        // itself points at, and there is no longer a step that lets one be
-        // typed in. The message says to get in touch, which is the only real
-        // remedy, so it stays on the step the click came from.
-        setError(result.error);
-        setSubmitting(false);
-        setProvisioning(false);
-        return;
-      }
-
-      // Stay signed in through the Connect step; the sign-out that used to
-      // happen here now waits until handleFinish, so the embedded component
-      // has a session (and, as a fallback, the signed token below).
-      setProvisioned({
-        establishmentId: result.establishmentId,
-        onboardingToken: result.onboardingToken,
-      });
-    } else if (mode === 'express') {
-      // Express flow: account created here, group already exists in DB
+    if (mode === 'express') {
       let userId = createdUserId.current;
       if (!userId) {
         const supabase = createClient();
@@ -466,19 +373,14 @@ export function OnboardingWizard(props: Props) {
           },
         });
 
-        if (signUpErr) {
-          setError(mapAuthError(signUpErr.message, tAuth));
-          setSubmitting(false);
-          setProvisioning(false);
-          return;
-        }
+        if (signUpErr) return { error: mapAuthError(signUpErr.message, tAuth) };
         userId = signUpData.user?.id ?? null;
         createdUserId.current = userId;
       }
 
-      // Run the express onboarding action up-front so the group_admin role is
-      // attached to the new auth user even when email confirmation defers the
-      // session. Otherwise the user logs in later with no role at all.
+      // Run the express action up front so the group_admin role is attached to
+      // the new auth user even though email confirmation defers the session.
+      // Otherwise the manager logs in later with no role at all.
       const result = await completeExpressOnboarding({
         groupId: props.groupId,
         token: props.token,
@@ -491,96 +393,23 @@ export function OnboardingWizard(props: Props) {
         locale: locale as 'fr' | 'en',
         userId: userId ?? undefined,
       });
-
-      if ('error' in result) {
-        setError(result.error);
-        setSubmitting(false);
-        setProvisioning(false);
-        return;
-      }
-
-      setProvisioned({
-        establishmentId: result.establishmentId,
-        onboardingToken: result.onboardingToken,
-      });
-    } else {
-      const result = await completePostPurchaseOnboarding({
-        establishmentName: state.establishmentName,
-        address: state.address,
-        googlePlaceId: state.googlePlaceId || undefined,
-        googleReviewUrl: state.googleReviewUrl || undefined,
-        adminFullName: state.adminFullName,
-        businessType: state.businessType,
-        locale: locale as 'fr' | 'en',
-      });
-
-      if ('error' in result) {
-        setError(result.error);
-        setSubmitting(false);
-        setProvisioning(false);
-        return;
-      }
-
-      setProvisioned({ establishmentId: result.establishmentId });
+      return 'error' in result
+        ? { error: result.error }
+        : { establishmentId: result.establishmentId, onboardingToken: result.onboardingToken };
     }
 
-    setSubmitting(false);
-    setProvisioning(false);
-    goTo('connect');
-    } catch (err) {
-      // Without this, a thrown error (server action 500, network failure)
-      // would leave the button stuck on "Finalisation…" forever.
-      console.error('onboarding provisioning failed', err);
-      setError(tAuth('errorGeneric'));
-      setSubmitting(false);
-      setProvisioning(false);
-    }
-  }
-
-  /**
-   * Closes the wizard, but only if Stripe confirms the establishment submitted
-   * its onboarding details. The server re-reads the account rather than
-   * trusting anything the browser claims about it.
-   */
-  async function handleFinish() {
-    if (!provisioned) return;
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const result = await finalizeOnboarding({
-        establishmentId: provisioned.establishmentId,
-        token: provisioned.onboardingToken,
-      });
-
-      if ('error' in result) {
-        setError(result.code === 'connect_incomplete' ? t('connect.incomplete') : result.error);
-        setSubmitting(false);
-        return;
-      }
-
-      trackEvent('onboarding_submitted', {
-        mode,
-        payoutsEnabled: result.payoutsEnabled,
-      });
-
-      // Scan and express both created the account here, so the user is signed
-      // in but unconfirmed. Sign them out and tell them to check their inbox.
-      if (mode === 'scan' || mode === 'express') {
-        const supabase = createClient();
-        const { data } = await supabase.auth.getSession();
-        if (data.session) await supabase.auth.signOut();
-        setNeedsEmailVerification(true);
-      }
-
-      setPayoutsPending(!result.chargesEnabled || !result.payoutsEnabled);
-      setDone(true);
-      setSubmitting(false);
-    } catch (err) {
-      console.error('onboarding finalize failed', err);
-      setError(tAuth('errorGeneric'));
-      setSubmitting(false);
-    }
+    const result = await completePostPurchaseOnboarding({
+      establishmentName: state.establishmentName,
+      address: state.address,
+      googlePlaceId: state.googlePlaceId || undefined,
+      googleReviewUrl: state.googleReviewUrl || undefined,
+      adminFullName: state.adminFullName,
+      businessType: state.businessType,
+      locale: locale as 'fr' | 'en',
+    });
+    return 'error' in result
+      ? { error: result.error }
+      : { establishmentId: result.establishmentId, onboardingToken: result.onboardingToken };
   }
 
   // ─── Done screen ───────────────────────────────────────────────────────────
@@ -696,7 +525,7 @@ export function OnboardingWizard(props: Props) {
   const STEP_I18N: Record<string, string> = {
     'google-review': 'googleReview',
     confirm: 'confirm',
-    'admin-name': 'adminName', email: 'email', password: 'password', connect: 'connect',
+    'admin-name': 'adminName', email: 'email', password: 'password',
   };
   const i18nKey = STEP_I18N[currentStep];
   const config = i18nKey
@@ -712,11 +541,6 @@ export function OnboardingWizard(props: Props) {
   // default header size it fell below the fold on a phone, so the header gives
   // up the difference. See the header comment below.
   const dense = currentStep === 'confirm';
-  // Stripe has not been told enough yet — finishing would only earn a rejection
-  // from finalizeOnboarding, so the button says so instead of inviting the click.
-  const connectBlocking =
-    currentStep === 'connect' &&
-    (!legalForm || connectReady === 'incomplete' || connectReady === 'checking');
 
   function renderStepBody() {
     switch (currentStep) {
@@ -840,87 +664,6 @@ export function OnboardingWizard(props: Props) {
           </div>
         );
 
-      case 'connect':
-        // Everything above this step only wrote rows in our own database. This
-        // one is where the establishment actually becomes able to receive
-        // money, and it is deliberately blocking: `handleFinish` asks Stripe
-        // whether the form was really submitted before completing onboarding.
-        return (
-          <div>
-            <div style={{
-              display: 'flex', gap: 12, padding: '16px', marginBottom: 16,
-              borderRadius: 12, background: 'var(--surface-2)',
-              border: '1px solid var(--border-subtle)',
-            }}>
-              <span style={{ fontSize: 22, flexShrink: 0 }}>🔒</span>
-              <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
-                {t.rich('connect.body', {
-                  name: state.establishmentName,
-                  b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong>,
-                })}
-              </div>
-            </div>
-
-            {provisioning && (
-              <div style={{ fontSize: 13, color: 'var(--text-3)', textAlign: 'center', padding: '24px 0' }}>
-                {t('connect.preparing')}
-              </div>
-            )}
-
-            {provisioned && !legalForm && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
-                  {t('connect.legalTitle')}
-                </div>
-                {[
-                  { value: 'company' as const, label: t('connect.legalCompany'), icon: '🏢' },
-                  { value: 'individual' as const, label: t('connect.legalIndividual'), icon: '🧑‍🍳' },
-                ].map(({ value, label, icon }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setLegalForm(value)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      padding: '16px 18px', borderRadius: 14,
-                      border: '1.5px solid var(--border)',
-                      background: 'var(--surface)',
-                      cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
-                      transition: 'border-color 150ms, background 150ms',
-                    }}
-                  >
-                    <span style={{ fontSize: 22 }}>{icon}</span>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {provisioned && legalForm && (
-              <EstablishmentOnboarding
-                establishmentId={provisioned.establishmentId}
-                token={provisioned.onboardingToken}
-                legalForm={legalForm}
-                onExit={() => setConnectExited(true)}
-                errorFallback={
-                  <div style={{ fontSize: 13, color: 'var(--error)', lineHeight: 1.6 }}>
-                    {t('connect.loadFailed')}
-                  </div>
-                }
-              />
-            )}
-
-            {connectExited && connectReady !== 'incomplete' && connectReady !== 'checking' && (
-              <p style={{
-                marginTop: 14, fontSize: 12.5, color: 'var(--text-3)',
-                textAlign: 'center', lineHeight: 1.6,
-              }}>
-                {t('connect.exited')}
-              </p>
-            )}
-          </div>
-        );
-
       default:
         return null;
     }
@@ -1004,43 +747,15 @@ export function OnboardingWizard(props: Props) {
             <button
               type="button"
               onClick={() => handleFinish()}
-              disabled={submitting || !canAdvance() || connectBlocking}
+              disabled={submitting || !canAdvance()}
               style={{
                 ...btnPrimary,
-                opacity: (submitting || !canAdvance() || connectBlocking) ? 0.5 : 1,
-                cursor: connectBlocking ? 'not-allowed' : 'pointer',
+                opacity: (submitting || !canAdvance()) ? 0.5 : 1,
               }}
             >
               {submitting ? t('finishing') : t('finish')}
             </button>
 
-            {currentStep === 'connect' && legalForm && connectReady === 'checking' && (
-              <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
-                {t('connect.checking')}
-              </p>
-            )}
-
-            {currentStep === 'connect' && legalForm && connectReady === 'incomplete' && (
-              <>
-                <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
-                  {t('connect.incompleteHint')}
-                </p>
-                {/* The embedded form does not always announce that it is done,
-                    so there has to be a way to re-ask without reloading. */}
-                <button
-                  type="button"
-                  onClick={() => void recheckConnectStatus()}
-                  style={{
-                    background: 'none', border: 'none', color: 'var(--text-3)',
-                    fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
-                    textDecoration: 'underline', textUnderlineOffset: 3,
-                    textAlign: 'center', padding: 0,
-                  }}
-                >
-                  {t('connect.recheck')}
-                </button>
-              </>
-            )}
           </>
         ) : (
           <button
@@ -1087,12 +802,7 @@ export function OnboardingWizard(props: Props) {
           </button>
         )}
 
-        {/* No way back out of the Connect step. Everything the earlier steps
-            collected has already been written by the time it is reached, and
-            provisionThenAdvance short-circuits on the second pass — so going
-            back, editing, and coming forward again silently discards the edit.
-            An exit that quietly loses work is worse than no exit. */}
-        {stepIndex > 0 && currentStep !== 'connect' && (
+        {stepIndex > 0 && (
           <button
             type="button"
             onClick={back}

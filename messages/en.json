@@ -1147,7 +1147,16 @@
       "details": "Business details",
       "payouts": "Payouts",
       "loadFailed": "Your payment account could not be loaded. Reload the page or try again in a moment.",
-      "noEstablishment": "No establishment is linked to your account yet."
+      "noEstablishment": "No establishment is linked to your account yet.",
+      "statusNotStarted": "Your business is not verified yet, so your customers cannot leave a tip. The form below takes about 2 minutes.",
+      "statusIncomplete": "Your verification was started but never finished. Pick the form below up where you left off.",
+      "verifyIntro": "The form below is <b>Stripe</b>'s, our payment partner, embedded here. Regulation requires the recipient's identity to be verified before any money is collected. Your bank details are encrypted by Stripe and never pass through Digitip.",
+      "legalTitle": "Your legal structure",
+      "legalCompany": "A company",
+      "legalIndividual": "A sole trader",
+      "verifyLoadFailed": "The verification form could not be loaded. Reload the page or try again in a moment.",
+      "verifyExited": "Finished the form? This page updates on its own as soon as Stripe confirms it.",
+      "verifyChecking": "Checking with Stripe…"
     },
     "pro": {
       "upsellTitle": "Upgrade to Digitip Pro",
@@ -1252,8 +1261,8 @@
       "title": "Your space is ready!",
       "body": "{name} is set up. You can now manage your team and track your tips.",
       "cta": "Go to dashboard →",
-      "payoutsPendingTitle": "Verification in progress",
-      "payoutsPendingBody": "Stripe has your details and is reviewing them. Your tip page switches on automatically once that clears, usually within 24 hours. Nothing else is needed from you."
+      "payoutsPendingTitle": "One last step before you can be paid",
+      "payoutsPendingBody": "Your business still has to be verified: about 2 minutes, once. Until then your tip page stays closed. You will find it at the top of your dashboard."
     },
     "emailVerification": {
       "title": "Check your email",
@@ -1312,21 +1321,6 @@
       "nameLabel": "Business name",
       "addressLabel": "Address",
       "typeLabel": "Your trade"
-    },
-    "connect": {
-      "title": "Receiving your tips",
-      "subtitle": "Last step: verify your business so you can get paid.",
-      "body": "Tips land in <b>{name}</b>'s account, then reach your team through payroll. Regulations require verifying the recipient's identity: the form below is <b>Stripe</b>'s, our payment partner, embedded right here. Your bank details are encrypted by Stripe and never pass through Digitip.",
-      "preparing": "Setting up your payment account…",
-      "loadFailed": "The verification form could not be loaded. Reload the page or try again in a moment.",
-      "incomplete": "The verification form isn't finished yet. Complete it above to finish signing up.",
-      "exited": "All done above? Hit “Finish” to complete your setup.",
-      "checking": "Checking with Stripe…",
-      "incompleteHint": "Complete the form above to enable this button.",
-      "recheck": "I'm done, check again",
-      "legalTitle": "Your legal structure",
-      "legalCompany": "A company (SAS, SARL, SA…)",
-      "legalIndividual": "A sole trader or self-employed business"
     }
   }
 }

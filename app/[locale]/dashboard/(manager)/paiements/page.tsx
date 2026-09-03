@@ -51,6 +51,14 @@ export default async function PaymentsPage({
   const est = await getEstablishmentPayability(createServiceClient(), roleRow.group_id);
   const ready = est?.state === 'ready';
 
+  // Three situations, three sentences. Collapsing them into ready/not-ready is
+  // what made this page unable to say whether the manager had something to do.
+  const status =
+    est?.state === 'ready' ? t('statusReady')
+    : est?.state === 'verifying' ? t('statusPending')
+    : est?.state === 'incomplete' ? t('statusIncomplete')
+    : t('statusNotStarted');
+
   return (
     <div>
       <h1 style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 4 }}>
@@ -86,11 +94,24 @@ export default async function PaymentsPage({
               }}
             />
             <div style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6 }}>
-              {ready ? t('statusReady') : t('statusPending')}
+              {status}
             </div>
           </div>
 
-          <PaymentsPanel establishmentId={est.establishmentId} />
+          {/* Why a third party is asking for an ID at all. Shown only while the
+              KYC form is the thing on this page; once it is submitted the
+              management panel speaks for itself. */}
+          {!est.detailsSubmitted && (
+            <div style={{ ...card, marginBottom: 16, fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.65 }}>
+              {t.rich('verifyIntro', { b: (c) => <strong style={{ color: 'var(--text-2)' }}>{c}</strong> })}
+            </div>
+          )}
+
+          <PaymentsPanel
+            establishmentId={est.establishmentId}
+            detailsSubmitted={est.detailsSubmitted}
+            hasAccount={est.hasAccount}
+          />
         </>
       )}
     </div>

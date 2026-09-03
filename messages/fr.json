@@ -1147,7 +1147,16 @@
       "details": "Informations de l'établissement",
       "payouts": "Virements",
       "loadFailed": "Impossible de charger votre compte de paiement. Rechargez la page ou réessayez dans quelques instants.",
-      "noEstablishment": "Aucun établissement n'est encore rattaché à votre compte."
+      "noEstablishment": "Aucun établissement n'est encore rattaché à votre compte.",
+      "statusNotStarted": "Votre établissement n'est pas encore vérifié : vos clients ne peuvent pas laisser de pourboire. Le formulaire ci-dessous prend environ 2 minutes.",
+      "statusIncomplete": "Votre vérification est commencée mais pas terminée. Reprenez le formulaire ci-dessous là où vous en étiez.",
+      "verifyIntro": "Le formulaire ci-dessous est celui de <b>Stripe</b>, notre partenaire de paiement, intégré ici. La réglementation impose de vérifier l'identité du bénéficiaire avant tout encaissement. Vos coordonnées bancaires sont chiffrées par Stripe et ne transitent jamais par Digitip.",
+      "legalTitle": "Votre structure juridique",
+      "legalCompany": "Une société (SAS, SARL, SA…)",
+      "legalIndividual": "Une entreprise individuelle ou auto-entreprise",
+      "verifyLoadFailed": "Impossible de charger le formulaire de vérification. Rechargez la page ou réessayez dans quelques instants.",
+      "verifyExited": "Formulaire terminé ? Cette page se met à jour toute seule dès que Stripe nous le confirme.",
+      "verifyChecking": "Vérification auprès de Stripe…"
     },
     "pro": {
       "upsellTitle": "Passez à Digitip Pro",
@@ -1252,8 +1261,8 @@
       "title": "Votre espace est prêt !",
       "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
       "cta": "Accéder au dashboard →",
-      "payoutsPendingTitle": "Vérification en cours",
-      "payoutsPendingBody": "Stripe a bien reçu vos informations et les vérifie. Votre page de pourboire s'activera automatiquement dès que c'est validé, en général sous 24 h. Vous n'avez rien d'autre à faire."
+      "payoutsPendingTitle": "Une dernière étape pour encaisser",
+      "payoutsPendingBody": "Il reste la vérification de votre établissement, environ 2 minutes, une seule fois. Tant qu'elle n'est pas faite, votre page de pourboire reste fermée. Vous la trouverez en haut de votre dashboard."
     },
     "emailVerification": {
       "title": "Vérifiez votre email",
@@ -1312,21 +1321,6 @@
       "nameLabel": "Nom de l'établissement",
       "addressLabel": "Adresse",
       "typeLabel": "Votre activité"
-    },
-    "connect": {
-      "title": "Recevoir vos pourboires",
-      "subtitle": "Dernière étape : vérifiez votre établissement pour pouvoir encaisser.",
-      "body": "Les pourboires arrivent sur le compte de <b>{name}</b>, puis sont reversés à votre équipe via la paie. La réglementation impose de vérifier l'identité du bénéficiaire : le formulaire ci-dessous est celui de <b>Stripe</b>, notre partenaire de paiement, intégré directement ici. Vos coordonnées bancaires sont chiffrées par Stripe et ne transitent jamais par Digitip.",
-      "preparing": "Préparation de votre compte de paiement…",
-      "loadFailed": "Impossible de charger le formulaire de vérification. Rechargez la page ou réessayez dans quelques instants.",
-      "incomplete": "Le formulaire de vérification n'est pas encore complété. Terminez-le ci-dessus pour finaliser votre inscription.",
-      "exited": "Formulaire terminé ? Cliquez sur « Terminer » pour finaliser votre inscription.",
-      "checking": "Vérification auprès de Stripe…",
-      "incompleteHint": "Complétez le formulaire ci-dessus pour activer ce bouton.",
-      "recheck": "J'ai terminé, vérifier à nouveau",
-      "legalTitle": "Votre structure juridique",
-      "legalCompany": "Une société (SAS, SARL, SA…)",
-      "legalIndividual": "Une entreprise individuelle ou auto-entreprise"
     }
   }
 }

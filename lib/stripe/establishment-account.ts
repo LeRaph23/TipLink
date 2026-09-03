@@ -215,6 +215,10 @@ export type EstablishmentPayability = {
   establishmentId: string;
   establishmentName: string;
   state: PayabilityState;
+  /** A Connect account exists, so the legal form has already been answered. */
+  hasAccount: boolean;
+  /** Stripe has the KYC form. Decides which embedded component to mount. */
+  detailsSubmitted: boolean;
   /** Verbatim from Stripe: `company.verification.document` and friends. */
   currentlyDue: string[];
   /**
@@ -281,6 +285,8 @@ export async function getEstablishmentPayability(
     establishmentId: est.id,
     establishmentName: est.name ?? '',
     state,
+    hasAccount: !!est.stripe_account_id,
+    detailsSubmitted: est.stripe_details_submitted,
     currentlyDue,
     heldCents,
   };

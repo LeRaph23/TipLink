@@ -11,7 +11,6 @@ import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 import { normalizeGoogleReviewUrl } from '@/lib/google-places';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
 import { authorizeEstablishmentAccess } from '@/lib/auth/establishment-access';
-import { syncEstablishmentAccountStatus } from '@/lib/stripe/establishment-account';
 
 /**
  * What the three provisioning actions return.
@@ -438,27 +437,26 @@ const FinalizeSchema = z.object({
 
 export type FinalizeResult =
   | { success: true; chargesEnabled: boolean; payoutsEnabled: boolean }
-  // `code` lets the wizard tell "you still have to finish the Stripe form"
-  // apart from a generic failure; the localized `error` stays the fallback.
-  | { error: string; code?: 'connect_missing' | 'connect_incomplete' };
+  | { error: string };
 
 /**
  * Closes the onboarding wizard.
  *
- * The Connect step is meant to be blocking, so this refuses to mark the group
- * complete until Stripe confirms the account exists and its onboarding form was
- * submitted. The check reads Stripe directly rather than trusting the embedded
- * component's client-side "done" callback, which anyone could fire from the
- * console to skip setup entirely.
+ * It used to refuse until Stripe confirmed the establishment had submitted its
+ * KYC form, because the wizard's last step was that form. Making it blocking
+ * put the longest, least welcome part of the setup between the manager and any
+ * sign that this thing works, and it is where they stopped.
  *
- * Two distinct thresholds, deliberately:
- *   - `details_submitted` — the form is filled in. Enough to finish the wizard.
- *   - `charges_enabled && payouts_enabled` — Stripe finished verifying. Gates
- *     the public tip pages (see get_public_staff in 00074).
+ * Verification now happens from the dashboard, where the banner asks for it and
+ * the payments page hosts the form. Nothing about the money changed: the tip
+ * pages still gate on `charges_enabled AND payouts_enabled` (get_public_staff,
+ * migration 00074), so an establishment that closes the wizard without a Stripe
+ * account cannot be paid and cannot leave funds sitting anywhere. All that is
+ * different is that they now have a dashboard telling them so.
  *
- * Requiring the second one here would strand a manager in the wizard for as
- * long as Stripe's review takes, so the caller gets both flags back and tells
- * them where they stand instead.
+ * The flags come back from our own row rather than a Stripe round-trip: there
+ * is usually no account yet at this point, and the done screen only uses them
+ * to decide which sentence to show.
  */
 export async function finalizeOnboarding(
   input: z.infer<typeof FinalizeSchema>
@@ -474,24 +472,9 @@ export async function finalizeOnboarding(
 
   const { data: est } = await service
     .from('establishments')
-    .select('stripe_account_id')
+    .select('stripe_charges_enabled, stripe_payouts_enabled')
     .eq('id', establishmentId)
     .maybeSingle();
-
-  if (!est?.stripe_account_id) {
-    return { ...(await actionError('validation', 'connect_account_missing')), code: 'connect_missing' as const };
-  }
-
-  let status;
-  try {
-    status = await syncEstablishmentAccountStatus(service, { accountId: est.stripe_account_id });
-  } catch (err) {
-    return actionError('network', err, 'finalizeOnboarding.stripe');
-  }
-  if (!status) return actionError('notFound');
-  if (!status.detailsSubmitted) {
-    return { ...(await actionError('validation', 'connect_incomplete')), code: 'connect_incomplete' as const };
-  }
 
   const { error: doneErr } = await service
     .from('groups')
@@ -504,7 +487,7 @@ export async function finalizeOnboarding(
   revalidatePath('/dashboard');
   return {
     success: true,
-    chargesEnabled: status.chargesEnabled,
-    payoutsEnabled: status.payoutsEnabled,
+    chargesEnabled: est?.stripe_charges_enabled ?? false,
+    payoutsEnabled: est?.stripe_payouts_enabled ?? false,
   };
 }
