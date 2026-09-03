@@ -9,7 +9,7 @@ import type { PackPricing } from '@/lib/stripe/pricing';
 
 const PACK_IMAGES: Record<PackId, { src: string; alt: string }> = {
   solo: { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
-  duo:  { src: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
+  duo:  { src: '/products/duo-double.jpg', alt: 'Pack Duo, 2 plaques époxy NFC Digitip' },
 };
 
 export function StepPack({

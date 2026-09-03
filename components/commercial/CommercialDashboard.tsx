@@ -750,7 +750,7 @@ export function CommercialDashboard({ code }: { code: string }) {
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.55 }}>
                 Choisissez votre <strong>PIN à 4 chiffres</strong>. Vous l&apos;utiliserez à chaque
-                connexion à votre espace commercial — conservez-le en sécurité.
+                connexion à votre espace commercial, conservez-le en sécurité.
               </div>
             </div>
             <PinInput onSubmit={handleSetupPin} error={pinError} loading={pinLoading} />

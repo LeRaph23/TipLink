@@ -100,7 +100,7 @@ export default async function AdminEmailsPage({ params }: { params: Promise<{ lo
           Emails automatiques
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          Suivi des relances d&apos;onboarding, d&apos;activation et de rétention — {rows.length} derniers envois.
+          Suivi des relances d&apos;onboarding, d&apos;activation et de rétention. {rows.length} derniers envois.
         </p>
       </div>
 

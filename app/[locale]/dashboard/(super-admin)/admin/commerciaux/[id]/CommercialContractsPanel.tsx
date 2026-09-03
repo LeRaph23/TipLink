@@ -97,7 +97,7 @@ export function CommercialContractsPanel({
       }}>
         {noEmail ? (
           <div style={{ fontSize: 12.5, color: 'var(--warning)', padding: '6px 0' }}>
-            Aucune adresse email enregistrée pour ce commercial — impossible d&apos;envoyer un contrat.
+            Aucune adresse email enregistrée pour ce commercial : impossible d&apos;envoyer un contrat.
           </div>
         ) : activeTemplates.length === 0 ? (
           <div style={{ fontSize: 12.5, color: 'var(--text-3)', padding: '6px 0' }}>
@@ -119,7 +119,7 @@ export function CommercialContractsPanel({
                 }}
               >
                 {activeTemplates.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name} — v{t.version}</option>
+                  <option key={t.id} value={t.id}>{t.name} · v{t.version}</option>
                 ))}
               </select>
             </div>

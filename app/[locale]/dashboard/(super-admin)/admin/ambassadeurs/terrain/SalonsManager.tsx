@@ -105,7 +105,7 @@ export function SalonsManager({
     setFeedback(null);
     startImportJob(params).then((r) => {
       if (!r.ok) setFeedback({ type: 'err', msg: r.error });
-      else setFeedback({ type: 'ok', msg: okMessage ?? 'Job lancé — progression dans le panneau ci-dessus.' });
+      else setFeedback({ type: 'ok', msg: okMessage ?? 'Job lancé : progression dans le panneau ci-dessus.' });
     });
   };
 
@@ -234,7 +234,7 @@ export function SalonsManager({
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
           Ville → arrondissements ou commune entière selon la taille. Département → toutes ses communes.
-          Le job tourne côté serveur — vous pouvez fermer cet onglet, il continue.
+          Le job tourne côté serveur : vous pouvez fermer cet onglet, il continue.
         </div>
 
         {/* Zone-selection bulk-actions bar. Visible when zones exist; bulk
@@ -598,7 +598,7 @@ function ZonesTable({
                 {count > 0 && (
                   <button
                     onClick={() => onRunForZone('enrich_addresses', z.id, missing === 0)}
-                    title={missing > 0 ? `${missing} établissement(s) sans adresse` : 'Toutes les adresses sont remplies — relance pour rafraîchir'}
+                    title={missing > 0 ? `${missing} établissement(s) sans adresse` : 'Toutes les adresses sont remplies, relance pour rafraîchir'}
                     style={{
                       padding: '8px 12px',
                       background: missing > 0 ? 'var(--warning-bg)' : 'var(--surface-2)',
@@ -617,7 +617,7 @@ function ZonesTable({
                     onClick={() => onRunForZone('enrich_google', z.id, unenrichedGoogle === 0)}
                     title={unenrichedGoogle > 0
                       ? `${unenrichedGoogle} établissement(s) à enrichir via Google`
-                      : 'Tous les établissements sont déjà enrichis — relance pour rafraîchir horaires & note'}
+                      : 'Tous les établissements sont déjà enrichis, relance pour rafraîchir horaires & note'}
                     style={miniBtnStyle}
                   >
                     ⚙ {unenrichedGoogle > 0 ? `Google (${unenrichedGoogle})` : 'Google ↻'}
@@ -762,7 +762,7 @@ function SalonsTable({
       {creating && (
         <div style={{ padding: 10, borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <select value={form.zoneId} onChange={(e) => setForm({ ...form, zoneId: e.target.value })} style={inputStyle}>
-            <option value="">— Aucune zone —</option>
+            <option value="">Aucune zone</option>
             {zones.map((z) => <option key={z.id} value={z.id}>{z.city} · {z.name}</option>)}
           </select>
           <input placeholder="Ville" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} style={inputStyle} />
@@ -786,7 +786,7 @@ function SalonsTable({
                 <Td>{s.city}</Td>
                 <Td>{s.zoneId ? zoneById.get(s.zoneId)?.name ?? '—' : <span style={{ color: 'var(--text-3)' }}>—</span>}</Td>
                 <Td><strong>{s.name}</strong></Td>
-                <Td>{s.address ?? <span style={{ color: 'var(--warning)' }}>— manquante</span>}{s.postal_code ? ` · ${s.postal_code}` : ''}</Td>
+                <Td>{s.address ?? <span style={{ color: 'var(--warning)' }}>manquante</span>}{s.postal_code ? ` · ${s.postal_code}` : ''}</Td>
                 <Td>{s.phone ?? '—'}</Td>
                 <Td>{s.visitCount}</Td>
                 <Td>
@@ -884,11 +884,11 @@ function VisitVerifBadge({ verified, distanceM }: { verified: boolean; distanceM
       ? {
           bg: 'var(--warning-bg)', fg: 'var(--warning)', bd: 'var(--warning)',
           label: `⚠ ${distanceM} m`,
-          title: `Visite enregistrée à ${distanceM} m de l’établissement — hors du rayon de vérification`,
+          title: `Visite enregistrée à ${distanceM} m de l’établissement, hors du rayon de vérification`,
         }
       : {
           bg: 'var(--surface-2)', fg: 'var(--text-3)', bd: 'var(--border)',
-          label: '— sans GPS',
+          label: 'sans GPS',
           title: 'Aucune position GPS capturée pour cette visite',
         };
   return (

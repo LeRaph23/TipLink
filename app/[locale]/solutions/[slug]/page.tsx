@@ -85,7 +85,7 @@ export default async function SolutionPage({ params }: Props) {
     ...(pricing
       ? [
           productNode({
-            name: 'SmartTag Digitip — Solo',
+            name: 'SmartTag Digitip Solo',
             description: 'Plaque époxy NFC pré-programmée pour recevoir des pourboires sans contact.',
             priceCents: pricing.solo.unitAmount,
             currency: pricing.solo.currency,
@@ -93,7 +93,7 @@ export default async function SolutionPage({ params }: Props) {
             sku: 'digitip-solo',
           }),
           productNode({
-            name: 'SmartTag Digitip — Duo',
+            name: 'SmartTag Digitip Duo',
             description: 'Deux plaques époxy NFC pré-programmées pour recevoir des pourboires sans contact.',
             priceCents: pricing.duo.unitAmount,
             currency: pricing.duo.currency,

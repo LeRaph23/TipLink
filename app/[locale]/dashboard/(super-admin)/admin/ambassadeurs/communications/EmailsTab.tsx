@@ -200,7 +200,7 @@ export function EmailsTab({
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>Template</label>
             <select style={inputStyle} value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
-              <option value="">— Email personnalisé (vide) —</option>
+              <option value="">Email personnalisé (vide)</option>
               {templates.map((t) => (
                 <option key={t.id} value={t.id}>{t.name} ({t.slug}{t.is_seeded ? ' · seed' : ''})</option>
               ))}
@@ -212,7 +212,7 @@ export function EmailsTab({
           </div>
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, display: 'block', marginBottom: 5 }}>
-              Corps HTML — variables : {'{{first_name}}'} {'{{full_name}}'} {'{{promo_code}}'} {'{{dashboard_url}}'}
+              Corps HTML, variables : {'{{first_name}}'} {'{{full_name}}'} {'{{promo_code}}'} {'{{dashboard_url}}'}
             </label>
             <textarea
               style={{ ...inputStyle, minHeight: 220, fontFamily: 'ui-monospace, monospace', fontSize: 12 }}

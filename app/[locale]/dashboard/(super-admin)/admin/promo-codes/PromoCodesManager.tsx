@@ -132,7 +132,7 @@ function PromoForm({
           {pending
             ? mode === 'create' ? 'Création…' : 'Enregistrement…'
             : mode === 'create'
-              ? `Créer "${v.code.toUpperCase() || '…'}" — ${v.percentage}% de remise`
+              ? `Créer "${v.code.toUpperCase() || '…'}" à ${v.percentage}% de remise`
               : 'Enregistrer les modifications'}
         </button>
         <button style={secondaryBtn} disabled={pending} onClick={onCancel}>

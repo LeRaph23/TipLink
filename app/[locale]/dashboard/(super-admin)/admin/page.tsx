@@ -178,7 +178,7 @@ export default async function AdminOverviewPage({
           <KpiCard label="Candidatures ambassadeurs" value={String(ambassadeursCount ?? 0)} sub="En attente de validation" href="/dashboard/admin/ambassadeurs" highlight />
         )}
         {(commerciauxCount ?? 0) > 0 && (
-          <KpiCard label="Candidatures commerciaux pros" value={String(commerciauxCount ?? 0)} sub="50€ Solo / 65€ Duo — en attente" href="/dashboard/admin/commerciaux/recrutement" highlight />
+          <KpiCard label="Candidatures commerciaux pros" value={String(commerciauxCount ?? 0)} sub="50€ Solo / 65€ Duo, en attente" href="/dashboard/admin/commerciaux/recrutement" highlight />
         )}
       </div>
 

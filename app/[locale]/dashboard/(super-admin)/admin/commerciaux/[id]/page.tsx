@@ -160,7 +160,7 @@ export default async function CommercialDetailPage({
         {infoRow('Ville', com.city)}
         {infoRow('Stripe account', com.stripe_account_id ? <code style={{ fontFamily: 'monospace', fontSize: 11 }}>{com.stripe_account_id}</code> : null)}
         {infoRow('Création', fmtDateTime(com.created_at))}
-        {infoRow('PIN configuré', com.pin_hash ? 'Oui' : <span style={{ color: 'var(--warning)' }}>Non — lien d&apos;activation requis</span>)}
+        {infoRow('PIN configuré', com.pin_hash ? 'Oui' : <span style={{ color: 'var(--warning)' }}>Non, lien d&apos;activation requis</span>)}
         {code && (
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-3)' }}>
             Portail commercial :{' '}

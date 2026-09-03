@@ -85,12 +85,12 @@ type Props = {
 
 const PACK_GALLERIES: Record<Pack, { src: string; alt: string }[]> = {
   solo: [
-    { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip — rendu 3D' },
+    { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip, rendu 3D' },
     { src: '/products/solo-table.jpg', alt: 'Plaque Digitip posée sur le comptoir' },
     { src: '/products/solo-wall.jpg', alt: 'Plaque Digitip fixée au mur' },
   ],
   duo: [
-    { src: '/products/duo-double.jpg', alt: 'Pack Duo — 2 plaques époxy NFC Digitip' },
+    { src: '/products/duo-double.jpg', alt: 'Pack Duo, 2 plaques époxy NFC Digitip' },
     { src: '/products/solo-table.jpg', alt: 'Plaque Digitip posée sur le comptoir' },
     { src: '/products/solo-wall.jpg', alt: 'Plaque Digitip fixée au mur' },
   ],

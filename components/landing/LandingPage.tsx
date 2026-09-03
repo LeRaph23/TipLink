@@ -93,7 +93,7 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
   return (
     <>
       <header style={{ position: 'sticky', top: 38, zIndex: 200, height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px, 4vw, 48px)', background: scrolled ? 'rgba(255,255,255,0.97)' : '#fff', backdropFilter: scrolled ? 'blur(12px)' : 'none', borderBottom: '1px solid #e4e4ec', transition: 'background 300ms' }}>
-        <Link href="/" aria-label="Digitip — Accueil" title="Digitip" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <Link href="/" aria-label="Digitip, accueil" title="Digitip" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
           <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
         </Link>
 
@@ -278,7 +278,7 @@ function KeyAdvantagesSection() {
         <Reveal delay={120} style={{ flex: '0 1 300px', display: 'flex', justifyContent: 'center', alignSelf: 'flex-end' }}>
           <div style={{ position: 'relative' }}>
             <div style={{ borderRadius: 36, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.10)', width: 260, lineHeight: 0 }}>
-              <Image src="/mockup-app.jpg" alt="Digitip — choisir à qui va le pourboire" width={260} height={520} style={{ objectFit: 'cover', display: 'block', width: '100%', height: 'auto' }} />
+              <Image src="/mockup-app.jpg" alt="Digitip, choisir à qui va le pourboire" width={260} height={520} style={{ objectFit: 'cover', display: 'block', width: '100%', height: 'auto' }} />
             </div>
             {/* Floating badge */}
             <div style={{ position: 'absolute', bottom: -14, left: -20, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 12, padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
@@ -505,7 +505,7 @@ function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo
                 <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden' }}>
                   <Image
                     src={p.key === 'duo' ? '/products/duo-double.jpg' : '/products/solo-3d.jpg'}
-                    alt={p.key === 'duo' ? 'Pack Duo — 2 plaques époxy NFC' : 'Plaque époxy NFC Solo'}
+                    alt={p.key === 'duo' ? 'Pack Duo, 2 plaques époxy NFC' : 'Plaque époxy NFC Solo'}
                     fill
                     sizes="(max-width: 600px) 100vw, 320px"
                     style={{ objectFit: 'cover' }}

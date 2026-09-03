@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "Digitip — Cashless tips via NFC | digitip.app",
-    "description": "Digitip is the cashless tipping app powered by NFC: place a SmartTag, your customers tip in one tap. Built for restaurants, bars, cafés, salons, hotels and every local business — available at digitip.app."
+    "title": "Digitip: cashless tips via NFC | digitip.app",
+    "description": "Digitip is the cashless tipping app powered by NFC: place a SmartTag, your customers tip in one tap. Built for restaurants, bars, cafés, salons, hotels and every local business, available at digitip.app."
   },
   "common": {
     "login": "Log in",
@@ -68,7 +68,7 @@
     "backHome": "Back to home",
     "privacy": {
       "title": "Privacy Policy",
-      "intro": "At Digitip we take your privacy seriously. This policy explains what data we collect, how we use it, and the rights you have over it. The data controller is YUZU LABS SAS, the company operating the Digitip service — SIREN 994 879 013, 11 rue de Lorraine, 68490 Petit-Landau, France.",
+      "intro": "At Digitip we take your privacy seriously. This policy explains what data we collect, how we use it, and the rights you have over it. The data controller is YUZU LABS SAS, the company operating the Digitip service, SIREN 994 879 013, 11 rue de Lorraine, 68490 Petit-Landau, France.",
       "s1Title": "1. Data we collect",
       "s1Body": "Account data (name, email, password hash), business data (company name, VAT, shipping/billing address), tipping data (amount, date, recipient staff member), payout data handled by Stripe (bank account, identity verification), and technical data (IP address, browser, language) used for security and analytics.",
       "s2Title": "2. How we use your data",
@@ -86,7 +86,7 @@
       "s8Title": "8. Security",
       "s8Body": "Data is encrypted in transit (TLS 1.2+) and at rest. Access is restricted to authorised staff. We conduct regular security reviews.",
       "s9Title": "9. Contact",
-      "s9Body": "For any question about this policy, or to exercise your rights, email privacy@digitip.app or write to YUZU LABS SAS — Data Protection, 11 rue de Lorraine, 68490 Petit-Landau, France."
+      "s9Body": "For any question about this policy, or to exercise your rights, email privacy@digitip.app or write to YUZU LABS SAS, Data Protection, 11 rue de Lorraine, 68490 Petit-Landau, France."
     },
     "terms": {
       "title": "Terms of Service",
@@ -125,23 +125,23 @@
     "title": "Legal notice",
     "intro": "In accordance with French Law n° 2004-575 of June 21, 2004 on Confidence in the Digital Economy (LCEN), the following information is made available to users of digitip.app.",
     "s1Title": "1. Publisher",
-    "s1Body": "The site digitip.app is published by YUZU LABS, a simplified joint-stock company (SAS) with a share capital of €100, registered in the National Business Register (RNE) under SIREN 994 879 013 — SIRET: 994 879 013 00013. Registered office: 11 rue de Lorraine, 68490 Petit-Landau, France. APE/NAF code: 62.01Z — Computer programming. EU VAT number: FR13 994 879 013. Contact: contact@digitip.app.",
+    "s1Body": "The site digitip.app is published by YUZU LABS, a simplified joint-stock company (SAS) with a share capital of €100, registered in the National Business Register (RNE) under SIREN 994 879 013. SIRET: 994 879 013 00013. Registered office: 11 rue de Lorraine, 68490 Petit-Landau, France. APE/NAF code: 62.01Z, computer programming. EU VAT number: FR13 994 879 013. Contact: contact@digitip.app.",
     "s2Title": "2. Publication director",
     "s2Body": "Raphaël Meyer. Contact: contact@digitip.app.",
     "s3Title": "3. Hosting",
-    "s3Body": "The site digitip.app is hosted by Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, United States — https://vercel.com. European user data is handled in accordance with Vercel's GDPR commitments.",
+    "s3Body": "The site digitip.app is hosted by Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, United States (https://vercel.com). European user data is handled in accordance with Vercel's GDPR commitments.",
     "s4Title": "4. Intellectual property",
     "s4Body": "All elements of digitip.app (text, visuals, logos, source code, database) are the exclusive property of YUZU LABS SAS or are licensed to it. Any reproduction, representation, modification or distribution, even partial, without prior written authorisation from YUZU LABS SAS, is strictly prohibited and constitutes an infringement under French intellectual property law.",
     "s5Title": "5. Hyperlinks",
     "s5Body": "Linking to digitip.app is permitted, provided such links do not damage the image of YUZU LABS SAS or create confusion as to the origin of content. YUZU LABS SAS accepts no liability for the content of third-party sites linked from this site.",
     "s6Title": "6. Personal data & cookies",
-    "s6Body": "The processing of personal data collected on digitip.app is described in the Privacy Policy available on this site. Data controller: YUZU LABS SAS — privacy@digitip.app. We use only strictly necessary cookies for authentication and security. No advertising cookies or third-party trackers.",
+    "s6Body": "The processing of personal data collected on digitip.app is described in the Privacy Policy available on this site. Data controller: YUZU LABS SAS, privacy@digitip.app. We use only strictly necessary cookies for authentication and security. No advertising cookies or third-party trackers.",
     "s7Title": "7. Applicable law",
     "s7Body": "This legal notice is governed by French law. In the event of a dispute and after an attempt at amicable resolution, French courts shall have sole jurisdiction."
   },
   "cgv": {
     "title": "Terms of Sale",
-    "intro": "These Terms of Sale (ToS) govern all orders for products and services placed on digitip.app. By confirming an order, the buyer unconditionally accepts these Terms. Seller: YUZU LABS SAS, 11 rue de Lorraine, 68490 Petit-Landau — SIREN 994 879 013 — contact@digitip.app.",
+    "intro": "These Terms of Sale (ToS) govern all orders for products and services placed on digitip.app. By confirming an order, the buyer unconditionally accepts these Terms. Seller: YUZU LABS SAS, 11 rue de Lorraine, 68490 Petit-Landau, SIREN 994 879 013, contact@digitip.app.",
     "s1Title": "1. Products and services",
     "s1Body": "YUZU LABS SAS sells under the Digitip brand: (1) pre-programmed NFC epoxy plaques (\"SmartTags\") enabling customers to leave contactless tips, and (2) access to the Digitip software platform (dashboard, staff management, analytics). Essential product characteristics are detailed on the order pages.",
     "s2Title": "2. Pricing",
@@ -149,21 +149,21 @@
     "s3Title": "3. Orders",
     "s3Body": "Any order placed on digitip.app constitutes acceptance of these Terms, the prices, and the product descriptions. YUZU LABS SAS reserves the right to refuse or cancel any order in cases of suspected fraud, unresolved prior dispute, or product unavailability. A confirmation email is sent within 24 hours of validation.",
     "s4Title": "4. Payment",
-    "s4Body": "Payment is made in full online at the time of order via Stripe (debit/credit card, Apple Pay, Google Pay). Payment data is collected and processed exclusively by Stripe — YUZU LABS SAS servers never see or store any banking data. In the event of payment failure, the order is automatically cancelled.",
+    "s4Body": "Payment is made in full online at the time of order via Stripe (debit/credit card, Apple Pay, Google Pay). Payment data is collected and processed exclusively by Stripe: YUZU LABS SAS servers never see or store any banking data. In the event of payment failure, the order is automatically cancelled.",
     "s5Title": "5. Delivery",
     "s5Body": "SmartTags are dispatched from France within 3 to 5 business days following payment confirmation. Delivery is free across Europe. A tracking email is sent upon shipment. YUZU LABS SAS cannot be held liable for delays attributable to the carrier, force majeure, or incorrect delivery information provided by the buyer.",
     "s6Title": "6. Right of withdrawal",
     "s6Body": "In accordance with Article L221-18 of the French Consumer Code, any consumer (non-professional buyer) has 14 calendar days from receipt of the parcel to exercise their right of withdrawal, without reason or penalty. Products must be returned unused, in their original packaging, at the buyer's expense. Refund will be made within 14 days of receipt and verification of the return. This right does not apply to orders placed for professional purposes (B2B), or to products that have been used or damaged after delivery.",
     "s7Title": "7. Legal warranties",
-    "s7Body": "SmartTags benefit from the statutory warranty of conformity (Articles L217-3 et seq. of the French Consumer Code — 2 years from delivery for non-professional buyers) and the warranty against hidden defects (Articles 1641 et seq. of the French Civil Code). In addition, YUZU LABS SAS offers a lifetime commercial warranty: any SmartTag showing a manufacturing defect or failure under normal use will be replaced free of charge upon sending a photo to contact@digitip.app.",
+    "s7Body": "SmartTags benefit from the statutory warranty of conformity (Articles L217-3 et seq. of the French Consumer Code, 2 years from delivery for non-professional buyers) and the warranty against hidden defects (Articles 1641 et seq. of the French Civil Code). In addition, YUZU LABS SAS offers a lifetime commercial warranty: any SmartTag showing a manufacturing defect or failure under normal use will be replaced free of charge upon sending a photo to contact@digitip.app.",
     "s8Title": "8. After-sales service",
     "s8Body": "For any after-sales request, contact contact@digitip.app with your order number. YUZU LABS SAS will respond within 48 business hours and process any guaranteed replacement within 5 business days of confirmation.",
     "s9Title": "9. Service fee on tips",
-    "s9Body": "Using the Digitip platform to collect tips does not result in any deduction from the tips collected: the recipient receives the full amount chosen by the customer. The service fee — a fixed part of €0.25 per transaction and a variable part of 5% of the tip — is added on top of the tip and paid by the person leaving it, who is shown the exact figure before confirming payment. That fee covers payment processing (Stripe), infrastructure hosting, fraud prevention and service maintenance. No fee is due if no tips are collected.",
+    "s9Body": "Using the Digitip platform to collect tips does not result in any deduction from the tips collected: the recipient receives the full amount chosen by the customer. The service fee (a fixed part of €0.25 per transaction and a variable part of 5% of the tip) is added on top of the tip and paid by the person leaving it, who is shown the exact figure before confirming payment. That fee covers payment processing (Stripe), infrastructure hosting, fraud prevention and service maintenance. No fee is due if no tips are collected.",
     "s10Title": "10. Liability",
     "s10Body": "YUZU LABS SAS cannot be held liable for indirect damages (lost profits, loss of customers, data loss) related to the use or inability to use SmartTags or the platform. The liability of YUZU LABS SAS is limited to amounts actually paid by the buyer in the 12 months preceding the loss.",
     "s11Title": "11. Disputes and mediation",
-    "s11Body": "In the event of an unresolved dispute, any consumer may use a free approved mediator: CM2C — Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris — www.cm2c.net. The European Commission also provides an online dispute resolution platform: ec.europa.eu/consumers/odr. Disputes between professionals fall under the exclusive jurisdiction of the courts of the Colmar Court of Appeal, unless mandatory law provides otherwise. These Terms are governed by French law."
+    "s11Body": "In the event of an unresolved dispute, any consumer may use a free approved mediator: CM2C, Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris (www.cm2c.net). The European Commission also provides an online dispute resolution platform: ec.europa.eu/consumers/odr. Disputes between professionals fall under the exclusive jurisdiction of the courts of the Colmar Court of Appeal, unless mandatory law provides otherwise. These Terms are governed by French law."
   },
   "orderSuccess": {
     "title": "Order confirmed!",
@@ -177,8 +177,8 @@
     }
   },
   "landing": {
-    "promoBanner": "LAUNCH OFFER — Free shipping across Europe",
-    "promoBannerDated": "LAUNCH OFFER — Free shipping across Europe · until {date} ({days, plural, one {# day left} other {# days left}})",
+    "promoBanner": "LAUNCH OFFER: free shipping across Europe",
+    "promoBannerDated": "LAUNCH OFFER: free shipping across Europe · until {date} ({days, plural, one {# day left} other {# days left}})",
     "nav": {
       "packs": "Our packs",
       "clients": "Clients",
@@ -187,15 +187,15 @@
     },
     "hero": {
       "badge": "Lifetime hardware guarantee",
-      "srBrand": "Digitip — the cashless NFC tipping app, available at digitip.app.",
+      "srBrand": "Digitip, the cashless NFC tipping app, available at digitip.app.",
       "h1a": "The best way",
       "h1b": "to earn more",
       "h1c": "tips",
-      "sub": "Place the plaque anywhere in 5 seconds. Your client taps their phone or scans the QR code, picks an amount — and the tip makes its way to your bank account, via Stripe. No app, no cash, no friction.",
+      "sub": "Place the plaque anywhere in 5 seconds. Your client taps their phone or scans the QR code, picks an amount, and the tip makes its way to your bank account, via Stripe. No app, no cash, no friction.",
       "social": "One-time payment, no subscription",
       "cta": "Order now",
       "b1": "Named tipping: the client chooses who to reward",
-      "b2": "No subscription whatsoever — pay once, for life",
+      "b2": "No subscription whatsoever: pay once, for life",
       "b3": "Paid straight to your bank account via Stripe",
       "b4": "No app, no cash: just a tap or QR code"
     },
@@ -213,7 +213,7 @@
       "packLLabel": "3+ locations",
       "bullet1": "One-time purchase, no monthly fee",
       "bullet2": "0% taken from tips",
-      "bullet3": "Premium high-density epoxy resin — built to last",
+      "bullet3": "Premium high-density epoxy resin, built to last",
       "bullet4": "French company",
       "bullet5": "Lifetime hardware replacement",
       "material": "Epoxy resin",
@@ -291,7 +291,7 @@
     "trust": {
       "kicker": "Our commitments",
       "title": "What you can count on",
-      "sub": "Digitip is just starting out. Instead of customer numbers, here are verifiable commitments — each one is written into our terms of sale or our legal notice.",
+      "sub": "Digitip is just starting out. Instead of customer numbers, here are verifiable commitments: each one is written into our terms of sale or our legal notice.",
       "freeShippingShort": "Free shipping across Europe",
       "warranty": "Lifetime hardware guarantee",
       "warrantySub": "Broken or faulty plaque? We replace it free of charge, with no time limit.",
@@ -302,7 +302,7 @@
       "directPayout": "Paid to the recipient's own account",
       "directPayoutSub": "The tip goes to the person the customer picked, straight to their own bank account.",
       "frenchCompany": "French company",
-      "frenchCompanySub": "YUZU LABS SAS — SIREN 994 879 013. Plaques programmed and shipped from France.",
+      "frenchCompanySub": "YUZU LABS SAS, SIREN 994 879 013. Plaques programmed and shipped from France.",
       "euData": "Data hosted in the EU",
       "euDataSub": "No advertising cookies, no third-party trackers. GDPR compliant."
     },
@@ -318,17 +318,17 @@
       "q1": "Is it compatible with all smartphones?",
       "a1": "90% of recent smartphones support NFC. For the rest, every SmartTag also includes a QR code scannable with the phone camera. 100% compatibility guaranteed.",
       "q2": "Can customers pay with Apple Pay or Google Pay?",
-      "a2": "Yes. The Digitip payment page accepts Apple Pay, Google Pay and all debit/credit cards — no app needed for the customer.",
+      "a2": "Yes. The Digitip payment page accepts Apple Pay, Google Pay and all debit/credit cards, no app needed for the customer.",
       "q3": "How long does a SmartTag last?",
       "a3": "Indefinitely. There's no battery, no active electronics. The SmartTag works by induction. We offer lifetime replacement if it breaks.",
       "q4": "Can Digitip be used across multiple venues?",
       "a4": "Yes. A single Digitip account can manage unlimited venues and teams, each with their own SmartTags and analytics.",
-      "q5": "My plaque is damaged or defective — what do I do?",
+      "q5": "My plaque is damaged or defective: what do I do?",
       "a5": "No problem. Lifetime hardware replacement is included with every pack. Email us a photo and we'll ship a new one free of charge.",
       "q6": "Do I need a company number or a specific status?",
-      "a6": "Not to order SmartTags. To collect tips, the business verifies itself once, right inside Digitip (the manager's identity and bank details) — the check anti-money-laundering rules require. Your employees have no account to create and nothing to do: tips are attributed to them by name and you pass them on through payroll.",
+      "a6": "Not to order SmartTags. To collect tips, the business verifies itself once, right inside Digitip (the manager's identity and bank details), the check anti-money-laundering rules require. Your employees have no account to create and nothing to do: tips are attributed to them by name and you pass them on through payroll.",
       "q7": "How does Digitip make money?",
-      "a7": "From the service fee, paid by the person leaving the tip — never from the tip itself. For a €10 tip the customer pays €10.75 in total: €0.25 fixed plus 5% of the tip. You receive the full €10. Of the 75 cents of fees, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount charged) and €0.34 goes to Digitip for infrastructure, support and ongoing development. No subscription, no monthly fee, and nothing out of your pocket."
+      "a7": "From the service fee, paid by the person leaving the tip, never from the tip itself. For a €10 tip the customer pays €10.75 in total: €0.25 fixed plus 5% of the tip. You receive the full €10. Of the 75 cents of fees, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount charged) and €0.34 goes to Digitip for infrastructure, support and ongoing development. No subscription, no monthly fee, and nothing out of your pocket."
     },
     "doubleGuarantee": {
       "g1title": "Premium quality guaranteed",
@@ -357,7 +357,7 @@
       "split": {
         "title": "The client chooses",
         "titleAccent": "who gets the tip",
-        "body": "Every team member has their own profile. The client directly decides who receives the tip — fair, transparent, and a real motivation driver for the whole team."
+        "body": "Every team member has their own profile. The client directly decides who receives the tip: fair, transparent, and a real motivation driver for the whole team."
       }
     },
     "pricing": {
@@ -369,17 +369,17 @@
       "row1detail": "The tip as chosen, in full. Nothing is taken out of it.",
       "row2label": "Stripe (secure payment)",
       "row2amount": "€0.41",
-      "row2detail": "€0.25 fixed per transaction + 1.5% of the amount charged — unavoidable bank fees, which Digitip pays for you.",
+      "row2detail": "€0.25 fixed per transaction + 1.5% of the amount charged, unavoidable bank fees, which Digitip pays for you.",
       "row3label": "Digitip",
       "row3amount": "€0.34",
       "row3detail": "Infrastructure, hosting, support and ongoing service improvements.",
-      "footer": "No subscription, no monthly fee — and nothing on your side: the fee is paid by the customer."
+      "footer": "No subscription, no monthly fee, and nothing on your side: the fee is paid by the customer."
     },
     "reviews": {
       "kicker": "Right after the tip",
       "title": "Turn every tip into",
       "titleAccent": "a Google review",
-      "body": "Your customer has just tipped you. That is exactly the moment they are most willing to recommend you — and Digitip asks them right there on the confirmation screen, in a single tap.",
+      "body": "Your customer has just tipped you. That is exactly the moment they are most willing to recommend you, and Digitip asks them right there on the confirmation screen, in a single tap.",
       "timing": {
         "title": "At the right moment",
         "body": "Not an email two days later, once the goodwill has faded. Right after a positive gesture, phone still in hand."
@@ -392,20 +392,20 @@
         "title": "Where it counts",
         "body": "Recent reviews carry the most weight in local search. A steady trickle beats a handful of old ones."
       },
-      "proNote": "Google reviews are part of Digitip Pro. The plaque and the tips themselves work with no subscription and no commitment — you switch reviews on from your dashboard whenever you decide to."
+      "proNote": "Google reviews are part of Digitip Pro. The plaque and the tips themselves work with no subscription and no commitment: you switch reviews on from your dashboard whenever you decide to."
     }
   },
   "pricing": {
     "kicker": "Epoxy NFC plaques",
     "title": "Order your Digitip plaque.",
-    "subtitle": "Handcrafted, ready to display. Each epoxy plaque arrives pre-programmed, tested, and ready to place at your workstation. Premium high-density epoxy resin — built to last.",
+    "subtitle": "Handcrafted, ready to display. Each epoxy plaque arrives pre-programmed, tested, and ready to place at your workstation. Premium high-density epoxy resin, built to last.",
     "oneTime": "excl. VAT",
     "perMonth": "/ month",
     "tagsIncluded": "{count, plural, one {# epoxy plaque included} other {# epoxy plaques included}}",
     "choose": "Order now",
     "mostPopular": "Best value",
     "enterpriseTitle": "Multiple venues or specific needs?",
-    "enterpriseBody": "Several locations, large teams, questions about setup — we adapt. Get in touch.",
+    "enterpriseBody": "Several locations, large teams, questions about setup: we adapt. Get in touch.",
     "enterpriseCta": "Contact us",
     "benefits": {
       "preConfigured": "Pre-programmed NFC, ready to display",
@@ -426,7 +426,7 @@
       },
       "duo": {
         "name": "Duo",
-        "tagline": "Two plaques at the best rate — ideal for venues with several team members."
+        "tagline": "Two plaques at the best rate, ideal for venues with several team members."
       }
     },
     "trust1": "Secured by Stripe",
@@ -436,7 +436,7 @@
   "contact": {
     "kicker": "Contact",
     "title": "How can we help?",
-    "subtitle": "Multi-venue setup, questions about the service, or anything else? Drop us a line — we'll get back to you within 24 hours.",
+    "subtitle": "Multi-venue setup, questions about the service, or anything else? Drop us a line, we'll get back to you within 24 hours.",
     "name": "Full name",
     "email": "Work email",
     "phone": "Phone (optional)",
@@ -467,7 +467,7 @@
     "termsPrefix": "By signing up you agree to our",
     "and": "and",
     "checkEmail": "Check your email to confirm your account.",
-    "emailVerifiedBanner": "Email verified — sign in to access your account.",
+    "emailVerifiedBanner": "Email verified, sign in to access your account.",
     "checkEmailResend": "Didn't receive the email?",
     "resendEmail": "Resend email",
     "resendEmailSending": "Sending…",
@@ -478,7 +478,7 @@
     "forgotPasswordSubtitle": "Enter your email and we'll send you a link to reset your password.",
     "forgotPasswordSubmit": "Send reset link",
     "forgotPasswordSending": "Sending…",
-    "forgotPasswordSuccess": "Check your email — a reset link has just been sent.",
+    "forgotPasswordSuccess": "Check your email: a reset link has just been sent.",
     "backToLogin": "Back to sign in",
     "resetPasswordTitle": "New password",
     "resetPasswordSubtitle": "Choose a new password for your account.",
@@ -487,7 +487,7 @@
     "passwordMismatch": "Passwords don't match.",
     "resetPasswordSubmit": "Reset password",
     "resetPasswordSubmitting": "Resetting…",
-    "resetPasswordSuccess": "Password updated — you can now sign in.",
+    "resetPasswordSuccess": "Password updated, you can now sign in.",
     "resetPasswordError": "Link expired or invalid. Please request a new one.",
     "errorInvalidCredentials": "Incorrect email or password.",
     "errorTooManyRequests": "Too many attempts. Please try again in a few minutes.",
@@ -561,7 +561,7 @@
       "orderSummary": "Order summary",
       "hardware": "Hardware (one-time)",
       "commission": "Fee on tips",
-      "commissionValue": "0% — paid by the customer",
+      "commissionValue": "0%, paid by the customer",
       "shippingTo": "Shipping to",
       "billedTo": "Billed to",
       "account": "Account",
@@ -578,7 +578,7 @@
       "pack": "Pack {pack}",
       "hardware": "Hardware",
       "commission": "Fee on tips",
-      "commissionValue": "0% — paid by the customer",
+      "commissionValue": "0%, paid by the customer",
       "shipping": "Shipping",
       "free": "Free",
       "total": "Total today",
@@ -594,7 +594,7 @@
       "password_too_short": "Password too short (8 characters minimum).",
       "signup_failed": "Account creation failed. Check your details and try again.",
       "checkout_failed": "The payment couldn't be completed. Please try again in a moment.",
-      "email_in_use": "An account already exists for this email. Please sign in first — we'll resume your order.",
+      "email_in_use": "An account already exists for this email. Please sign in first, we'll resume your order.",
       "email_confirmation_required": "We sent you a confirmation email. Confirm it then sign in to finish your order."
     }
   },
@@ -653,16 +653,16 @@
     "receiptByEmail": "Get a receipt by email",
     "tipHeadline": "Want to say thanks?",
     "tipSubhead": "Leave a tip in a tap",
-    "feeInfo": "This fee covers the bank transaction cost and the Digitip service. The whole tip you chose is passed on — we take nothing out of it.",
-    "successBodyNamed": "Your tip is on its way — {name} has been notified.",
+    "feeInfo": "This fee covers the bank transaction cost and the Digitip service. The whole tip you chose is passed on: we take nothing out of it.",
+    "successBodyNamed": "Your tip is on its way, {name} has been notified.",
     "sentTo": "Sent to",
     "reviewTitle": "Did you have a great time?",
     "reviewTitleNamed": "Did you enjoy {name}?",
-    "reviewBody": "Help the team by leaving a Google review — it takes 10 seconds.",
+    "reviewBody": "Help the team by leaving a Google review, it takes 10 seconds.",
     "reviewButton": "Leave a Google review →",
     "demo": {
       "badge": "Demo mode",
-      "banner": "Demo — no real payment",
+      "banner": "Demo: no real payment",
       "payButton": "Pay {amount} (demo)"
     }
   },
@@ -720,7 +720,7 @@
       "orderTracking": "Tracking",
       "orderInvoice": "Invoice",
       "noOrders": "No orders yet.",
-      "pendingFulfillment": "Fulfillment in progress — we're hand-programming your SmartTags and will ship them within 3 business days.",
+      "pendingFulfillment": "Fulfillment in progress: we're hand-programming your SmartTags and will ship them within 3 business days.",
       "successTitle": "You're all set.",
       "successBody": "Your order is confirmed. We're hand-programming your SmartTags and will ship within 3 business days. An invoice was sent to your email.",
       "goToDashboard": "Go to dashboard",
@@ -853,7 +853,7 @@
       "tipLink": "Customer tip page",
       "copyLink": "Copy link",
       "linkCopied": "Copied!",
-      "createHint": "Only create an extra establishment if you run several establishments. Then remember to assign a SmartTag to it from the SmartTags tab — without a tag, the establishment can't receive tips."
+      "createHint": "Only create an extra establishment if you run several establishments. Then remember to assign a SmartTag to it from the SmartTags tab. Without a tag, the establishment can't receive tips."
     },
     "stickers": {
       "title": "SmartTags",
@@ -880,9 +880,9 @@
       "pendingTitle": "Verification in progress",
       "pendingBody": "Stripe is reviewing your details. Payouts will be enabled shortly.",
       "step1Title": "Why Stripe?",
-      "step1Body": "To pay out your tips securely, we use Stripe — the world's leading payment provider, trusted by millions of businesses. Stripe protects your money and your details: Digitip never has access to them.",
+      "step1Body": "To pay out your tips securely, we use Stripe, the world's leading payment provider, trusted by millions of businesses. Stripe protects your money and your details: Digitip never has access to them.",
       "step2Title": "Quick, and only once",
-      "step2Body": "It takes about 2 minutes, just once. After that, your tips reach your bank account — Stripe handles the payouts, at the frequency you choose.",
+      "step2Body": "It takes about 2 minutes, just once. After that, your tips reach your bank account: Stripe handles the payouts, at the frequency you choose.",
       "step3Title": "Nothing to worry about",
       "step3Body": "You receive your tips personally, as a private individual. Setting up Stripe doesn't make you a business and commits you to nothing.",
       "back": "← Back",
@@ -895,7 +895,7 @@
       "incompleteTitle": "Setup not finished",
       "incompleteBody": "Resume the secure setup to receive your tips.",
       "step4Title": "Keep “Sole trader”",
-      "step4Body": "Stripe only offers two account types: “individual / sole trader” or “company”. Keep the pre-selected “Individual / sole trader” (never “Company”) — no company details to provide.",
+      "step4Body": "Stripe only offers two account types: “individual / sole trader” or “company”. Keep the pre-selected “Individual / sole trader” (never “Company”), no company details to provide.",
       "step5Title": "What to have ready",
       "step5Body": "Just have your date of birth, your address and your IBAN handy. That's all Stripe needs to pay out your tips.",
       "step6Title": "“Tax”, “Climate”? Not now",
@@ -1015,7 +1015,7 @@
         "empty": "No orders match this filter.",
         "filterAll": "All",
         "backToList": "Back to orders",
-        "detailTitle": "Order — {group}",
+        "detailTitle": "Order: {group}",
         "detailSubtitle": "{quantity} × pack {pack} · placed {date}",
         "fieldStatus": "Status",
         "fieldProgress": "Encoded",
@@ -1054,7 +1054,7 @@
         "subtitle": "{n} transactions · {volume} successful volume",
         "subtitleFiltered": "{shown} rows shown (max 500) · {total} transactions matching filters · {volume} successful volume (succeeded)",
         "rpcFallback": "Exact totals require SQL migration 00019 (admin_transactions_summary). Showing an approximation from the current page.",
-        "truncatedList": "More than {limit} transactions match these filters — narrow the date range or group.",
+        "truncatedList": "More than {limit} transactions match these filters, narrow the date range or group.",
         "empty": "No transactions match these filters.",
         "anyStatus": "Any status",
         "anyGroup": "Any group",
@@ -1102,9 +1102,9 @@
       "stripe": {
         "title": "Stripe (project data)",
         "subtitle": "Deep links to the Stripe dashboard from IDs stored in the database.",
-        "groupsTitle": "Groups — customer & subscription",
-        "establishmentsTitle": "Establishments — Connect accounts",
-        "staffTitle": "Staff — Connect accounts",
+        "groupsTitle": "Groups: customer & subscription",
+        "establishmentsTitle": "Establishments: Connect accounts",
+        "staffTitle": "Staff: Connect accounts",
         "staffEmpty": "No staff Stripe Connect accounts.",
         "colName": "Name",
         "colGroup": "Group",
@@ -1169,7 +1169,7 @@
       "total": "Total",
       "empty": "No payout this month.",
       "export": "Export as CSV",
-      "heldNote": "{amount} awaiting withdrawal by your employees — not yet paid, excluded from the statement.",
+      "heldNote": "{amount} awaiting withdrawal by your employees, not yet paid, excluded from the statement.",
       "exportJournal": "Detailed journal",
       "freeLimit": "The free plan exports the current month. Go Pro for the full history, the detailed journal and automatic delivery to your accountant."
     },
@@ -1189,7 +1189,7 @@
       "feature1": "A Google review invitation after every tip",
       "feature2": "Payroll statement emailed monthly to you and your accountant",
       "feature3": "Detailed payroll export, unlimited history, CSV and Excel",
-      "ctaMonthly": "Go Pro — €19/month excl. VAT",
+      "ctaMonthly": "Go Pro · €19/month excl. VAT",
       "ctaYearly": "Pay yearly (2 months free)",
       "opening": "Opening…",
       "activeTitle": "Digitip Pro is active",
@@ -1198,7 +1198,7 @@
       "unavailable": "Pro isn't available yet. Please try again later.",
       "failed": "The payment page could not be opened. Try again in a moment.",
       "reviewTeaserTitle": "{count, plural, one {# tip this month} other {# tips this month}}",
-      "reviewTeaserBody": "That's as many customers who could have left a Google review. With Digitip Pro, the invitation shows right after the tip — at the exact moment they're happy.",
+      "reviewTeaserBody": "That's as many customers who could have left a Google review. With Digitip Pro, the invitation shows right after the tip, at the exact moment they're happy.",
       "reviewTeaserCta": "See Digitip Pro",
       "exportTitle": "Full accounting export",
       "exportBody": "The free plan exports the current month. Digitip Pro opens the full history and the detailed journal, and emails the statement to your accountant every month.",
@@ -1216,7 +1216,7 @@
     "welcome": {
       "title": "Join {name}",
       "subtitle": "Your tips, in your bank account.",
-      "bullet1": "Your clients tip you from their phone — no cash, no app.",
+      "bullet1": "Your clients tip you from their phone, no cash, no app.",
       "bullet2": "You receive the money in your bank account.",
       "bullet3": "Ready in 2 minutes.",
       "start": "Get started →"
@@ -1279,7 +1279,7 @@
       "body": "{name} is set up. You can now manage your team and track your tips.",
       "cta": "Go to dashboard →",
       "payoutsPendingTitle": "Verification in progress",
-      "payoutsPendingBody": "Stripe has your details and is reviewing them. Your tip page switches on automatically once that clears — usually within 24 hours. Nothing else is needed from you."
+      "payoutsPendingBody": "Stripe has your details and is reviewing them. Your tip page switches on automatically once that clears, usually within 24 hours. Nothing else is needed from you."
     },
     "emailVerification": {
       "title": "Check your email",
@@ -1347,15 +1347,15 @@
       "demoName": "your team",
       "demoThanks": "Thanks for the tip!",
       "demoQuestion": "Did you enjoy {name}?",
-      "demoBody": "Help the team out with a Google review — it takes 10 seconds.",
+      "demoBody": "Help the team out with a Google review, it takes 10 seconds.",
       "demoCta": "Leave a Google review →",
       "timing": "Asked at the right moment: straight after a kind gesture.",
-      "oneTap": "Already signed in to Google — they rate, they submit. Two taps.",
+      "oneTap": "Already signed in to Google: they rate, they submit. Two taps.",
       "ranking": "A steady flow of recent reviews lifts you on Maps."
     },
     "googleReview": {
       "title": "Google reviews",
-      "subtitle": "Link your Google listing now. The review invitation shown after each tip is part of Digitip Pro — switch it on whenever you like.",
+      "subtitle": "Link your Google listing now. The review invitation shown after each tip is part of Digitip Pro, switch it on whenever you like.",
       "skip": "Skip for now",
       "searchPlaceholder": "Your business name",
       "searchButton": "Search",
@@ -1365,7 +1365,7 @@
       "manualIntro": "Paste the “Ask for reviews” link from your Google Business profile.",
       "manualSave": "Save link",
       "backToSearch": "← Back to search",
-      "manualHelp": "No Google Business listing? Find your business on Google Maps, open its page and copy the page address — a place ID works too.",
+      "manualHelp": "No Google Business listing? Find your business on Google Maps, open its page and copy the page address. A place ID works too.",
       "manualInvalid": "Enter a valid Google review link.",
       "linked": "Google listing linked",
       "change": "Change",
@@ -1388,7 +1388,7 @@
       "exited": "All done above? Hit “Finish” to complete your setup.",
       "checking": "Checking with Stripe…",
       "incompleteHint": "Complete the form above to enable this button.",
-      "recheck": "I'm done — check again",
+      "recheck": "I'm done, check again",
       "legalTitle": "Your legal structure",
       "legalCompany": "A company (SAS, SARL, SA…)",
       "legalIndividual": "A sole trader or self-employed business"

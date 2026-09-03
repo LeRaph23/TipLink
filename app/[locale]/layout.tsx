@@ -131,7 +131,7 @@ export async function generateMetadata({
           url: '/icon.jpg',
           width: 1200,
           height: 630,
-          alt: 'Digitip — Pourboires par CB via NFC',
+          alt: 'Digitip, pourboires par CB via NFC',
         },
       ],
     },

@@ -142,11 +142,11 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
         Deux programmes, deux cadres :
         <ul style={faqList}>
           <FaqBullet>
-            <strong>Ambassadeurs</strong> — public large (étudiants, salariés, demandeurs d&apos;emploi),
+            <strong>Ambassadeurs</strong> : public large (étudiants, salariés, demandeurs d&apos;emploi),
             cadre micro-entreprise simplifié, 35-45 € par vente.
           </FaqBullet>
           <FaqBullet>
-            <strong>Commerciaux Pros</strong> — réservé aux commerciaux professionnels avec structure
+            <strong>Commerciaux Pros</strong> : réservé aux commerciaux professionnels avec structure
             juridique déclarée (auto-entreprise, EI, SARL, SAS…), contrat d&apos;apporteur d&apos;affaires
             formel, barème supérieur de 50-65 € par vente.
           </FaqBullet>
@@ -185,7 +185,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
   {
     q: 'Y a-t-il un objectif minimum ?',
-    a: 'Non, aucun quota imposé. Le contrat est sans engagement de volume et sans clause d\'exclusivité — vous pouvez le résilier à tout moment avec un préavis de 30 jours. Nous attendons en revanche un démarchage régulier et conforme à l\'image de la marque.',
+    a: 'Non, aucun quota imposé. Le contrat est sans engagement de volume et sans clause d\'exclusivité : vous pouvez le résilier à tout moment avec un préavis de 30 jours. Nous attendons en revanche un démarchage régulier et conforme à l\'image de la marque.',
   },
   {
     q: 'Quel produit présente-t-on ?',

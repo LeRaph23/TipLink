@@ -175,7 +175,7 @@ export function AmbassadeurSalonsTracker({ code }: { code: string }) {
           <div style={{ fontSize: FONT.body - 1, color: 'var(--text-3)', marginBottom: SPACE.md, lineHeight: 1.5 }}>
             Aucune ville ne vous est encore attribuée. Sélectionnez une ville pour afficher les établissements à démarcher.
           </div>
-          <CitySelect cities={cities} value="" onChange={chooseCity} placeholder="— Sélectionner une ville —" />
+          <CitySelect cities={cities} value="" onChange={chooseCity} placeholder="Sélectionner une ville" />
         </div>
       </TrackerCard>
     );
@@ -297,7 +297,7 @@ function CitySelect({
         fontSize: FONT.body, fontWeight: WEIGHT.semibold, fontFamily: 'inherit', cursor: 'pointer',
       }}
     >
-      <option value="" disabled>{placeholder ?? '— Changer de ville —'}</option>
+      <option value="" disabled>{placeholder ?? 'Changer de ville'}</option>
       {cities.map((c) => (
         <option key={c.city} value={c.city}>{c.city} ({c.count})</option>
       ))}
@@ -516,11 +516,11 @@ function VisitModal({
           <span>
             {geoStatus === 'locating' && 'Localisation en cours… restez sur place.'}
             {geoStatus === 'ok' && geo &&
-              `Position détectée (±${Math.round(geo.accuracy)} m) — votre visite sera vérifiée.`}
+              `Position détectée (±${Math.round(geo.accuracy)} m), votre visite sera vérifiée.`}
             {geoStatus === 'denied' &&
-              'Localisation refusée — la visite sera enregistrée mais marquée non vérifiée.'}
+              'Localisation refusée : la visite sera enregistrée mais marquée non vérifiée.'}
             {geoStatus === 'unavailable' &&
-              'Localisation indisponible sur cet appareil — visite marquée non vérifiée.'}
+              'Localisation indisponible sur cet appareil : visite marquée non vérifiée.'}
           </span>
         </div>
 

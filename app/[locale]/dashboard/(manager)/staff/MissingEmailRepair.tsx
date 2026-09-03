@@ -69,7 +69,7 @@ export function MissingEmailRepair({
       <p style={{ fontSize: 13, color: '#92400e', lineHeight: 1.6, marginBottom: 16, opacity: 0.9 }}>
         Ces profils ont été créés sans adresse email, donc aucune invitation n&apos;a été
         envoyée et ils n&apos;ont pas de compte. Renseignez leur email pour leur envoyer
-        l&apos;invitation — sans ça, ils ne pourront jamais encaisser.
+        l&apos;invitation. Sans ça, ils ne pourront jamais encaisser.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

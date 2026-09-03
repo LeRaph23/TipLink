@@ -325,7 +325,7 @@ export function OrderFulfillment({
           <textarea
             value={customBody}
             onChange={(e) => setCustomBody(e.target.value)}
-            placeholder="Bonjour, on a pris quelques jours de retard sur l’encodage de votre pack — il partira lundi…"
+            placeholder="Bonjour, on a pris quelques jours de retard sur l’encodage de votre pack, il partira lundi…"
             rows={5}
             style={{ ...input, fontFamily: 'var(--font)', resize: 'vertical' }}
           />

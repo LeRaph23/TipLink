@@ -288,7 +288,7 @@ function InnerCheckout({
     const expressEmail = event?.billingDetails?.email ?? null;
     const finalEmail = (expressEmail ?? email).trim();
     if (!finalEmail) {
-      setError('Merci d’entrer un email — il est obligatoire pour recevoir la facture et le lien de configuration.');
+      setError('Merci d’entrer un email : il est obligatoire pour recevoir la facture et le lien de configuration.');
       return;
     }
     if (!tax) {
@@ -513,7 +513,7 @@ function InnerCheckout({
       <p style={{ fontSize: 11, color: '#6b6d85', textAlign: 'center', lineHeight: 1.5, margin: 0 }}>
         Paiement sécurisé par Stripe. TVA calculée selon votre pays de livraison.
         En confirmant, vous acceptez nos CGV.
-        {pack === 'duo' ? ' Pack Duo — 2 plaques NFC.' : ' Pack Solo — 1 plaque NFC.'}
+        {pack === 'duo' ? ' Pack Duo, 2 plaques NFC.' : ' Pack Solo, 1 plaque NFC.'}
       </p>
     </div>
   );
