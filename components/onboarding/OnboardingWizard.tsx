@@ -175,9 +175,6 @@ export function OnboardingWizard(props: Props) {
   // not state: the retry reads it in the same tick it is written.
   const createdUserId = useRef<string | null>(null);
 
-  // Guards the finish button against a double submit: provisioning writes a
-  // group, an establishment and the roles, and running it twice in scan mode
-  // creates a duplicate group.
   // Provisioning and finishing are one click, but they are two round-trips: if
   // the second fails, a retry must not create a second group, and it must still
   // carry the token minted by the first. Kept in a ref so the retry reads it in
@@ -221,7 +218,7 @@ export function OnboardingWizard(props: Props) {
   // Guard against landing on a step past unfilled prerequisites. The current
   // step is persisted in the URL (?step=…) but the collected data lives only in
   // in-memory state, so a page reload or browser back/forward can restore a late
-  // step (e.g. "banking") with empty fields. Submitting from there would send
+  // step with empty fields. Submitting from there would send
   // blank values to the server action and surface a raw Zod
   // "Too small: expected string to have >=1 characters" error. Instead, bounce
   // the user back to the first incomplete step so they re-enter their details.
@@ -488,10 +485,10 @@ export function OnboardingWizard(props: Props) {
         <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 24 }}>
           {t('done.body', { name: state.establishmentName })}
         </p>
-        {/* Stripe accepted the form but is still verifying: the wizard is over,
-            the tip pages just stay closed until charges and payouts light up.
-            Nothing is asked of the manager — say so, so they don't go hunting
-            for a step they missed. */}
+        {/* The tip pages stay closed until charges and payouts light up, which
+            now means until the manager does the Stripe verification from the
+            dashboard. Saying so here is the handover: the banner picks the
+            same thread up on the other side. */}
         {payoutsPending && (
           <div style={{
             background: 'var(--surface-2)', border: '1px solid rgba(229,122,151,0.25)',
@@ -505,9 +502,6 @@ export function OnboardingWizard(props: Props) {
             </div>
           </div>
         )}
-        {/* Payouts are configured during the wizard now, so there is no
-            leftover banking step to send anyone to — the dashboard is the
-            destination in every mode. */}
         <button
           onClick={() => router.push(`/${locale}/dashboard`)}
           style={{ ...btnPrimary, maxWidth: 320, margin: '0 auto', display: 'block' }}
@@ -531,7 +525,6 @@ export function OnboardingWizard(props: Props) {
   const config = i18nKey
     ? { title: t(`${i18nKey}.title`), subtitle: t(`${i18nKey}.subtitle`) }
     : { title: '', subtitle: '' };
-  // Connect is mandatory for everyone, so it is always the final step.
   const isLastStep = stepIndex === steps.length - 1;
   const totalSteps = steps.length;
   // Google review is soft-required: the primary CTA stays disabled until a link
