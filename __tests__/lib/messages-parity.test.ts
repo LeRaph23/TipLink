@@ -66,6 +66,15 @@ describe('message catalogue parity', () => {
     expect(dashed(en as unknown as Tree)).toEqual([]);
   });
 
+  it('keeps every trace of passwords out of the catalogues', () => {
+    // Authentication is a six-digit code sent by email; there is no password
+    // anywhere in the product. A key naming one means a screen asking for one
+    // came back, which would be a dead end: no UI sets a password, and nothing
+    // would accept it. Cheaper to fail here than to find it in production.
+    const offenders = frKeys.filter((k) => /password/i.test(k));
+    expect(offenders).toEqual([]);
+  });
+
   it('no longer ships fabricated social-proof keys', () => {
     // Guards the fix that removed the invented 4.8/400 rating, the "+150 avis
     // vérifiés" counter and the three fictional testimonials. Re-adding any of

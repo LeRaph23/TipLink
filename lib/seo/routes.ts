@@ -64,8 +64,6 @@ export const NOINDEX_PREFIXES: readonly string[] = [
   '/pro',
   '/auth',
   '/signup',
-  '/forgot-password',
-  '/reset-password',
   '/lp',
 ];
 
