@@ -170,3 +170,118 @@ export async function revalidateEstablishmentTipPages(
 
   for (const s of staff ?? []) revalidateTag(staffTipTag(s.id), 'max');
 }
+
+/**
+ * Where the establishment stands on being able to receive tips, in the four
+ * states the manager needs told apart.
+ *
+ * There was no shared reader for this: the payments page ran its own inline
+ * query and collapsed everything into one boolean, which cannot say whether
+ * the manager has something to do or merely something to wait for. That
+ * distinction is the whole point of the dashboard banner.
+ */
+export type PayabilityState =
+  /** No Stripe account at all: the manager has not started. */
+  | 'not_started'
+  /** An account exists but its form was never submitted. Their move. */
+  | 'incomplete'
+  /** Submitted, and Stripe has not finished checking. Nothing to do but wait. */
+  | 'verifying'
+  /** Charges and payouts are both live. */
+  | 'ready';
+
+/**
+ * The state machine on its own, so it can be pinned by a test without standing
+ * up a fake PostgREST client.
+ *
+ * Order matters. `details_submitted` stays true once the form is sent, so it
+ * cannot be the first question: an account that submitted everything and then
+ * had payouts turned back off would read as 'verifying' for ever. Live charges
+ * and payouts are checked first, and they are checked together because either
+ * one missing closes the tip page.
+ */
+export function derivePayabilityState(account: {
+  accountId: string | null;
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+}): PayabilityState {
+  if (!account.accountId) return 'not_started';
+  if (account.chargesEnabled && account.payoutsEnabled) return 'ready';
+  return account.detailsSubmitted ? 'verifying' : 'incomplete';
+}
+
+export type EstablishmentPayability = {
+  establishmentId: string;
+  establishmentName: string;
+  state: PayabilityState;
+  /** Verbatim from Stripe: `company.verification.document` and friends. */
+  currentlyDue: string[];
+  /**
+   * Tips already collected whose transfer to the establishment has not gone
+   * through, in cents.
+   *
+   * Read from `transactions`, not `tip_allocations`: allocations record who
+   * earned a tip, which stays true whether or not the money moved. A row that
+   * succeeded but still has no `stripe_transfer_id` is money sitting on the
+   * platform balance, which is exactly what an unverified account causes.
+   */
+  heldCents: number;
+};
+
+export async function getEstablishmentPayability(
+  supabase: Service,
+  groupId: string,
+): Promise<EstablishmentPayability | null> {
+  const { data: est } = await supabase
+    .from('establishments')
+    .select(
+      'id, name, stripe_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_payouts_enabled, stripe_requirements',
+    )
+    .eq('group_id', groupId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!est) return null;
+
+  const state = derivePayabilityState({
+    accountId: est.stripe_account_id,
+    detailsSubmitted: est.stripe_details_submitted,
+    chargesEnabled: est.stripe_charges_enabled,
+    payoutsEnabled: est.stripe_payouts_enabled,
+  });
+
+  const requirements = (est.stripe_requirements ?? null) as { currently_due?: unknown } | null;
+  const currentlyDue = Array.isArray(requirements?.currently_due)
+    ? (requirements.currently_due as unknown[]).filter((v): v is string => typeof v === 'string')
+    : [];
+
+  // Only worth a second query when something is actually stuck. A ready
+  // establishment is the common case and pays nothing for this.
+  let heldCents = 0;
+  if (state !== 'ready') {
+    const { data: stuck } = await supabase
+      .from('transactions')
+      .select('metadata')
+      .eq('establishment_id', est.id)
+      .eq('status', 'succeeded')
+      .in('transfer_status', ['pending', 'failed'])
+      .is('stripe_transfer_id', null)
+      .limit(500);
+
+    for (const row of stuck ?? []) {
+      const amount = Number((row.metadata as { tip_amount?: unknown } | null)?.tip_amount);
+      if (Number.isFinite(amount) && amount > 0) heldCents += amount;
+    }
+  }
+
+  return {
+    establishmentId: est.id,
+    establishmentName: est.name ?? '',
+    state,
+    currentlyDue,
+    heldCents,
+  };
+}

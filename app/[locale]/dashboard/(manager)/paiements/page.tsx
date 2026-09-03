@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PaymentsPanel } from './PaymentsPanel';
+import { getEstablishmentPayability } from '@/lib/stripe/establishment-account';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,17 +46,10 @@ export default async function PaymentsPage({
 
   if (!roleRow?.group_id) redirect(`/${locale}/dashboard`);
 
-  const service = createServiceClient();
-  const { data: est } = await service
-    .from('establishments')
-    .select('id, name, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled')
-    .eq('group_id', roleRow.group_id)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  const ready = !!est?.stripe_charges_enabled && !!est?.stripe_payouts_enabled;
+  // Same reader the dashboard banner uses, so the two can never disagree about
+  // whether this establishment can be paid.
+  const est = await getEstablishmentPayability(createServiceClient(), roleRow.group_id);
+  const ready = est?.state === 'ready';
 
   return (
     <div>
@@ -96,7 +90,7 @@ export default async function PaymentsPage({
             </div>
           </div>
 
-          <PaymentsPanel establishmentId={est.id} />
+          <PaymentsPanel establishmentId={est.establishmentId} />
         </>
       )}
     </div>

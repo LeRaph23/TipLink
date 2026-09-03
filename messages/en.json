@@ -867,40 +867,6 @@
       "linkCopied": "Copied"
     },
     "payouts": "Payouts",
-    "banking": {
-      "title": "Payouts",
-      "subtitle": "Receive your tips in your bank account.",
-      "returnIncomplete": "Your Stripe setup is not finished. Your tips are held safely, but they cannot be paid out until the verification is complete. Pick up where you left off below.",
-      "notLinkedTitle": "Account not linked",
-      "notLinkedBody": "Your account isn't linked to an establishment yet. Contact your administrator to access this feature.",
-      "totalReceived": "Total received",
-      "autoPayout": "Your tips are paid out to your bank account by Stripe, <b>at the payout frequency you chose</b>.",
-      "activeTitle": "Bank account active",
-      "activeBody": "You're receiving your tips. You can update your details if needed.",
-      "pendingTitle": "Verification in progress",
-      "pendingBody": "Stripe is reviewing your details. Payouts will be enabled shortly.",
-      "step1Title": "Why Stripe?",
-      "step1Body": "To pay out your tips securely, we use Stripe, the world's leading payment provider, trusted by millions of businesses. Stripe protects your money and your details: Digitip never has access to them.",
-      "step2Title": "Quick, and only once",
-      "step2Body": "It takes about 2 minutes, just once. After that, your tips reach your bank account: Stripe handles the payouts, at the frequency you choose.",
-      "step3Title": "Nothing to worry about",
-      "step3Body": "You receive your tips personally, as a private individual. Setting up Stripe doesn't make you a business and commits you to nothing.",
-      "back": "← Back",
-      "continue": "Continue →",
-      "openingStripe": "Opening Stripe…",
-      "setupCta": "Set up with Stripe →",
-      "updateCta": "Update my bank details →",
-      "pendingBalanceTitle": "Pending tips",
-      "pendingBalanceBody": "Finish your verification (2 min) to receive these tips in your account.",
-      "incompleteTitle": "Setup not finished",
-      "incompleteBody": "Resume the secure setup to receive your tips.",
-      "step4Title": "Keep “Sole trader”",
-      "step4Body": "Stripe only offers two account types: “individual / sole trader” or “company”. Keep the pre-selected “Individual / sole trader” (never “Company”), no company details to provide.",
-      "step5Title": "What to have ready",
-      "step5Body": "Just have your date of birth, your address and your IBAN handy. That's all Stripe needs to pay out your tips.",
-      "step6Title": "“Tax”, “Climate”? Not now",
-      "step6Body": "Stripe may offer extra add-ons (Tax, Climate). You don't need them: click “Not now” and carry on. You're all set!"
-    },
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenue and top performers over the last 30 days.",
@@ -1169,7 +1135,6 @@
       "total": "Total",
       "empty": "No payout this month.",
       "export": "Export as CSV",
-      "heldNote": "{amount} awaiting withdrawal by your employees, not yet paid, excluded from the statement.",
       "exportJournal": "Detailed journal",
       "freeLimit": "The free plan exports the current month. Go Pro for the full history, the detailed journal and automatic delivery to your accountant."
     },
@@ -1203,6 +1168,16 @@
       "exportTitle": "Full accounting export",
       "exportBody": "The free plan exports the current month. Digitip Pro opens the full history and the detailed journal, and emails the statement to your accountant every month.",
       "exportCta": "Upgrade to Pro"
+    },
+    "verifyBanner": {
+      "titleHeld": "{amount} is waiting for you",
+      "titleBlocked": "Your SmartTag cannot take payments yet",
+      "titleVerifying": "Stripe is running its checks",
+      "bodyNotStarted": "The Stripe verification is still to do: about 2 minutes, once. Until then your customers cannot leave a tip.",
+      "bodyIncomplete": "Your Stripe verification was started but never finished. Pick up where you left off, only a few fields remain.",
+      "bodyVerifying": "Stripe is finishing its checks. Nothing to do on your side: your tips will be paid out as soon as it clears.",
+      "ctaStart": "Verify now",
+      "ctaResume": "Resume"
     }
   },
   "join": {

@@ -867,40 +867,6 @@
       "linkCopied": "Copié"
     },
     "payouts": "Virements",
-    "banking": {
-      "title": "Virements",
-      "subtitle": "Recevez vos pourboires sur votre compte bancaire.",
-      "returnIncomplete": "Votre configuration Stripe n'est pas terminée. Vos pourboires sont conservés en sécurité, mais ils ne pourront être versés qu'une fois la vérification finalisée. Reprenez là où vous en étiez ci-dessous.",
-      "notLinkedTitle": "Compte non rattaché",
-      "notLinkedBody": "Votre compte n'est pas encore rattaché à un établissement. Contactez votre administrateur pour accéder à cette fonctionnalité.",
-      "totalReceived": "Total reçu",
-      "autoPayout": "Vos pourboires sont versés sur votre compte bancaire par Stripe, <b>selon la fréquence de virement que vous avez choisie</b>.",
-      "activeTitle": "Compte bancaire actif",
-      "activeBody": "Vous recevez vos pourboires. Vous pouvez modifier vos coordonnées si besoin.",
-      "pendingTitle": "Vérification en cours",
-      "pendingBody": "Stripe vérifie vos informations. Vos virements seront activés sous peu.",
-      "step1Title": "Pourquoi Stripe ?",
-      "step1Body": "Pour vous verser vos pourboires en toute sécurité, on passe par Stripe, le spécialiste mondial du paiement, utilisé par des millions d'entreprises. C'est lui qui protège votre argent et vos coordonnées : Digitip n'y a jamais accès.",
-      "step2Title": "Rapide, et une seule fois",
-      "step2Body": "Comptez 2 minutes, à ne faire qu'une seule fois. Ensuite, vos pourboires arrivent sur votre compte bancaire : c'est Stripe qui s'en charge, au rythme de virement que vous choisissez.",
-      "step3Title": "Aucune inquiétude à avoir",
-      "step3Body": "Vous recevez vos pourboires à titre personnel, en tant que particulier. La configuration Stripe ne fait pas de vous une entreprise et ne vous engage à rien.",
-      "back": "← Retour",
-      "continue": "Continuer →",
-      "openingStripe": "Ouverture de Stripe…",
-      "setupCta": "Configurer avec Stripe →",
-      "updateCta": "Modifier mes coordonnées bancaires →",
-      "pendingBalanceTitle": "Pourboires en attente",
-      "pendingBalanceBody": "Finalisez votre vérification (2 min) pour recevoir ces pourboires sur votre compte.",
-      "incompleteTitle": "Inscription à finaliser",
-      "incompleteBody": "Reprenez la configuration sécurisée pour recevoir vos pourboires.",
-      "step4Title": "Gardez « Auto-entrepreneur »",
-      "step4Body": "Stripe ne propose que deux types de compte : « entrepreneur individuel / auto-entrepreneur » ou « société ». Gardez l'option « Entrepreneur individuel / Auto-entrepreneur » déjà cochée (jamais « Société »), aucune information d'entreprise à fournir.",
-      "step5Title": "Ce qu’il faut préparer",
-      "step5Body": "Ayez simplement sous la main votre date de naissance, votre adresse et votre IBAN. C'est tout ce dont Stripe a besoin pour vous verser vos pourboires.",
-      "step6Title": "« Tax », « Climate » ? Pas pour l’instant",
-      "step6Body": "Stripe peut vous proposer des options en plus (Tax, Climate). Vous n'en avez pas besoin : cliquez « Pas pour l'instant » et continuez tranquillement. C'est prêt !"
-    },
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenus et top équipe sur les 30 derniers jours.",
@@ -1169,7 +1135,6 @@
       "total": "Total",
       "empty": "Aucun versement ce mois-ci.",
       "export": "Exporter en CSV",
-      "heldNote": "{amount} en attente de retrait par vos employés, non encore versé, hors relevé.",
       "exportJournal": "Journal détaillé",
       "freeLimit": "L'offre gratuite exporte le mois en cours. Passez au Pro pour l'historique complet, le journal détaillé et l'envoi automatique à votre comptable."
     },
@@ -1203,6 +1168,16 @@
       "exportTitle": "Export comptable complet",
       "exportBody": "Le plan gratuit exporte le mois en cours. Digitip Pro ouvre l'historique complet, le journal détaillé, et envoie le relevé chaque mois à votre comptable.",
       "exportCta": "Passer au Pro"
+    },
+    "verifyBanner": {
+      "titleHeld": "{amount} vous attendent",
+      "titleBlocked": "Votre SmartTag n'accepte pas encore les paiements",
+      "titleVerifying": "Vérification en cours chez Stripe",
+      "bodyNotStarted": "Il reste la vérification Stripe à faire, environ 2 minutes, une seule fois. Sans elle, vos clients ne peuvent pas laisser de pourboire.",
+      "bodyIncomplete": "Votre vérification Stripe est commencée mais pas terminée. Reprenez là où vous en étiez, il ne reste que quelques champs.",
+      "bodyVerifying": "Stripe finit de vérifier vos informations. Rien à faire de votre côté : vos pourboires seront versés dès que c'est validé.",
+      "ctaStart": "Vérifier maintenant",
+      "ctaResume": "Reprendre"
     }
   },
   "join": {
