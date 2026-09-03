@@ -137,11 +137,13 @@ export function OnboardingWizard(props: Props) {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentStep = (searchParams.get('step') ?? steps[0]) as ScanStep | AuthStep;
-  const stepIndex = Math.max(
-    0,
-    steps.indexOf(currentStep as never)
-  );
+  // A `?step=` this mode does not have falls back to the first one rather than
+  // rendering a header and a body that both resolve to nothing. Steps have been
+  // removed before and will be again, and the URL outlives the deploy: anyone
+  // mid-wizard when it lands, or holding a bookmark, arrives with a dead value.
+  const requestedStep = searchParams.get('step');
+  const stepIndex = Math.max(0, steps.indexOf(requestedStep as never));
+  const currentStep = steps[stepIndex] as ScanStep | AuthStep;
 
   const [state, dispatch] = useReducer(
     (s: WizardState, patch: Partial<WizardState>) => ({ ...s, ...patch }),
