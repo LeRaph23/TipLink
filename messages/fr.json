@@ -70,7 +70,7 @@
       "title": "Politique de confidentialité",
       "intro": "Chez Digitip nous prenons votre vie privée au sérieux. Cette politique explique quelles données nous collectons, comment nous les utilisons et les droits dont vous disposez. Le responsable du traitement est YUZU LABS SAS, éditrice du service Digitip, SIREN 994 879 013, 11 rue de Lorraine, 68490 Petit-Landau, France.",
       "s1Title": "1. Données collectées",
-      "s1Body": "Données de compte (nom, email, hash du mot de passe), données professionnelles (raison sociale, TVA, adresse de livraison et de facturation), données de pourboire (montant, date, membre du personnel destinataire), données de versement gérées par Stripe (coordonnées bancaires, vérification d'identité), et données techniques (IP, navigateur, langue) utilisées pour la sécurité et l'analytique.",
+      "s1Body": "Données de compte (nom, email), données professionnelles (raison sociale, TVA, adresse de livraison et de facturation), données de pourboire (montant, date, membre du personnel destinataire), données de versement gérées par Stripe (coordonnées bancaires, vérification d'identité), et données techniques (IP, navigateur, langue) utilisées pour la sécurité et l'analytique.",
       "s2Title": "2. Utilisation des données",
       "s2Body": "Pour exécuter le service (traiter les pourboires, gérer le personnel, émettre les factures), respecter nos obligations légales (comptabilité, fiscalité, lutte anti-blanchiment), améliorer le produit, et vous contacter à propos de votre compte. Nous ne vendons jamais vos données.",
       "s3Title": "3. Paiements & Stripe",
@@ -451,31 +451,10 @@
   },
   "auth": {
     "loginTitle": "Bon retour",
-    "loginSubtitle": "Connectez-vous à votre dashboard Digitip.",
+    "loginSubtitle": "Entrez votre email, nous vous envoyons un code à 6 chiffres.",
     "fullName": "Nom complet",
     "emailAddress": "Adresse email",
-    "password": "Mot de passe",
-    "passwordHint": "Utilisez un mot de passe fort et unique.",
-    "passwordMin": "Au moins 8 caractères",
-    "creatingAccount": "Création du compte…",
-    "signingIn": "Connexion…",
     "emailVerifiedBanner": "Email vérifié, connectez-vous pour accéder à votre espace.",
-    "forgotPassword": "Mot de passe oublié ?",
-    "forgotPasswordTitle": "Mot de passe oublié",
-    "forgotPasswordSubtitle": "Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
-    "forgotPasswordSubmit": "Envoyer le lien",
-    "forgotPasswordSending": "Envoi…",
-    "forgotPasswordSuccess": "Vérifiez votre email : un lien de réinitialisation vient d'être envoyé.",
-    "backToLogin": "Retour à la connexion",
-    "resetPasswordTitle": "Nouveau mot de passe",
-    "resetPasswordSubtitle": "Choisissez un nouveau mot de passe pour votre compte.",
-    "newPassword": "Nouveau mot de passe",
-    "confirmPassword": "Confirmer le mot de passe",
-    "passwordMismatch": "Les mots de passe ne correspondent pas.",
-    "resetPasswordSubmit": "Réinitialiser le mot de passe",
-    "resetPasswordSubmitting": "Réinitialisation…",
-    "resetPasswordSuccess": "Mot de passe mis à jour, vous pouvez maintenant vous connecter.",
-    "errorInvalidCredentials": "Email ou mot de passe incorrect.",
     "errorTooManyRequests": "Trop de tentatives. Réessayez dans quelques minutes.",
     "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
     "errorEmailInUse": "Un compte existe déjà avec cet email.",
@@ -497,7 +476,18 @@
       "country": "Pays",
       "skip": "Passer pour l'instant",
       "continueToPayment": "Continuer vers le paiement"
-    }
+    },
+    "sendCode": "Recevoir mon code",
+    "sendingCode": "Envoi du code…",
+    "codeSentTo": "Nous venons d'envoyer un code à 6 chiffres à <strong>{email}</strong>. Il est valable 15 minutes.",
+    "codeLabel": "Code à 6 chiffres",
+    "verifyCode": "Valider",
+    "verifyingCode": "Vérification…",
+    "resendCode": "Renvoyer le code",
+    "resendCodeIn": "Renvoyer dans {seconds} s",
+    "changeEmail": "Changer d'adresse",
+    "errorInvalidCode": "Ce code est incorrect ou expiré. Demandez-en un nouveau.",
+    "errorNoAccount": "Aucun compte avec cette adresse. Vérifiez l'orthographe ou créez votre compte."
   },
   "order": {
     "exit": "Quitter",
@@ -537,9 +527,10 @@
     "account": {
       "title": "Créez votre compte",
       "subtitle": "Dernière étape avant le paiement. Votre compte vous donne accès au dashboard pour gérer votre équipe et vos SmartTags.",
-      "passwordHint": "Minimum 8 caractères.",
       "already": "Vous avez déjà un compte ?",
-      "signIn": "Se connecter"
+      "signIn": "Se connecter",
+      "codeHint": "Nous vous enverrons un code à 6 chiffres pour confirmer cette adresse avant le paiement.",
+      "verified": "Adresse confirmée."
     },
     "review": {
       "title": "Tout est prêt",
@@ -577,11 +568,8 @@
       "billing_invalid": "Adresse de facturation incomplète.",
       "full_name_required": "Merci d'indiquer votre nom.",
       "email_invalid": "Adresse email invalide.",
-      "password_too_short": "Mot de passe trop court (8 caractères minimum).",
-      "signup_failed": "La création du compte a échoué. Vérifiez vos informations et réessayez.",
       "checkout_failed": "Le paiement n'a pas pu aboutir. Réessayez dans un instant.",
-      "email_in_use": "Un compte existe déjà pour cet email. Connectez-vous d'abord, nous reprendrons votre commande.",
-      "email_confirmation_required": "Un email de confirmation vous a été envoyé. Confirmez-le puis connectez-vous pour finaliser la commande."
+      "code_required": "Confirmez votre adresse email avec le code reçu avant de continuer."
     }
   },
   "pay": {
@@ -780,7 +768,7 @@
       "invited": "Invité",
       "new": {
         "title": "Inviter un membre",
-        "subtitle": "Il·elle recevra un email pour définir son mot de passe et connecter son compte de virement.",
+        "subtitle": "Il·elle recevra un email avec un lien pour rejoindre l'équipe et créer son compte.",
         "fullName": "Prénom",
         "fullNameHint": "Affiché aux clients sur la page de pourboire. Utilisez le prénom seul pour un ton plus convivial (ex. « Alice »).",
         "fullNamePlaceholder": "Alice",
@@ -1178,11 +1166,6 @@
   "join": {
     "back": "← Retour",
     "continue": "Continuer →",
-    "creatingAccount": "Création du compte…",
-    "verifyEmail": {
-      "title": "Vérifiez votre email",
-      "body": "Un lien de confirmation a été envoyé à <b>{email}</b>. Cliquez dessus pour activer votre compte et rejoindre <b>{name}</b>."
-    },
     "welcome": {
       "title": "Rejoignez {name}",
       "subtitle": "Vos pourboires, sur votre compte bancaire.",
@@ -1216,16 +1199,10 @@
       "bullet2": "C'est Stripe qui collecte et chiffre votre pièce d'identité et votre IBAN. Digitip ne les voit jamais.",
       "bullet3": "Votre IBAN n'est jamais visible par votre employeur."
     },
-    "email": {
-      "title": "Votre email",
-      "subtitle": "Utilisé pour vous connecter à votre compte DigiTip.",
+    "verify": {
+      "title": "Confirmez votre email",
+      "subtitle": "Nous vous envoyons un code à 6 chiffres. C'est aussi comme ça que vous vous connecterez ensuite.",
       "prefilled": "Votre responsable a pré-renseigné votre email. Vous pouvez le modifier si nécessaire."
-    },
-    "password": {
-      "title": "Mot de passe",
-      "subtitle": "Choisissez un mot de passe pour sécuriser votre compte.",
-      "hint": "8 caractères minimum",
-      "join": "Rejoindre {name} →"
     }
   },
   "acceptInvite": {
@@ -1250,11 +1227,6 @@
       "payoutsPendingTitle": "Une dernière étape pour encaisser",
       "payoutsPendingBody": "Il reste la vérification de votre établissement, environ 2 minutes, une seule fois. Tant qu'elle n'est pas faite, votre page de pourboire reste fermée. Vous la trouverez en haut de votre dashboard."
     },
-    "emailVerification": {
-      "title": "Vérifiez votre email",
-      "sent": "Un lien de confirmation a été envoyé à <strong>{email}</strong>.",
-      "activate": "Cliquez dessus pour activer votre compte et accéder à votre espace <strong>{name}</strong>."
-    },
     "businessType": {
       "restaurant": "Restaurant, bar ou café",
       "beauty": "Coiffure, beauté ou bien-être"
@@ -1266,15 +1238,6 @@
     "adminName": {
       "title": "Votre nom",
       "subtitle": "Comment vous appelez-vous ?"
-    },
-    "email": {
-      "title": "Votre email",
-      "subtitle": "Vous recevrez vos notifications et votre lien de connexion ici."
-    },
-    "password": {
-      "title": "Mot de passe",
-      "subtitle": "Choisissez un mot de passe sécurisé.",
-      "hint": "8 caractères minimum"
     },
     "googleReview": {
       "title": "Votre établissement",
@@ -1307,6 +1270,12 @@
       "nameLabel": "Nom de l'établissement",
       "addressLabel": "Adresse",
       "typeLabel": "Votre activité"
+    },
+    "verify": {
+      "title": "Confirmez votre email",
+      "subtitle": "Nous vous envoyons un code à 6 chiffres. Pas de mot de passe à retenir.",
+      "send": "Recevoir mon code",
+      "confirmed": "Adresse confirmée. Vous êtes connecté."
     }
   }
 }

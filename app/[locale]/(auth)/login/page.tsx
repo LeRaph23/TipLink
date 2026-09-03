@@ -30,7 +30,6 @@ export default async function LoginPage({
   const { locale } = await params;
   const sp = await searchParams;
   const verified = sp.verified === 'true';
-  const reset = sp.reset === 'true';
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -64,7 +63,7 @@ export default async function LoginPage({
           borderRadius: 'var(--radius-lg)', padding: 28,
           boxShadow: 'var(--shadow), 0 0 0 1px rgba(255,255,255,0.02)',
         }}>
-          <LoginForm verified={verified} reset={reset} />
+          <LoginForm verified={verified} />
         </div>
 
       </div>

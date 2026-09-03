@@ -70,7 +70,7 @@
       "title": "Privacy Policy",
       "intro": "At Digitip we take your privacy seriously. This policy explains what data we collect, how we use it, and the rights you have over it. The data controller is YUZU LABS SAS, the company operating the Digitip service, SIREN 994 879 013, 11 rue de Lorraine, 68490 Petit-Landau, France.",
       "s1Title": "1. Data we collect",
-      "s1Body": "Account data (name, email, password hash), business data (company name, VAT, shipping/billing address), tipping data (amount, date, recipient staff member), payout data handled by Stripe (bank account, identity verification), and technical data (IP address, browser, language) used for security and analytics.",
+      "s1Body": "Account data (name, email), business data (company name, VAT, shipping/billing address), tipping data (amount, date, recipient staff member), payout data handled by Stripe (bank account, identity verification), and technical data (IP address, browser, language) used for security and analytics.",
       "s2Title": "2. How we use your data",
       "s2Body": "To operate the service (process tips, manage staff, issue invoices), to comply with legal obligations (accounting, tax, anti-money laundering), to improve the product, and to contact you about your account. We never sell your data.",
       "s3Title": "3. Payments & Stripe",
@@ -451,31 +451,10 @@
   },
   "auth": {
     "loginTitle": "Welcome back",
-    "loginSubtitle": "Log in to your Digitip dashboard.",
+    "loginSubtitle": "Enter your email and we will send you a 6 digit code.",
     "fullName": "Full name",
     "emailAddress": "Email address",
-    "password": "Password",
-    "passwordHint": "Use a strong, unique password.",
-    "passwordMin": "At least 8 characters",
-    "creatingAccount": "Creating account…",
-    "signingIn": "Signing in…",
     "emailVerifiedBanner": "Email verified, sign in to access your account.",
-    "forgotPassword": "Forgot password?",
-    "forgotPasswordTitle": "Forgot your password?",
-    "forgotPasswordSubtitle": "Enter your email and we'll send you a link to reset your password.",
-    "forgotPasswordSubmit": "Send reset link",
-    "forgotPasswordSending": "Sending…",
-    "forgotPasswordSuccess": "Check your email: a reset link has just been sent.",
-    "backToLogin": "Back to sign in",
-    "resetPasswordTitle": "New password",
-    "resetPasswordSubtitle": "Choose a new password for your account.",
-    "newPassword": "New password",
-    "confirmPassword": "Confirm password",
-    "passwordMismatch": "Passwords don't match.",
-    "resetPasswordSubmit": "Reset password",
-    "resetPasswordSubmitting": "Resetting…",
-    "resetPasswordSuccess": "Password updated, you can now sign in.",
-    "errorInvalidCredentials": "Incorrect email or password.",
     "errorTooManyRequests": "Too many attempts. Please try again in a few minutes.",
     "errorNetwork": "Network error. Check your connection.",
     "errorEmailInUse": "An account already exists with this email.",
@@ -497,7 +476,18 @@
       "country": "Country",
       "skip": "Skip for now",
       "continueToPayment": "Continue to payment"
-    }
+    },
+    "sendCode": "Send me a code",
+    "sendingCode": "Sending the code…",
+    "codeSentTo": "We just sent a 6 digit code to <strong>{email}</strong>. It is valid for 15 minutes.",
+    "codeLabel": "6 digit code",
+    "verifyCode": "Confirm",
+    "verifyingCode": "Checking…",
+    "resendCode": "Send a new code",
+    "resendCodeIn": "Send again in {seconds}s",
+    "changeEmail": "Use another address",
+    "errorInvalidCode": "That code is wrong or has expired. Ask for a new one.",
+    "errorNoAccount": "No account for this address. Check the spelling, or create your account."
   },
   "order": {
     "exit": "Exit",
@@ -537,9 +527,10 @@
     "account": {
       "title": "Create your account",
       "subtitle": "Last step before payment. Your account gives you access to the dashboard to manage your team and SmartTags.",
-      "passwordHint": "Minimum 8 characters.",
       "already": "Already have an account?",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "codeHint": "We will send a 6 digit code to confirm this address before payment.",
+      "verified": "Address confirmed."
     },
     "review": {
       "title": "Everything's ready",
@@ -577,11 +568,8 @@
       "billing_invalid": "Billing address is incomplete.",
       "full_name_required": "Please enter your name.",
       "email_invalid": "Invalid email address.",
-      "password_too_short": "Password too short (8 characters minimum).",
-      "signup_failed": "Account creation failed. Check your details and try again.",
       "checkout_failed": "The payment couldn't be completed. Please try again in a moment.",
-      "email_in_use": "An account already exists for this email. Please sign in first, we'll resume your order.",
-      "email_confirmation_required": "We sent you a confirmation email. Confirm it then sign in to finish your order."
+      "code_required": "Confirm your email address with the code we sent before continuing."
     }
   },
   "pay": {
@@ -780,7 +768,7 @@
       "invited": "Invited",
       "new": {
         "title": "Invite a team member",
-        "subtitle": "They'll receive an email to set their password and connect their payout account.",
+        "subtitle": "They'll receive an email with a link to join the team and create their account.",
         "fullName": "First name",
         "fullNameHint": "Shown to customers on the tip page. First name only feels warmer (e.g. \"Alice\").",
         "fullNamePlaceholder": "Alice",
@@ -1178,11 +1166,6 @@
   "join": {
     "back": "← Back",
     "continue": "Continue →",
-    "creatingAccount": "Creating account…",
-    "verifyEmail": {
-      "title": "Check your email",
-      "body": "A confirmation link has been sent to <b>{email}</b>. Click it to activate your account and join <b>{name}</b>."
-    },
     "welcome": {
       "title": "Join {name}",
       "subtitle": "Your tips, in your bank account.",
@@ -1216,16 +1199,10 @@
       "bullet2": "Stripe collects and encrypts your ID and IBAN. Digitip never sees them.",
       "bullet3": "Your IBAN is never visible to your employer."
     },
-    "email": {
-      "title": "Your email",
-      "subtitle": "Used to sign in to your DigiTip account.",
-      "prefilled": "Your manager pre-filled your email. You can change it if needed."
-    },
-    "password": {
-      "title": "Password",
-      "subtitle": "Choose a password to secure your account.",
-      "hint": "At least 8 characters",
-      "join": "Join {name} →"
+    "verify": {
+      "title": "Confirm your email",
+      "subtitle": "We will send you a 6 digit code. That is also how you will sign in later.",
+      "prefilled": "Your manager prefilled your email. Change it if you need to."
     }
   },
   "acceptInvite": {
@@ -1250,11 +1227,6 @@
       "payoutsPendingTitle": "One last step before you can be paid",
       "payoutsPendingBody": "Your business still has to be verified: about 2 minutes, once. Until then your tip page stays closed. You will find it at the top of your dashboard."
     },
-    "emailVerification": {
-      "title": "Check your email",
-      "sent": "A confirmation link has been sent to <strong>{email}</strong>.",
-      "activate": "Click it to activate your account and access your <strong>{name}</strong> space."
-    },
     "businessType": {
       "restaurant": "Restaurant, bar or café",
       "beauty": "Hair, beauty or wellness"
@@ -1266,15 +1238,6 @@
     "adminName": {
       "title": "Your name",
       "subtitle": "What is your full name?"
-    },
-    "email": {
-      "title": "Your email",
-      "subtitle": "You will receive your notifications and login link here."
-    },
-    "password": {
-      "title": "Password",
-      "subtitle": "Choose a secure password.",
-      "hint": "At least 8 characters"
     },
     "googleReview": {
       "title": "Your business",
@@ -1307,6 +1270,12 @@
       "nameLabel": "Business name",
       "addressLabel": "Address",
       "typeLabel": "Your trade"
+    },
+    "verify": {
+      "title": "Confirm your email",
+      "subtitle": "We will send you a 6 digit code. No password to remember.",
+      "send": "Send me a code",
+      "confirmed": "Address confirmed. You are signed in."
     }
   }
 }

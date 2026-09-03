@@ -85,10 +85,17 @@ function reducer(state: OrderState, action: Action): OrderState {
 }
 
 // Max step the user has legitimately reached (for progress-bar click safety).
-function maxReachable(state: OrderState, activeSteps: readonly Step[]): Step {
+function maxReachable(
+  state: OrderState,
+  activeSteps: readonly Step[],
+  otpVerified: boolean,
+): Step {
   if (validateShipping(state)) return activeSteps.includes('shipping') ? 'shipping' : activeSteps[0];
   if (validateBilling(state)) return activeSteps.includes('billing') ? 'billing' : activeSteps[0];
-  if (activeSteps.includes('account') && validateAccount(state)) return 'account';
+  // Unverified stops here even with the fields filled in: the stepper is
+  // clickable, and reaching review without a session would only surface as a
+  // 401 from /api/billing/checkout after the order was re-entered.
+  if (activeSteps.includes('account') && (validateAccount(state) || !otpVerified)) return 'account';
   return 'review';
 }
 
@@ -106,6 +113,10 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // The six-digit code was accepted, so a session exists and checkout can run.
+  // Held in memory only: rehydrating a stale "verified" from localStorage would
+  // walk someone into /api/billing/checkout with no session and a 401.
+  const [otpVerified, setOtpVerified] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   // Once set, the wizard shows the in-page payment instead of the step form.
   const [payment, setPayment] = useState<{
@@ -144,12 +155,10 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
   useEffect(() => {
     if (!hydrated) return;
     try {
-      // Never persist the password.
-      const persistable = {
-        ...state,
-        account: { ...state.account, password: '' },
-      };
-      window.localStorage.setItem(STORAGE_KEY(pack), JSON.stringify(persistable));
+      // The whole order is safe to persist now that the account step holds no
+      // secret: it is a name and an email, and the six-digit code that proves
+      // the address is never stored (see otpVerified).
+      window.localStorage.setItem(STORAGE_KEY(pack), JSON.stringify(state));
     } catch {
       // quota exceeded / private mode — ignore
     }
@@ -192,7 +201,12 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       case 'pack': return null;
       case 'shipping': return validateShipping(state);
       case 'billing': return validateBilling(state);
-      case 'account': return isAuthenticated ? null : validateAccount(state);
+      case 'account':
+        if (isAuthenticated) return null;
+        // Checkout needs a session, so the code has to be verified before the
+        // review step rather than at payment time: discovering there that the
+        // address is unreachable would mean re-entering the whole order.
+        return validateAccount(state) ?? (otpVerified ? null : 'code_required');
       case 'review': return null;
     }
   };
@@ -221,38 +235,11 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     setSubmitting(true);
 
     try {
-      if (!isAuthenticated) {
-        const supabase = createClient();
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: state.account.email,
-          password: state.account.password,
-          options: { data: { full_name: state.account.full_name } },
-        });
-
-        if (signUpError) {
-          console.error('[order] signup failed', signUpError.message);
-          setError('signup_failed');
-          setSubmitting(false);
-          goToStep('account');
-          return;
-        }
-
-        // Supabase returns a user with empty identities[] when the email is already taken.
-        if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
-          setError('email_in_use');
-          setSubmitting(false);
-          goToStep('account');
-          return;
-        }
-
-        // Email confirmation is enabled and no session was returned → payment would fail.
-        if (!signUpData.session) {
-          setError('email_confirmation_required');
-          setSubmitting(false);
-          return;
-        }
-      }
-
+      // No sign-up here any more: verifying the code on the account step both
+      // created the account and left a live session, which is exactly what
+      // /api/billing/checkout requires. The three failure modes this used to
+      // have (signup_failed, email_in_use, email_confirmation_required) were
+      // all consequences of trying to create an account at payment time.
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -321,7 +308,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     if (error.includes('::')) {
       const [key, detail] = error.split('::');
       try {
-        errorMessage = tErrors(key as 'signup_failed' | 'checkout_failed', { message: detail ?? '' });
+        errorMessage = tErrors(key as 'checkout_failed', { message: detail ?? '' });
       } catch {
         errorMessage = detail || key;
       }
@@ -343,11 +330,22 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       case 'billing':
         return <StepBilling value={state.business} onChange={(v) => dispatch({ type: 'setBusiness', value: v })} />;
       case 'account':
-        return <StepAccount value={state.account} onChange={(v) => dispatch({ type: 'setAccount', value: v })} />;
+        return (
+          <StepAccount
+            value={state.account}
+            onChange={(v) => dispatch({ type: 'setAccount', value: v })}
+            verified={otpVerified}
+            onVerified={() => { setOtpVerified(true); goToStep('review'); }}
+          />
+        );
       case 'review':
         return <StepReview state={state} locale={locale} pricing={pricing} onEdit={goToStep} promoCode={promoCode} onPromoChange={setPromoCode} />;
     }
   };
+
+  // On the account step, the OTP widget carries its own send and verify
+  // buttons; a second "Continue" beside them would be two ways to do one thing.
+  const awaitingCode = currentStep === 'account' && !isAuthenticated && !otpVerified;
 
   const footer = (
     <>
@@ -365,7 +363,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       )}
       <div style={{ display: 'flex', gap: 10 }}>
         {currentStep !== 'pack' && <BackBtn onBack={handleBack} label={t('back')} />}
-        {currentStep !== 'review' ? (
+        {awaitingCode ? null : currentStep !== 'review' ? (
           <ContinueBtn onClick={handleContinue}>
             {t('continue')} →
           </ContinueBtn>
@@ -400,7 +398,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         locale={locale}
         pricing={pricing}
         step="review"
-        reachable={maxReachable(state, activeSteps)}
+        reachable={maxReachable(state, activeSteps, otpVerified || isAuthenticated)}
         steps={activeSteps}
         title={locale === 'fr' ? 'Paiement' : 'Payment'}
         subtitle={locale === 'fr' ? 'Réglez votre commande en toute sécurité.' : 'Pay for your order securely.'}
@@ -429,7 +427,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       locale={locale}
       pricing={pricing}
       step={currentStep}
-      reachable={maxReachable(state, activeSteps)}
+      reachable={maxReachable(state, activeSteps, otpVerified || isAuthenticated)}
       steps={activeSteps}
       title={titles[currentStep].title}
       subtitle={titles[currentStep].subtitle}

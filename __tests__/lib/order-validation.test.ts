@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   isValidEmail,
-  isValidPassword,
   isValidVat,
   isValidAddress,
   validatePack,
@@ -25,17 +24,6 @@ describe('email', () => {
     ['missing@', false],
   ])('isValidEmail(%s) === %s', (e, ok) => {
     expect(isValidEmail(e)).toBe(ok);
-  });
-});
-
-describe('password', () => {
-  it('rejects < 8 chars', () => {
-    expect(isValidPassword('short')).toBe(false);
-    expect(isValidPassword('1234567')).toBe(false);
-  });
-  it('accepts >= 8 chars', () => {
-    expect(isValidPassword('12345678')).toBe(true);
-    expect(isValidPassword('correcthorsebatterystaple')).toBe(true);
   });
 });
 
@@ -108,16 +96,16 @@ describe('step validators', () => {
     expect(validateBilling(badBilling)).toBe('billing_invalid');
   });
 
-  it('validateAccount requires name, email, password', () => {
+  // The password this used to check is gone: the account is created by a
+  // six-digit code sent to the address, so a name and a reachable address are
+  // everything the step can validate on its own.
+  it('validateAccount requires a name and an email', () => {
     expect(validateAccount(base)).toBe('full_name_required');
 
     const noEmail = { ...base, account: { ...base.account, full_name: 'Marco' } };
     expect(validateAccount(noEmail)).toBe('email_invalid');
 
-    const badPwd = { ...base, account: { full_name: 'Marco', email: 'a@b.co', password: '123' } };
-    expect(validateAccount(badPwd)).toBe('password_too_short');
-
-    const ok = { ...base, account: { full_name: 'Marco', email: 'a@b.co', password: '12345678' } };
+    const ok = { ...base, account: { full_name: 'Marco', email: 'a@b.co' } };
     expect(validateAccount(ok)).toBeNull();
   });
 });

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { EmailOtpForm } from '@/components/auth/EmailOtpForm';
 import { Icon, type IconName } from '@/components/ambassadeur/icons';
 
 interface UnclaimedProfile {
@@ -12,7 +12,7 @@ interface UnclaimedProfile {
   email?: string;
 }
 
-type Step = 'welcome' | 'identity' | 'name-photo' | 'email' | 'password';
+type Step = 'welcome' | 'identity' | 'name-photo' | 'verify';
 
 const inp: React.CSSProperties = {
   width: '100%',
@@ -103,10 +103,8 @@ export function JoinForm({
 
   // Account
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasSessionEmail, setHasSessionEmail] = useState(false);
 
@@ -137,7 +135,6 @@ export function JoinForm({
 
   const effectiveName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
   const firstNameFilled = firstName.trim().length > 0;
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   function selectProfile(p: UnclaimedProfile) {
     setSelectedProfile(p);
@@ -198,90 +195,19 @@ export function JoinForm({
     window.location.href = `/${locale}/dashboard`;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  /**
+   * Finishes the join for someone who already has a session.
+   *
+   * That is now everyone who reaches the end: either the invite link signed
+   * them in through /auth/accept, or the six-digit code just did. The password
+   * this used to set existed only so they could log in again later, which the
+   * code now covers, so nothing is left between arriving here and having a
+   * profile.
+   */
+  async function finish() {
     setError(null);
     setLoading(true);
-
-    if (isAuthenticated) {
-      // Invited via a magic link → already signed in but with no password yet
-      // (and, on a shared/generic link, sometimes no email either). Set the
-      // password, plus the email when the session didn't carry one, before
-      // finishing the join so they can log back in later.
-      const supabase = createClient();
-      const { error: pwErr } = await supabase.auth.updateUser({
-        password,
-        ...(hasSessionEmail ? {} : { email }),
-      });
-      if (pwErr) {
-        setError(mapAuthError(pwErr.message, tAuth));
-        setLoading(false);
-        return;
-      }
-      await submitJoin();
-      return;
-    }
-
-    const supabase = createClient();
-    let session: import('@supabase/supabase-js').Session | null = null;
-
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: effectiveName } },
-    });
-
-    if (signUpError) {
-      console.error('[join] signup failed', signUpError.message);
-      setError(mapAuthError(signUpError.message, tAuth));
-      setLoading(false);
-      return;
-    }
-
-    if (data.user && data.user.identities?.length === 0) {
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError || !signInData.session) {
-        setError(tAuth('errorEmailInUse'));
-        setLoading(false);
-        return;
-      }
-      session = signInData.session;
-    } else {
-      session = data.session;
-    }
-
-    if (!session) {
-      setDone(true);
-      setLoading(false);
-      return;
-    }
-
     await submitJoin();
-  }
-
-  // ─── Done (email verification pending) ───────────────────────────────────
-
-  if (done) {
-    return (
-      <div style={{ textAlign: 'center', padding: '48px 0' }}>
-        <div style={{
-          width: 56, height: 56, borderRadius: '50%',
-          background: 'var(--surface-2)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px', color: 'var(--accent)',
-        }}><Icon name="mail" size={26} /></div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
-          {t('verifyEmail.title')}
-        </h2>
-        <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.7 }}>
-          {t.rich('verifyEmail.body', {
-            email,
-            name: establishmentName,
-            b: (c) => <strong>{c}</strong>,
-          })}
-        </p>
-      </div>
-    );
   }
 
   // ─── Step: welcome ────────────────────────────────────────────────────────
@@ -463,7 +389,10 @@ export function JoinForm({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
           <button
             type="button"
-            onClick={() => setStep(isAuthenticated && hasSessionEmail ? 'password' : 'email')}
+            // A session that already carries an email is proof enough: the
+            // invite link verified that address on the way in, so asking for a
+            // code would be asking the same question twice.
+            onClick={() => (isAuthenticated && hasSessionEmail ? void finish() : setStep('verify'))}
             disabled={!firstNameFilled}
             style={{ ...btnPrimary, opacity: firstNameFilled ? 1 : 0.4 }}
           >
@@ -477,71 +406,26 @@ export function JoinForm({
     );
   }
 
-  // ─── Step: email ──────────────────────────────────────────────────────────
-
-  if (step === 'email') {
-    const prefilledEmail = selectedProfile?.email;
-    return (
-      <div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-          {t('email.title')}
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-          {t('email.subtitle')}
-        </p>
-
-        {prefilledEmail && (
-          <div style={{
-            padding: '10px 14px', borderRadius: 10,
-            background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-            fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12,
-          }}>
-            {t('email.prefilled')}
-          </div>
-        )}
-
-        {error && (
-          <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>
-            {error}
-          </div>
-        )}
-
-        <input
-          autoFocus
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && emailValid && setStep('password')}
-          style={{ ...inp, marginBottom: 20 }}
-        />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
-            type="button"
-            onClick={() => setStep('password')}
-            disabled={!emailValid}
-            style={{ ...btnPrimary, opacity: emailValid ? 1 : 0.4 }}
-          >
-            {t('continue')}
-          </button>
-          <button type="button" onClick={() => setStep('name-photo')} style={btnSecondary}>
-            {t('back')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Step: password ───────────────────────────────────────────────────────
+  // ─── Step: verify ─────────────────────────────────────────────────────────
 
   return (
-    <form onSubmit={handleSubmit}>
+    <div>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-        {t('password.title')}
+        {t('verify.title')}
       </h1>
       <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
-        {t('password.subtitle')}
+        {t('verify.subtitle')}
       </p>
+
+      {selectedProfile?.email && (
+        <div style={{
+          padding: '10px 14px', borderRadius: 10,
+          background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+          fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12,
+        }}>
+          {t('verify.prefilled')}
+        </div>
+      )}
 
       {error && (
         <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, marginBottom: 16 }}>
@@ -549,32 +433,24 @@ export function JoinForm({
         </div>
       )}
 
-      <input
-        autoFocus
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        minLength={8}
-        style={{ ...inp, marginBottom: 8 }}
+      <EmailOtpForm
+        initialEmail={email}
+        // An employee claiming a profile usually has no account yet, and the
+        // establishment already decided they belong here.
+        shouldCreateUser
+        fullName={effectiveName}
+        onEmailChange={setEmail}
+        onVerified={finish}
       />
-      <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 24 }}>{t('password.hint')}</p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button
-          type="submit"
-          disabled={loading || password.length < 8}
-          style={{ ...btnPrimary, opacity: loading || password.length < 8 ? 0.5 : 1 }}
-        >
-          {loading ? t('creatingAccount') : t('password.join', { name: establishmentName })}
-        </button>
-        <button
-          type="button"
-          onClick={() => { setError(null); setStep(isAuthenticated && hasSessionEmail ? 'name-photo' : 'email'); }}
-          style={btnSecondary}
-        >
-          {t('back')}
-        </button>
-      </div>
-    </form>
+      <button
+        type="button"
+        onClick={() => { setError(null); setStep('name-photo'); }}
+        disabled={loading}
+        style={{ ...btnSecondary, marginTop: 16 }}
+      >
+        {t('back')}
+      </button>
+    </div>
   );
 }

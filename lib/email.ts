@@ -1395,8 +1395,8 @@ export async function sendStaffInviteEmail(opts: {
     : `<strong class="text-strong" style="color:#0f0f12">${establishmentName}</strong> is inviting you to join Digitip and receive tips straight into your bank account.`;
   const ctaLabel = isFr ? 'Créer mon compte' : 'Create my account';
   const helper = isFr
-    ? `Ce lien vous emmène directement à l'onboarding avec votre email pré-rempli (${to}). Pas besoin de mot de passe : vous choisirez le vôtre à la fin.`
-    : `This link takes you straight to onboarding with your email pre-filled (${to}). No password needed: you'll set one at the end.`;
+    ? `Ce lien vous emmène directement à l'onboarding avec votre email pré-rempli (${to}). Aucun mot de passe : nous vous enverrons un code à 6 chiffres pour confirmer votre adresse.`
+    : `This link takes you straight to onboarding with your email pre-filled (${to}). No password: we will send you a 6 digit code to confirm your address.`;
   const greeting = isFr ? `Bonjour ${fullName},` : `Hi ${fullName},`;
   const footer = isFr
     ? 'Si vous n\'attendiez pas cette invitation, vous pouvez ignorer ce message.'

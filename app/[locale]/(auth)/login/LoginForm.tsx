@@ -1,119 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { useRouter, Link } from '@/i18n/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { EmailOtpForm } from '@/components/auth/EmailOtpForm';
 
-const inputStyle = (focused: boolean, error?: boolean): React.CSSProperties => ({
-  width: '100%',
-  background: 'var(--surface-2)',
-  border: `1.5px solid ${error ? 'var(--error)' : focused ? 'var(--accent)' : 'var(--border)'}`,
-  borderRadius: 'var(--radius-sm)',
-  padding: '9px 12px',
-  color: 'var(--text)',
+const banner: React.CSSProperties = {
+  padding: '10px 14px',
+  borderRadius: 8,
+  background: 'rgba(22, 163, 74, 0.08)',
+  border: '1px solid rgba(22, 163, 74, 0.35)',
+  color: '#16a34a',
   fontSize: 13.5,
-  outline: 'none',
-  boxShadow: focused ? '0 0 0 3px var(--accent-muted)' : 'none',
-  transition: 'border-color 120ms, box-shadow 120ms',
-  fontFamily: 'var(--font)',
-});
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 12.5, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 5,
+  fontWeight: 500,
 };
 
-export function LoginForm({ verified, reset }: { verified?: boolean; reset?: boolean }) {
+export function LoginForm({ verified }: { verified?: boolean }) {
   const router = useRouter();
   const t = useTranslations('auth');
-  const tc = useTranslations('common');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [emailFocus, setEmailFocus] = useState(false);
-  const [pwdFocus, setPwdFocus] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(mapAuthError(error.message, t));
-      setIsLoading(false);
-      return;
-    }
-    // Keep loading state active until navigation completes
-    router.push('/dashboard');
-    router.refresh();
-  };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {verified && (
-        <div style={{
-          padding: '10px 14px', borderRadius: 8,
-          background: 'rgba(22, 163, 74, 0.08)',
-          border: '1px solid rgba(22, 163, 74, 0.35)',
-          color: '#16a34a', fontSize: 13.5, fontWeight: 500,
-        }}>
-          ✓ {t('emailVerifiedBanner')}
-        </div>
-      )}
-      {reset && (
-        <div style={{
-          padding: '10px 14px', borderRadius: 8,
-          background: 'rgba(22, 163, 74, 0.08)',
-          border: '1px solid rgba(22, 163, 74, 0.35)',
-          color: '#16a34a', fontSize: 13.5, fontWeight: 500,
-        }}>
-          ✓ {t('resetPasswordSuccess')}
-        </div>
-      )}
-      <div>
-        <label style={labelStyle}>{t('emailAddress')}</label>
-        <input
-          type="email" value={email} onChange={e => setEmail(e.target.value)}
-          placeholder="you@example.com" required autoComplete="email"
-          style={inputStyle(emailFocus)}
-          onFocus={() => setEmailFocus(true)} onBlur={() => setEmailFocus(false)}
-        />
-      </div>
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-          <label style={{ ...labelStyle, marginBottom: 0 }}>{t('password')}</label>
-          <Link
-            href="/forgot-password"
-            style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}
-          >
-            {t('forgotPassword')}
-          </Link>
-        </div>
-        <input
-          type="password" value={password} onChange={e => setPassword(e.target.value)}
-          required autoComplete="current-password"
-          style={inputStyle(pwdFocus)}
-          onFocus={() => setPwdFocus(true)} onBlur={() => setPwdFocus(false)}
-        />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Kept one release past the switch: confirmation links sent under the
+          password flow still land here with ?verified=true. */}
+      {verified && <div style={banner}>✓ {t('emailVerifiedBanner')}</div>}
 
-      {error && <p style={{ fontSize: 12, color: 'var(--error)' }}>{error}</p>}
-
-      <button
-        type="submit" disabled={isLoading}
-        style={{
-          width: '100%', padding: '10px 16px', borderRadius: 'var(--radius)',
-          background: 'var(--accent)', color: 'var(--accent-fg)',
-          fontSize: 13.5, fontWeight: 600, border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer',
-          opacity: isLoading ? 0.6 : 1, transition: 'opacity 120ms',
-          fontFamily: 'var(--font)', letterSpacing: '-0.01em',
+      <EmailOtpForm
+        // Signing in must never create the account. An unknown address that
+        // silently became a user would arrive on a dashboard with no group,
+        // no role and nothing to explain why it is empty; "no account for this
+        // address" is the true and useful answer.
+        shouldCreateUser={false}
+        onVerified={() => {
+          router.push('/dashboard');
+          router.refresh();
         }}
-      >
-        {isLoading ? t('signingIn') : `${tc('signIn')} ${tc('arrowRight')}`}
-      </button>
-    </form>
+      />
+    </div>
   );
 }
