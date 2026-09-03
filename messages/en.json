@@ -452,27 +452,14 @@
   "auth": {
     "loginTitle": "Welcome back",
     "loginSubtitle": "Log in to your Digitip dashboard.",
-    "signupTitle": "Create your account",
-    "signupSubtitle": "Start receiving tips in minutes.",
     "fullName": "Full name",
     "emailAddress": "Email address",
     "password": "Password",
     "passwordHint": "Use a strong, unique password.",
     "passwordMin": "At least 8 characters",
-    "createAccount": "Create account",
     "creatingAccount": "Creating account…",
     "signingIn": "Signing in…",
-    "noAccount": "No account yet?",
-    "hasAccount": "Already have an account?",
-    "termsPrefix": "By signing up you agree to our",
-    "and": "and",
-    "checkEmail": "Check your email to confirm your account.",
     "emailVerifiedBanner": "Email verified, sign in to access your account.",
-    "checkEmailResend": "Didn't receive the email?",
-    "resendEmail": "Resend email",
-    "resendEmailSending": "Sending…",
-    "resendEmailSent": "Email sent!",
-    "correctEmail": "Correct email address",
     "forgotPassword": "Forgot password?",
     "forgotPasswordTitle": "Forgot your password?",
     "forgotPasswordSubtitle": "Enter your email and we'll send you a link to reset your password.",
@@ -488,7 +475,6 @@
     "resetPasswordSubmit": "Reset password",
     "resetPasswordSubmitting": "Resetting…",
     "resetPasswordSuccess": "Password updated, you can now sign in.",
-    "resetPasswordError": "Link expired or invalid. Please request a new one.",
     "errorInvalidCredentials": "Incorrect email or password.",
     "errorTooManyRequests": "Too many attempts. Please try again in a few minutes.",
     "errorNetwork": "Network error. Check your connection.",
@@ -867,40 +853,6 @@
       "linkCopied": "Copied"
     },
     "payouts": "Payouts",
-    "banking": {
-      "title": "Payouts",
-      "subtitle": "Receive your tips in your bank account.",
-      "returnIncomplete": "Your Stripe setup is not finished. Your tips are held safely, but they cannot be paid out until the verification is complete. Pick up where you left off below.",
-      "notLinkedTitle": "Account not linked",
-      "notLinkedBody": "Your account isn't linked to an establishment yet. Contact your administrator to access this feature.",
-      "totalReceived": "Total received",
-      "autoPayout": "Your tips are paid out to your bank account by Stripe, <b>at the payout frequency you chose</b>.",
-      "activeTitle": "Bank account active",
-      "activeBody": "You're receiving your tips. You can update your details if needed.",
-      "pendingTitle": "Verification in progress",
-      "pendingBody": "Stripe is reviewing your details. Payouts will be enabled shortly.",
-      "step1Title": "Why Stripe?",
-      "step1Body": "To pay out your tips securely, we use Stripe, the world's leading payment provider, trusted by millions of businesses. Stripe protects your money and your details: Digitip never has access to them.",
-      "step2Title": "Quick, and only once",
-      "step2Body": "It takes about 2 minutes, just once. After that, your tips reach your bank account: Stripe handles the payouts, at the frequency you choose.",
-      "step3Title": "Nothing to worry about",
-      "step3Body": "You receive your tips personally, as a private individual. Setting up Stripe doesn't make you a business and commits you to nothing.",
-      "back": "← Back",
-      "continue": "Continue →",
-      "openingStripe": "Opening Stripe…",
-      "setupCta": "Set up with Stripe →",
-      "updateCta": "Update my bank details →",
-      "pendingBalanceTitle": "Pending tips",
-      "pendingBalanceBody": "Finish your verification (2 min) to receive these tips in your account.",
-      "incompleteTitle": "Setup not finished",
-      "incompleteBody": "Resume the secure setup to receive your tips.",
-      "step4Title": "Keep “Sole trader”",
-      "step4Body": "Stripe only offers two account types: “individual / sole trader” or “company”. Keep the pre-selected “Individual / sole trader” (never “Company”), no company details to provide.",
-      "step5Title": "What to have ready",
-      "step5Body": "Just have your date of birth, your address and your IBAN handy. That's all Stripe needs to pay out your tips.",
-      "step6Title": "“Tax”, “Climate”? Not now",
-      "step6Body": "Stripe may offer extra add-ons (Tax, Climate). You don't need them: click “Not now” and carry on. You're all set!"
-    },
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenue and top performers over the last 30 days.",
@@ -1169,7 +1121,6 @@
       "total": "Total",
       "empty": "No payout this month.",
       "export": "Export as CSV",
-      "heldNote": "{amount} awaiting withdrawal by your employees, not yet paid, excluded from the statement.",
       "exportJournal": "Detailed journal",
       "freeLimit": "The free plan exports the current month. Go Pro for the full history, the detailed journal and automatic delivery to your accountant."
     },
@@ -1182,7 +1133,16 @@
       "details": "Business details",
       "payouts": "Payouts",
       "loadFailed": "Your payment account could not be loaded. Reload the page or try again in a moment.",
-      "noEstablishment": "No establishment is linked to your account yet."
+      "noEstablishment": "No establishment is linked to your account yet.",
+      "statusNotStarted": "Your business is not verified yet, so your customers cannot leave a tip. The form below takes about 2 minutes.",
+      "statusIncomplete": "Your verification was started but never finished. Pick the form below up where you left off.",
+      "verifyIntro": "The form below is <b>Stripe</b>'s, our payment partner, embedded here. Regulation requires the recipient's identity to be verified before any money is collected. Your bank details are encrypted by Stripe and never pass through Digitip.",
+      "legalTitle": "Your legal structure",
+      "legalCompany": "A company",
+      "legalIndividual": "A sole trader",
+      "verifyLoadFailed": "The verification form could not be loaded. Reload the page or try again in a moment.",
+      "verifyExited": "Finished the form? This page updates on its own as soon as Stripe confirms it.",
+      "verifyChecking": "Checking with Stripe…"
     },
     "pro": {
       "upsellTitle": "Upgrade to Digitip Pro",
@@ -1203,6 +1163,16 @@
       "exportTitle": "Full accounting export",
       "exportBody": "The free plan exports the current month. Digitip Pro opens the full history and the detailed journal, and emails the statement to your accountant every month.",
       "exportCta": "Upgrade to Pro"
+    },
+    "verifyBanner": {
+      "titleHeld": "{amount} is waiting for you",
+      "titleBlocked": "Your SmartTag cannot take payments yet",
+      "titleVerifying": "Stripe is running its checks",
+      "bodyNotStarted": "The Stripe verification is still to do: about 2 minutes, once. Until then your customers cannot leave a tip.",
+      "bodyIncomplete": "Your Stripe verification was started but never finished. Pick up where you left off, only a few fields remain.",
+      "bodyVerifying": "Stripe is finishing its checks. Nothing to do on your side: your tips will be paid out as soon as it clears.",
+      "ctaStart": "Verify now",
+      "ctaResume": "Resume"
     }
   },
   "join": {
@@ -1268,7 +1238,6 @@
   "onboarding": {
     "stepOf": "Step {current} of {total}",
     "continue": "Continue →",
-    "skip": "Skip this step",
     "finish": "Finish setup →",
     "finishing": "Finalizing…",
     "creating": "Creating your account…",
@@ -1278,37 +1247,19 @@
       "title": "Your space is ready!",
       "body": "{name} is set up. You can now manage your team and track your tips.",
       "cta": "Go to dashboard →",
-      "payoutsPendingTitle": "Verification in progress",
-      "payoutsPendingBody": "Stripe has your details and is reviewing them. Your tip page switches on automatically once that clears, usually within 24 hours. Nothing else is needed from you."
+      "payoutsPendingTitle": "One last step before you can be paid",
+      "payoutsPendingBody": "Your business still has to be verified: about 2 minutes, once. Until then your tip page stays closed. You will find it at the top of your dashboard."
     },
     "emailVerification": {
       "title": "Check your email",
       "sent": "A confirmation link has been sent to <strong>{email}</strong>.",
       "activate": "Click it to activate your account and access your <strong>{name}</strong> space."
     },
-    "codes": {
-      "title": "Your SmartTags",
-      "subtitle": "Your SmartTag is ready to be set up. Do you have other tags to configure at the same time?",
-      "add": "Add",
-      "validating": "…",
-      "placeholder": "e.g. a3f2b9c1",
-      "invalidCode": "Invalid or already assigned code",
-      "networkError": "Network error, check your connection and try again.",
-      "hint": "Codes are printed under the QR code on each SmartTag."
-    },
-    "salon": {
-      "title": "Establishment name",
-      "subtitle": "What is your establishment called?"
-    },
     "businessType": {
-      "title": "Your business",
-      "subtitle": "This helps us tailor the suggested tip amounts to your customers.",
       "restaurant": "Restaurant, bar or café",
       "beauty": "Hair, beauty or wellness"
     },
     "address": {
-      "title": "Address",
-      "subtitle": "Where is your establishment located?",
       "searching": "Searching…",
       "manualHint": "No suggestions? Enter your address manually."
     },
@@ -1325,38 +1276,10 @@
       "subtitle": "Choose a secure password.",
       "hint": "At least 8 characters"
     },
-    "team": {
-      "title": "Your team",
-      "subtitle": "Invite your colleagues so they can also receive tips. You can skip this step and invite them later from your dashboard.",
-      "intro": "Your colleagues will receive an email to create their account and start receiving tips. You can skip this step and invite them later from your dashboard.",
-      "namePlaceholder": "Colleague's first name",
-      "emailPlaceholder": "Colleague email (required to invite them)",
-      "emailRequiredHint": "Without an email this colleague gets no account and cannot receive tips. You can add their address later from the dashboard.",
-      "add": "+ Add a colleague",
-      "remove": "Remove"
-    },
-    "tipsOptIn": {
-      "title": "And you?",
-      "subtitle": "Would you also like to receive tips personally?",
-      "yes": "Yes, I want to receive tips",
-      "no": "No, I only manage my team"
-    },
-    "reviewIntro": {
-      "title": "Turn your tips into reviews",
-      "subtitle": "What your customer sees right after leaving a tip.",
-      "demoName": "your team",
-      "demoThanks": "Thanks for the tip!",
-      "demoQuestion": "Did you enjoy {name}?",
-      "demoBody": "Help the team out with a Google review, it takes 10 seconds.",
-      "demoCta": "Leave a Google review →",
-      "timing": "Asked at the right moment: straight after a kind gesture.",
-      "oneTap": "Already signed in to Google: they rate, they submit. Two taps.",
-      "ranking": "A steady flow of recent reviews lifts you on Maps."
-    },
     "googleReview": {
-      "title": "Google reviews",
-      "subtitle": "Link your Google listing now. The review invitation shown after each tip is part of Digitip Pro, switch it on whenever you like.",
-      "skip": "Skip for now",
+      "title": "Your business",
+      "subtitle": "Search for your Google listing: it gives us your name, your address and your review link in one go.",
+      "skip": "My business is not on Google",
       "searchPlaceholder": "Your business name",
       "searchButton": "Search",
       "searching": "Searching…",
@@ -1378,20 +1301,12 @@
       "guide2": "Tap \"Ask for reviews\". Google shows a short link like g.page/r/…/review.",
       "guide3": "Copy that link and paste it below."
     },
-    "connect": {
-      "title": "Receiving your tips",
-      "subtitle": "Last step: verify your business so you can get paid.",
-      "body": "Tips land in <b>{name}</b>'s account, then reach your team through payroll. Regulations require verifying the recipient's identity: the form below is <b>Stripe</b>'s, our payment partner, embedded right here. Your bank details are encrypted by Stripe and never pass through Digitip.",
-      "preparing": "Setting up your payment account…",
-      "loadFailed": "The verification form could not be loaded. Reload the page or try again in a moment.",
-      "incomplete": "The verification form isn't finished yet. Complete it above to finish signing up.",
-      "exited": "All done above? Hit “Finish” to complete your setup.",
-      "checking": "Checking with Stripe…",
-      "incompleteHint": "Complete the form above to enable this button.",
-      "recheck": "I'm done, check again",
-      "legalTitle": "Your legal structure",
-      "legalCompany": "A company (SAS, SARL, SA…)",
-      "legalIndividual": "A sole trader or self-employed business"
+    "confirm": {
+      "title": "Check these details",
+      "subtitle": "We prefilled what Google knows about your business. Correct anything that looks wrong.",
+      "nameLabel": "Business name",
+      "addressLabel": "Address",
+      "typeLabel": "Your trade"
     }
   }
 }

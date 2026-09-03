@@ -10,8 +10,42 @@ const EstablishmentAccountPanel = dynamic(
   { ssr: false },
 );
 
-export function PaymentsPanel({ establishmentId }: { establishmentId: string }) {
+const EstablishmentVerification = dynamic(
+  () => import('@/components/stripe/EstablishmentVerification').then((m) => m.EstablishmentVerification),
+  { ssr: false },
+);
+
+export function PaymentsPanel({
+  establishmentId,
+  /** Stripe has the KYC form. Until then this page IS the KYC form. */
+  detailsSubmitted,
+  hasAccount,
+}: {
+  establishmentId: string;
+  detailsSubmitted: boolean;
+  hasAccount: boolean;
+}) {
   const t = useTranslations('dashboard.payments');
+
+  // Account management assumes an account that has been through onboarding; on
+  // one that never submitted anything it is a settings screen for settings that
+  // do not exist yet. The onboarding form is what belongs here first.
+  if (!detailsSubmitted) {
+    return (
+      <EstablishmentVerification
+        establishmentId={establishmentId}
+        hasAccount={hasAccount}
+        labels={{
+          legalTitle: t('legalTitle'),
+          legalCompany: t('legalCompany'),
+          legalIndividual: t('legalIndividual'),
+          loadFailed: t('verifyLoadFailed'),
+          exited: t('verifyExited'),
+          checking: t('verifyChecking'),
+        }}
+      />
+    );
+  }
 
   return (
     <EstablishmentAccountPanel

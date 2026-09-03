@@ -6,6 +6,17 @@ import { useTranslations } from 'next-intl';
 export interface ReviewSelection {
   placeId: string | null;
   reviewUrl: string;
+  /**
+   * What the chosen listing says about the business, when one was chosen from
+   * the search results. The wizard uses it to prefill the confirmation screen,
+   * which is why the picker now runs first: one search answers the name, the
+   * address and the trade at once. Absent for a manually pasted link.
+   */
+  place?: {
+    displayName: string | null;
+    formattedAddress: string | null;
+    businessType: 'restaurant' | 'beauty' | null;
+  };
 }
 
 interface Candidate {
@@ -15,6 +26,7 @@ interface Candidate {
   rating: number | null;
   userRatingCount: number | null;
   reviewUrl: string;
+  businessType: 'restaurant' | 'beauty' | null;
 }
 
 interface Props {
@@ -108,7 +120,15 @@ export function GoogleReviewPicker({
   function choose(c: Candidate) {
     setManual(false);
     setManualError(null);
-    onChange({ placeId: c.placeId, reviewUrl: c.reviewUrl });
+    onChange({
+      placeId: c.placeId,
+      reviewUrl: c.reviewUrl,
+      place: {
+        displayName: c.displayName,
+        formattedAddress: c.formattedAddress,
+        businessType: c.businessType,
+      },
+    });
   }
 
   function clearSelection() {

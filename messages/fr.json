@@ -452,27 +452,14 @@
   "auth": {
     "loginTitle": "Bon retour",
     "loginSubtitle": "Connectez-vous à votre dashboard Digitip.",
-    "signupTitle": "Créez votre compte",
-    "signupSubtitle": "Commencez à recevoir des pourboires en quelques minutes.",
     "fullName": "Nom complet",
     "emailAddress": "Adresse email",
     "password": "Mot de passe",
     "passwordHint": "Utilisez un mot de passe fort et unique.",
     "passwordMin": "Au moins 8 caractères",
-    "createAccount": "Créer le compte",
     "creatingAccount": "Création du compte…",
     "signingIn": "Connexion…",
-    "noAccount": "Pas encore de compte ?",
-    "hasAccount": "Vous avez déjà un compte ?",
-    "termsPrefix": "En vous inscrivant, vous acceptez nos",
-    "and": "et",
-    "checkEmail": "Vérifiez votre email pour confirmer votre compte.",
     "emailVerifiedBanner": "Email vérifié, connectez-vous pour accéder à votre espace.",
-    "checkEmailResend": "Vous n'avez pas reçu l'email ?",
-    "resendEmail": "Renvoyer l'email",
-    "resendEmailSending": "Envoi…",
-    "resendEmailSent": "Email renvoyé !",
-    "correctEmail": "Corriger l'adresse",
     "forgotPassword": "Mot de passe oublié ?",
     "forgotPasswordTitle": "Mot de passe oublié",
     "forgotPasswordSubtitle": "Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
@@ -488,7 +475,6 @@
     "resetPasswordSubmit": "Réinitialiser le mot de passe",
     "resetPasswordSubmitting": "Réinitialisation…",
     "resetPasswordSuccess": "Mot de passe mis à jour, vous pouvez maintenant vous connecter.",
-    "resetPasswordError": "Lien expiré ou invalide. Demandez un nouveau lien.",
     "errorInvalidCredentials": "Email ou mot de passe incorrect.",
     "errorTooManyRequests": "Trop de tentatives. Réessayez dans quelques minutes.",
     "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
@@ -867,40 +853,6 @@
       "linkCopied": "Copié"
     },
     "payouts": "Virements",
-    "banking": {
-      "title": "Virements",
-      "subtitle": "Recevez vos pourboires sur votre compte bancaire.",
-      "returnIncomplete": "Votre configuration Stripe n'est pas terminée. Vos pourboires sont conservés en sécurité, mais ils ne pourront être versés qu'une fois la vérification finalisée. Reprenez là où vous en étiez ci-dessous.",
-      "notLinkedTitle": "Compte non rattaché",
-      "notLinkedBody": "Votre compte n'est pas encore rattaché à un établissement. Contactez votre administrateur pour accéder à cette fonctionnalité.",
-      "totalReceived": "Total reçu",
-      "autoPayout": "Vos pourboires sont versés sur votre compte bancaire par Stripe, <b>selon la fréquence de virement que vous avez choisie</b>.",
-      "activeTitle": "Compte bancaire actif",
-      "activeBody": "Vous recevez vos pourboires. Vous pouvez modifier vos coordonnées si besoin.",
-      "pendingTitle": "Vérification en cours",
-      "pendingBody": "Stripe vérifie vos informations. Vos virements seront activés sous peu.",
-      "step1Title": "Pourquoi Stripe ?",
-      "step1Body": "Pour vous verser vos pourboires en toute sécurité, on passe par Stripe, le spécialiste mondial du paiement, utilisé par des millions d'entreprises. C'est lui qui protège votre argent et vos coordonnées : Digitip n'y a jamais accès.",
-      "step2Title": "Rapide, et une seule fois",
-      "step2Body": "Comptez 2 minutes, à ne faire qu'une seule fois. Ensuite, vos pourboires arrivent sur votre compte bancaire : c'est Stripe qui s'en charge, au rythme de virement que vous choisissez.",
-      "step3Title": "Aucune inquiétude à avoir",
-      "step3Body": "Vous recevez vos pourboires à titre personnel, en tant que particulier. La configuration Stripe ne fait pas de vous une entreprise et ne vous engage à rien.",
-      "back": "← Retour",
-      "continue": "Continuer →",
-      "openingStripe": "Ouverture de Stripe…",
-      "setupCta": "Configurer avec Stripe →",
-      "updateCta": "Modifier mes coordonnées bancaires →",
-      "pendingBalanceTitle": "Pourboires en attente",
-      "pendingBalanceBody": "Finalisez votre vérification (2 min) pour recevoir ces pourboires sur votre compte.",
-      "incompleteTitle": "Inscription à finaliser",
-      "incompleteBody": "Reprenez la configuration sécurisée pour recevoir vos pourboires.",
-      "step4Title": "Gardez « Auto-entrepreneur »",
-      "step4Body": "Stripe ne propose que deux types de compte : « entrepreneur individuel / auto-entrepreneur » ou « société ». Gardez l'option « Entrepreneur individuel / Auto-entrepreneur » déjà cochée (jamais « Société »), aucune information d'entreprise à fournir.",
-      "step5Title": "Ce qu’il faut préparer",
-      "step5Body": "Ayez simplement sous la main votre date de naissance, votre adresse et votre IBAN. C'est tout ce dont Stripe a besoin pour vous verser vos pourboires.",
-      "step6Title": "« Tax », « Climate » ? Pas pour l’instant",
-      "step6Body": "Stripe peut vous proposer des options en plus (Tax, Climate). Vous n'en avez pas besoin : cliquez « Pas pour l'instant » et continuez tranquillement. C'est prêt !"
-    },
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenus et top équipe sur les 30 derniers jours.",
@@ -1169,7 +1121,6 @@
       "total": "Total",
       "empty": "Aucun versement ce mois-ci.",
       "export": "Exporter en CSV",
-      "heldNote": "{amount} en attente de retrait par vos employés, non encore versé, hors relevé.",
       "exportJournal": "Journal détaillé",
       "freeLimit": "L'offre gratuite exporte le mois en cours. Passez au Pro pour l'historique complet, le journal détaillé et l'envoi automatique à votre comptable."
     },
@@ -1182,7 +1133,16 @@
       "details": "Informations de l'établissement",
       "payouts": "Virements",
       "loadFailed": "Impossible de charger votre compte de paiement. Rechargez la page ou réessayez dans quelques instants.",
-      "noEstablishment": "Aucun établissement n'est encore rattaché à votre compte."
+      "noEstablishment": "Aucun établissement n'est encore rattaché à votre compte.",
+      "statusNotStarted": "Votre établissement n'est pas encore vérifié : vos clients ne peuvent pas laisser de pourboire. Le formulaire ci-dessous prend environ 2 minutes.",
+      "statusIncomplete": "Votre vérification est commencée mais pas terminée. Reprenez le formulaire ci-dessous là où vous en étiez.",
+      "verifyIntro": "Le formulaire ci-dessous est celui de <b>Stripe</b>, notre partenaire de paiement, intégré ici. La réglementation impose de vérifier l'identité du bénéficiaire avant tout encaissement. Vos coordonnées bancaires sont chiffrées par Stripe et ne transitent jamais par Digitip.",
+      "legalTitle": "Votre structure juridique",
+      "legalCompany": "Une société (SAS, SARL, SA…)",
+      "legalIndividual": "Une entreprise individuelle ou auto-entreprise",
+      "verifyLoadFailed": "Impossible de charger le formulaire de vérification. Rechargez la page ou réessayez dans quelques instants.",
+      "verifyExited": "Formulaire terminé ? Cette page se met à jour toute seule dès que Stripe nous le confirme.",
+      "verifyChecking": "Vérification auprès de Stripe…"
     },
     "pro": {
       "upsellTitle": "Passez à Digitip Pro",
@@ -1203,6 +1163,16 @@
       "exportTitle": "Export comptable complet",
       "exportBody": "Le plan gratuit exporte le mois en cours. Digitip Pro ouvre l'historique complet, le journal détaillé, et envoie le relevé chaque mois à votre comptable.",
       "exportCta": "Passer au Pro"
+    },
+    "verifyBanner": {
+      "titleHeld": "{amount} vous attendent",
+      "titleBlocked": "Votre SmartTag n'accepte pas encore les paiements",
+      "titleVerifying": "Vérification en cours chez Stripe",
+      "bodyNotStarted": "Il reste la vérification Stripe à faire, environ 2 minutes, une seule fois. Sans elle, vos clients ne peuvent pas laisser de pourboire.",
+      "bodyIncomplete": "Votre vérification Stripe est commencée mais pas terminée. Reprenez là où vous en étiez, il ne reste que quelques champs.",
+      "bodyVerifying": "Stripe finit de vérifier vos informations. Rien à faire de votre côté : vos pourboires seront versés dès que c'est validé.",
+      "ctaStart": "Vérifier maintenant",
+      "ctaResume": "Reprendre"
     }
   },
   "join": {
@@ -1268,7 +1238,6 @@
   "onboarding": {
     "stepOf": "Étape {current} sur {total}",
     "continue": "Continuer →",
-    "skip": "Passer cette étape",
     "finish": "Terminer la configuration →",
     "finishing": "Finalisation…",
     "creating": "Création de votre compte…",
@@ -1278,37 +1247,19 @@
       "title": "Votre espace est prêt !",
       "body": "{name} est configuré. Vous pouvez maintenant gérer votre équipe et suivre vos pourboires.",
       "cta": "Accéder au dashboard →",
-      "payoutsPendingTitle": "Vérification en cours",
-      "payoutsPendingBody": "Stripe a bien reçu vos informations et les vérifie. Votre page de pourboire s'activera automatiquement dès que c'est validé, en général sous 24 h. Vous n'avez rien d'autre à faire."
+      "payoutsPendingTitle": "Une dernière étape pour encaisser",
+      "payoutsPendingBody": "Il reste la vérification de votre établissement, environ 2 minutes, une seule fois. Tant qu'elle n'est pas faite, votre page de pourboire reste fermée. Vous la trouverez en haut de votre dashboard."
     },
     "emailVerification": {
       "title": "Vérifiez votre email",
       "sent": "Un lien de confirmation a été envoyé à <strong>{email}</strong>.",
       "activate": "Cliquez dessus pour activer votre compte et accéder à votre espace <strong>{name}</strong>."
     },
-    "codes": {
-      "title": "Vos SmartTags",
-      "subtitle": "Votre SmartTag est prêt à être configuré. Avez-vous d'autres tags à associer maintenant ?",
-      "add": "Ajouter",
-      "validating": "…",
-      "placeholder": "ex: a3f2b9c1",
-      "invalidCode": "Code invalide ou déjà utilisé",
-      "networkError": "Erreur réseau, vérifiez votre connexion et réessayez.",
-      "hint": "Les codes se trouvent sous le QR code imprimé sur chaque SmartTag."
-    },
-    "salon": {
-      "title": "Nom de l'établissement",
-      "subtitle": "Comment s'appelle votre établissement ?"
-    },
     "businessType": {
-      "title": "Votre activité",
-      "subtitle": "Cela nous aide à adapter les montants de pourboire suggérés à vos clients.",
       "restaurant": "Restaurant, bar ou café",
       "beauty": "Coiffure, beauté ou bien-être"
     },
     "address": {
-      "title": "Adresse",
-      "subtitle": "À quelle adresse se trouve votre établissement ?",
       "searching": "Recherche…",
       "manualHint": "Aucune suggestion ? Saisissez votre adresse manuellement."
     },
@@ -1325,38 +1276,10 @@
       "subtitle": "Choisissez un mot de passe sécurisé.",
       "hint": "8 caractères minimum"
     },
-    "team": {
-      "title": "Votre équipe",
-      "subtitle": "Invitez vos collègues pour qu'ils puissent eux aussi recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard.",
-      "intro": "Vos collègues recevront un email pour créer leur compte et commencer à recevoir des pourboires. Vous pouvez passer cette étape et les inviter plus tard depuis votre dashboard.",
-      "namePlaceholder": "Prénom du collègue",
-      "emailPlaceholder": "Email du collègue (obligatoire pour l'inviter)",
-      "emailRequiredHint": "Sans email, ce collègue n'aura pas de compte et ne pourra pas recevoir de pourboires. Vous pourrez ajouter son adresse plus tard depuis le dashboard.",
-      "add": "+ Ajouter un collègue",
-      "remove": "Retirer"
-    },
-    "tipsOptIn": {
-      "title": "Et vous ?",
-      "subtitle": "Souhaitez-vous aussi recevoir des pourboires personnellement ?",
-      "yes": "Oui, je veux recevoir des pourboires",
-      "no": "Non, je gère uniquement mon équipe"
-    },
-    "reviewIntro": {
-      "title": "Transformez vos pourboires en avis",
-      "subtitle": "Ce que voit votre client juste après avoir laissé un pourboire.",
-      "demoName": "votre équipe",
-      "demoThanks": "Merci pour le pourboire !",
-      "demoQuestion": "Vous avez apprécié {name} ?",
-      "demoBody": "Aidez l'équipe en laissant un avis Google, ça prend 10 secondes.",
-      "demoCta": "Laisser un avis Google →",
-      "timing": "Demandé au bon moment : juste après un geste positif.",
-      "oneTap": "Déjà connecté à Google, il note et valide. Deux taps.",
-      "ranking": "Un flux d'avis récents vous fait remonter sur Maps."
-    },
     "googleReview": {
-      "title": "Avis Google",
-      "subtitle": "Reliez votre fiche Google dès maintenant. L'invitation à laisser un avis après chaque pourboire fait partie de Digitip Pro, vous l'activerez quand vous voudrez.",
-      "skip": "Passer pour l’instant",
+      "title": "Votre établissement",
+      "subtitle": "Cherchez votre fiche Google : elle nous donne votre nom, votre adresse et votre lien d'avis d'un seul coup.",
+      "skip": "Mon établissement n'est pas sur Google",
       "searchPlaceholder": "Nom de votre établissement",
       "searchButton": "Rechercher",
       "searching": "Recherche…",
@@ -1378,20 +1301,12 @@
       "guide2": "Touchez « Demander des avis ». Google affiche un lien court du type g.page/r/…/review.",
       "guide3": "Copiez ce lien et collez-le ci-dessous."
     },
-    "connect": {
-      "title": "Recevoir vos pourboires",
-      "subtitle": "Dernière étape : vérifiez votre établissement pour pouvoir encaisser.",
-      "body": "Les pourboires arrivent sur le compte de <b>{name}</b>, puis sont reversés à votre équipe via la paie. La réglementation impose de vérifier l'identité du bénéficiaire : le formulaire ci-dessous est celui de <b>Stripe</b>, notre partenaire de paiement, intégré directement ici. Vos coordonnées bancaires sont chiffrées par Stripe et ne transitent jamais par Digitip.",
-      "preparing": "Préparation de votre compte de paiement…",
-      "loadFailed": "Impossible de charger le formulaire de vérification. Rechargez la page ou réessayez dans quelques instants.",
-      "incomplete": "Le formulaire de vérification n'est pas encore complété. Terminez-le ci-dessus pour finaliser votre inscription.",
-      "exited": "Formulaire terminé ? Cliquez sur « Terminer » pour finaliser votre inscription.",
-      "checking": "Vérification auprès de Stripe…",
-      "incompleteHint": "Complétez le formulaire ci-dessus pour activer ce bouton.",
-      "recheck": "J'ai terminé, vérifier à nouveau",
-      "legalTitle": "Votre structure juridique",
-      "legalCompany": "Une société (SAS, SARL, SA…)",
-      "legalIndividual": "Une entreprise individuelle ou auto-entreprise"
+    "confirm": {
+      "title": "Vérifiez ces informations",
+      "subtitle": "Nous avons pré-rempli ce que Google sait de votre établissement. Corrigez ce qui ne va pas.",
+      "nameLabel": "Nom de l'établissement",
+      "addressLabel": "Adresse",
+      "typeLabel": "Votre activité"
     }
   }
 }
