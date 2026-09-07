@@ -135,6 +135,14 @@ input, select, textarea, button { font-family: var(--font); }
   0%, 100% { opacity: 1; }
   50%       { opacity: .4; }
 }
+/* The tick on the tip receipt. The path is ~28 units long, so 30 covers it
+   with a margin. Drawing it takes the same time as reading the word above it,
+   which is the whole idea: the screen finishes composing itself as the eye
+   arrives, rather than being complete before it is looked at. */
+@keyframes drawCheck {
+  from { stroke-dashoffset: 30; }
+  to   { stroke-dashoffset: 0; }
+}
 @keyframes checkIn {
   from { opacity: 0; transform: scale(.6); }
   to   { opacity: 1; transform: scale(1); }
@@ -142,7 +150,8 @@ input, select, textarea, button { font-family: var(--font); }
 .fade-up  { animation: fadeUp  var(--dur-3) var(--ease-out) both; }
 .fade-in  { animation: fadeIn  var(--dur-2) var(--ease-out) both; }
 .scale-in { animation: scaleIn 180ms cubic-bezier(.34,1.3,.64,1) both; }
-.check-in { animation: checkIn 400ms cubic-bezier(.34,1.3,.64,1) both; }
+.check-in { animation: checkIn var(--dur-4) cubic-bezier(.34,1.3,.64,1) both; }
+.draw-check { stroke-dasharray: 30; animation: drawCheck 460ms var(--ease-out) 160ms both; }
 .shimmer  { animation: shimmer 1.6s ease infinite; background: var(--surface-3); border-radius: 6px; }
 
 /* ── Motion utilities ───────────────────────────────────────────────────────── */

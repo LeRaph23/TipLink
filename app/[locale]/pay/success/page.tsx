@@ -30,7 +30,12 @@ function StatusIcon({ status }: { status: RedirectStatus }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M7 17l7 7 13-13" />
+          {/* Drawn, not stamped. Someone has just handed over money on a
+              stranger's phone; the one thing this screen owes them is a moment
+              that reads as deliberate. Deliberately nothing more than that:
+              no bounce, no counter, no celebration. A receipt states the
+              amount, it does not perform it. */}
+          <path className="draw-check" d="M7 17l7 7 13-13" />
         </svg>
       </div>
     );
@@ -199,7 +204,9 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
     }}>
       <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 400, borderRadius: '50%', background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
-      <div className="fade-up" style={{ width: '100%', maxWidth: 380, textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      {/* stagger, so the tick lands first and the receipt settles under it,
+          rather than the whole screen arriving at once. */}
+      <div className="stagger" style={{ width: '100%', maxWidth: 380, textAlign: 'center', position: 'relative', zIndex: 1 }}>
         {isDemo && (
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 14,
