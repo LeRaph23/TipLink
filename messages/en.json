@@ -642,14 +642,10 @@
   },
   "dashboard": {
     "welcome": "Welcome back,",
-    "onboardingBanner": "Set up your payout account to start receiving tips.",
-    "onboardingCta": "Set up",
     "totalEarned": "Total earned",
     "allTime": "All time",
     "thisWeek": "This week",
-    "last7": "Last 7 days",
     "transactions": "Transactions",
-    "recent5": "Recent 5",
     "recentTips": "Recent tips",
     "viewAll": "View all",
     "noTips": "No tips yet",
@@ -727,11 +723,7 @@
       "trendVsPrev": "vs prev. week",
       "adminReceiveTipsTitle": "Receive tips too",
       "adminReceiveTipsBody": "As an admin, you can also appear in the list and receive tips in your bank account.",
-      "adminReceiveTipsCta": "Set up →",
-      "bankingSetupTitleAdmin": "Complete your payout setup",
-      "bankingSetupTitleStaff": "Set up your bank account",
-      "bankingSetupBody": "Add your IBAN to start receiving tips in your bank account.",
-      "bankingSetupCta": "Set up →"
+      "adminReceiveTipsCta": "Set up →"
     },
     "txs": {
       "title": "Transactions",
@@ -742,16 +734,6 @@
       "colStatus": "Status",
       "colReceipt": "Receipt",
       "empty": "No transactions yet"
-    },
-    "onboarding": {
-      "title": "Payout setup",
-      "subtitle": "Connect your bank to receive your tips.",
-      "continue": "Continue setup",
-      "start": "Start setup",
-      "initializing": "Setting up…",
-      "ready": "Your payout account is set up and ready to receive tips.",
-      "pending": "Stripe is verifying your information.",
-      "initFailed": "Initialization failed. Please try again."
     },
     "staff": {
       "title": "Staff",
@@ -840,7 +822,6 @@
       "copyLink": "Copy link",
       "linkCopied": "Copied"
     },
-    "payouts": "Payouts",
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenue and top performers over the last 30 days.",
@@ -987,7 +968,9 @@
           "shipped": "Shipped",
           "delivered": "Delivered",
           "canceled": "Canceled"
-        }
+        },
+        "targetEstablishment": "Destination business",
+        "working": "Working…"
       },
       "transactions": {
         "title": "Transactions",
@@ -1161,6 +1144,30 @@
       "bodyVerifying": "Stripe is finishing its checks. Nothing to do on your side: your tips will be paid out as soon as it clears.",
       "ctaStart": "Verify now",
       "ctaResume": "Resume"
+    },
+    "gettingStarted": {
+      "title": "First steps",
+      "progress": "{done} of {total}",
+      "verify": {
+        "label": "Verify your business",
+        "body": "About 2 minutes, once. Until it is done your tip page stays closed and your customers cannot leave anything.",
+        "cta": "Verify"
+      },
+      "team": {
+        "label": "Add your team",
+        "body": "Everyone you add gets an invitation and can then receive tips in their own name.",
+        "cta": "Add"
+      },
+      "review": {
+        "label": "Link your Google listing",
+        "body": "Asked once. With Digitip Pro your customers can leave a review right after tipping, at the moment they are happy.",
+        "cta": "Link"
+      },
+      "firstTip": {
+        "label": "Take a first tip",
+        "body": "Open your own tip page to see what your customers see. It is the best way to check the whole thing works.",
+        "cta": "Open my page"
+      }
     }
   },
   "join": {

@@ -6,6 +6,8 @@ import { getReviewTeaser } from '@/lib/billing/review-teaser';
 import { ProUpsell } from '@/components/billing/ProUpsell';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
+import { GettingStarted } from '@/components/dashboard/GettingStarted';
+import { readGettingStarted } from '@/lib/dashboard/getting-started';
 import { StatCard } from '@/components/dashboard/StatCard';
 
 // Line-style card icon for the banking prompts, matching the dashboard set.
@@ -63,6 +65,12 @@ export default async function DashboardPage({
   // showing an employee an upsell for their manager's subscription is noise.
   const adminGroupId =
     roles?.find((r) => (r.role === 'group_admin' || r.role === 'super_admin') && r.group_id)?.group_id ?? null;
+
+  // What the manager still has to do, read from the same rows the rest of the
+  // dashboard reads. Group admins only: nobody else can act on any of it.
+  const gettingStarted = adminGroupId
+    ? await readGettingStarted(createServiceClient(), adminGroupId)
+    : null;
 
   const reviewTeaser = adminGroupId
     ? await (async () => {
@@ -136,6 +144,17 @@ export default async function DashboardPage({
           {t('welcome')} {staffProfile?.full_name ?? (user!.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? ''}
         </p>
       </div>
+
+      {/* Before anything else on the page: on a new account every card below
+          this one shows a zero, and a screen full of zeroes with no next step
+          is where a manager decides the product does not work yet. */}
+      {gettingStarted && (
+        <GettingStarted
+          facts={gettingStarted}
+          tipUrlPath={gettingStarted.tipUrlPath}
+          locale={locale}
+        />
+      )}
 
       {staffProfile && staffProfile.onboarding_status === 'complete' && (
         <DigitipCard staffId={staffProfile.id} locale={locale} />
@@ -215,7 +234,30 @@ export default async function DashboardPage({
             </thead>
             <tbody>
               {!recentTransactions?.length ? (
-                <tr><td colSpan={3} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>{t('noTips')}</td></tr>
+                <tr>
+                  <td colSpan={3} style={{ padding: '36px 16px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-3)', fontSize: 13 }}>{t('noTips')}</div>
+                    {/* Only for the person who can do something about it. An
+                        employee has no tag to place and no team to invite. */}
+                    {gettingStarted?.tipUrlPath && (
+                      <a
+                        className="btn-ghost"
+                        href={`/${locale}${gettingStarted.tipUrlPath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          minHeight: 36, padding: '0 16px', borderRadius: 9, marginTop: 14,
+                          border: '1px solid var(--border)', background: 'var(--surface-2)',
+                          color: 'var(--text-2)', fontSize: 13, fontWeight: 600,
+                          textDecoration: 'none', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {t('gettingStarted.firstTip.cta')}
+                      </a>
+                    )}
+                  </td>
+                </tr>
               ) : recentTransactions.map(tx => (
                 <tr key={tx.id} className="dash-row" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '11px 16px', color: 'var(--text-3)', fontSize: 12.5 }}>
