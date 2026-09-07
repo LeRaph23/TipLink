@@ -28,9 +28,12 @@ export function DashboardShell({ userRoles, userEmail, userName, children }: Pro
 
   return (
     <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--bg)' }}>
-      {/* Mobile backdrop */}
+      {/* Mobile backdrop. It used to mount and unmount instantly while the
+          drawer beside it slid over 300ms, so the two halves of one gesture
+          were visibly out of step. */}
       {open && (
         <div
+          className="fade-in"
           onClick={() => setOpen(false)}
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.48)',
@@ -61,7 +64,12 @@ export function DashboardShell({ userRoles, userEmail, userName, children }: Pro
           </span>
         </div>
 
-        <div className="fade-up dash-main-pad" style={{ padding: '36px 40px', maxWidth: 1440 }}>
+        {/* `key` is what makes this animate at all. The shell survives every
+            route change in the App Router, so without it React reuses this
+            element and `fade-up` plays exactly once, on the first mount of the
+            session. Every navigation after that was a hard cut, which is most
+            of why moving around the dashboard felt abrupt. */}
+        <div key={pathname} className="fade-up dash-main-pad" style={{ padding: '36px 40px', maxWidth: 1440 }}>
           {children}
         </div>
       </main>

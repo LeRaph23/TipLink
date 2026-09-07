@@ -132,6 +132,12 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                           border: '1px solid var(--border)', background: 'var(--surface)',
                           color: 'var(--text-2)', fontFamily: 'var(--font)', maxWidth: 200,
                           cursor: s.establishments ? 'pointer' : 'not-allowed',
+                          // Moving a tag between salons is a server round-trip.
+                          // The control was already disabled while it ran, but
+                          // silently: a select that stops responding and looks
+                          // unchanged reads as broken, not as busy.
+                          opacity: savingId === s.id ? 0.5 : 1,
+                          transition: 'opacity var(--dur-1) var(--ease-out)',
                         }}
                       >
                         {!s.establishments && <option value="">—</option>}
@@ -159,6 +165,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                   <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <button
+                        className="btn-ghost"
                         type="button"
                         onClick={() => setQrShortId(s.short_id)}
                         title="QR Code"
@@ -172,6 +179,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                         QR
                       </button>
                       <button
+                        className="btn-ghost"
                         type="button"
                         onClick={() => handleCopy(s)}
                         style={{
@@ -224,6 +232,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
+                className="btn-accent"
                 type="button"
                 onClick={handleDownloadQr}
                 style={{
@@ -235,6 +244,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                 ↓ PNG
               </button>
               <button
+                className="btn-ghost"
                 type="button"
                 onClick={() => setQrShortId(null)}
                 style={{

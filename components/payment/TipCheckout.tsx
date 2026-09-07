@@ -176,6 +176,7 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
         <>
           <PaymentElement options={{ layout: 'tabs' }} />
           <button
+            className="btn-accent"
             type="button"
             onClick={handlePay}
             disabled={!stripe || !elements || isLoading}
@@ -185,7 +186,7 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
               color: isLoading ? 'var(--accent)' : '#fff',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em',
-              transition: 'all 130ms',
+              transition: 'transform var(--dur-1) var(--ease-spring), border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out)',
             }}
           >
             {isLoading ? t('processingButton') : `${t('pay')} ${fmt.format(amount / 100)}`}

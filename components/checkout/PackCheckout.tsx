@@ -552,12 +552,12 @@ function CheckoutSkeleton() {
   const block: React.CSSProperties = {
     background: 'linear-gradient(90deg, #f1f1f4 0%, #e8e8ed 50%, #f1f1f4 100%)',
     backgroundSize: '200% 100%',
-    animation: 'shimmer 1.4s ease-in-out infinite',
+    animation: 'packSweep 1.4s ease-in-out infinite',
     borderRadius: 10,
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <style>{`@keyframes shimmer { 0% {background-position: 200% 0;} 100% {background-position: -200% 0;} }`}</style>
+      <style>{`@keyframes packSweep { 0% {background-position: 200% 0;} 100% {background-position: -200% 0;} }`}</style>
       <div style={{ ...block, height: 48 }} />
       <div style={{ ...block, height: 56 }} />
       <div style={{ ...block, height: 120 }} />

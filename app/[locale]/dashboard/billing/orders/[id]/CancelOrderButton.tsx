@@ -76,6 +76,7 @@ export function CancelOrderButton({ orderId, locale }: Props) {
 
       {!confirming ? (
         <button
+          className="btn-ghost"
           type="button"
           onClick={() => setConfirming(true)}
           disabled={pending}
@@ -112,6 +113,7 @@ export function CancelOrderButton({ orderId, locale }: Props) {
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button
+              className="btn-accent"
               type="button"
               disabled={pending}
               onClick={() => {
@@ -131,6 +133,7 @@ export function CancelOrderButton({ orderId, locale }: Props) {
               {pending ? '…' : L.confirm}
             </button>
             <button
+              className="btn-ghost"
               type="button"
               disabled={pending}
               onClick={() => { setConfirming(false); setError(null); }}

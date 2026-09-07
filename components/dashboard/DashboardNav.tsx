@@ -92,7 +92,11 @@ function NavLink({ href, icon, label, active, pending, onNavigate }: { href: str
         color: active ? 'var(--accent)' : hov ? 'var(--text)' : 'var(--text-2)',
         fontSize: 13.5, fontWeight: active ? 600 : 500,
         letterSpacing: '-0.01em', width: '100%',
-        transition: 'all 120ms',
+        // Named properties, not `all`. `all` also animated fontWeight, which a
+        // browser resolves by reflowing the text sub-pixel every frame: the
+        // label shivered on hover, on the control clicked more than any other
+        // in the product.
+        transition: 'background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out)',
       }}
     >
       <span style={{ color: active ? 'var(--accent)' : 'currentColor', flexShrink: 0 }}>{icon}</span>

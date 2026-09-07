@@ -44,13 +44,13 @@ export function StaffInviteCopy({
       }}>
         {url}
       </code>
-      <button type="button" onClick={copyUrl} style={{
+      <button type="button" className="btn-accent" onClick={copyUrl} style={{
         padding: '8px 14px', borderRadius: 8,
         background: urlCopied ? 'var(--success)' : 'var(--accent)',
         color: '#fff', border: 'none',
         fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
         whiteSpace: 'nowrap', fontFamily: 'var(--font)',
-        transition: 'background 200ms', flexShrink: 0,
+        flexShrink: 0,
       }}>
         {urlCopied ? '✓ Copié !' : 'Copier le lien'}
       </button>

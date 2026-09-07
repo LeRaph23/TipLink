@@ -213,6 +213,7 @@ export function SettingsForm({
       {saved && <p style={{ fontSize: 12.5, color: 'var(--success)', marginBottom: 12 }}>{labels.saved}</p>}
 
       <button
+        className="btn-accent"
         type="submit"
         disabled={saving}
         style={{

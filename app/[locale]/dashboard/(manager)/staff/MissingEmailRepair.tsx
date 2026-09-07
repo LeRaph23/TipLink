@@ -101,6 +101,7 @@ export function MissingEmailRepair({
                 }}
               />
               <button
+                className="btn-accent"
                 type="button"
                 onClick={() => submit(s.id)}
                 disabled={pending || !(emails[s.id] ?? '').trim()}

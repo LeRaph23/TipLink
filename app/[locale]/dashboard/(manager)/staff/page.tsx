@@ -164,7 +164,7 @@ export default async function StaffListPage({
                 const result = await joinAsStaffMember();
                 if ('ok' in result) redirect('/dashboard/staff');
               }}>
-                <button type="submit" style={{
+                <button type="submit" className="btn-accent" style={{
                   padding: '10px 18px', borderRadius: 10, border: 'none',
                   background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
                   color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
@@ -206,8 +206,26 @@ export default async function StaffListPage({
             <tbody>
               {(!staffMembers || staffMembers.length === 0) && (
                 <tr>
-                  <td colSpan={6} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>
-                    {t('empty')}
+                  {/* The header has an add button, but someone reading an empty
+                      table is looking at the table. An empty state that only
+                      states the emptiness makes the reader go hunting. */}
+                  <td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 14 }}>
+                      {t('empty')}
+                    </div>
+                    <Link
+                      className="btn-ghost"
+                      href="/dashboard/staff/new"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        minHeight: 36, padding: '0 16px', borderRadius: 9,
+                        border: '1px solid var(--border)', background: 'var(--surface-2)',
+                        color: 'var(--text-2)', fontSize: 13, fontWeight: 600,
+                        textDecoration: 'none', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('addButton')}
+                    </Link>
                   </td>
                 </tr>
               )}

@@ -642,14 +642,10 @@
   },
   "dashboard": {
     "welcome": "Bon retour,",
-    "onboardingBanner": "Configurez votre compte de virement pour recevoir des pourboires.",
-    "onboardingCta": "Configurer",
     "totalEarned": "Total perçu",
     "allTime": "Depuis le début",
     "thisWeek": "Cette semaine",
-    "last7": "7 derniers jours",
     "transactions": "Transactions",
-    "recent5": "5 dernières",
     "recentTips": "Derniers pourboires",
     "viewAll": "Tout voir",
     "noTips": "Aucun pourboire pour l'instant",
@@ -727,11 +723,7 @@
       "trendVsPrev": "vs sem. préc.",
       "adminReceiveTipsTitle": "Recevez vous aussi des pourboires",
       "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires sur votre compte bancaire.",
-      "adminReceiveTipsCta": "Configurer →",
-      "bankingSetupTitleAdmin": "Finalisez votre configuration de virements",
-      "bankingSetupTitleStaff": "Configurez votre compte bancaire",
-      "bankingSetupBody": "Ajoutez votre IBAN pour commencer à recevoir vos pourboires sur votre compte bancaire.",
-      "bankingSetupCta": "Configurer →"
+      "adminReceiveTipsCta": "Configurer →"
     },
     "txs": {
       "title": "Transactions",
@@ -742,16 +734,6 @@
       "colStatus": "Statut",
       "colReceipt": "Reçu",
       "empty": "Aucune transaction pour l'instant"
-    },
-    "onboarding": {
-      "title": "Compte de virement",
-      "subtitle": "Connectez votre banque pour recevoir vos pourboires.",
-      "continue": "Poursuivre la configuration",
-      "start": "Commencer la configuration",
-      "initializing": "Initialisation…",
-      "ready": "Votre compte de virement est configuré et prêt à recevoir des pourboires.",
-      "pending": "Stripe vérifie vos informations.",
-      "initFailed": "L'initialisation a échoué. Veuillez réessayer."
     },
     "staff": {
       "title": "Équipe",
@@ -840,7 +822,6 @@
       "copyLink": "Copier le lien",
       "linkCopied": "Copié"
     },
-    "payouts": "Virements",
     "analytics": {
       "title": "Analytics",
       "subtitle": "Revenus et top équipe sur les 30 derniers jours.",
@@ -987,7 +968,9 @@
           "shipped": "Expédiée",
           "delivered": "Livrée",
           "canceled": "Annulée"
-        }
+        },
+        "targetEstablishment": "Établissement destinataire",
+        "working": "En cours…"
       },
       "transactions": {
         "title": "Transactions",
@@ -1161,6 +1144,30 @@
       "bodyVerifying": "Stripe finit de vérifier vos informations. Rien à faire de votre côté : vos pourboires seront versés dès que c'est validé.",
       "ctaStart": "Vérifier maintenant",
       "ctaResume": "Reprendre"
+    },
+    "gettingStarted": {
+      "title": "Premiers pas",
+      "progress": "{done} sur {total}",
+      "verify": {
+        "label": "Vérifier votre établissement",
+        "body": "Environ 2 minutes, une seule fois. Tant que ce n'est pas fait, votre page de pourboire reste fermée et vos clients ne peuvent rien laisser.",
+        "cta": "Vérifier"
+      },
+      "team": {
+        "label": "Ajouter votre équipe",
+        "body": "Chaque personne ajoutée reçoit une invitation et pourra recevoir des pourboires à son nom.",
+        "cta": "Ajouter"
+      },
+      "review": {
+        "label": "Relier votre fiche Google",
+        "body": "Le lien est demandé une fois. Avec Digitip Pro, vos clients pourront laisser un avis juste après leur pourboire, au moment où ils sont contents.",
+        "cta": "Relier"
+      },
+      "firstTip": {
+        "label": "Recevoir un premier pourboire",
+        "body": "Ouvrez votre propre page de pourboire pour voir ce que vos clients voient. C'est le meilleur moyen de vérifier que tout fonctionne.",
+        "cta": "Voir ma page"
+      }
     }
   },
   "join": {

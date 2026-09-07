@@ -148,6 +148,7 @@ export function InviteStaffForm({
       {success && <p style={{ fontSize: 12.5, color: 'var(--success)' }}>{success}</p>}
 
       <button
+        className="btn-accent"
         type="submit"
         disabled={loading || establishments.length === 0}
         style={{

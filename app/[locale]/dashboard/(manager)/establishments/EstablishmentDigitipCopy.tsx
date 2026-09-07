@@ -21,6 +21,7 @@ export function EstablishmentDigitipCopy({ url, copyLabel, copiedLabel }: Props)
 
   return (
     <button
+      className="btn-ghost"
       type="button"
       onClick={handleCopy}
       style={{
@@ -28,7 +29,6 @@ export function EstablishmentDigitipCopy({ url, copyLabel, copiedLabel }: Props)
         padding: '5px 10px', borderRadius: 'var(--radius-sm)',
         color: copied ? 'var(--success)' : 'var(--text-2)',
         fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font)',
-        transition: 'color 150ms',
       }}
     >
       {copied ? copiedLabel : copyLabel}

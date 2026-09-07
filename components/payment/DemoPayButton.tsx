@@ -48,6 +48,7 @@ export function DemoPayButton({ kind, targetId, amount, currency }: Props) {
         🧪 {t('demo.banner')}
       </div>
       <button
+        className="btn-accent"
         type="button"
         onClick={pay}
         disabled={going}
@@ -56,7 +57,7 @@ export function DemoPayButton({ kind, targetId, amount, currency }: Props) {
           background: going ? 'var(--accent-muted)' : 'var(--accent)',
           color: going ? 'var(--accent)' : '#fff',
           cursor: going ? 'not-allowed' : 'pointer',
-          fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em', transition: 'all 130ms',
+          fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em', transition: 'transform var(--dur-1) var(--ease-spring), border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out)',
         }}
       >
         {going ? t('processingButton') : t('demo.payButton', { amount: fmt.format(amount / 100) })}
