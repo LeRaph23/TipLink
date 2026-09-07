@@ -7,6 +7,13 @@
  *
  *   STRIPE_SECRET_KEY=sk_live_... npx tsx scripts/stripe-setup.ts
  *
+ * Each part can be run on its own, which matters because the packs already
+ * exist in a live account and re-running the whole script would create a
+ * second copy of them:
+ *
+ *   ... npx tsx scripts/stripe-setup.ts packs
+ *   ... npx tsx scripts/stripe-setup.ts pro
+ *
  * Copy the output lines into your .env.local file.
  */
 
@@ -37,11 +44,19 @@ const PRO = {
 } as const;
 
 async function main() {
+  const only = process.argv[2];
+  if (only && only !== 'packs' && only !== 'pro') {
+    console.error(`❌  Unknown argument "${only}". Use "packs", "pro", or nothing for both.`);
+    process.exit(1);
+  }
+  const doPacks = only !== 'pro';
+  const doPro = only !== 'packs';
+
   console.log('Creating Stripe products and prices…\n');
 
   const lines: string[] = [];
 
-  for (const pack of PACKS) {
+  for (const pack of doPacks ? PACKS : []) {
     const product = await stripe.products.create({
       name: pack.name,
       metadata: { tiplink_pack: pack.id },
@@ -63,28 +78,30 @@ async function main() {
     lines.push(line);
   }
 
-  const proProduct = await stripe.products.create({
-    name: PRO.name,
-    metadata: { tiplink_plan: 'pro' },
-  });
-
-  for (const [interval, amount, env] of [
-    ['month', PRO.monthlyAmount, 'STRIPE_PRICE_PRO_MONTHLY'],
-    ['year', PRO.yearlyAmount, 'STRIPE_PRICE_PRO_YEARLY'],
-  ] as const) {
-    const price = await stripe.prices.create({
-      product: proProduct.id,
-      unit_amount: amount,
-      currency: 'eur',
-      recurring: { interval },
+  if (doPro) {
+    const proProduct = await stripe.products.create({
+      name: PRO.name,
       metadata: { tiplink_plan: 'pro' },
     });
-    // Unlike the packs, the app holds the *price* ID here rather than the
-    // product's default_price: a subscription has two prices on one product,
-    // so there is no single default that could stand for both.
-    const line = `${env}=${price.id}`;
-    console.log(`✅  ${line}`);
-    lines.push(line);
+
+    for (const [interval, amount, env] of [
+      ['month', PRO.monthlyAmount, 'STRIPE_PRICE_PRO_MONTHLY'],
+      ['year', PRO.yearlyAmount, 'STRIPE_PRICE_PRO_YEARLY'],
+    ] as const) {
+      const price = await stripe.prices.create({
+        product: proProduct.id,
+        unit_amount: amount,
+        currency: 'eur',
+        recurring: { interval },
+        metadata: { tiplink_plan: 'pro' },
+      });
+      // Unlike the packs, the app holds the *price* ID here rather than the
+      // product's default_price: a subscription has two prices on one product,
+      // so there is no single default that could stand for both.
+      const line = `${env}=${price.id}`;
+      console.log(`✅  ${line}`);
+      lines.push(line);
+    }
   }
 
   console.log('\n─────────────────────────────────────────');
