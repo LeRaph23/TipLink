@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { stripe } from '@/lib/stripe/client';
+import { createServiceClient } from '@/lib/supabase/service';
+import { ReviewInvite } from '@/components/pay/ReviewInvite';
 
 export const dynamic = 'force-dynamic';
 
@@ -174,6 +176,19 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
       ? await fetchTipContext(staffId, establishmentId)
       : { staffName: staffId ? (await fetchTipContext(staffId, null)).staffName : null, reviewUrl: null };
 
+  // The tip this page is confirming, looked up only when there is an
+  // invitation to attribute a click to. It is what turns "somebody clicked"
+  // into "12 of your 47 tips this month did", which is the difference between
+  // a statistic and something a subscriber can act on. Absent in demo mode:
+  // no charge happened, so there is no tip to attribute anything to.
+  const transactionId = reviewUrl && !isDemo && sp.payment_intent
+    ? (await createServiceClient()
+        .from('transactions')
+        .select('id')
+        .eq('stripe_payment_intent_id', sp.payment_intent)
+        .maybeSingle()).data?.id ?? null
+    : null;
+
   const heading =
     status === 'succeeded'
       ? t('success')
@@ -246,36 +261,11 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
         </div>
 
         {status === 'succeeded' && reviewUrl && (
-          <a
-            href={reviewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'block', textDecoration: 'none',
-              background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 20,
-              boxShadow: 'var(--shadow)',
-            }}
-          >
-            <div style={{ fontSize: 22, letterSpacing: 2, color: '#f5a623', marginBottom: 8 }}>
-              ★★★★★
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-              {staffName ? t('reviewTitleNamed', { name: staffName }) : t('reviewTitle')}
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 14 }}>
-              {t('reviewBody')}
-            </div>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', boxSizing: 'border-box',
-              padding: '12px 20px', borderRadius: 'var(--radius)',
-              background: 'var(--accent)', color: 'var(--accent-fg, #fff)',
-              fontSize: 14, fontWeight: 700,
-            }}>
-              {t('reviewButton')}
-            </span>
-          </a>
+          <ReviewInvite
+            reviewUrl={reviewUrl}
+            staffName={staffName}
+            transactionId={transactionId}
+          />
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

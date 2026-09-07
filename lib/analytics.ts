@@ -24,7 +24,11 @@ export type AnalyticsEvent =
   | 'stripe_returned_complete'
   | 'stripe_returned_incomplete'
   | 'staff_invite_sent'
-  | 'staff_invite_repaired';
+  | 'staff_invite_repaired'
+  // The one thing Digitip Pro is sold on, and the one thing nothing measured.
+  // Its per-establishment counterpart lives in `review_clicks`, because a
+  // manager needs their own number and this dashboard is ours.
+  | 'review_cta_clicked';
 
 type Props = Record<string, string | number | boolean | null>;
 

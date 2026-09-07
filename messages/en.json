@@ -1167,6 +1167,14 @@
         "body": "Open your own tip page to see what your customers see. It is the best way to check the whole thing works.",
         "cta": "Open my page"
       }
+    },
+    "reviewImpact": {
+      "label": "Google reviews this month",
+      "ratio": "{clicks}/{tips}",
+      "title": "customers went to leave a review",
+      "body": "Since the 1st. The invitation shows after every tip; following it is their call.",
+      "emptyTitle": "No review started this month",
+      "emptyBody": "The invitation does show after every tip, but nobody has followed it yet. Check that your Google link points where you expect."
     }
   },
   "join": {

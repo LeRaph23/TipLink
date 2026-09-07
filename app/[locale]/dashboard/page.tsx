@@ -2,11 +2,12 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { hasPro } from '@/lib/billing/entitlements';
-import { getReviewTeaser } from '@/lib/billing/review-teaser';
+import { getReviewTeaser, getReviewImpact } from '@/lib/billing/review-teaser';
 import { ProUpsell } from '@/components/billing/ProUpsell';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
+import { ReviewImpact } from '@/components/dashboard/ReviewImpact';
 import { readGettingStarted } from '@/lib/dashboard/getting-started';
 import { StatCard } from '@/components/dashboard/StatCard';
 
@@ -72,14 +73,19 @@ export default async function DashboardPage({
     ? await readGettingStarted(createServiceClient(), adminGroupId)
     : null;
 
-  const reviewTeaser = adminGroupId
+  // Two sides of the same number, and never both at once. A free group is told
+  // what it gave up this month; a paying one is told what it got. The second
+  // half only became possible with `review_clicks`: before that, a subscriber
+  // had no way at all to tell whether the feature they pay for does anything.
+  const { reviewTeaser, reviewImpact } = adminGroupId
     ? await (async () => {
         const service = createServiceClient();
-        // Skipped outright for Pro groups — they already have the feature.
-        if (await hasPro(service, adminGroupId)) return null;
-        return getReviewTeaser(service, adminGroupId);
+        if (await hasPro(service, adminGroupId)) {
+          return { reviewTeaser: null, reviewImpact: await getReviewImpact(service, adminGroupId) };
+        }
+        return { reviewTeaser: await getReviewTeaser(service, adminGroupId), reviewImpact: null };
       })()
-    : null;
+    : { reviewTeaser: null, reviewImpact: null };
 
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
@@ -164,6 +170,8 @@ export default async function DashboardPage({
           have been asked for a review at the moment they were demonstrably
           happy. Shown only when the group actually has a review link and
           actually took tips — see getReviewTeaser for why both matter. */}
+      {reviewImpact && <ReviewImpact impact={reviewImpact} />}
+
       {reviewTeaser && (
         <ProUpsell
           title={t('pro.reviewTeaserTitle', { count: reviewTeaser.tipCount })}

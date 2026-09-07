@@ -1167,6 +1167,14 @@
         "body": "Ouvrez votre propre page de pourboire pour voir ce que vos clients voient. C'est le meilleur moyen de vérifier que tout fonctionne.",
         "cta": "Voir ma page"
       }
+    },
+    "reviewImpact": {
+      "label": "Avis Google ce mois-ci",
+      "ratio": "{clicks}/{tips}",
+      "title": "clients sont allés laisser un avis",
+      "body": "Depuis le 1er du mois. L'invitation s'affiche après chaque pourboire ; ce sont eux qui décident de la suivre.",
+      "emptyTitle": "Aucun avis lancé ce mois-ci",
+      "emptyBody": "L'invitation s'affiche bien après chaque pourboire, mais personne ne l'a suivie pour l'instant. Vérifiez que votre lien Google pointe au bon endroit."
     }
   },
   "join": {
