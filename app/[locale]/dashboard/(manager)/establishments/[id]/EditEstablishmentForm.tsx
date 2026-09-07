@@ -146,6 +146,7 @@ export function EditEstablishmentForm({ establishment }: { establishment: Establ
 
       <div style={{ display: 'flex', gap: 10 }}>
         <button
+          className="btn-accent"
           type="submit"
           disabled={saveStatus === 'saving'}
           style={{
@@ -160,6 +161,7 @@ export function EditEstablishmentForm({ establishment }: { establishment: Establ
           {saveStatus === 'saving' ? t('saving') : saveStatus === 'saved' ? t('saved') : t('save')}
         </button>
         <button
+          className="btn-ghost"
           type="button"
           onClick={() => router.push('/dashboard/establishments')}
           style={{
@@ -174,6 +176,7 @@ export function EditEstablishmentForm({ establishment }: { establishment: Establ
 
       <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 18, marginTop: 4 }}>
         <button
+          className="btn-ghost"
           type="button"
           onClick={handleDelete}
           style={{

@@ -73,6 +73,7 @@ export function DigitipCard({ staffId, locale }: Props) {
         </button>
         {typeof navigator !== 'undefined' && 'share' in navigator && (
           <button
+            className="btn-ghost"
             type="button"
             onClick={handleShare}
             title="Share"

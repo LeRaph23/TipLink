@@ -118,6 +118,7 @@ export function StaffDetailForm({
 
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 4 }}>
         <button
+          className="btn-accent"
           type="submit"
           disabled={saving}
           style={{
@@ -133,6 +134,7 @@ export function StaffDetailForm({
 
         {isActive && (
           <button
+            className="btn-ghost"
             type="button"
             onClick={onDeactivate}
             disabled={saving}

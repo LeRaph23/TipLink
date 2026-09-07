@@ -159,6 +159,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                   <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <button
+                        className="btn-ghost"
                         type="button"
                         onClick={() => setQrShortId(s.short_id)}
                         title="QR Code"
@@ -172,6 +173,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                         QR
                       </button>
                       <button
+                        className="btn-ghost"
                         type="button"
                         onClick={() => handleCopy(s)}
                         style={{
@@ -224,6 +226,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
+                className="btn-accent"
                 type="button"
                 onClick={handleDownloadQr}
                 style={{
@@ -235,6 +238,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                 ↓ PNG
               </button>
               <button
+                className="btn-ghost"
                 type="button"
                 onClick={() => setQrShortId(null)}
                 style={{

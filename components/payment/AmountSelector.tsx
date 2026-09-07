@@ -77,7 +77,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
                   fontFamily: 'var(--font)', fontSize: 20, fontWeight: 800, cursor: 'pointer',
                   letterSpacing: '-0.03em',
                   boxShadow: active ? '0 0 0 3px var(--accent-muted)' : 'none',
-                  transition: 'all 130ms cubic-bezier(.34,1.3,.64,1)',
+                  transition: 'transform var(--dur-1) var(--ease-spring), border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out)',
                   transform: active ? 'scale(1.04)' : 'scale(1)',
                 }}
               >

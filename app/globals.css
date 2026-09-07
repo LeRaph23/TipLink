@@ -15,6 +15,13 @@
   --sidebar-w: 232px;
   --ease-spring: cubic-bezier(.22, 1, .36, 1);
   --ease-out:    cubic-bezier(.4, 0, .2, 1);
+  /* Four durations, and only four. The codebase had thirteen ad-hoc values
+     across sixty-four inline transitions, which is why two controls sitting
+     side by side never felt like the same interface. */
+  --dur-1: 120ms;  /* press and hover: should register, not be watched */
+  --dur-2: 180ms;  /* one element arriving or leaving */
+  --dur-3: 260ms;  /* a panel or a drawer */
+  --dur-4: 400ms;  /* something crossing the screen */
 }
 
 /* ── Dark theme (default) ───────────────────────────────────────────────── */
@@ -128,45 +135,40 @@ input, select, textarea, button { font-family: var(--font); }
   0%, 100% { opacity: 1; }
   50%       { opacity: .4; }
 }
-@keyframes marqueeScroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
 @keyframes checkIn {
   from { opacity: 0; transform: scale(.6); }
   to   { opacity: 1; transform: scale(1); }
 }
-@keyframes ripple {
-  from { opacity: 0.6; transform: scale(0.8); }
-  to   { opacity: 0;   transform: scale(1.4); }
-}
-
-.fade-up  { animation: fadeUp  220ms ease both; }
-.fade-in  { animation: fadeIn  180ms ease both; }
+.fade-up  { animation: fadeUp  var(--dur-3) var(--ease-out) both; }
+.fade-in  { animation: fadeIn  var(--dur-2) var(--ease-out) both; }
 .scale-in { animation: scaleIn 180ms cubic-bezier(.34,1.3,.64,1) both; }
 .check-in { animation: checkIn 400ms cubic-bezier(.34,1.3,.64,1) both; }
 .shimmer  { animation: shimmer 1.6s ease infinite; background: var(--surface-3); border-radius: 6px; }
 
 /* ── Motion utilities ───────────────────────────────────────────────────────── */
 /* Hover lift — subtle elevation on cards / interactive surfaces */
-.lift { transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out); }
+.lift { transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out); }
 .lift:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 
-/* Landing buttons — inline styles can't do :hover, so motion lives here */
-.btn-accent { transition: transform 120ms var(--ease-out), box-shadow 160ms var(--ease-out), filter 120ms var(--ease-out); }
+/* Interactive controls. Inline styles cannot express :hover, :active or
+   :focus-visible at all, which is why a codebase written in inline styles ends
+   up feeling flat however much care went into the design. These classes carry
+   only transform, filter and border-color, so they compose with whatever
+   colours and spacing the inline style sets and change no design decision. */
+.btn-accent { transition: transform var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), filter var(--dur-1) var(--ease-out); }
 .btn-accent:hover  { transform: translateY(-1px); filter: brightness(1.05); }
 .btn-accent:active { transform: translateY(0) scale(.98); }
-.btn-ghost { transition: transform 120ms var(--ease-out), border-color 140ms var(--ease-out), background 140ms var(--ease-out); }
+.btn-ghost { transition: transform var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out); }
 .btn-ghost:hover  { border-color: var(--laccent, #E57A97); }
 .btn-ghost:active { transform: scale(.98); }
 
 /* Accordion — animate height via grid-template-rows (0fr → 1fr) */
-.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 260ms var(--ease-spring); }
+.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-3) var(--ease-spring); }
 .acc-panel.is-open { grid-template-rows: 1fr; }
 .acc-panel > * { overflow: hidden; min-height: 0; }
 
 /* Staggered entrance — children fade up in sequence */
-.stagger > * { animation: fadeUp 420ms var(--ease-spring) both; }
+.stagger > * { animation: fadeUp var(--dur-4) var(--ease-spring) both; }
 .stagger > *:nth-child(1) { animation-delay: 40ms; }
 .stagger > *:nth-child(2) { animation-delay: 100ms; }
 .stagger > *:nth-child(3) { animation-delay: 160ms; }
@@ -174,11 +176,8 @@ input, select, textarea, button { font-family: var(--font); }
 .stagger > *:nth-child(5) { animation-delay: 280ms; }
 .stagger > *:nth-child(6) { animation-delay: 340ms; }
 
-/* Marquee — pause the scroll on hover */
-.marquee:hover .marquee-track { animation-play-state: paused; }
-
 /* Dashboard table rows — gentle hover highlight */
-.dash-row { transition: background 120ms var(--ease-out); }
+.dash-row { transition: background var(--dur-1) var(--ease-out); }
 .dash-row:hover { background: var(--surface-2); }
 
 /* ── Reduced motion — neutralise all animation/transition (overrides inline) ── */
@@ -187,8 +186,15 @@ input, select, textarea, button { font-family: var(--font); }
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    /* Without these two, .stagger still held its children back by up to 340ms
+       for someone who asked for no motion: nothing moved, things simply
+       appeared late, which reads as a slow page rather than a still one. */
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
+  /* grid-template-rows has no meaningful 0.01ms state: the panel would flash
+     open. It opts out rather than being sped up. */
   .acc-panel { transition: none; }
 }
 
@@ -362,15 +368,21 @@ input, select, textarea, button { font-family: var(--font); }
   .dash-inline-form > * { width: 100% !important; min-width: 0 !important; }
 }
 
-/* ── Touch comfort on all screens ────────────────────────────────────────── */
-@media (hover: none) and (pointer: coarse) {
-  /* Visible focus rings for touch users */
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+/* ── Focus ────────────────────────────────────────────────────────────────
+   This lived inside `@media (hover: none) and (pointer: coarse)`, so anyone on
+   a mouse or a keyboard had no focus ring at all. :focus-visible is already the
+   whole point: the browser shows it for keyboard navigation and withholds it
+   for a mouse click, so the media query only removed it from the people who
+   needed it most. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
 }
 
 /* ── Long-form article prose ─────────────────────────────────────────────────

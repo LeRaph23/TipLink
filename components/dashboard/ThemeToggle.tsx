@@ -24,13 +24,16 @@ export function ThemeToggle() {
 
   return (
     <button
+      // It carried `transition: all 120ms` and no hover or active state, so the
+      // transition had nothing to animate towards. btn-ghost gives it both.
+      className="btn-ghost"
       onClick={toggle}
       title={theme === 'light' ? 'Passer en mode sombre' : 'Passer en mode clair'}
       style={{
         width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border-subtle)',
         background: 'var(--surface-2)', cursor: 'pointer', display: 'flex',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        color: 'var(--text-2)', fontSize: 14, transition: 'all 120ms',
+        color: 'var(--text-2)', fontSize: 14,
       }}
     >
       <Icon name={theme === 'light' ? 'moon' : 'sun'} size={15} />

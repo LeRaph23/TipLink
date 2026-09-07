@@ -36,6 +36,7 @@ export function CsvExportButton({ transactions }: Props) {
 
   return (
     <button
+      className="btn-ghost"
       type="button"
       onClick={handleExport}
       disabled={transactions.length === 0}

@@ -112,6 +112,7 @@ export function CreateEstablishmentForm() {
 
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
         <button
+          className="btn-ghost"
           type="button"
           onClick={() => router.push('/dashboard/establishments')}
           style={{
@@ -123,6 +124,7 @@ export function CreateEstablishmentForm() {
           {t('back')}
         </button>
         <button
+          className="btn-accent"
           type="submit"
           disabled={status === 'creating' || !name.trim()}
           style={{

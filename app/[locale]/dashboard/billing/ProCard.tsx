@@ -60,6 +60,7 @@ export function ProCard({ groupId, isPro, locale }: Props) {
           {t('activeBody')}
         </p>
         <button
+          className="btn-ghost"
           type="button"
           onClick={() => go('monthly')}
           disabled={busy}
@@ -100,6 +101,7 @@ export function ProCard({ groupId, isPro, locale }: Props) {
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button
+          className="btn-accent"
           type="button"
           onClick={() => go('monthly')}
           disabled={busy}
@@ -115,6 +117,7 @@ export function ProCard({ groupId, isPro, locale }: Props) {
           {busy ? t('opening') : t('ctaMonthly')}
         </button>
         <button
+          className="btn-ghost"
           type="button"
           onClick={() => go('yearly')}
           disabled={busy}

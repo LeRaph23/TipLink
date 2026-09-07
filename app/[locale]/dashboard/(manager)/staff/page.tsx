@@ -164,7 +164,7 @@ export default async function StaffListPage({
                 const result = await joinAsStaffMember();
                 if ('ok' in result) redirect('/dashboard/staff');
               }}>
-                <button type="submit" style={{
+                <button type="submit" className="btn-accent" style={{
                   padding: '10px 18px', borderRadius: 10, border: 'none',
                   background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
                   color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
