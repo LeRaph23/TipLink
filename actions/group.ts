@@ -72,6 +72,40 @@ export async function updateGroup(
   return { success: true };
 }
 
+/**
+ * Remembers that the manager closed the Pro nudge on their dashboard.
+ *
+ * Stored in `groups.settings`, which is already used as a JSON bag, so this
+ * needs no migration. Group-wide rather than per-user on purpose: the nudge is
+ * about the group's subscription, and a second admin re-opening it the day
+ * after their colleague closed it would be the same nag twice.
+ */
+export async function dismissProNudge(
+  groupId: string
+): Promise<{ success: true } | { error: string }> {
+  const scope = await getManageScope();
+  if (!scope || !canManageGroup(scope, groupId)) return { error: 'Forbidden' };
+
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from('groups')
+    .select('settings')
+    .eq('id', groupId)
+    .single();
+
+  const settings = (current?.settings as Record<string, unknown> | null) ?? {};
+  const { error } = await supabase
+    .from('groups')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update({ settings: { ...settings, pro_nudge_dismissed_at: new Date().toISOString() } } as any)
+    .eq('id', groupId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard');
+  return { success: true };
+}
+
 export async function updateGroupPlatformFee(
   groupId: string,
   bps: number

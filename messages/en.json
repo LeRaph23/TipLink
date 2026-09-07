@@ -26,7 +26,8 @@
     "privacy": "Privacy",
     "terms": "Terms of use",
     "arrowRight": "→",
-    "language": "Language"
+    "language": "Language",
+    "close": "Close"
   },
   "imageUpload": {
     "upload": "Upload image",
@@ -96,7 +97,7 @@
       "s2Title": "2. Eligibility",
       "s2Body": "You must be at least 18, have the authority to bind your business, and operate a lawful hospitality or service activity in a country where Stripe Connect is available.",
       "s3Title": "3. Orders",
-      "s3Body": "SmartTag packs are sold as a one-time hardware purchase. There is no subscription and no monthly fee: once the plaque is paid for, no recurring amount is charged. The Digitip platform earns revenue solely through a service fee added on top of the tip and paid by the person leaving it (see section 5). Nothing is taken out of the tip itself: the recipient receives the full amount chosen. With no tips, nothing is owed. Hardware is non-refundable once shipped, without prejudice to the legal warranties and the right of withdrawal set out in the terms of sale.",
+      "s3Body": "SmartTag packs are sold as a one-time hardware purchase: once the plaque is paid for, no recurring amount is due to use it. Tipping works without a subscription. The Digitip platform earns revenue through a service fee added on top of the tip and paid by the person leaving it (see section 5): nothing is taken out of the tip itself, the recipient receives the full amount chosen, and with no tips nothing is owed. Digitip also offers an optional subscription, Digitip Pro, which unlocks the additional features described in the dashboard. It is taken out voluntarily, can be cancelled at any time, and is required neither to receive tips nor to use the plaque. Hardware is non-refundable once shipped, without prejudice to the legal warranties and the right of withdrawal set out in the terms of sale.",
       "s4Title": "4. Payments",
       "s4Body": "All payments are processed by Stripe. VAT is applied automatically according to your country. Hardware is paid for once, at the time of the order; no recurring charge is made. A 30-day grace period applies to SmartTags before full deactivation if the account is closed.",
       "s5Title": "5. Tips, collection and payout",
@@ -192,10 +193,10 @@
       "h1b": "to earn more",
       "h1c": "tips",
       "sub": "Place the plaque anywhere in 5 seconds. Your client taps their phone or scans the QR code, picks an amount, and the tip makes its way to your bank account, via Stripe. No app, no cash, no friction.",
-      "social": "One-time payment, no subscription",
+      "social": "One-time payment, tipping with no subscription",
       "cta": "Order now",
       "b1": "Named tipping: the client chooses who to reward",
-      "b2": "No subscription whatsoever: pay once, for life",
+      "b2": "Pay for the plaque once. Tipping itself never has a subscription.",
       "b3": "Paid straight to your bank account via Stripe",
       "b4": "No app, no cash: just a tap or QR code"
     },
@@ -211,7 +212,7 @@
       "packSLabel": "1 spot",
       "packMLabel": "2 spots",
       "packLLabel": "3+ locations",
-      "bullet1": "One-time purchase, no monthly fee",
+      "bullet1": "One-time purchase, no monthly fee on your tips",
       "bullet2": "0% taken from tips",
       "bullet3": "Premium high-density epoxy resin, built to last",
       "bullet4": "French company",
@@ -295,7 +296,7 @@
       "freeShippingShort": "Free shipping across Europe",
       "warranty": "Lifetime hardware guarantee",
       "warrantySub": "Broken or faulty plaque? We replace it free of charge, with no time limit.",
-      "noSubscription": "No subscription",
+      "noSubscription": "Tipping with no subscription",
       "noSubscriptionSub": "You pay for the plaque once. After that, nothing: the service fee is paid by the customer, not by you.",
       "stripe": "Payments secured by Stripe",
       "stripeSub": "No card data ever touches our servers. Apple Pay and Google Pay accepted.",
@@ -328,7 +329,7 @@
       "q6": "Do I need a company number or a specific status?",
       "a6": "Not to order SmartTags. To collect tips, the business verifies itself once, right inside Digitip (the manager's identity and bank details), the check anti-money-laundering rules require. Your employees have no account to create and nothing to do: tips are attributed to them by name and you pass them on through payroll.",
       "q7": "How does Digitip make money?",
-      "a7": "From the service fee, paid by the person leaving the tip, never from the tip itself. For a €10 tip the customer pays €10.75 in total: €0.25 fixed plus 5% of the tip. You receive the full €10. Of the 75 cents of fees, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount charged) and €0.34 goes to Digitip for infrastructure, support and ongoing development. No subscription, no monthly fee, and nothing out of your pocket."
+      "a7": "From the service fee, paid by the person leaving the tip, never from the tip itself. For a €10 tip the customer pays €10.75 in total: €0.25 fixed plus 5% of the tip. You receive the full €10. Of the 75 cents of fees, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount charged) and €0.34 goes to Digitip for infrastructure, support and ongoing development. No monthly fee on your tips, and nothing out of your pocket."
     },
     "doubleGuarantee": {
       "g1title": "Premium quality guaranteed",
@@ -337,8 +338,8 @@
       "g2body": "SmartTag broken or defective? We send a new one. Free. For life.",
       "g3title": "Free shipping",
       "g3body": "Free delivery across Europe, whatever pack you order.",
-      "g4title": "Zero monthly fees",
-      "g4body": "No subscription, no surprises. Pay once, earn forever."
+      "g4title": "Zero monthly fees on your tips",
+      "g4body": "Pay for the plate once, then earn for life. Tips never require a subscription."
     },
     "footer": {
       "tagline": "Cashless tips, effortlessly.",
@@ -373,7 +374,7 @@
       "row3label": "Digitip",
       "row3amount": "€0.34",
       "row3detail": "Infrastructure, hosting, support and ongoing service improvements.",
-      "footer": "No subscription, no monthly fee, and nothing on your side: the fee is paid by the customer."
+      "footer": "No monthly fee on your tips, and nothing on your side: the fee is paid by the customer."
     },
     "reviews": {
       "kicker": "Right after the tip",
@@ -400,7 +401,6 @@
     "title": "Order your Digitip plaque.",
     "subtitle": "Handcrafted, ready to display. Each epoxy plaque arrives pre-programmed, tested, and ready to place at your workstation. Premium high-density epoxy resin, built to last.",
     "oneTime": "excl. VAT",
-    "perMonth": "/ month",
     "tagsIncluded": "{count, plural, one {# epoxy plaque included} other {# epoxy plaques included}}",
     "choose": "Order now",
     "mostPopular": "Best value",
@@ -412,8 +412,6 @@
       "freeShipping": "Free shipping across Europe",
       "lifetimeReplacement": "Lifetime replacement guarantee",
       "dashboard": "Full manager dashboard included",
-      "app": "Manager mobile app included",
-      "prioritySupport": "Priority support",
       "noSubscription": "Tips with no subscription, no commitment",
       "vatInvoice": "Auto-generated VAT invoices"
     },
@@ -671,8 +669,8 @@
       "payments": "Payment account"
     },
     "billing": {
-      "title": "Billing & commission",
-      "subtitle": "Track the service fees paid by your customers and manage your SmartTag orders.",
+      "title": "Billing",
+      "subtitle": "Your SmartTag orders, your invoices, and your Digitip Pro subscription.",
       "commissionRate": "Service fee",
       "commissionRateHint": "Added on top of the tip and paid by the customer. Nothing is taken from your tips.",
       "tipsCollected30d": "Tips (30 days)",
@@ -691,9 +689,6 @@
       "orderInvoice": "Invoice",
       "noOrders": "No orders yet.",
       "pendingFulfillment": "Fulfillment in progress: we're hand-programming your SmartTags and will ship them within 3 business days.",
-      "successTitle": "You're all set.",
-      "successBody": "Your order is confirmed. We're hand-programming your SmartTags and will ship within 3 business days. An invoice was sent to your email.",
-      "goToDashboard": "Go to dashboard",
       "viewDetails": "View",
       "viewInvoice": "Invoice PDF",
       "backToOrders": "Back to orders",
@@ -715,7 +710,8 @@
         "shipped": "Shipped",
         "delivered": "Delivered",
         "canceled": "Canceled"
-      }
+      },
+      "proSection": "Subscription"
     },
     "home": {
       "dashboard": "Dashboard",
@@ -849,7 +845,7 @@
       "saved": "Saved.",
       "noGroup": "No group associated with your account yet.",
       "accountantEmail": "Accountant's email",
-      "accountantEmailHelp": "The monthly tip statement is sent here automatically, alongside your own address. Pro plan only."
+      "accountantEmailHelp": "The monthly tip statement is sent there automatically, alongside your own address. Automatic delivery is part of Digitip Pro; you can fill the address in now either way."
     },
     "admin": {
       "nav": {
@@ -1093,7 +1089,7 @@
       "empty": "No payout this month.",
       "export": "Export as CSV",
       "exportJournal": "Detailed journal",
-      "freeLimit": "The free plan exports the current month. Go Pro for the full history, the detailed journal and automatic delivery to your accountant."
+      "proBadge": "Pro"
     },
     "payments": {
       "title": "Payment account",
@@ -1119,9 +1115,9 @@
       "upsellTitle": "Upgrade to Digitip Pro",
       "feature1": "A Google review invitation after every tip",
       "feature2": "Payroll statement emailed monthly to you and your accountant",
-      "feature3": "Detailed payroll export, unlimited history, CSV and Excel",
-      "ctaMonthly": "Go Pro · €19/month excl. VAT",
-      "ctaYearly": "Pay yearly (2 months free)",
+      "feature3": "Detailed accounting export and unlimited history, as CSV",
+      "ctaMonthly": "Go Pro",
+      "ctaYearly": "Pay yearly",
       "opening": "Opening…",
       "activeTitle": "Digitip Pro is active",
       "activeBody": "Google reviews and the full payroll export are switched on. You can change or cancel your subscription at any time.",
@@ -1133,7 +1129,18 @@
       "reviewTeaserCta": "See Digitip Pro",
       "exportTitle": "Full accounting export",
       "exportBody": "The free plan exports the current month. Digitip Pro opens the full history and the detailed journal, and emails the statement to your accountant every month.",
-      "exportCta": "Upgrade to Pro"
+      "exportCta": "Upgrade to Pro",
+      "priceMonthly": "{price} per month, excl. VAT",
+      "priceYearly": "or {price} per year, excl. VAT",
+      "monthsFree": "{months, plural, one {# month free} other {# months free}}",
+      "checkoutDoneTitle": "Payment confirmed",
+      "checkoutDoneBody": "Your subscription activates within seconds. Reload the page if the Pro features are not there yet.",
+      "ctaTrial": "Try {days} days, cancel anytime",
+      "trialTitle": "Digitip Pro trial in progress",
+      "trialDaysLeft": "{days, plural, one {# day left} other {# days left}}",
+      "trialBody": "When the trial ends, the subscription starts at {price} per month excl. VAT. You can stop before then and pay nothing.",
+      "trialBodyNoPrice": "When the trial ends, the subscription starts automatically. You can stop before then and pay nothing.",
+      "trialEnded": "Your trial ended on {date}. Google reviews and the full export are switched off again."
     },
     "verifyBanner": {
       "titleHeld": "{amount} is waiting for you",
@@ -1168,6 +1175,14 @@
         "body": "Open your own tip page to see what your customers see. It is the best way to check the whole thing works.",
         "cta": "Open my page"
       }
+    },
+    "reviewImpact": {
+      "label": "Google reviews this month",
+      "ratio": "{clicks}/{tips}",
+      "title": "customers went to leave a review",
+      "body": "Since the 1st. The invitation shows after every tip; following it is their call.",
+      "emptyTitle": "No review started this month",
+      "emptyBody": "The invitation does show after every tip, but nobody has followed it yet. Check that your Google link points where you expect."
     }
   },
   "join": {
@@ -1269,7 +1284,10 @@
       "searchUnavailable": "Google search is temporarily unavailable. Nothing is blocked: paste your link below instead.",
       "guide1": "Open your listing in the Google Maps or Google Business Profile app, signed in with the business account.",
       "guide2": "Tap \"Ask for reviews\". Google shows a short link like g.page/r/…/review.",
-      "guide3": "Copy that link and paste it below."
+      "guide3": "Copy that link and paste it below.",
+      "gateTitle": "The review invitation is not switched on yet",
+      "gateBody": "Your link is saved, but on the free plan the customer never sees it: nothing appears after the tip. The invitation is part of Digitip Pro.",
+      "gateCta": "See Digitip Pro"
     },
     "confirm": {
       "title": "Check these details",

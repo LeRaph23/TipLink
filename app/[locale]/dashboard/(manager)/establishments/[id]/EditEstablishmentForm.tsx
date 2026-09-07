@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter, Link } from '@/i18n/navigation';
 import { updateEstablishment, deleteEstablishment } from '@/actions/establishment';
 import { GoogleReviewPicker } from '@/components/onboarding/GoogleReviewPicker';
 
@@ -44,7 +44,14 @@ interface Establishment {
   google_review_url?: string | null;
 }
 
-export function EditEstablishmentForm({ establishment }: { establishment: Establishment }) {
+export function EditEstablishmentForm({
+  establishment,
+  isPro,
+}: {
+  establishment: Establishment;
+  /** Decides whether the review link collected here is used or just stored. */
+  isPro: boolean;
+}) {
   const t = useTranslations('dashboard.establishments');
   const tReview = useTranslations('onboarding.googleReview');
   const router = useRouter();
@@ -138,6 +145,31 @@ export function EditEstablishmentForm({ establishment }: { establishment: Establ
             setGoogleReviewUrl(reviewUrl);
           }}
         />
+
+        {/* The most legitimate wall in the product, and the one nothing said
+            out loud. The link is asked for during onboarding, and on a free
+            plan the invitation that would use it never appears: the manager
+            gave us something and got silence. Saying so is not an upsell, it
+            is the answer to "why has nobody left a review". */}
+        {!isPro && googleReviewUrl.trim() && (
+          <div style={{
+            marginTop: 12, padding: '12px 14px', borderRadius: 10,
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+          }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
+              {tReview('gateTitle')}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55, marginBottom: 10 }}>
+              {tReview('gateBody')}
+            </div>
+            <Link href="/dashboard/billing" style={{
+              display: 'inline-flex', alignItems: 'center',
+              fontSize: 12.5, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none',
+            }}>
+              {tReview('gateCta')}
+            </Link>
+          </div>
+        )}
       </div>
 
       {saveStatus === 'error' && (

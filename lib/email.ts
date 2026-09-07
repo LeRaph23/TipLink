@@ -1784,6 +1784,77 @@ export async function sendWeeklyTipRecap(opts: {
     }));
 }
 
+/**
+ * Group admin on the free plan, last month's recap (recurring, the 5th).
+ *
+ * The Pro version of this arrives with the payroll CSVs attached and goes to
+ * the accountant too. This one is the same month seen from the free plan: the
+ * figures, and the one thing that did not happen. Every tip last month was a
+ * customer at the exact moment they were pleased, and not one of them was
+ * asked for a review, because the invitation is switched off.
+ *
+ * Deliberately no projected revenue, no "an avis is worth X". The number of
+ * customers who were not asked is a fact; what a review earns is a guess, and
+ * a guess in a monthly email is a promise by the third month.
+ */
+export async function sendFreeMonthlyRecap(opts: {
+  to: string; firstName: string; establishmentName: string; monthLabel: string;
+  tipCount: number; totalFormatted: string; billingUrl: string;
+  unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, monthLabel, tipCount, totalFormatted, billingUrl, unsubscribeUrl } = opts;
+  const plural = tipCount > 1;
+
+  return lifecycleSend(to, `${escapeHtml(establishmentName)} : ${totalFormatted} de pourboires en ${monthLabel}`,
+    lifecycleBody({
+      badge: 'Récap du mois', tone: 'green',
+      title: `${firstName}, ${escapeHtml(establishmentName)} a encaissé ${totalFormatted} en ${monthLabel}`,
+      intro: `<strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${plural ? 's' : ''}</strong> le mois dernier. Autant de client${plural ? 's' : ''} content${plural ? 's' : ''} à qui personne n'a demandé d'avis Google : l'invitation après le pourboire fait partie de Digitip Pro, et elle est désactivée sur votre offre.`,
+      bullets: [
+        '① L\'invitation s\'affiche juste après le pourboire, quand le client est content',
+        '② Le relevé de paie part chaque mois à vous et à votre comptable',
+        '③ L\'export comptable complet, tous les mois, pas seulement le mois en cours',
+      ],
+      ctaLabel: 'Essayer Digitip Pro →', ctaUrl: billingUrl,
+      note: 'Vos pourboires n\'ont jamais besoin d\'abonnement : ils arrivent pareil.',
+      unsubscribeUrl,
+    }));
+}
+
+/**
+ * Group admin, three days before the Pro trial converts (transactional).
+ *
+ * The one email a trial owes its customer. It leads with what the trial
+ * actually produced, because that is the only argument that survives contact
+ * with a manager deciding whether to keep paying, and it says the price and
+ * the date plainly: a subscription that starts charging without warning is how
+ * a trial turns into a chargeback and a bad review.
+ */
+export async function sendTrialEndingSoon(opts: {
+  to: string; firstName: string; establishmentName: string; daysLeft: number;
+  priceLabel: string | null; tipCount: number; clickCount: number;
+  billingUrl: string;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, daysLeft, priceLabel, tipCount, clickCount, billingUrl } = opts;
+  const days = `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+
+  // What the trial did, or an honest admission that it has nothing to show.
+  // A month with no clicks is a reason to keep the plaque visible, not a
+  // reason to write a sentence that implies otherwise.
+  const evidence = tipCount > 0
+    ? `Pendant votre essai, <strong class="text-strong" style="color:#0f0f12">${clickCount} client${clickCount > 1 ? 's' : ''} sur ${tipCount}</strong> ${clickCount > 1 ? 'sont allés' : 'est allé'} laisser un avis après leur pourboire.`
+    : `Votre essai se termine sans qu'aucun pourboire ne soit passé, donc sans qu'on ait pu vous montrer ce que l'invitation d'avis donne chez vous.`;
+
+  return lifecycleSend(to, `${firstName}, votre essai Digitip Pro se termine dans ${days}`,
+    lifecycleBody({
+      badge: 'Fin d\'essai', tone: 'amber',
+      title: `${firstName}, il vous reste ${days} d'essai`,
+      intro: `${evidence} À la fin de l'essai${priceLabel ? `, l'abonnement démarre à <strong class="text-strong" style="color:#0f0f12">${escapeHtml(priceLabel)} HT par mois</strong>` : ", l'abonnement démarre"} pour ${escapeHtml(establishmentName)}. Si vous ne voulez pas continuer, résiliez avant la fin : rien ne sera prélevé.`,
+      ctaLabel: 'Gérer mon abonnement →', ctaUrl: billingUrl,
+      note: 'Vos pourboires continuent d\'arriver dans tous les cas : ils ne dépendent pas de l\'abonnement.',
+    }));
+}
+
 /** Staff, a Stripe payout failed (transactional). */
 export async function sendPayoutFailedAlert(opts: {
   to: string; firstName: string; bankingUrl: string;

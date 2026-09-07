@@ -23,7 +23,11 @@ import {
   sendStaffInviteReminder,
   sendReEngagementEmail,
   sendWeeklyTipRecap,
+  sendTrialEndingSoon,
 } from '@/lib/email';
+import { deriveTrialState, isTrialWarningDue } from '@/lib/billing/trial';
+import { getReviewImpact } from '@/lib/billing/review-teaser';
+import { getProPricing } from '@/lib/billing/pro-pricing';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -394,6 +398,86 @@ async function runReEngagementNudges(service: Db, dryRun: boolean): Promise<Tall
   return t;
 }
 
+// ─── Group admin: the Pro trial converts in three days ───────────────────────
+//
+// The one email a trial owes its customer. It fires from a window rather than
+// an exact day count, because a cron run that is late or retried must not
+// silently skip the only warning anybody gets before their card is charged;
+// the one-shot dedup in `lifecycle_email_log` is what keeps it to one send.
+async function runTrialEndingWarnings(service: Db, dryRun: boolean): Promise<Tally> {
+  const t = newTally();
+  const now = new Date();
+
+  const { data: groups } = await service
+    .from('groups')
+    .select('id, name, plan, subscription_status, trial_ends_at')
+    .not('trial_ends_at', 'is', null)
+    .gt('trial_ends_at', now.toISOString())
+    .is('deleted_at', null)
+    .limit(LIMIT);
+
+  const due = (groups ?? [])
+    .map((g) => ({
+      group: g,
+      trial: deriveTrialState({
+        plan: g.plan,
+        subscriptionStatus: g.subscription_status,
+        trialEndsAt: g.trial_ends_at,
+      }, now),
+    }))
+    .filter(({ trial }) => isTrialWarningDue(trial));
+
+  if (dryRun) { t.considered = due.length; return t; }
+  if (due.length === 0) return t;
+
+  // One Stripe read for the whole batch, and it is allowed to fail: an email
+  // that says the trial is ending is worth sending without the price in it.
+  const pricing = await getProPricing().catch(() => null);
+  const priceLabel = pricing?.monthly
+    ? new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: pricing.monthly.currency.toUpperCase(),
+        minimumFractionDigits: pricing.monthly.unitAmount % 100 === 0 ? 0 : 2,
+      }).format(pricing.monthly.unitAmount / 100)
+    : null;
+
+  for (const { group, trial } of due) {
+    if (trial.state !== 'trialing') continue;
+    t.considered++;
+    try {
+      const recipient = await resolveGroupAdmin(service, group.id);
+      if (!recipient) { t.skipped++; continue; }
+
+      const impact = await getReviewImpact(
+        service as unknown as Parameters<typeof getReviewImpact>[0],
+        group.id,
+      );
+
+      const r = await dispatchLifecycleEmail(service, {
+        def: LIFECYCLE.trial_ending,
+        groupId: group.id,
+        to: recipient.email,
+        locale: recipient.locale,
+        send: () => sendTrialEndingSoon({
+          to: recipient.email,
+          firstName: firstNameFrom(recipient.name, 'Bonjour'),
+          establishmentName: group.name ?? 'votre établissement',
+          daysLeft: trial.daysLeft,
+          priceLabel,
+          tipCount: impact?.tipCount ?? 0,
+          clickCount: impact?.clickCount ?? 0,
+          billingUrl: `${getBaseUrl()}/dashboard/billing`,
+        }),
+      });
+      t[r]++;
+    } catch (e) {
+      t.failed++;
+      console.error('[lifecycle] trial-ending failed', group.id, e);
+    }
+  }
+  return t;
+}
+
 // ─── Group admin: weekly recap of tips collected (Mondays) ───────────────────
 async function runWeeklyRecap(service: Db, dryRun: boolean): Promise<Tally> {
   const t = newTally();
@@ -547,6 +631,9 @@ export async function GET(req: NextRequest) {
   results.inviteTeam = ta.team;
   results.activation = ta.activation;
   results.reEngagement = await runReEngagementNudges(service, dryRun);
+  // Transactional, so it is not subject to the frequency cap and its position
+  // here costs nothing to the sequences above it.
+  results.trialEnding = await runTrialEndingWarnings(service, dryRun);
   if (new Date().getUTCDay() === 1) {
     results.weeklyRecap = await runWeeklyRecap(service, dryRun);
   }

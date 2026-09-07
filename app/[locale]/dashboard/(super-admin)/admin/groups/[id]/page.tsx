@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
 import { createServiceClient } from '@/lib/supabase/service';
 import { GroupFeeForm } from './GroupFeeForm';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function GroupDetailPage({
   params,
@@ -25,20 +26,18 @@ export default async function GroupDetailPage({
 
   return (
     <div style={{ maxWidth: 440 }}>
-      <div style={{ marginBottom: 24 }}>
-        <Link
-          href="/dashboard/admin/groups"
-          style={{ fontSize: 12.5, color: 'var(--text-3)', textDecoration: 'none' }}
-        >
-          ← {t('groups.title')}
-        </Link>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em', marginTop: 10 }}>
-          {group.legal_name ?? group.name}
-        </h1>
-        <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>
-          {group.name}
-        </p>
-      </div>
+      <PageHeader
+        title={group.legal_name ?? group.name}
+        subtitle={group.name}
+        back={
+          <Link
+            href="/dashboard/admin/groups"
+            style={{ fontSize: 12.5, color: 'var(--text-3)', textDecoration: 'none' }}
+          >
+            ← {t('groups.title')}
+          </Link>
+        }
+      />
 
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',

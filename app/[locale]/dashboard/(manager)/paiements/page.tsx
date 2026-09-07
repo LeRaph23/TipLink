@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PaymentsPanel } from './PaymentsPanel';
 import { getEstablishmentPayability } from '@/lib/stripe/establishment-account';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,12 +62,7 @@ export default async function PaymentsPage({
 
   return (
     <div>
-      <h1 style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 4 }}>
-        {t('title')}
-      </h1>
-      <p style={{ fontSize: 13.5, color: 'var(--text-3)', marginBottom: 20, lineHeight: 1.6 }}>
-        {t('subtitle')}
-      </p>
+      <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
       {!est ? (
         <div style={{ ...card, fontSize: 13.5, color: 'var(--text-3)' }}>{t('noEstablishment')}</div>

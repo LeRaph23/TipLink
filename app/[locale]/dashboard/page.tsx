@@ -2,13 +2,17 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { hasPro } from '@/lib/billing/entitlements';
-import { getReviewTeaser } from '@/lib/billing/review-teaser';
-import { ProUpsell } from '@/components/billing/ProUpsell';
+import { getReviewTeaser, getReviewImpact } from '@/lib/billing/review-teaser';
+import { DismissibleProUpsell } from '@/components/billing/DismissibleProUpsell';
+import { deriveTrialState } from '@/lib/billing/trial';
+import { shouldShowProNudge } from '@/lib/dashboard/pro-nudge';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
+import { ReviewImpact } from '@/components/dashboard/ReviewImpact';
 import { readGettingStarted } from '@/lib/dashboard/getting-started';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { PageHeader } from '@/components/dashboard/ui';
 
 // Line-style card icon for the banking prompts, matching the dashboard set.
 function CardIcon({ size = 22 }: { size?: number }) {
@@ -72,14 +76,52 @@ export default async function DashboardPage({
     ? await readGettingStarted(createServiceClient(), adminGroupId)
     : null;
 
-  const reviewTeaser = adminGroupId
+  // Two sides of the same number, and never both at once. A free group is told
+  // what it gave up this month; a paying one is told what it got. The second
+  // half only became possible with `review_clicks`: before that, a subscriber
+  // had no way at all to tell whether the feature they pay for does anything.
+  const { reviewTeaser, reviewImpact } = adminGroupId
     ? await (async () => {
         const service = createServiceClient();
-        // Skipped outright for Pro groups — they already have the feature.
-        if (await hasPro(service, adminGroupId)) return null;
-        return getReviewTeaser(service, adminGroupId);
+        if (await hasPro(service, adminGroupId)) {
+          return { reviewTeaser: null, reviewImpact: await getReviewImpact(service, adminGroupId) };
+        }
+
+        const teaser = await getReviewTeaser(service, adminGroupId);
+        if (!teaser) return { reviewTeaser: null, reviewImpact: null };
+
+        // The teaser used to appear on every visit for as long as the group
+        // stayed free, which is how a suggestion becomes a nag. It is now the
+        // monthly nudge: closeable, held for a month, and withheld from the
+        // two groups it would be wrong for. Somebody on trial has the feature,
+        // and somebody who cannot take a payment yet has a real problem that
+        // this is not.
+        const { data: group } = await service
+          .from('groups')
+          .select('settings, subscription_status, trial_ends_at')
+          .eq('id', adminGroupId)
+          .maybeSingle();
+
+        const settings = (group?.settings as Record<string, unknown> | null) ?? {};
+        const trial = deriveTrialState({
+          plan: 'free',
+          subscriptionStatus: group?.subscription_status ?? null,
+          trialEndsAt: group?.trial_ends_at ?? null,
+        });
+
+        const show = shouldShowProNudge({
+          isPro: false,
+          trialing: trial.state === 'trialing',
+          payable: Boolean(gettingStarted?.payable),
+          tipCount: teaser.tipCount,
+          dismissedAt: typeof settings.pro_nudge_dismissed_at === 'string'
+            ? settings.pro_nudge_dismissed_at
+            : null,
+        });
+
+        return { reviewTeaser: show ? teaser : null, reviewImpact: null };
       })()
-    : null;
+    : { reviewTeaser: null, reviewImpact: null };
 
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
@@ -136,14 +178,10 @@ export default async function DashboardPage({
 
   return (
     <div className="stagger">
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {t('home.dashboard')}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          {t('welcome')} {staffProfile?.full_name ?? (user!.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? ''}
-        </p>
-      </div>
+      <PageHeader
+        title={t('home.dashboard')}
+        subtitle={`${t('welcome')} ${staffProfile?.full_name ?? (user!.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? ''}`}
+      />
 
       {/* Before anything else on the page: on a new account every card below
           this one shows a zero, and a screen full of zeroes with no next step
@@ -164,8 +202,11 @@ export default async function DashboardPage({
           have been asked for a review at the moment they were demonstrably
           happy. Shown only when the group actually has a review link and
           actually took tips — see getReviewTeaser for why both matter. */}
-      {reviewTeaser && (
-        <ProUpsell
+      {reviewImpact && <ReviewImpact impact={reviewImpact} />}
+
+      {reviewTeaser && adminGroupId && (
+        <DismissibleProUpsell
+          groupId={adminGroupId}
           title={t('pro.reviewTeaserTitle', { count: reviewTeaser.tipCount })}
           body={t('pro.reviewTeaserBody')}
           cta={t('pro.reviewTeaserCta')}

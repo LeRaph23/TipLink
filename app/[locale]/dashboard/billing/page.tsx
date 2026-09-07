@@ -3,7 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { ProCard } from './ProCard';
-import { getPlan } from '@/lib/billing/entitlements';
+import { getProPricing } from '@/lib/billing/pro-pricing';
+import { deriveTrialState, type TrialState } from '@/lib/billing/trial';
+import { PageHeader, SectionTitle, Card } from '@/components/dashboard/ui';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,11 +23,14 @@ function statusStyle(status: string): { color: string; bg: string; dot: string }
 
 export default async function BillingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ pro?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const justPaid = (await searchParams).pro === 'success';
   const t = await getTranslations('dashboard.billing');
   const tc = await getTranslations('common');
 
@@ -62,58 +67,42 @@ export default async function BillingPage({
   // The upsell card needs a group; a super admin browsing every order has none
   // of their own, so it is simply not shown to them.
   const primaryGroupId = ownedGroupIds[0] ?? null;
-  const plan = primaryGroupId ? await getPlan(service, primaryGroupId) : 'free';
+  const [planRow, proPricing] = await Promise.all([
+    primaryGroupId
+      ? service
+          .from('groups')
+          .select('plan, subscription_status, trial_ends_at')
+          .eq('id', primaryGroupId)
+          .is('deleted_at', null)
+          .maybeSingle()
+          .then((r) => r.data)
+      : Promise.resolve(null),
+    getProPricing(),
+  ]);
+
+  const plan = planRow?.plan === 'pro' ? 'pro' : 'free';
+  const trial: TrialState = planRow
+    ? deriveTrialState({
+        plan: planRow.plan,
+        subscriptionStatus: planRow.subscription_status,
+        trialEndsAt: planRow.trial_ends_at,
+      })
+    : { state: 'none' };
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          Facturation
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          Commandes et factures SmartTags.
-        </p>
-      </div>
+      <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
-      {primaryGroupId && (
-        <ProCard
-          groupId={primaryGroupId}
-          isPro={plan === 'pro'}
-          locale={locale === 'en' ? 'en' : 'fr'}
-        />
-      )}
+      {/* The page's own content comes first. It used to open on the Pro
+          advertisement, above the orders and invoices it is named after and
+          in the same white card as everything else, so the screen was three
+          equal blocks with the least relevant one on top. Pro is the last
+          section now: the conversion moments that work are the walls and the
+          home page, not the page somebody opened to find an invoice. */}
+      <section style={{ marginBottom: 28 }}>
+        <SectionTitle>{t('orders')}</SectionTitle>
 
-      {/* Actions row */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius)', padding: 18, marginBottom: 20,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-      }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
-            {t('orderMoreTitle')}
-          </div>
-          <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-            {t('orderMoreBody')}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <Link href="/order/solo" style={{
-            padding: '9px 16px', borderRadius: 8, textDecoration: 'none',
-            background: 'var(--accent)', color: 'var(--accent-fg)',
-            fontSize: 13, fontWeight: 600,
-          }}>
-            {t('orderMoreCta')} {tc('arrowRight')}
-          </Link>
-        </div>
-      </div>
-
-      {/* Orders */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-subtle)' }}>
-          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{t('orders')}</span>
-        </div>
-
+        <Card padded={false} style={{ marginBottom: 0, overflow: 'hidden' }}>
         {!orders?.length ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
             {t('noOrders')}
@@ -189,7 +178,48 @@ export default async function BillingPage({
             {t('pendingFulfillment')}
           </div>
         )}
-      </div>
+        </Card>
+      </section>
+
+      <section style={{ marginBottom: 28 }}>
+        <SectionTitle>{t('orderMoreTitle')}</SectionTitle>
+        <Card style={{
+          marginBottom: 0, display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', gap: 16, flexWrap: 'wrap',
+        }}>
+          <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55 }}>
+              {t('orderMoreBody')}
+            </div>
+          </div>
+          {/* Secondary, deliberately. Two filled accent buttons on one screen
+              is two things claiming to be the next step, and neither of them
+              is why anyone opened this page. */}
+          <Link className="btn-ghost" href="/order/solo" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '9px 16px', borderRadius: 10, textDecoration: 'none',
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            color: 'var(--text-2)', fontSize: 13, fontWeight: 600,
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            {t('orderMoreCta')} {tc('arrowRight')}
+          </Link>
+        </Card>
+      </section>
+
+      {primaryGroupId && (
+        <section>
+          <SectionTitle>{t('proSection')}</SectionTitle>
+          <ProCard
+            groupId={primaryGroupId}
+            isPro={plan === 'pro'}
+            locale={locale === 'en' ? 'en' : 'fr'}
+            pricing={proPricing}
+            justPaid={justPaid}
+          trial={trial}
+          />
+        </section>
+      )}
     </div>
   );
 }

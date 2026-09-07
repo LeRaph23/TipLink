@@ -1761,6 +1761,42 @@ export type Database = {
           },
         ]
       }
+      review_clicks: {
+        Row: {
+          clicked_at: string
+          establishment_id: string
+          id: string
+          transaction_id: string
+        }
+        Insert: {
+          clicked_at?: string
+          establishment_id: string
+          id?: string
+          transaction_id: string
+        }
+        Update: {
+          clicked_at?: string
+          establishment_id?: string
+          id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_clicks_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_clicks_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salon_visits: {
         Row: {
           ambassador_id: string

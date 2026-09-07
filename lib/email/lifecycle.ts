@@ -38,6 +38,12 @@ export const LIFECYCLE: Record<string, LifecycleEmailDef> = {
   earnings_milestone:     { key: 'earnings_milestone',     audience: 'staff',       recurrence: 'one_shot',  transactional: false },
   re_engagement:          { key: 're_engagement',          audience: 'group_admin', recurrence: 'recurring', transactional: false },
   weekly_tip_recap:       { key: 'weekly_tip_recap',       audience: 'group_admin', recurrence: 'recurring', transactional: false },
+  // Transactional: it says what is about to be charged and when. Somebody who
+  // unsubscribed from nudges still has to be told before their card is billed.
+  trial_ending:           { key: 'trial_ending',           audience: 'group_admin', recurrence: 'one_shot',  transactional: true },
+  // The free-plan twin of the Pro monthly statement. Not transactional: it is
+  // a recap nobody asked for, so it respects the opt-out like every nudge.
+  monthly_recap_free:     { key: 'monthly_recap_free',     audience: 'group_admin', recurrence: 'recurring', transactional: false },
 };
 
 // No more than one non-transactional lifecycle email per recipient per N days.

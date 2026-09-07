@@ -6,6 +6,7 @@ import { stripe } from '@/lib/stripe/client';
 import { Link } from '@/i18n/navigation';
 import { CancelOrderButton } from './CancelOrderButton';
 import { getOrderPaymentSummary } from '@/actions/billing/orders';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -123,18 +124,15 @@ export default async function OrderDetailPage({
 
   return (
     <div style={{ maxWidth: 680 }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Link href="/dashboard/billing" style={{ fontSize: 13, color: 'var(--text-3)', textDecoration: 'none' }}>
-          ← {t('backToOrders')}
-        </Link>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em', marginTop: 12, marginBottom: 4 }}>
-          {t('orderDetailTitle', { pack: order.pack.toUpperCase(), qty: order.quantity })}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>
-          {t('orderDetailRef', { ref: order.id.slice(0, 8).toUpperCase() })} · {fmtDate(order.created_at)}
-        </p>
-      </div>
+      <PageHeader
+        title={t('orderDetailTitle', { pack: order.pack.toUpperCase(), qty: order.quantity })}
+        subtitle={`${t('orderDetailRef', { ref: order.id.slice(0, 8).toUpperCase() })} · ${fmtDate(order.created_at)}`}
+        back={
+          <Link href="/dashboard/billing" style={{ fontSize: 13, color: 'var(--text-3)', textDecoration: 'none' }}>
+            ← {t('backToOrders')}
+          </Link>
+        }
+      />
 
       {/* Status timeline */}
       <div style={{

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { EstablishmentDigitipCopy } from '../EstablishmentDigitipCopy';
 import { EditEstablishmentForm } from './EditEstablishmentForm';
+import { PageHeader } from '@/components/dashboard/ui';
+import { hasPro } from '@/lib/billing/entitlements';
 
 export default async function EditEstablishmentPage({
   params,
@@ -38,18 +40,18 @@ export default async function EditEstablishmentPage({
 
   if (!est || est.group_id !== roleRow.group_id) notFound();
 
+  // Needed by the form: a free group can save a review link and never find
+  // out that nothing is done with it.
+  const isPro = await hasPro(service, roleRow.group_id);
+
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? '';
   const tipUrl = `${baseUrl}/${locale}/pay/group/${id}`;
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {est.name}
-        </h1>
-      </div>
+      <PageHeader title={est.name} />
 
-      <EditEstablishmentForm establishment={est} />
+      <EditEstablishmentForm establishment={est} isPro={isPro} />
 
       <div style={{
         marginTop: 28, padding: 18, background: 'var(--surface)',

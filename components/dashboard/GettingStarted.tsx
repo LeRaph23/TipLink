@@ -5,6 +5,7 @@ import {
   type GettingStartedFacts,
   type GettingStartedStepId,
 } from '@/lib/dashboard/getting-started';
+import { cardTitleStyle } from './ui';
 
 /**
  * What to do next, in the order it has to happen.
@@ -57,7 +58,7 @@ export async function GettingStarted({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-        <h2 style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+        <h2 style={cardTitleStyle}>
           {t('title')}
         </h2>
         <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
