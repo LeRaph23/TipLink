@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { OrderState } from '@/lib/order-validation';
+import { EmailOtpForm } from '@/components/auth/EmailOtpForm';
 import { inputStyle, labelStyle } from './formStyles';
 
 type Account = OrderState['account'];
@@ -11,9 +12,14 @@ type Account = OrderState['account'];
 export function StepAccount({
   value,
   onChange,
+  verified,
+  onVerified,
 }: {
   value: Account;
   onChange: (next: Account) => void;
+  /** The code already came back good, so the fields are settled. */
+  verified: boolean;
+  onVerified: () => void;
 }) {
   const t = useTranslations('order.account');
   const ta = useTranslations('auth');
@@ -45,19 +51,29 @@ export function StepAccount({
         />
       </div>
 
-      <div>
-        <label style={labelStyle}>{ta('password')}</label>
-        <input
-          type="password" value={value.password}
-          onChange={(e) => onChange({ ...value, password: e.target.value })}
-          required minLength={8} autoComplete="new-password"
-          style={inputStyle(f('pwd'))}
-          onFocus={() => setFocus('pwd')} onBlur={() => setFocus(null)}
-        />
-        <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>
-          {t('passwordHint')}
+      {verified ? (
+        <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 2 }}>
+          ✓ {t('verified')}
         </p>
-      </div>
+      ) : (
+        <>
+          <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.6 }}>
+            {t('codeHint')}
+          </p>
+          {/* Paying needs a session, so the address has to be proven here
+              rather than at checkout. Buying is also the moment an account is
+              meant to come into existence, hence shouldCreateUser. */}
+          <EmailOtpForm
+            key={value.email}
+            initialEmail={value.email}
+            lockEmail
+            shouldCreateUser
+            fullName={value.full_name}
+            onVerified={onVerified}
+            autoFocus={false}
+          />
+        </>
+      )}
 
       <p style={{ fontSize: 12.5, color: 'var(--text-3)', textAlign: 'center', marginTop: 4 }}>
         {t('already')}{' '}

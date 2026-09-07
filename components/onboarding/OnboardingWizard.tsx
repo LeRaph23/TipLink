@@ -12,8 +12,7 @@ import {
 } from '@/actions/onboarding';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { GoogleReviewPicker } from './GoogleReviewPicker';
-import { getBaseUrl } from '@/lib/env';
-import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { EmailOtpForm } from '@/components/auth/EmailOtpForm';
 import { trackEvent } from '@/lib/analytics';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -27,7 +26,6 @@ interface WizardState {
   googleReviewUrl: string;
   adminFullName: string;
   adminEmail: string;
-  password: string;
 }
 
 // The Google listing comes first on purpose: picking it answers the name, the
@@ -41,13 +39,45 @@ interface WizardState {
 // /dashboard/paiements, with the dashboard banner making the case for it. The
 // tag stays shut either way (get_public_staff gates on charges AND payouts), so
 // nothing about the money moved, only the order of the asking.
-type ScanStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password';
+//
+// The last step is a six-digit code rather than a password. It is asked BEFORE
+// anything is created, which buys three things at once: the manager finishes
+// with a live session and lands on the dashboard instead of in their inbox, an
+// abandoned wizard leaves no orphan group behind, and there is no password to
+// invent and forget.
+type ScanStep = 'google-review' | 'confirm' | 'admin-name' | 'verify';
 type AuthStep = 'google-review' | 'confirm' | 'admin-name';
-type ExpressStep = 'google-review' | 'confirm' | 'admin-name' | 'email' | 'password';
+type ExpressStep = 'google-review' | 'confirm' | 'admin-name' | 'verify';
 
-const SCAN_STEPS: ScanStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password'];
+const SCAN_STEPS: ScanStep[] = ['google-review', 'confirm', 'admin-name', 'verify'];
 const AUTH_STEPS: AuthStep[] = ['google-review', 'confirm', 'admin-name'];
-const EXPRESS_STEPS: ExpressStep[] = ['google-review', 'confirm', 'admin-name', 'email', 'password'];
+const EXPRESS_STEPS: ExpressStep[] = ['google-review', 'confirm', 'admin-name', 'verify'];
+
+/**
+ * Where an in-flight wizard is kept between page loads.
+ *
+ * The last step sends the manager to their inbox for a six-digit code. On a
+ * phone that often means switching apps, and coming back to a reloaded tab: the
+ * step survives in the URL but the answers only lived in memory, so the bounce
+ * guard would drop them back on screen one with everything blank. Keyed by
+ * mode so a scan and a post-purchase run cannot read each other's answers.
+ *
+ * Not stored: whether the code was accepted. That is a live session or it is
+ * nothing, and reading a stale "yes" back would offer a finish button with no
+ * session behind it.
+ */
+const STORAGE_PREFIX = 'digitip.onboarding.';
+
+function readStored(mode: string): Partial<WizardState> | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_PREFIX + mode);
+    return raw ? (JSON.parse(raw) as Partial<WizardState>) : null;
+  } catch {
+    // Private mode, blocked site data, corrupt JSON. An empty wizard is the
+    // right answer to all three.
+    return null;
+  }
+}
 
 type Props =
   | {
@@ -147,35 +177,51 @@ export function OnboardingWizard(props: Props) {
 
   const [state, dispatch] = useReducer(
     (s: WizardState, patch: Partial<WizardState>) => ({ ...s, ...patch }),
-    {
-      nfcCodes: mode === 'scan' ? [props.initialCode] : [],
-      establishmentName: props.establishment?.name ?? '',
-      // Every real creation path used to hardcode 'beauty', so the column said
-      // "beauty" for every establishment in production regardless of trade.
-      // Defaulted rather than left null because the column is NOT NULL.
-      businessType: 'beauty',
-      address: props.establishment?.address ?? '',
-      googlePlaceId: '',
-      googleReviewUrl: '',
-      adminFullName: '',
-      adminEmail: mode === 'express' ? props.initialEmail : '',
-      password: '',
-    }
+    undefined,
+    // Lazy initialiser: localStorage is not readable during the server render,
+    // and this runs once on the client rather than on every dispatch.
+    (): WizardState => {
+      const base: WizardState = {
+        nfcCodes: mode === 'scan' ? [props.initialCode] : [],
+        establishmentName: props.establishment?.name ?? '',
+        // Every real creation path used to hardcode 'beauty', so the column said
+        // "beauty" for every establishment in production regardless of trade.
+        // Defaulted rather than left null because the column is NOT NULL.
+        businessType: 'beauty',
+        address: props.establishment?.address ?? '',
+        googlePlaceId: '',
+        googleReviewUrl: '',
+        adminFullName: '',
+        adminEmail: mode === 'express' ? props.initialEmail : '',
+      };
+      if (typeof window === 'undefined') return base;
+      const stored = readStored(mode);
+      // The tag comes from the URL the sticker points at, and the express
+      // token is bound to its own group: neither may be restored from a
+      // previous run in this browser.
+      return stored ? { ...base, ...stored, nfcCodes: base.nfcCodes } : base;
+    },
   );
 
   const [error, setError] = useState<string | null>(null);
+  // The six-digit code was accepted and a session exists. Deliberately not
+  // persisted alongside the rest of the wizard: a stale "already verified" read
+  // back from storage would offer a finish button with no session behind it.
+  const [verified, setVerified] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
 
-  // The auth user created by a previous provisioning attempt.
-  //
-  // Sign-up and the server action are two steps, and only the second one is
-  // rolled back on failure. Without this, retrying after a failure that struck
-  // between them replays signUp() against an address that now exists, and the
-  // manager is stuck on "un compte existe déjà" with no way to finish. A ref,
-  // not state: the retry reads it in the same tick it is written.
-  const createdUserId = useRef<string | null>(null);
+  // Persist on every answer. Writing from an effect rather than inside the
+  // reducer keeps the reducer pure and leaves storage as what it is: an
+  // external system this component synchronises to.
+  useEffect(() => {
+    if (done) return;
+    try {
+      window.localStorage.setItem(STORAGE_PREFIX + mode, JSON.stringify(state));
+    } catch {
+      // Storage full or blocked. The wizard still works in one sitting.
+    }
+  }, [state, mode, done]);
 
   // Provisioning and finishing are one click, but they are two round-trips: if
   // the second fails, a retry must not create a second group, and it must still
@@ -186,6 +232,20 @@ export function OnboardingWizard(props: Props) {
   // wizard now that Stripe is asked from the dashboard, but it is read from the
   // server's answer rather than assumed.
   const [payoutsPending, setPayoutsPending] = useState(false);
+
+  // A session that already exists is the proof the code was meant to produce.
+  // Without this, coming back to a reloaded tab (the very thing the stored
+  // answers above are for) would ask for a second code that the first one
+  // already made unnecessary.
+  useEffect(() => {
+    let cancelled = false;
+    void createClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (!cancelled && data.user) setVerified(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const goTo = useCallback(
     (step: string) => {
@@ -207,8 +267,9 @@ export function OnboardingWizard(props: Props) {
         case 'confirm':
           return state.establishmentName.trim().length > 0 && state.address.trim().length > 0;
         case 'admin-name': return state.adminFullName.trim().length > 0;
-        case 'email': return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.adminEmail);
-        case 'password': return state.password.length >= 8;
+        // The step gates itself: the finish button only appears once the code
+        // has been verified, so navigation never has to hold it shut.
+        case 'verify': return true;
         default: return true;
       }
     },
@@ -225,7 +286,7 @@ export function OnboardingWizard(props: Props) {
   // "Too small: expected string to have >=1 characters" error. Instead, bounce
   // the user back to the first incomplete step so they re-enter their details.
   useEffect(() => {
-    if (done || needsEmailVerification) return;
+    if (done) return;
     const firstIncomplete = steps.findIndex((s) => !isStepComplete(s));
     if (firstIncomplete !== -1 && stepIndex > firstIncomplete) {
       // Redirect via the router directly (not goTo) so we only sync the URL —
@@ -234,7 +295,7 @@ export function OnboardingWizard(props: Props) {
       p.set('step', steps[firstIncomplete]);
       router.replace(`/${locale}/onboarding?${p.toString()}`, { scroll: false });
     }
-  }, [stepIndex, steps, isStepComplete, done, needsEmailVerification, router, locale, searchParams]);
+  }, [stepIndex, steps, isStepComplete, done, router, locale, searchParams]);
 
   const next = () => {
     // Steps live in the query string and advance via router.replace, so they
@@ -289,15 +350,17 @@ export function OnboardingWizard(props: Props) {
 
       trackEvent('onboarding_submitted', { mode, payoutsEnabled: finalized.payoutsEnabled });
 
-      // Scan and express both created the auth account here, so the manager is
-      // signed in but unconfirmed. Sign them out and point them at their inbox.
-      if (mode === 'scan' || mode === 'express') {
-        const supabase = createClient();
-        const { data } = await supabase.auth.getSession();
-        if (data.session) await supabase.auth.signOut();
-        setNeedsEmailVerification(true);
+      // The run is over; leaving the answers behind would prefill the next
+      // establishment created from this browser with the previous one's name.
+      try {
+        window.localStorage.removeItem(STORAGE_PREFIX + mode);
+      } catch {
+        // Nothing was written in the first place.
       }
 
+      // No sign-out and no "check your inbox" any more: the code the manager
+      // typed two screens ago both created the account and confirmed the
+      // address, so the session they finish on is the one they keep.
       // Always true at this point in practice: the Stripe account is created
       // from the dashboard now, so nothing can charge yet. The done screen says
       // so rather than implying the tag is live.
@@ -313,35 +376,28 @@ export function OnboardingWizard(props: Props) {
     }
   }
 
+  /**
+   * The signed-in manager's id.
+   *
+   * The account exists before this runs: verifying the code is what creates it,
+   * and it hands back a session. That replaces the signUp() this used to do,
+   * along with the retry bookkeeping it needed, since the account can no longer
+   * be created and then stranded by a failing server action.
+   */
+  async function currentUserId(): Promise<string | null> {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id ?? null;
+  }
+
   /** Creates the group, the establishment and the roles for the current mode. */
   async function provision(): Promise<
     { establishmentId: string; onboardingToken?: string } | { error: string }
   > {
     if (mode === 'scan') {
-      // 1. Create the Supabase account client-side, unless a previous attempt
-      //    already did (see createdUserId).
-      let userId = createdUserId.current;
-      if (!userId) {
-        const supabase = createClient();
-        const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/login?verified=true`)}`;
-        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-          email: state.adminEmail,
-          password: state.password,
-          options: {
-            data: { full_name: state.adminFullName },
-            emailRedirectTo: redirectTo,
-          },
-        });
+      const userId = await currentUserId();
+      if (!userId) return { error: tAuth('errorGeneric') };
 
-        if (signUpErr || !signUpData.user) {
-          return { error: signUpErr ? mapAuthError(signUpErr.message, tAuth) : tAuth('errorGeneric') };
-        }
-        userId = signUpData.user.id;
-        createdUserId.current = userId;
-      }
-
-      // 2. Call the server action, passing userId so it works before the email
-      //    is confirmed.
       const result = await completeNfcOnboarding({
         userId,
         nfcCodes: state.nfcCodes,
@@ -359,27 +415,9 @@ export function OnboardingWizard(props: Props) {
     }
 
     if (mode === 'express') {
-      let userId = createdUserId.current;
-      if (!userId) {
-        const supabase = createClient();
-        const redirectTo = `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/login?verified=true`)}`;
-        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-          email: state.adminEmail,
-          password: state.password,
-          options: {
-            data: { full_name: state.adminFullName },
-            emailRedirectTo: redirectTo,
-          },
-        });
+      const userId = await currentUserId();
+      if (!userId) return { error: tAuth('errorGeneric') };
 
-        if (signUpErr) return { error: mapAuthError(signUpErr.message, tAuth) };
-        userId = signUpData.user?.id ?? null;
-        createdUserId.current = userId;
-      }
-
-      // Run the express action up front so the group_admin role is attached to
-      // the new auth user even though email confirmation defers the session.
-      // Otherwise the manager logs in later with no role at all.
       const result = await completeExpressOnboarding({
         groupId: props.groupId,
         token: props.token,
@@ -390,7 +428,7 @@ export function OnboardingWizard(props: Props) {
         adminFullName: state.adminFullName,
         businessType: state.businessType,
         locale: locale as 'fr' | 'en',
-        userId: userId ?? undefined,
+        userId,
       });
       return 'error' in result
         ? { error: result.error }
@@ -414,49 +452,6 @@ export function OnboardingWizard(props: Props) {
   // ─── Done screen ───────────────────────────────────────────────────────────
 
   if (done) {
-    if (needsEmailVerification) {
-      return (
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 480,
-            textAlign: 'center',
-            animation: 'onbSlideIn 280ms ease-out',
-          }}
-        >
-          <style>{`@keyframes onbSlideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}`}</style>
-          <div style={{
-            width: 64,
-            height: 64,
-            borderRadius: '50%',
-            background: 'var(--surface-2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px',
-            fontSize: 28,
-          }}>
-            ✉
-          </div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>
-            {t('emailVerification.title')}
-          </h1>
-          <p style={{ fontSize: 15, color: 'var(--text-3)', lineHeight: 1.7, marginBottom: 12 }}>
-            {t.rich('emailVerification.sent', {
-              email: state.adminEmail,
-              strong: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong>,
-            })}
-          </p>
-          <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.7 }}>
-            {t.rich('emailVerification.activate', {
-              name: state.establishmentName,
-              strong: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong>,
-            })}
-          </p>
-        </div>
-      );
-    }
-
     return (
       <div
         style={{
@@ -521,13 +516,17 @@ export function OnboardingWizard(props: Props) {
   const STEP_I18N: Record<string, string> = {
     'google-review': 'googleReview',
     confirm: 'confirm',
-    'admin-name': 'adminName', email: 'email', password: 'password',
+    'admin-name': 'adminName', verify: 'verify',
   };
   const i18nKey = STEP_I18N[currentStep];
   const config = i18nKey
     ? { title: t(`${i18nKey}.title`), subtitle: t(`${i18nKey}.subtitle`) }
     : { title: '', subtitle: '' };
+  // The last step is `verify` in scan and express mode, and it only becomes
+  // finishable once the code has been accepted. In postpurchase mode the
+  // manager already has a session, so the last step is finishable outright.
   const isLastStep = stepIndex === steps.length - 1;
+  const awaitingCode = currentStep === 'verify' && !verified;
   const totalSteps = steps.length;
   // Google review is soft-required: the primary CTA stays disabled until a link
   // is chosen, but a discreet skip link lets the manager move on.
@@ -632,31 +631,42 @@ export function OnboardingWizard(props: Props) {
           />
         );
 
-      case 'email':
+      case 'verify':
+        // Already signed in: either the code just landed, or the manager was
+        // logged in before the scan and is adding a second establishment.
+        // Showing the code form beside an enabled finish button would ask for
+        // something that is already done.
+        if (verified) {
+          return (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '16px 18px', borderRadius: 14,
+              border: '1.5px solid var(--accent)', background: 'var(--surface-2)',
+            }}>
+              <span style={{ fontSize: 22 }}>✅</span>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                {t('verify.confirmed')}
+              </div>
+            </div>
+          );
+        }
         return (
-          <input
-            autoFocus
-            type="email"
-            value={state.adminEmail}
-            onChange={(e) => dispatch({ adminEmail: e.target.value })}
-            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && next()}
-            style={inp}
+          <EmailOtpForm
+            initialEmail={state.adminEmail}
+            // The address may not exist yet: for a manager arriving from a
+            // scan, this call is what creates the account.
+            shouldCreateUser
+            fullName={state.adminFullName}
+            submitLabel={t('verify.send')}
+            onVerified={() => {
+              // Only flips a flag. Provisioning waits for the explicit finish
+              // click, so the manager sees what they are about to create.
+              setVerified(true);
+            }}
+            // Remember the address the widget settled on, so a resume after a
+            // reload comes back with it filled in.
+            onEmailChange={(adminEmail) => dispatch({ adminEmail })}
           />
-        );
-
-      case 'password':
-        return (
-          <div>
-            <input
-              autoFocus
-              type="password"
-              value={state.password}
-              onChange={(e) => dispatch({ password: e.target.value })}
-              onKeyDown={(e) => e.key === 'Enter' && canAdvance() && (isLastStep ? handleFinish() : next())}
-              style={inp}
-            />
-            <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8 }}>{t('password.hint')}</p>
-          </div>
         );
 
       default:
@@ -737,7 +747,7 @@ export function OnboardingWizard(props: Props) {
 
       {/* Navigation */}
       <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {isLastStep ? (
+        {awaitingCode ? null : isLastStep ? (
           <>
             <button
               type="button"
@@ -772,7 +782,7 @@ export function OnboardingWizard(props: Props) {
 
         {/* Explain why the action button is greyed out instead of leaving the
             user guessing. Not shown on steps with no required field. */}
-        {!canAdvance() && !submitting && (
+        {!canAdvance() && !submitting && !awaitingCode && (
           <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', margin: 0 }}>
             {t('fillField')}
           </p>
