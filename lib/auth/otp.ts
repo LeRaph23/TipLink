@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { getBaseUrl } from '@/lib/env';
 
 /**
  * Floor between two code requests for the same address, in milliseconds.
@@ -11,6 +12,19 @@ import { createClient } from '@/lib/supabase/client';
 export const RESEND_COOLDOWN_MS = 60_000;
 
 export type OtpResult = { ok: true } | { ok: false; message: string };
+
+/**
+ * Absolute URL for the link a code email also carries.
+ *
+ * The locale comes from the path rather than a parameter: every app route is
+ * locale-prefixed, and threading it through four call sites to reach one string
+ * is more plumbing than the answer is worth.
+ */
+function fallbackRedirect(): string {
+  const first = typeof window === 'undefined' ? '' : window.location.pathname.split('/')[1];
+  const locale = first === 'en' ? 'en' : 'fr';
+  return `${getBaseUrl()}/auth/callback?next=${encodeURIComponent(`/${locale}/dashboard`)}`;
+}
 
 /**
  * Emails a six-digit code to `email`.
@@ -43,6 +57,13 @@ export async function requestEmailCode(
     email: email.trim(),
     options: {
       shouldCreateUser,
+      // Where the template's fallback link lands. It matters more than it
+      // looks: the same email carries both a code and a link, and a template
+      // that has lost `{{ .Token }}` sends only the link. Without this the
+      // link redirects to the Site URL, which is a static page that never
+      // consumes the `?code=` it arrives with, so clicking it would silently
+      // do nothing. /auth/callback exchanges it and lands on the dashboard.
+      emailRedirectTo: fallbackRedirect(),
       ...(fullName?.trim() ? { data: { full_name: fullName.trim() } } : {}),
     },
   });
