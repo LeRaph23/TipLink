@@ -1,23 +1,21 @@
+// What Pro unlocks, for reference: the post-tip Google review invitation
+// (enforced in SQL, see migration 00076) and the payroll export beyond the
+// current month, with its monthly delivery to the accountant.
+//
+// The rule behind that split: nothing which increases tip volume is ever gated,
+// because tips are the platform's own revenue and charging for them would be
+// paying to earn less. So Pro is administrative and reputational only, and the
+// free plan keeps unlimited tips, unlimited staff, full history and full
+// analytics.
+//
+// This used to be a `PRO_FEATURES` object nothing imported. Each gate reads the
+// plan where it stands, which is the only place the answer can be enforced, so
+// the map was a second description of the rules that no code had to agree with.
+
 import 'server-only';
 import { createServiceClient } from '@/lib/supabase/service';
 
 export type Plan = 'free' | 'pro';
-
-/**
- * What each plan unlocks.
- *
- * The rule behind this split: nothing that increases tip volume is ever gated,
- * because tips are the platform's own revenue — charging for them would be
- * paying to earn less. So Pro is administrative and reputational only, and the
- * free plan keeps unlimited tips, unlimited staff, full history and full
- * analytics.
- */
-export const PRO_FEATURES = {
-  /** Post-tip Google review invitation (enforced in SQL, see 00076). */
-  googleReviews: true,
-  /** Payroll export beyond the current month, extra formats, monthly email. */
-  payrollExport: true,
-} as const;
 
 type Service = ReturnType<typeof createServiceClient>;
 

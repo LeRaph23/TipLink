@@ -23,6 +23,11 @@ const optional: { key: string; hint: string }[] = [
   { key: 'GOOGLE_PLACES_API_KEY',     hint: 'Google review link picker + salon enrichment' },
   { key: 'UPSTASH_REDIS_REST_URL',    hint: 'Production rate limiting (upstash.com)' },
   { key: 'UPSTASH_REDIS_REST_TOKEN',  hint: 'Production rate limiting (upstash.com)' },
+  // Without these the dashboard shows no price and /api/billing/subscribe
+  // answers 503 pro_unavailable. Everything else keeps working on the free
+  // plan, which is why they are optional rather than required.
+  { key: 'STRIPE_PRICE_PRO_MONTHLY',  hint: 'Digitip Pro monthly price. Run: npm run setup:stripe' },
+  { key: 'STRIPE_PRICE_PRO_YEARLY',   hint: 'Digitip Pro yearly price. Run: npm run setup:stripe' },
 ];
 
 let allOk = true;

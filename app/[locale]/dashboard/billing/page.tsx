@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { ProCard } from './ProCard';
 import { getPlan } from '@/lib/billing/entitlements';
+import { getProPricing } from '@/lib/billing/pro-pricing';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,11 +22,14 @@ function statusStyle(status: string): { color: string; bg: string; dot: string }
 
 export default async function BillingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ pro?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const justPaid = (await searchParams).pro === 'success';
   const t = await getTranslations('dashboard.billing');
   const tc = await getTranslations('common');
 
@@ -62,16 +66,19 @@ export default async function BillingPage({
   // The upsell card needs a group; a super admin browsing every order has none
   // of their own, so it is simply not shown to them.
   const primaryGroupId = ownedGroupIds[0] ?? null;
-  const plan = primaryGroupId ? await getPlan(service, primaryGroupId) : 'free';
+  const [plan, proPricing] = await Promise.all([
+    primaryGroupId ? getPlan(service, primaryGroupId) : Promise.resolve('free' as const),
+    getProPricing(),
+  ]);
 
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          Facturation
+          {t('title')}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          Commandes et factures SmartTags.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -80,6 +87,8 @@ export default async function BillingPage({
           groupId={primaryGroupId}
           isPro={plan === 'pro'}
           locale={locale === 'en' ? 'en' : 'fr'}
+          pricing={proPricing}
+          justPaid={justPaid}
         />
       )}
 

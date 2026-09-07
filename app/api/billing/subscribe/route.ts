@@ -106,8 +106,13 @@ export async function POST(request: NextRequest) {
       mode: 'subscription',
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
+      // Back to the billing page either way. `?pro=success` is read there to
+      // acknowledge the payment: the webhook that flips the plan usually lands
+      // first, but not always, and a page that still says "Passez au Pro" to
+      // someone who just paid reads as a failed payment. There is no matching
+      // cancel parameter, because a cancelled checkout has nothing to say.
       success_url: `${returnUrl}?pro=success`,
-      cancel_url: `${returnUrl}?pro=cancelled`,
+      cancel_url: returnUrl,
       locale,
       // The webhook resolves the group from here. Both are set: the session
       // metadata covers checkout.session.completed, and subscription_data

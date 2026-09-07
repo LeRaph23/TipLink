@@ -1,5 +1,6 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { hasPro } from '@/lib/billing/entitlements';
@@ -112,7 +113,15 @@ export default async function StatementsPage({
   }
 
   const totals = rows.reduce((acc, r) => ({ count: acc.count + r.count, amount: acc.amount + r.amount }), { count: 0, amount: 0 });
-  const monthOpts = recentMonths(12).map((m) => ({ value: m, label: fmtMonth(m) }));
+
+  // Viewing any month stays free; exporting one that is not the current month
+  // does not. The picker says so in the option label, so the limit is legible
+  // before anything is clicked rather than after a file has been downloaded.
+  const exportLocked = !isPro && month !== currentMonth();
+  const monthOpts = recentMonths(12).map((m) => ({
+    value: m,
+    label: !isPro && m !== currentMonth() ? `${fmtMonth(m)} · ${t('proBadge')}` : fmtMonth(m),
+  }));
 
   const th: React.CSSProperties = {
     padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600,
@@ -120,6 +129,19 @@ export default async function StatementsPage({
     borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', background: 'var(--surface-2)',
   };
   const cell: React.CSSProperties = { padding: '14px', color: 'var(--text-2)' };
+
+  const actionBase: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    minHeight: 44, padding: '0 18px', borderRadius: 'var(--radius)',
+    fontSize: 14, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
+  };
+  // A locked control keeps its place and its label and loses only its colour.
+  // Hiding it instead, which is what the journal export used to do, means a
+  // free plan never finds out the feature exists.
+  const lockedAction: React.CSSProperties = {
+    ...actionBase,
+    background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-3)',
+  };
 
   return (
     <div style={{ maxWidth: 760 }}>
@@ -133,34 +155,50 @@ export default async function StatementsPage({
         <div style={{ flex: '1 1 200px', minWidth: 0 }}>
           <MonthPicker value={month} months={monthOpts} label={t('month')} />
         </div>
-        <a href={`/api/statements/export.csv?month=${month}`} style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          minHeight: 44, padding: '0 18px', borderRadius: 'var(--radius)',
-          background: 'var(--accent)', color: 'var(--accent-fg)', fontSize: 14,
-          fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
-        }}>{t('export')}</a>
-        {isPro && (
-          <a href={`/api/statements/export.csv?month=${month}&scope=journal`} style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            minHeight: 44, padding: '0 18px', borderRadius: 'var(--radius)',
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
-            color: 'var(--text-2)', fontSize: 14,
-            fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
-          }}>{t('exportJournal')}</a>
+        {exportLocked ? (
+          <Link href="/dashboard/billing" className="btn-ghost" style={lockedAction}>
+            {t('export')} · {t('proBadge')}
+          </Link>
+        ) : (
+          <a
+            className="btn-accent"
+            href={`/api/statements/export.csv?month=${month}`}
+            style={{ ...actionBase, background: 'var(--accent)', color: 'var(--accent-fg)' }}
+          >
+            {t('export')}
+          </a>
+        )}
+
+        {isPro ? (
+          <a
+            className="btn-ghost"
+            href={`/api/statements/export.csv?month=${month}&scope=journal`}
+            style={{ ...actionBase, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}
+          >
+            {t('exportJournal')}
+          </a>
+        ) : (
+          <Link href="/dashboard/billing" className="btn-ghost" style={lockedAction}>
+            {t('exportJournal')} · {t('proBadge')}
+          </Link>
         )}
       </div>
 
       {/* The free plan exports the current month only. This used to be a grey
-          sentence stating the limit with nothing to click — a manager who had
+          sentence stating the limit with nothing to click: a manager who had
           just picked an older month learned they could not have it and was left
           there. It is the highest-intent moment in the product, so it carries a
-          way out now. */}
+          way out now.
+          The two registers are not the same moment. Having just selected a month
+          you cannot export is a limit hit, and the quiet surface is the right
+          one for it. Sitting on the current month, which exports fine, it is an
+          offer, and dressing an offer as a refusal reads as a nag. */}
       {!isPro && (
         <ProUpsell
           title={tPro('exportTitle')}
           body={tPro('exportBody')}
           cta={tPro('exportCta')}
-          emphasis="quiet"
+          emphasis={exportLocked ? 'quiet' : 'normal'}
         />
       )}
 

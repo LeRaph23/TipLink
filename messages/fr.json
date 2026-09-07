@@ -96,7 +96,7 @@
       "s2Title": "2. Éligibilité",
       "s2Body": "Vous devez avoir au moins 18 ans, être habilité à engager votre entreprise, et exploiter une activité légale d'hôtellerie, de restauration ou de service dans un pays où Stripe Connect est disponible.",
       "s3Title": "3. Commandes",
-      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique. Il n'existe aucun abonnement ni frais mensuel : une fois la plaque payée, aucune somme récurrente n'est prélevée. La plateforme Digitip se rémunère exclusivement par des frais de service ajoutés au pourboire et réglés par la personne qui le laisse (voir article 5). Aucun montant n'est prélevé sur le pourboire lui-même : le bénéficiaire perçoit l'intégralité de la somme choisie. En l'absence de pourboire, aucun montant n'est dû. Le matériel n'est pas remboursable une fois expédié, sous réserve des garanties légales et du droit de rétractation prévus aux CGV.",
+      "s3Body": "Les packs SmartTag sont vendus comme un achat matériel unique : une fois la plaque payée, aucune somme récurrente n'est due pour l'utiliser. Les pourboires fonctionnent sans abonnement. La plateforme Digitip se rémunère par des frais de service ajoutés au pourboire et réglés par la personne qui le laisse (voir article 5) : aucun montant n'est prélevé sur le pourboire lui-même, le bénéficiaire perçoit l'intégralité de la somme choisie, et en l'absence de pourboire aucun montant n'est dû. Digitip propose par ailleurs un abonnement facultatif, Digitip Pro, qui donne accès à des fonctionnalités complémentaires décrites dans le tableau de bord. Il est souscrit volontairement, résiliable à tout moment, et n'est nécessaire ni pour recevoir des pourboires ni pour utiliser la plaque. Le matériel n'est pas remboursable une fois expédié, sous réserve des garanties légales et du droit de rétractation prévus aux CGV.",
       "s4Title": "4. Paiements",
       "s4Body": "Tous les paiements sont traités par Stripe. La TVA est appliquée automatiquement selon votre pays. Le paiement du matériel est unique et intervient à la commande ; aucun prélèvement récurrent n'est effectué. Une période de grâce de 30 jours s'applique aux SmartTags avant désactivation complète en cas de résiliation du compte.",
       "s5Title": "5. Pourboires, encaissement et versement",
@@ -192,10 +192,10 @@
       "h1b": "d'encaisser plus de",
       "h1c": "pourboires",
       "sub": "La plaque se pose en 5 secondes, n'importe où. Votre client approche son téléphone ou scanne le QR code, choisit un montant, et le pourboire vous revient sur votre compte bancaire, via Stripe. Zéro app, zéro cash, zéro friction.",
-      "social": "Paiement unique, sans abonnement",
+      "social": "Paiement unique, pourboires sans abonnement",
       "cta": "Commander maintenant",
       "b1": "Pourboire nominatif : le client choisit qui récompenser",
-      "b2": "Sans aucun abonnement : payez une fois, à vie",
+      "b2": "Payez la plaque une fois. Les pourboires, eux, n'ont jamais d'abonnement.",
       "b3": "Versé directement sur votre compte bancaire via Stripe",
       "b4": "Zéro app, zéro cash : un simple tap ou QR code"
     },
@@ -211,7 +211,7 @@
       "packSLabel": "1 emplacement",
       "packMLabel": "2 emplacements",
       "packLLabel": "3+ emplacements",
-      "bullet1": "Paiement unique, 0 frais mensuel",
+      "bullet1": "Paiement unique, 0 frais mensuel sur vos pourboires",
       "bullet2": "0 % prélevé sur les pourboires",
       "bullet3": "Résine époxy haute densité, conçue pour durer",
       "bullet4": "Entreprise française",
@@ -295,7 +295,7 @@
       "freeShippingShort": "Livraison offerte en Europe",
       "warranty": "Garantie matériel à vie",
       "warrantySub": "Plaque cassée ou défectueuse ? On la remplace gratuitement, sans limite de durée.",
-      "noSubscription": "Aucun abonnement",
+      "noSubscription": "Pourboires sans abonnement",
       "noSubscriptionSub": "Vous payez la plaque une fois. Ensuite plus rien : les frais de service sont réglés par le client, pas par vous.",
       "stripe": "Paiements sécurisés par Stripe",
       "stripeSub": "Aucune donnée bancaire ne transite par nos serveurs. Apple Pay et Google Pay acceptés.",
@@ -328,7 +328,7 @@
       "q6": "Ai-je besoin d'un SIRET ou d'un statut particulier ?",
       "a6": "Pas pour commander les SmartTags. Pour encaisser les pourboires, c'est l'établissement qui se vérifie une seule fois, directement dans Digitip (identité du gérant et coordonnées bancaires), la vérification imposée par la réglementation anti-blanchiment. Vos employés, eux, n'ont aucun compte à créer et aucune démarche à faire : les pourboires leur sont attribués nominativement et vous les reversez avec la paie.",
       "q7": "Comment Digitip se rémunère-t-il ?",
-      "a7": "Sur les frais de service, réglés par la personne qui laisse le pourboire, jamais sur le pourboire lui-même. Pour un pourboire de 10 €, le client règle 10,75 € au total : 0,25 € de frais fixes plus 5 % du pourboire. Vous, vous touchez les 10 € en entier. Sur les 75 centimes de frais, environ 0,41 € part chez Stripe (0,25 € fixes + 1,5 % du montant réglé) et 0,34 € revient à Digitip pour l'infrastructure, le support et le développement du service. Aucun abonnement, aucun frais mensuel, et rien qui sorte de votre poche."
+      "a7": "Sur les frais de service, réglés par la personne qui laisse le pourboire, jamais sur le pourboire lui-même. Pour un pourboire de 10 €, le client règle 10,75 € au total : 0,25 € de frais fixes plus 5 % du pourboire. Vous, vous touchez les 10 € en entier. Sur les 75 centimes de frais, environ 0,41 € part chez Stripe (0,25 € fixes + 1,5 % du montant réglé) et 0,34 € revient à Digitip pour l'infrastructure, le support et le développement du service. Aucun frais mensuel sur vos pourboires, et rien qui sorte de votre poche."
     },
     "doubleGuarantee": {
       "g1title": "Qualité premium garantie",
@@ -337,8 +337,8 @@
       "g2body": "Un SmartTag cassé ou défectueux ? On vous en envoie un neuf. Gratuitement. À vie.",
       "g3title": "Livraison offerte",
       "g3body": "Frais de port offerts sur toute l'Europe, quel que soit le pack commandé.",
-      "g4title": "0 frais mensuel",
-      "g4body": "Pas d'abonnement, pas de surprise. Vous payez une fois, vous encaissez à vie."
+      "g4title": "0 frais mensuel sur vos pourboires",
+      "g4body": "Vous payez la plaque une fois, puis vous encaissez à vie. Les pourboires ne demandent jamais d'abonnement."
     },
     "footer": {
       "tagline": "Encaissez vos pourboires sans contact.",
@@ -373,7 +373,7 @@
       "row3label": "Digitip",
       "row3amount": "0,34 €",
       "row3detail": "Infrastructure, hébergement, support et amélioration continue du service.",
-      "footer": "Aucun abonnement, aucun frais mensuel, et rien à votre charge : les frais sont réglés par le client."
+      "footer": "Aucun frais mensuel sur vos pourboires, et rien à votre charge : les frais sont réglés par le client."
     },
     "reviews": {
       "kicker": "Après le pourboire",
@@ -400,7 +400,6 @@
     "title": "Commandez votre plaque Digitip.",
     "subtitle": "Fabriquées à la main, prêtes à poser. Chaque plaque époxy arrive pré-programmée, testée et prête à être installée à votre poste de travail. Qualité premium, résine époxy haute densité, conçue pour durer.",
     "oneTime": "HT",
-    "perMonth": "/ mois",
     "tagsIncluded": "{count, plural, one {# plaque époxy incluse} other {# plaques époxy incluses}}",
     "choose": "Commander",
     "mostPopular": "Meilleur rapport qualité/prix",
@@ -412,8 +411,6 @@
       "freeShipping": "Livraison gratuite partout en Europe",
       "lifetimeReplacement": "Remplacement à vie garanti",
       "dashboard": "Dashboard manager complet inclus",
-      "app": "Application mobile manager incluse",
-      "prioritySupport": "Support prioritaire",
       "noSubscription": "Pourboires sans abonnement ni engagement",
       "vatInvoice": "Factures TVA automatiques"
     },
@@ -671,8 +668,8 @@
       "payments": "Compte de paiement"
     },
     "billing": {
-      "title": "Facturation & commissions",
-      "subtitle": "Suivez les frais de service réglés par vos clients et gérez vos commandes de SmartTags.",
+      "title": "Facturation",
+      "subtitle": "Vos commandes de SmartTags, vos factures, et votre abonnement Digitip Pro.",
       "commissionRate": "Frais de service",
       "commissionRateHint": "Ajoutés au pourboire et réglés par le client. Rien n'est prélevé sur vos pourboires.",
       "tipsCollected30d": "Pourboires 30 jours",
@@ -691,9 +688,6 @@
       "orderInvoice": "Facture",
       "noOrders": "Aucune commande pour l'instant.",
       "pendingFulfillment": "Préparation en cours : nous programmons vos SmartTags à la main et expédions sous 3 jours ouvrés.",
-      "successTitle": "C'est tout bon.",
-      "successBody": "Votre commande est confirmée. Nous programmons vos SmartTags à la main et les expédions sous 3 jours ouvrés. Une facture a été envoyée par email.",
-      "goToDashboard": "Aller au dashboard",
       "viewDetails": "Voir",
       "viewInvoice": "Facture PDF",
       "backToOrders": "Retour aux commandes",
@@ -849,7 +843,7 @@
       "saved": "Enregistré.",
       "noGroup": "Aucun groupe n'est encore associé à votre compte.",
       "accountantEmail": "Email du comptable",
-      "accountantEmailHelp": "Le relevé mensuel de pourboires y est envoyé automatiquement, en plus de votre adresse. Réservé à l'abonnement Pro."
+      "accountantEmailHelp": "Le relevé mensuel de pourboires y est envoyé automatiquement, en plus de votre adresse. L'envoi automatique fait partie de Digitip Pro ; vous pouvez renseigner l'adresse dès maintenant."
     },
     "admin": {
       "nav": {
@@ -1093,7 +1087,7 @@
       "empty": "Aucun versement ce mois-ci.",
       "export": "Exporter en CSV",
       "exportJournal": "Journal détaillé",
-      "freeLimit": "L'offre gratuite exporte le mois en cours. Passez au Pro pour l'historique complet, le journal détaillé et l'envoi automatique à votre comptable."
+      "proBadge": "Pro"
     },
     "payments": {
       "title": "Compte de paiement",
@@ -1119,9 +1113,9 @@
       "upsellTitle": "Passez à Digitip Pro",
       "feature1": "Invitation à laisser un avis Google après chaque pourboire",
       "feature2": "Relevé de paie envoyé chaque mois à vous et à votre comptable",
-      "feature3": "Export comptable détaillé, historique illimité, CSV et Excel",
-      "ctaMonthly": "Passer au Pro · 19 € HT/mois",
-      "ctaYearly": "Payer à l'année (2 mois offerts)",
+      "feature3": "Export comptable détaillé et historique illimité, au format CSV",
+      "ctaMonthly": "Passer au Pro",
+      "ctaYearly": "Payer à l'année",
       "opening": "Ouverture…",
       "activeTitle": "Digitip Pro est actif",
       "activeBody": "Les avis Google et l'export comptable complet sont activés. Vous pouvez modifier ou résilier votre abonnement à tout moment.",
@@ -1133,7 +1127,12 @@
       "reviewTeaserCta": "Voir Digitip Pro",
       "exportTitle": "Export comptable complet",
       "exportBody": "Le plan gratuit exporte le mois en cours. Digitip Pro ouvre l'historique complet, le journal détaillé, et envoie le relevé chaque mois à votre comptable.",
-      "exportCta": "Passer au Pro"
+      "exportCta": "Passer au Pro",
+      "priceMonthly": "{price} HT par mois",
+      "priceYearly": "ou {price} HT par an",
+      "monthsFree": "{months, plural, one {# mois offert} other {# mois offerts}}",
+      "checkoutDoneTitle": "Paiement confirmé",
+      "checkoutDoneBody": "Votre abonnement s'active dans quelques secondes. Rechargez la page si les fonctionnalités Pro n'apparaissent pas encore."
     },
     "verifyBanner": {
       "titleHeld": "{amount} vous attendent",

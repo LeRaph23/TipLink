@@ -28,9 +28,15 @@ function currentMonth(): string {
  * these figures record who earned it, which is what payroll needs.
  *
  * Free plans export the current month only. Past months, the journal and the
- * automatic monthly delivery are the Pro offer — the value of this export is
+ * automatic monthly delivery are the Pro offer: the value of this export is
  * that it removes a recurring chore, and a chore you still do by hand for last
  * month is not removed.
+ *
+ * A free plan asking for either of those gets 402, not a quietly substituted
+ * file. This route used to answer `?month=2025-03` with the current month under
+ * the name `releve-pourboires-2025-03.csv`, which is the one failure mode a
+ * payroll export cannot have: a file that says it covers March and does not.
+ * Somebody would have sent it to their accountant.
  */
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -51,10 +57,24 @@ export async function GET(req: NextRequest) {
   const pro = await hasPro(service, roleRow.group_id);
 
   const rawMonth = req.nextUrl.searchParams.get('month');
-  const requested = rawMonth && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : currentMonth();
-  const month = pro ? requested : currentMonth();
+  const month = rawMonth && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : currentMonth();
+  const scope = req.nextUrl.searchParams.get('scope') === 'journal' ? 'journal' : 'summary';
 
-  const scope = pro && req.nextUrl.searchParams.get('scope') === 'journal' ? 'journal' : 'summary';
+  // The UI does not offer either of these to a free plan, so reaching here
+  // means a hand-made URL or a stale tab. Naming the feature lets the caller
+  // tell the two refusals apart.
+  const locked =
+    pro ? null
+    : month !== currentMonth() ? 'past_month'
+    : scope === 'journal' ? 'journal'
+    : null;
+  if (locked) {
+    return NextResponse.json(
+      { error: 'pro_required', feature: locked },
+      { status: 402 },
+    );
+  }
+
   const period = monthPeriod(month);
 
   const csv = scope === 'journal'
