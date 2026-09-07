@@ -1784,6 +1784,40 @@ export async function sendWeeklyTipRecap(opts: {
     }));
 }
 
+/**
+ * Group admin, three days before the Pro trial converts (transactional).
+ *
+ * The one email a trial owes its customer. It leads with what the trial
+ * actually produced, because that is the only argument that survives contact
+ * with a manager deciding whether to keep paying, and it says the price and
+ * the date plainly: a subscription that starts charging without warning is how
+ * a trial turns into a chargeback and a bad review.
+ */
+export async function sendTrialEndingSoon(opts: {
+  to: string; firstName: string; establishmentName: string; daysLeft: number;
+  priceLabel: string | null; tipCount: number; clickCount: number;
+  billingUrl: string;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, daysLeft, priceLabel, tipCount, clickCount, billingUrl } = opts;
+  const days = `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+
+  // What the trial did, or an honest admission that it has nothing to show.
+  // A month with no clicks is a reason to keep the plaque visible, not a
+  // reason to write a sentence that implies otherwise.
+  const evidence = tipCount > 0
+    ? `Pendant votre essai, <strong class="text-strong" style="color:#0f0f12">${clickCount} client${clickCount > 1 ? 's' : ''} sur ${tipCount}</strong> ${clickCount > 1 ? 'sont allés' : 'est allé'} laisser un avis après leur pourboire.`
+    : `Votre essai se termine sans qu'aucun pourboire ne soit passé, donc sans qu'on ait pu vous montrer ce que l'invitation d'avis donne chez vous.`;
+
+  return lifecycleSend(to, `${firstName}, votre essai Digitip Pro se termine dans ${days}`,
+    lifecycleBody({
+      badge: 'Fin d\'essai', tone: 'amber',
+      title: `${firstName}, il vous reste ${days} d'essai`,
+      intro: `${evidence} À la fin de l'essai${priceLabel ? `, l'abonnement démarre à <strong class="text-strong" style="color:#0f0f12">${escapeHtml(priceLabel)} HT par mois</strong>` : ", l'abonnement démarre"} pour ${escapeHtml(establishmentName)}. Si vous ne voulez pas continuer, résiliez avant la fin : rien ne sera prélevé.`,
+      ctaLabel: 'Gérer mon abonnement →', ctaUrl: billingUrl,
+      note: 'Vos pourboires continuent d\'arriver dans tous les cas : ils ne dépendent pas de l\'abonnement.',
+    }));
+}
+
 /** Staff, a Stripe payout failed (transactional). */
 export async function sendPayoutFailedAlert(opts: {
   to: string; firstName: string; bankingUrl: string;

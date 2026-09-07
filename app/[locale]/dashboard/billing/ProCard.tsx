@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { TRIAL_DAYS, type TrialState } from '@/lib/billing/trial';
 
 const card: React.CSSProperties = {
   background: 'var(--surface)',
@@ -22,9 +23,11 @@ type Props = {
   pricing: { monthly: DisplayPrice | null; yearly: DisplayPrice | null; yearlyMonthsFree: number | null };
   /** True right after Stripe checkout, before the webhook has flipped the plan. */
   justPaid?: boolean;
+  /** Where the group stands in its trial, if it ever started one. */
+  trial: TrialState;
 };
 
-export function ProCard({ groupId, isPro, locale, pricing, justPaid = false }: Props) {
+export function ProCard({ groupId, isPro, locale, pricing, justPaid = false, trial }: Props) {
   const t = useTranslations('dashboard.pro');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,19 +87,38 @@ export function ProCard({ groupId, isPro, locale, pricing, justPaid = false }: P
   }
 
   if (isPro) {
+    const trialing = trial.state === 'trialing' ? trial : null;
     return (
       <div style={card}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
           <span style={{
             padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700,
             background: 'var(--success-bg)', color: 'var(--success)',
           }}>
             Pro
           </span>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t('activeTitle')}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+            {trialing ? t('trialTitle') : t('activeTitle')}
+          </div>
+          {/* The number of days left, in the one place somebody would look for
+              it. A trial whose end nobody sees coming produces a surprise
+              charge, which costs more trust than the subscription is worth. */}
+          {trialing && (
+            <span style={{
+              padding: '2px 8px', borderRadius: 100, fontSize: 11.5, fontWeight: 700,
+              background: 'var(--surface-2)', border: '1px solid var(--border)',
+              color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums',
+            }}>
+              {t('trialDaysLeft', { days: trialing.daysLeft })}
+            </span>
+          )}
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 14 }}>
-          {t('activeBody')}
+          {trialing
+            ? (pricing.monthly
+                ? t('trialBody', { price: money(pricing.monthly) })
+                : t('trialBodyNoPrice'))
+            : t('activeBody')}
         </p>
         <button
           className="btn-ghost"
@@ -125,6 +147,20 @@ export function ProCard({ groupId, isPro, locale, pricing, justPaid = false }: P
       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
         {t('upsellTitle')}
       </div>
+
+      {/* A spent trial is said out loud, and the button below stops offering
+          one. Stripe would happily grant a second; a product that offers a
+          free trial to somebody who has already had it is either lying or
+          about to. */}
+      {trial.state === 'ended' && (
+        <p style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5, margin: '0 0 12px' }}>
+          {t('trialEnded', {
+            date: new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+              day: 'numeric', month: 'long', year: 'numeric',
+            }).format(trial.endedAt),
+          })}
+        </p>
+      )}
 
       <ul style={{
         listStyle: 'none', padding: 0, margin: '0 0 16px',
@@ -177,7 +213,11 @@ export function ProCard({ groupId, isPro, locale, pricing, justPaid = false }: P
             opacity: busy ? 0.6 : 1,
           }}
         >
-          {busy ? t('opening') : t('ctaMonthly')}
+          {busy
+            ? t('opening')
+            : trial.state === 'ended'
+              ? t('ctaMonthly')
+              : t('ctaTrial', { days: TRIAL_DAYS })}
         </button>
         {pricing.yearly && (
         <button

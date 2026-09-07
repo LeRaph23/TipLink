@@ -1133,7 +1133,13 @@
       "priceYearly": "ou {price} HT par an",
       "monthsFree": "{months, plural, one {# mois offert} other {# mois offerts}}",
       "checkoutDoneTitle": "Paiement confirmé",
-      "checkoutDoneBody": "Votre abonnement s'active dans quelques secondes. Rechargez la page si les fonctionnalités Pro n'apparaissent pas encore."
+      "checkoutDoneBody": "Votre abonnement s'active dans quelques secondes. Rechargez la page si les fonctionnalités Pro n'apparaissent pas encore.",
+      "ctaTrial": "Essayer {days} jours, sans engagement",
+      "trialTitle": "Essai Digitip Pro en cours",
+      "trialDaysLeft": "{days, plural, one {# jour restant} other {# jours restants}}",
+      "trialBody": "À la fin de l'essai, l'abonnement démarre à {price} HT par mois. Vous pouvez l'arrêter avant, sans rien payer.",
+      "trialBodyNoPrice": "À la fin de l'essai, l'abonnement démarre automatiquement. Vous pouvez l'arrêter avant, sans rien payer.",
+      "trialEnded": "Votre essai s'est terminé le {date}. Les avis Google et l'export complet sont de nouveau désactivés."
     },
     "verifyBanner": {
       "titleHeld": "{amount} vous attendent",

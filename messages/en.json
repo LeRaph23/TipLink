@@ -1133,7 +1133,13 @@
       "priceYearly": "or {price} per year, excl. VAT",
       "monthsFree": "{months, plural, one {# month free} other {# months free}}",
       "checkoutDoneTitle": "Payment confirmed",
-      "checkoutDoneBody": "Your subscription activates within seconds. Reload the page if the Pro features are not there yet."
+      "checkoutDoneBody": "Your subscription activates within seconds. Reload the page if the Pro features are not there yet.",
+      "ctaTrial": "Try {days} days, cancel anytime",
+      "trialTitle": "Digitip Pro trial in progress",
+      "trialDaysLeft": "{days, plural, one {# day left} other {# days left}}",
+      "trialBody": "When the trial ends, the subscription starts at {price} per month excl. VAT. You can stop before then and pay nothing.",
+      "trialBodyNoPrice": "When the trial ends, the subscription starts automatically. You can stop before then and pay nothing.",
+      "trialEnded": "Your trial ended on {date}. Google reviews and the full export are switched off again."
     },
     "verifyBanner": {
       "titleHeld": "{amount} is waiting for you",

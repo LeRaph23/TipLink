@@ -7,6 +7,7 @@ import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
 import { getBaseUrl, serverEnv } from '@/lib/env';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
+import { TRIAL_DAYS } from '@/lib/billing/trial';
 
 export const runtime = 'nodejs';
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
   const { data: group } = await service
     .from('groups')
-    .select('id, name, stripe_customer_id, stripe_subscription_id')
+    .select('id, name, stripe_customer_id, stripe_subscription_id, trial_ends_at')
     .eq('id', groupId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -119,7 +120,20 @@ export async function POST(request: NextRequest) {
       // stamps the subscription itself so later customer.subscription.* events
       // can be resolved without another lookup.
       metadata: { group_id: group.id, source: 'pro-subscription' },
-      subscription_data: { metadata: { group_id: group.id } },
+      // Thirty days rather than the usual fourteen because of what is being
+      // trialled: the review invitation only proves anything once enough
+      // customers have tipped and been asked, and in a salon that takes weeks.
+      // A trial too short to produce evidence is a trial that proves nothing
+      // and converts nobody.
+      //
+      // Only once. Stripe would hand a fresh trial to anyone who cancels and
+      // comes back, and `trial_ends_at` is the record of one already spent.
+      // It is also what makes the button honest: it offers the trial only
+      // where a trial is actually what happens next.
+      subscription_data: {
+        metadata: { group_id: group.id },
+        ...(group.trial_ends_at ? {} : { trial_period_days: TRIAL_DAYS }),
+      },
       automatic_tax: { enabled: true },
       customer_update: { address: 'auto', name: 'auto' },
     });

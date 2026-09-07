@@ -3,8 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { ProCard } from './ProCard';
-import { getPlan } from '@/lib/billing/entitlements';
 import { getProPricing } from '@/lib/billing/pro-pricing';
+import { deriveTrialState, type TrialState } from '@/lib/billing/trial';
 import { PageHeader, SectionTitle, Card } from '@/components/dashboard/ui';
 
 export const dynamic = 'force-dynamic';
@@ -67,10 +67,27 @@ export default async function BillingPage({
   // The upsell card needs a group; a super admin browsing every order has none
   // of their own, so it is simply not shown to them.
   const primaryGroupId = ownedGroupIds[0] ?? null;
-  const [plan, proPricing] = await Promise.all([
-    primaryGroupId ? getPlan(service, primaryGroupId) : Promise.resolve('free' as const),
+  const [planRow, proPricing] = await Promise.all([
+    primaryGroupId
+      ? service
+          .from('groups')
+          .select('plan, subscription_status, trial_ends_at')
+          .eq('id', primaryGroupId)
+          .is('deleted_at', null)
+          .maybeSingle()
+          .then((r) => r.data)
+      : Promise.resolve(null),
     getProPricing(),
   ]);
+
+  const plan = planRow?.plan === 'pro' ? 'pro' : 'free';
+  const trial: TrialState = planRow
+    ? deriveTrialState({
+        plan: planRow.plan,
+        subscriptionStatus: planRow.subscription_status,
+        trialEndsAt: planRow.trial_ends_at,
+      })
+    : { state: 'none' };
 
   return (
     <div>
@@ -199,6 +216,7 @@ export default async function BillingPage({
             locale={locale === 'en' ? 'en' : 'fr'}
             pricing={proPricing}
             justPaid={justPaid}
+          trial={trial}
           />
         </section>
       )}
