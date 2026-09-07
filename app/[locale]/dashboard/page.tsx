@@ -3,7 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { hasPro } from '@/lib/billing/entitlements';
 import { getReviewTeaser, getReviewImpact } from '@/lib/billing/review-teaser';
-import { ProUpsell } from '@/components/billing/ProUpsell';
+import { DismissibleProUpsell } from '@/components/billing/DismissibleProUpsell';
+import { deriveTrialState } from '@/lib/billing/trial';
+import { shouldShowProNudge } from '@/lib/dashboard/pro-nudge';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
@@ -84,7 +86,40 @@ export default async function DashboardPage({
         if (await hasPro(service, adminGroupId)) {
           return { reviewTeaser: null, reviewImpact: await getReviewImpact(service, adminGroupId) };
         }
-        return { reviewTeaser: await getReviewTeaser(service, adminGroupId), reviewImpact: null };
+
+        const teaser = await getReviewTeaser(service, adminGroupId);
+        if (!teaser) return { reviewTeaser: null, reviewImpact: null };
+
+        // The teaser used to appear on every visit for as long as the group
+        // stayed free, which is how a suggestion becomes a nag. It is now the
+        // monthly nudge: closeable, held for a month, and withheld from the
+        // two groups it would be wrong for. Somebody on trial has the feature,
+        // and somebody who cannot take a payment yet has a real problem that
+        // this is not.
+        const { data: group } = await service
+          .from('groups')
+          .select('settings, subscription_status, trial_ends_at')
+          .eq('id', adminGroupId)
+          .maybeSingle();
+
+        const settings = (group?.settings as Record<string, unknown> | null) ?? {};
+        const trial = deriveTrialState({
+          plan: 'free',
+          subscriptionStatus: group?.subscription_status ?? null,
+          trialEndsAt: group?.trial_ends_at ?? null,
+        });
+
+        const show = shouldShowProNudge({
+          isPro: false,
+          trialing: trial.state === 'trialing',
+          payable: Boolean(gettingStarted?.payable),
+          tipCount: teaser.tipCount,
+          dismissedAt: typeof settings.pro_nudge_dismissed_at === 'string'
+            ? settings.pro_nudge_dismissed_at
+            : null,
+        });
+
+        return { reviewTeaser: show ? teaser : null, reviewImpact: null };
       })()
     : { reviewTeaser: null, reviewImpact: null };
 
@@ -169,8 +204,9 @@ export default async function DashboardPage({
           actually took tips — see getReviewTeaser for why both matter. */}
       {reviewImpact && <ReviewImpact impact={reviewImpact} />}
 
-      {reviewTeaser && (
-        <ProUpsell
+      {reviewTeaser && adminGroupId && (
+        <DismissibleProUpsell
+          groupId={adminGroupId}
           title={t('pro.reviewTeaserTitle', { count: reviewTeaser.tipCount })}
           body={t('pro.reviewTeaserBody')}
           cta={t('pro.reviewTeaserCta')}

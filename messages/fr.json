@@ -26,7 +26,8 @@
     "privacy": "Confidentialité",
     "terms": "CGU",
     "arrowRight": "→",
-    "language": "Langue"
+    "language": "Langue",
+    "close": "Fermer"
   },
   "imageUpload": {
     "upload": "Téléverser une image",
@@ -1283,7 +1284,10 @@
       "searchUnavailable": "La recherche Google est momentanément indisponible. Rien de bloquant : collez directement votre lien ci-dessous.",
       "guide1": "Ouvrez votre fiche dans l'app Google Maps ou Google Business Profile, avec le compte de l'établissement.",
       "guide2": "Touchez « Demander des avis ». Google affiche un lien court du type g.page/r/…/review.",
-      "guide3": "Copiez ce lien et collez-le ci-dessous."
+      "guide3": "Copiez ce lien et collez-le ci-dessous.",
+      "gateTitle": "L'invitation d'avis n'est pas encore active",
+      "gateBody": "Votre lien est enregistré, mais sur l'offre gratuite le client ne le voit jamais : rien ne s'affiche après le pourboire. L'invitation fait partie de Digitip Pro.",
+      "gateCta": "Voir Digitip Pro"
     },
     "confirm": {
       "title": "Vérifiez ces informations",

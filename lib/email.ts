@@ -1785,6 +1785,43 @@ export async function sendWeeklyTipRecap(opts: {
 }
 
 /**
+ * Group admin on the free plan, last month's recap (recurring, the 5th).
+ *
+ * The Pro version of this arrives with the payroll CSVs attached and goes to
+ * the accountant too. This one is the same month seen from the free plan: the
+ * figures, and the one thing that did not happen. Every tip last month was a
+ * customer at the exact moment they were pleased, and not one of them was
+ * asked for a review, because the invitation is switched off.
+ *
+ * Deliberately no projected revenue, no "an avis is worth X". The number of
+ * customers who were not asked is a fact; what a review earns is a guess, and
+ * a guess in a monthly email is a promise by the third month.
+ */
+export async function sendFreeMonthlyRecap(opts: {
+  to: string; firstName: string; establishmentName: string; monthLabel: string;
+  tipCount: number; totalFormatted: string; billingUrl: string;
+  unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, monthLabel, tipCount, totalFormatted, billingUrl, unsubscribeUrl } = opts;
+  const plural = tipCount > 1;
+
+  return lifecycleSend(to, `${escapeHtml(establishmentName)} : ${totalFormatted} de pourboires en ${monthLabel}`,
+    lifecycleBody({
+      badge: 'Récap du mois', tone: 'green',
+      title: `${firstName}, ${escapeHtml(establishmentName)} a encaissé ${totalFormatted} en ${monthLabel}`,
+      intro: `<strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${plural ? 's' : ''}</strong> le mois dernier. Autant de client${plural ? 's' : ''} content${plural ? 's' : ''} à qui personne n'a demandé d'avis Google : l'invitation après le pourboire fait partie de Digitip Pro, et elle est désactivée sur votre offre.`,
+      bullets: [
+        '① L\'invitation s\'affiche juste après le pourboire, quand le client est content',
+        '② Le relevé de paie part chaque mois à vous et à votre comptable',
+        '③ L\'export comptable complet, tous les mois, pas seulement le mois en cours',
+      ],
+      ctaLabel: 'Essayer Digitip Pro →', ctaUrl: billingUrl,
+      note: 'Vos pourboires n\'ont jamais besoin d\'abonnement : ils arrivent pareil.',
+      unsubscribeUrl,
+    }));
+}
+
+/**
  * Group admin, three days before the Pro trial converts (transactional).
  *
  * The one email a trial owes its customer. It leads with what the trial

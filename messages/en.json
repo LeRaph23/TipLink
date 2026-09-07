@@ -26,7 +26,8 @@
     "privacy": "Privacy",
     "terms": "Terms of use",
     "arrowRight": "→",
-    "language": "Language"
+    "language": "Language",
+    "close": "Close"
   },
   "imageUpload": {
     "upload": "Upload image",
@@ -1283,7 +1284,10 @@
       "searchUnavailable": "Google search is temporarily unavailable. Nothing is blocked: paste your link below instead.",
       "guide1": "Open your listing in the Google Maps or Google Business Profile app, signed in with the business account.",
       "guide2": "Tap \"Ask for reviews\". Google shows a short link like g.page/r/…/review.",
-      "guide3": "Copy that link and paste it below."
+      "guide3": "Copy that link and paste it below.",
+      "gateTitle": "The review invitation is not switched on yet",
+      "gateBody": "Your link is saved, but on the free plan the customer never sees it: nothing appears after the tip. The invitation is part of Digitip Pro.",
+      "gateCta": "See Digitip Pro"
     },
     "confirm": {
       "title": "Check these details",
