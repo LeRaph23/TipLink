@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { EstablishmentDigitipCopy } from './EstablishmentDigitipCopy';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function EstablishmentsPage({
   params,
@@ -59,13 +60,10 @@ export default async function EstablishmentsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-            {t('title')}
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
-        </div>
+      <PageHeader
+        title={t('title')}
+        subtitle={t('subtitle')}
+        action={
         <Link
           href="/dashboard/establishments/new"
           style={{
@@ -77,7 +75,8 @@ export default async function EstablishmentsPage({
         >
           + {t('create')}
         </Link>
-      </div>
+        }
+      />
 
       {!establishments?.length ? (
         <div style={{

@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/i18n/navigation';
 import { EstablishmentActions } from './EstablishmentActions';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function EstablishmentsPage({
   params,
@@ -29,13 +30,7 @@ export default async function EstablishmentsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {t('establishments.title')}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          {t('establishments.subtitle')}
-        </p>
+      <PageHeader title={t('establishments.title')} subtitle={t('establishments.subtitle')}>
         {total > 0 && (
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 12,
@@ -47,7 +42,7 @@ export default async function EstablishmentsPage({
             <span><strong style={{ color: 'var(--text)' }}>{withReview}/{total}</strong> ont configuré leur lien d’avis Google</span>
           </div>
         )}
-      </div>
+      </PageHeader>
 
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',

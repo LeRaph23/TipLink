@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { SettingsForm } from './SettingsForm';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function SettingsPage({
   params,
@@ -28,10 +29,7 @@ export default async function SettingsPage({
   if (!groupId) {
     return (
       <div style={{ maxWidth: 560 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>{t('title')}</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 8 }}>
-          {t('noGroup')}
-        </p>
+        <PageHeader title={t('title')} subtitle={t('noGroup')} />
       </div>
     );
   }
@@ -45,7 +43,7 @@ export default async function SettingsPage({
   if (!group) {
     return (
       <div style={{ maxWidth: 560 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>{t('title')}</h1>
+        <PageHeader title={t('title')} />
       </div>
     );
   }
@@ -59,10 +57,7 @@ export default async function SettingsPage({
 
   return (
     <div style={{ maxWidth: 640 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>{t('title')}</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
-      </div>
+      <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
       <SettingsForm
         groupId={group.id}

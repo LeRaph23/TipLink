@@ -709,7 +709,8 @@
         "shipped": "Expédiée",
         "delivered": "Livrée",
         "canceled": "Annulée"
-      }
+      },
+      "proSection": "Abonnement"
     },
     "home": {
       "dashboard": "Dashboard",

@@ -165,12 +165,15 @@ export function ProCard({ groupId, isPro, locale, pricing, justPaid = false }: P
           type="button"
           onClick={() => go('monthly')}
           disabled={busy}
+          // Flat accent, not the gradient with a coloured drop shadow it used
+          // to carry. That treatment appears nowhere else in the dashboard,
+          // which made the loudest object on the billing page the one nobody
+          // came for.
           style={{
             padding: '10px 18px', borderRadius: 10, border: 'none',
-            background: 'linear-gradient(135deg, #E57A97, #EC97B0)',
-            color: '#fff', fontSize: 13, fontWeight: 700,
+            background: 'var(--accent)', color: 'var(--accent-fg)',
+            fontSize: 13, fontWeight: 700,
             cursor: busy ? 'default' : 'pointer', fontFamily: 'var(--font)',
-            boxShadow: '0 4px 14px rgba(229,122,151,0.3)',
             opacity: busy ? 0.6 : 1,
           }}
         >

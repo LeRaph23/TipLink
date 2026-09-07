@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { hasPro } from '@/lib/billing/entitlements';
 import { ProUpsell } from '@/components/billing/ProUpsell';
 import { MonthPicker } from './MonthPicker';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -145,10 +146,7 @@ export default async function StatementsPage({
 
   return (
     <div style={{ maxWidth: 760 }}>
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>{t('title')}</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.5 }}>{t('subtitle')}</p>
-      </div>
+      <PageHeader title={t('title')} subtitle={t('subtitle')} style={{ marginBottom: 18 }} />
 
       {/* Controls — wrap and go full-width on small screens */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 14 }}>

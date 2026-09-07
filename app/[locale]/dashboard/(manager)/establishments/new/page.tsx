@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { CreateEstablishmentForm } from './CreateEstablishmentForm';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function NewEstablishmentPage({
   params,
@@ -12,11 +13,7 @@ export default async function NewEstablishmentPage({
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {t('create')}
-        </h1>
-      </div>
+      <PageHeader title={t('create')} />
       <CreateEstablishmentForm />
     </div>
   );

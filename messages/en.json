@@ -709,7 +709,8 @@
         "shipped": "Shipped",
         "delivered": "Delivered",
         "canceled": "Canceled"
-      }
+      },
+      "proSection": "Subscription"
     },
     "home": {
       "dashboard": "Dashboard",

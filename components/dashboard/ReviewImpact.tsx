@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import type { ReviewImpact as Impact } from '@/lib/billing/review-teaser';
+import { cardTitleStyle } from './ui';
 
 /**
  * What the Pro subscription produced this month, in the only terms that can be
@@ -40,9 +41,9 @@ export async function ReviewImpact({ impact }: { impact: Impact }) {
         {t('ratio', { clicks: impact.clickCount, tips: impact.tipCount })}
       </div>
       <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+        <h3 style={{ ...cardTitleStyle, marginBottom: 2 }}>
           {impact.clickCount > 0 ? t('title') : t('emptyTitle')}
-        </div>
+        </h3>
         <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5 }}>
           {impact.clickCount > 0 ? t('body') : t('emptyBody')}
         </div>

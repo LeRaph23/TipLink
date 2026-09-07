@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { EstablishmentDigitipCopy } from '../EstablishmentDigitipCopy';
 import { EditEstablishmentForm } from './EditEstablishmentForm';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function EditEstablishmentPage({
   params,
@@ -43,11 +44,7 @@ export default async function EditEstablishmentPage({
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {est.name}
-        </h1>
-      </div>
+      <PageHeader title={est.name} />
 
       <EditEstablishmentForm establishment={est} />
 

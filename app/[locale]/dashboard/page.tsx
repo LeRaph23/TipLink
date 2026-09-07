@@ -10,6 +10,7 @@ import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import { ReviewImpact } from '@/components/dashboard/ReviewImpact';
 import { readGettingStarted } from '@/lib/dashboard/getting-started';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { PageHeader } from '@/components/dashboard/ui';
 
 // Line-style card icon for the banking prompts, matching the dashboard set.
 function CardIcon({ size = 22 }: { size?: number }) {
@@ -142,14 +143,10 @@ export default async function DashboardPage({
 
   return (
     <div className="stagger">
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {t('home.dashboard')}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>
-          {t('welcome')} {staffProfile?.full_name ?? (user!.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? ''}
-        </p>
-      </div>
+      <PageHeader
+        title={t('home.dashboard')}
+        subtitle={`${t('welcome')} ${staffProfile?.full_name ?? (user!.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? ''}`}
+      />
 
       {/* Before anything else on the page: on a new account every card below
           this one shows a zero, and a screen full of zeroes with no next step

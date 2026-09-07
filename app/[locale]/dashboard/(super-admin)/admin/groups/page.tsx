@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/i18n/navigation';
 import { GroupFeeEditor } from './GroupFeeEditor';
 import { GroupActions } from './GroupActions';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function GroupsPage({
   params,
@@ -47,13 +48,10 @@ export default async function GroupsPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-            {t('groups.title')}
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('groups.subtitle')}</p>
-        </div>
+      <PageHeader
+        title={t('groups.title')}
+        subtitle={t('groups.subtitle')}
+        action={
         <Link
           href="/dashboard/admin/groups/new"
           style={{
@@ -65,7 +63,8 @@ export default async function GroupsPage({
         >
           + Nouveau groupe
         </Link>
-      </div>
+        }
+      />
 
       {displayGroups.length === 0 ? (
         <div style={{

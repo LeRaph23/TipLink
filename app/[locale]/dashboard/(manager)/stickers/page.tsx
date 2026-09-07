@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getBaseUrl } from '@/lib/env';
 import { StickerList } from '@/components/dashboard/StickerList';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function StickersPage({
   params,
@@ -44,12 +45,7 @@ export default async function StickersPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-          {t('title')}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
-      </div>
+      <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
       <div style={{
         display: 'flex', gap: 12, alignItems: 'flex-start',

@@ -8,6 +8,7 @@ import { StaffInviteCopy } from './StaffInviteCopy';
 import { MissingEmailRepair } from './MissingEmailRepair';
 import { joinAsStaffMember } from '@/actions/staff';
 import { Icon } from '@/components/ambassadeur/icons';
+import { PageHeader } from '@/components/dashboard/ui';
 
 export default async function StaffListPage({
   params,
@@ -100,26 +101,21 @@ export default async function StaffListPage({
 
   return (
     <div>
-      {/* Header */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        gap: 16, marginBottom: 16,
-      }}>
-        <div>
-          <h1 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em' }}>
-            {t('title')}
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
-        </div>
-        <Link href="/dashboard/staff/new" style={{
-          padding: '9px 16px', borderRadius: 'var(--radius)',
-          background: 'var(--accent)', color: 'var(--accent-fg)',
-          fontSize: 13, fontWeight: 600, textDecoration: 'none',
-          whiteSpace: 'nowrap', flexShrink: 0,
-        }}>
-          {t('addButton')} {tc('arrowRight')}
-        </Link>
-      </div>
+      <PageHeader
+        title={t('title')}
+        subtitle={t('subtitle')}
+        action={
+          <Link href="/dashboard/staff/new" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '9px 16px', borderRadius: 'var(--radius)',
+            background: 'var(--accent)', color: 'var(--accent-fg)',
+            fontSize: 13, fontWeight: 600, textDecoration: 'none',
+            whiteSpace: 'nowrap',
+          }}>
+            {t('addButton')} {tc('arrowRight')}
+          </Link>
+        }
+      />
 
       {/* Profiles created without an email: no account, no invite, and no way
           to ever be paid. Surfaced first because it is the only blocker here
