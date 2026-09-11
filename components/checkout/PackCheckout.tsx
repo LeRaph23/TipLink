@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { loadStripe, type Stripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import {
   AddressElement,
@@ -45,6 +46,7 @@ type CachedIntent = { key: string; data: IntentData } | { key: string; error: st
 type Tax = { ht: number; tax: number; total: number; ratePct: number | null };
 
 export function PackCheckout({ pack, locale }: Props) {
+  const t = useTranslations('checkout');
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -70,14 +72,14 @@ export function PackCheckout({ pack, locale }: Props) {
         if (!res.ok || !data || !data.clientSecret) {
           if (appliedPromo && res.status === 400 && data?.error === 'Invalid promo code') {
             setAppliedPromo(null);
-            setPromoError('Code promo invalide ou expiré.');
+            setPromoError(t('errPromoInvalid'));
             return;
           }
           setCached({
             key: requestKey,
             error: data?.error === 'payment_unavailable'
-              ? 'Le service de paiement est momentanément indisponible. Réessayez dans quelques instants.'
-              : 'Impossible d’initialiser le paiement. Veuillez réessayer.',
+              ? t('errPaymentUnavailable')
+              : t('errPaymentInit'),
           });
           return;
         }
@@ -99,6 +101,11 @@ export function PackCheckout({ pack, locale }: Props) {
         setCached({ key: requestKey, error: msg });
       });
     return () => ac.abort();
+    // `t` is referenced only to build the two error strings and is left out
+    // deliberately: this effect creates a PaymentIntent, so an extra run costs
+    // a real Stripe call. requestKey already covers everything that should
+    // trigger a refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pack, locale, appliedPromo, requestKey]);
 
   // Treat any cached result for a stale key as "still loading".
@@ -119,7 +126,7 @@ export function PackCheckout({ pack, locale }: Props) {
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}
         >
-          Réessayer
+          {t('retry')}
         </button>
       </div>
     );
@@ -182,6 +189,7 @@ function InnerCheckout({
   clientSecret,
   onApplyPromo,
 }: InnerProps) {
+  const t = useTranslations('checkout');
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
@@ -215,7 +223,7 @@ function InnerCheckout({
         body: JSON.stringify({ clientSecret, country, postalCode: postalCode ?? undefined }),
       });
       const d = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(d.error ?? 'Échec du calcul de la TVA');
+      if (!res.ok) throw new Error(d.error ?? 'pack tax lookup failed');
       return { ht: d.htAmount, tax: d.taxAmount, total: d.totalAmount, ratePct: d.taxRatePercent };
     },
     [clientSecret]
@@ -239,20 +247,22 @@ function InnerCheckout({
         .then(setTax)
         .catch((err: unknown) => {
           // Swallowed before. With `canPay = !!tax`, a failed VAT lookup left
-          // the pay button disabled under the label "Renseignez votre adresse
-          // de livraison" — telling a buyer who had just filled in a complete
-          // address to fill in their address, with no error and no way to
-          // retry. Clearing taxKeyRef alone was not a recovery: the address
-          // had not changed, so nothing would fetch again.
+          // the pay button disabled under its "enter your shipping
+          // address" — telling a buyer who had just filled in a complete
+          // address to fill it in, with no error and no way to retry. Clearing
+          // taxKeyRef alone was not a recovery: the address had not changed,
+          // so nothing would fetch again.
           console.error('[checkout] VAT lookup failed', err);
           taxKeyRef.current = '';
           setTax(null);
-          setError(
-            'Impossible de calculer la TVA pour cette adresse. Vérifiez le pays et le code postal, ou réessayez dans un instant.',
-          );
+          setError(t('errTaxAddress'));
         })
         .finally(() => setTaxLoading(false));
     },
+    // `t` omitted for the same reason as the intent effect above: it is only
+    // read to format an error, and a new identity here would re-run the VAT
+    // lookup on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [fetchTax]
   );
 
@@ -301,11 +311,11 @@ function InnerCheckout({
     const expressEmail = event?.billingDetails?.email ?? null;
     const finalEmail = (expressEmail ?? email).trim();
     if (!finalEmail) {
-      setError('Merci d’entrer un email : il est obligatoire pour recevoir la facture et le lien de configuration.');
+      setError(t('errEmailRequired'));
       return;
     }
     if (!tax) {
-      setError('Renseignez votre adresse de livraison pour calculer la TVA.');
+      setError(t('errAddressRequired'));
       return;
     }
     setError(null);
@@ -338,7 +348,7 @@ function InnerCheckout({
         },
       });
       if (confirmErr) {
-        setError(confirmErr.message ?? 'Le paiement a échoué.');
+        setError(confirmErr.message ?? t('errPaymentFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -383,7 +393,7 @@ function InnerCheckout({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 0' }}>
           <div style={{ flex: 1, height: 1, background: '#e6e6f0' }} />
           <span style={{ fontSize: 11, color: '#6b6d85', fontWeight: 600, letterSpacing: '0.04em' }}>
-            OU PAYER PAR CARTE
+            {t('orPayByCard')}
           </span>
           <div style={{ flex: 1, height: 1, background: '#e6e6f0' }} />
         </div>
@@ -395,14 +405,14 @@ function InnerCheckout({
           htmlFor="checkout-email"
           style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}
         >
-          Email
+          {t('emailLabel')}
         </label>
         <input
           id="checkout-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="email@exemple.com"
+          placeholder={t('emailPlaceholder')}
           required
           style={{
             width: '100%', padding: '12px', borderRadius: 10,
@@ -416,7 +426,7 @@ function InnerCheckout({
       {/* Shipping address — drives the VAT calculation */}
       <div>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}>
-          Adresse de livraison
+          {t('shippingLabel')}
         </label>
         <AddressElement
           options={{
@@ -432,7 +442,7 @@ function InnerCheckout({
       {/* Payment element */}
       <div>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}>
-          Paiement
+          {t('paymentLabel')}
         </label>
         <PaymentElement options={{ layout: 'tabs' }} />
       </div>
@@ -440,13 +450,13 @@ function InnerCheckout({
       {/* Promo code */}
       <div style={{ borderTop: '1px dashed #e6e6f0', paddingTop: 14 }}>
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6b6d85', marginBottom: 6 }}>
-          Code promo (optionnel)
+          {t('promoLabel')}
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={promoInput}
             onChange={(e) => setPromoInput(e.target.value)}
-            placeholder="DIGITIP10"
+            placeholder={t('promoPlaceholder')}
             style={{
               flex: 1, padding: '10px 12px', borderRadius: 10,
               border: '1px solid #e6e6f0', fontSize: 14, color: '#0f1020',
@@ -466,7 +476,7 @@ function InnerCheckout({
               fontSize: 13, fontWeight: 700,
             }}
           >
-            {isPromoApplied ? '✓ Appliqué' : 'Appliquer'}
+            {isPromoApplied ? t('promoApplied') : t('promoApply')}
           </button>
         </div>
         {promoError && (
@@ -484,18 +494,18 @@ function InnerCheckout({
         background: '#FEF1F4', border: '1px solid #FBDAE3', borderRadius: 14,
         padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6,
       }}>
-        <Row label="Sous-total HT" value={fmt.format(baseAmount / 100)} />
+        <Row label={t('rowSubtotal')} value={fmt.format(baseAmount / 100)} />
         {discountAmount > 0 && (
-          <Row label="Remise" value={`- ${fmt.format(discountAmount / 100)}`} accent="#0ea36b" />
+          <Row label={t('rowDiscount')} value={`- ${fmt.format(discountAmount / 100)}`} accent="#0ea36b" />
         )}
         <Row
-          label={tax?.ratePct != null ? `TVA (${tax.ratePct}%)` : 'TVA'}
-          value={tax ? fmt.format(tax.tax / 100) : (taxLoading ? 'Calcul…' : 'Selon l’adresse')}
+          label={tax?.ratePct != null ? t('rowVatWithRate', { rate: tax.ratePct }) : t('rowVat')}
+          value={tax ? fmt.format(tax.tax / 100) : (taxLoading ? t('vatCalculating') : t('vatPerAddress'))}
           muted={!tax}
         />
-        <Row label="Livraison" value="Offerte" muted />
+        <Row label={t('rowShipping')} value={t('shippingFree')} muted />
         <div style={{ height: 1, background: '#FBDAE3', margin: '4px 0' }} />
-        <Row label="Total TTC" value={tax ? fmt.format(tax.total / 100) : '—'} bold />
+        <Row label={t('rowTotal')} value={tax ? fmt.format(tax.total / 100) : '—'} bold />
       </div>
 
       {/* Pay button */}
@@ -515,18 +525,17 @@ function InnerCheckout({
         }}
       >
         {isLoading
-          ? 'Traitement…'
+          ? t('btnProcessing')
           : taxLoading
-            ? 'Calcul de la TVA…'
+            ? t('btnCalculatingVat')
             : tax
-              ? `Payer ${fmt.format(displayTotal / 100)}`
-              : 'Renseignez votre adresse de livraison'}
+              ? t('btnPay', { amount: fmt.format(displayTotal / 100) })
+              : t('btnNeedAddress')}
       </button>
 
       <p style={{ fontSize: 11, color: '#6b6d85', textAlign: 'center', lineHeight: 1.5, margin: 0 }}>
-        Paiement sécurisé par Stripe. TVA calculée selon votre pays de livraison.
-        En confirmant, vous acceptez nos CGV.
-        {pack === 'duo' ? ' Pack Duo, 2 plaques NFC.' : ' Pack Solo, 1 plaque NFC.'}
+        {t('legal')}{' '}
+        {pack === 'duo' ? t('packNoteDuo') : t('packNoteSolo')}
       </p>
     </div>
   );

@@ -21,6 +21,11 @@ const FILES = [
   'components/payment/GroupAmountSelector.tsx',
   'components/payment/TipCheckout.tsx',
   'components/payment/GroupTipCheckout.tsx',
+  // The hardware checkout. Both of these took `locale` as a prop and ignored
+  // it: every label, every error message and the terms-of-sale consent were
+  // French literals, on the page where someone hands over a card.
+  'components/checkout/PackCheckout.tsx',
+  'app/[locale]/checkout/page.tsx',
 ];
 
 // Unmistakably French, and short enough not to collide with English or with
@@ -28,6 +33,7 @@ const FILES = [
 const FRENCH = [
   'pourboire', 'frais de service', 'débit', 'Montant', 'Choisissez',
   'Veuillez', 'Réessayer', 'Paiement', 'équipe', 'établissement',
+  'livraison', 'commande', 'Appliquer', 'Remise', 'Retour',
 ];
 
 /** Strips // and block comments so prose in an explanation is not a finding. */

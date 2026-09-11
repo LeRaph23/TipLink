@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { PackCheckout } from '@/components/checkout/PackCheckout';
 import { getPackPricing } from '@/lib/stripe/pricing';
@@ -17,18 +17,19 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'checkout' });
   return buildPageMetadata({
     locale,
     path: '/checkout',
-    title: 'Commande',
-    description: 'Finalisez votre commande de SmartTag Digitip.',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
     noindex: true,
   });
 }
 
 const PACK_VISUAL = {
-  solo: { img: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip Solo' },
-  duo:  { img: '/products/duo-double.jpg', alt: 'Pack Duo, 2 plaques époxy NFC Digitip' },
+  solo: { img: '/products/solo-3d.jpg', altKey: 'altSolo' },
+  duo:  { img: '/products/duo-double.jpg', altKey: 'altDuo' },
 } as const;
 
 function isValidPack(s: string | undefined): s is PackId {
@@ -53,6 +54,7 @@ export default async function CheckoutPage({
   const { locale } = await params;
   const { pack } = await searchParams;
   setRequestLocale(locale);
+  const t = await getTranslations('checkout');
 
   if (!isValidPack(pack)) {
     notFound();
@@ -87,7 +89,7 @@ export default async function CheckoutPage({
               textDecoration: 'none',
             }}
           >
-            <span aria-hidden style={{ fontSize: 18 }}>←</span> Retour
+            <span aria-hidden style={{ fontSize: 18 }}>←</span> {t('back')}
           </Link>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -98,7 +100,7 @@ export default async function CheckoutPage({
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
-            PAIEMENT SÉCURISÉ
+            {t('securePayment')}
           </div>
         </div>
 
@@ -106,10 +108,10 @@ export default async function CheckoutPage({
           fontSize: 'clamp(24px, 3.5vw, 32px)', fontWeight: 900,
           letterSpacing: '-0.03em', marginBottom: 6,
         }}>
-          Finaliser votre commande
+          {t('title')}
         </h1>
         <p style={{ fontSize: 14, color: '#6b6d85', marginBottom: 28 }}>
-          Un seul paiement, livraison offerte sous 3 jours ouvrés.
+          {t('subtitle')}
         </p>
 
         {/* Layout: 2 cols on desktop */}
@@ -134,7 +136,7 @@ export default async function CheckoutPage({
             position: 'sticky', top: 24,
           }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#6b6d85', letterSpacing: '0.08em', marginBottom: 16 }}>
-              VOTRE COMMANDE
+              {t('yourOrder')}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
@@ -142,21 +144,21 @@ export default async function CheckoutPage({
                 width: 80, height: 80, borderRadius: 12, overflow: 'hidden',
                 position: 'relative', background: '#ede9fe', flexShrink: 0,
               }}>
-                <Image src={visual.img} alt={visual.alt} fill sizes="80px" style={{ objectFit: 'cover' }} />
+                <Image src={visual.img} alt={t(visual.altKey)} fill sizes="80px" style={{ objectFit: 'cover' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0f1020' }}>
                   {pricing.productName}
                 </div>
                 <div style={{ fontSize: 12.5, color: '#6b6d85', marginTop: 2 }}>
-                  {pricing.quantity} plaque{pricing.quantity > 1 ? 's' : ''} époxy NFC
+                  {t('plates', { count: pricing.quantity })}
                 </div>
                 {pricing.savingsPercent != null && (
                   <div style={{
                     display: 'inline-block', marginTop: 6,
                     fontSize: 11, fontWeight: 700, color: '#16a34a',
                   }}>
-                    −{pricing.savingsPercent}% vs prix unitaire
+                    {t('savings', { percent: pricing.savingsPercent })}
                   </div>
                 )}
               </div>
@@ -184,13 +186,13 @@ export default async function CheckoutPage({
                 marginBottom: 18,
               }}
             >
-              Passer au pack {pack === 'solo' ? 'Duo (2 plaques)' : 'Solo (1 plaque)'}
+              {pack === 'solo' ? t('switchToDuo') : t('switchToSolo')}
             </Link>
 
             {/* Trust */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
               <Trust
-                label="Garantie matériel à vie"
+                label={t('trustWarranty')}
                 icon={
                   <svg width={14} height={14} viewBox="0 0 20 20" fill="none" aria-hidden>
                     <path d="M10 2L3 5v5c0 4.5 3 7.5 7 8.5C14 17.5 17 14.5 17 10V5l-7-3z" fill="#0ea36b" opacity=".18" />
@@ -200,7 +202,7 @@ export default async function CheckoutPage({
                 }
               />
               <Trust
-                label="Livraison offerte en Europe (3 jours ouvrés)"
+                label={t('trustDelivery')}
                 icon={
                   <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <rect x="1" y="3" width="15" height="13" rx="1" />
@@ -211,7 +213,7 @@ export default async function CheckoutPage({
                 }
               />
               <Trust
-                label="Paiement chiffré par Stripe"
+                label={t('trustStripe')}
                 icon={
                   <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -220,7 +222,7 @@ export default async function CheckoutPage({
                 }
               />
               <Trust
-                label="Satisfait ou remboursé sous 14 jours"
+                label={t('trustRefund')}
                 icon={
                   <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#E57A97" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M3 12a9 9 0 1 0 3-6.7" />
