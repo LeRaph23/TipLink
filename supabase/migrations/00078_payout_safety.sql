@@ -1,4 +1,17 @@
 -- Payout safety: freeze flag, failure tracking, and per-staff payout audit.
+--
+-- Renumbered from 00043 to 00078. Two files shipped as `00043_*`, and the
+-- Supabase CLI keys `supabase_migrations.schema_migrations` on that numeric
+-- prefix, so only one of the pair could ever be recorded. On a fresh
+-- environment that meant this file might silently never run, leaving
+-- `staff_profiles.payouts_frozen` and both audit tables absent while the code
+-- that reads them (actions/stripe.ts requestPayout, the dispute and payout
+-- webhook branches) assumed they were there.
+--
+-- Every statement below is therefore idempotent, including the policies: this
+-- may or may not have already been applied under its old number, and it has to
+-- be safe either way.
+--
 -- Used by:
 --  - actions/stripe.ts requestPayout: refuses when payouts_frozen=true
 --    and enforces the 3-day hold period.
@@ -32,6 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_staff_payouts_status
 
 ALTER TABLE public.staff_payouts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "staff_payouts_owner_select" ON public.staff_payouts;
 CREATE POLICY "staff_payouts_owner_select" ON public.staff_payouts
   FOR SELECT TO authenticated
   USING (
@@ -62,6 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_neg_bal_staff
 
 ALTER TABLE public.negative_balance_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "neg_bal_super_admin_all" ON public.negative_balance_events;
 CREATE POLICY "neg_bal_super_admin_all" ON public.negative_balance_events
   FOR ALL TO authenticated
   USING (is_super_admin())

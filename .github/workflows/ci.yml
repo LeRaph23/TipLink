@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch cancels the first: nothing here needs to
+# finish for an already-superseded commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Types, lint, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      # Dummy values: the build only needs these to satisfy the zod schemas in
+      # lib/env.ts. Nothing here reaches a real Supabase or Stripe account, and
+      # no secret is required to prove the app compiles.
+      - name: Build
+        run: npx next build
+        env:
+          NEXT_PUBLIC_BASE_URL: https://ci.invalid
+          NEXT_PUBLIC_SUPABASE_URL: https://ci.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-placeholder
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder
+          STRIPE_SECRET_KEY: sk_test_ci_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+          CRON_SECRET: ci-cron-secret-placeholder
+          COLD_EMAIL_UNSUB_SECRET: ci-cold-email-secret-placeholder
+          ONBOARDING_TOKEN_SECRET: ci-onboarding-token-secret-placeholder-32
+          STRIPE_PRODUCT_PACK_SOLO: prod_ci_solo
+          STRIPE_PRODUCT_PACK_DUO: prod_ci_duo
+
+  rls:
+    name: Row Level Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # `supabase start` applies supabase/migrations against a real Postgres,
+      # so this step also proves the migrations apply cleanly from scratch —
+      # the check that would have caught two files sharing the 00043 prefix.
+      - name: Start Supabase
+        run: npx supabase start
+
+      # __tests__/rls/*.test.ts skip themselves unless both keys are present.
+      # Exporting them here is the whole point of this job: without it the 30
+      # tenant-isolation tests report as "passed" while never having run.
+      # __tests__/rls/*.test.ts skip themselves unless both keys are present.
+      # Exporting them here is the whole point of this job: without it the 30
+      # tenant-isolation tests report as "passed" while never having run.
+      #
+      # --override-name asks the CLI for our own variable names directly. The
+      # fallback to the CLI's default names keeps this working if an override
+      # key is ever renamed upstream, and the guard below turns any remaining
+      # surprise into a loud failure rather than a silent skip.
+      - name: Export local Supabase credentials
+        run: |
+          set -euo pipefail
+          status="$(npx supabase status -o env \
+            --override-name api.url=SUPABASE_LOCAL_URL \
+            --override-name auth.anon_key=SUPABASE_LOCAL_ANON_KEY \
+            --override-name auth.service_role_key=SUPABASE_LOCAL_SERVICE_KEY)"
+
+          read_var() {
+            printf '%s\n' "$status" | sed -n "s/^$1=//p" | tr -d '"' | head -n1
+          }
+
+          anon="$(read_var SUPABASE_LOCAL_ANON_KEY)"
+          [ -n "$anon" ] || anon="$(read_var ANON_KEY)"
+          service="$(read_var SUPABASE_LOCAL_SERVICE_KEY)"
+          [ -n "$service" ] || service="$(read_var SERVICE_ROLE_KEY)"
+          api="$(read_var SUPABASE_LOCAL_URL)"
+          [ -n "$api" ] || api="$(read_var API_URL)"
+
+          if [ -z "$anon" ] || [ -z "$service" ]; then
+            echo "::error::Could not read the local Supabase keys, so the RLS tests would silently skip."
+            printf '%s\n' "$status" | sed -E 's/=.*/=<redacted>/'
+            exit 1
+          fi
+
+          echo "::add-mask::$anon"
+          echo "::add-mask::$service"
+          {
+            echo "SUPABASE_LOCAL_ANON_KEY=$anon"
+            echo "SUPABASE_LOCAL_SERVICE_KEY=$service"
+            echo "SUPABASE_LOCAL_URL=${api:-http://localhost:54321}"
+          } >> "$GITHUB_ENV"
+
+      # Run once, then inspect. `vitest run` exits 0 when every test is
+      # skipped, so a credential that quietly stopped working would look
+      # exactly like a green run — which is the failure this whole job exists
+      # to prevent.
+      - name: RLS tests
+        run: |
+          set -o pipefail
+          npm run test:rls 2>&1 | tee rls-output.txt
+        env:
+          CI: "true"
+
+      - name: Assert the RLS tests actually ran
+        run: |
+          if grep -qE '[0-9]+ skipped' rls-output.txt; then
+            echo "::error::RLS tests were skipped. They must run — that is the point of this job."
+            exit 1
+          fi
+          grep -qE 'Tests +[0-9]+ passed' rls-output.txt || {
+            echo "::error::No passing RLS tests were reported."
+            exit 1
+          }
+
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop || true
