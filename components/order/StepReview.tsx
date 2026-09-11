@@ -116,7 +116,7 @@ export function StepReview({
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: 'var(--text-2)' }}>
             <span>{t('hardware')}</span>
             <span style={{ color: 'var(--text)', fontWeight: 600 }}>{formatPrice(pricing[state.pack].unitAmount, locale)} {htSuffix(locale)}</span>

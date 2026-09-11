@@ -21,8 +21,8 @@ export function StepShipping({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
-        <label style={labelStyle}>{tb('addrLine1')}</label>
-        <input
+        <label htmlFor="order-line1" style={labelStyle}>{tb('addrLine1')}</label>
+        <input id="order-line1"
           type="text" value={value.line1} onChange={(e) => set({ line1: e.target.value })}
           required autoFocus
           style={inputStyle(f('line1'))}
@@ -31,8 +31,8 @@ export function StepShipping({
       </div>
 
       <div>
-        <label style={labelStyle}>{tb('addrLine2')}</label>
-        <input
+        <label htmlFor="order-line2" style={labelStyle}>{tb('addrLine2')}</label>
+        <input id="order-line2"
           type="text" value={value.line2 ?? ''} onChange={(e) => set({ line2: e.target.value })}
           style={inputStyle(f('line2'))}
           onFocus={() => setFocus('line2')} onBlur={() => setFocus(null)}
@@ -41,8 +41,8 @@ export function StepShipping({
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 12 }}>
         <div>
-          <label style={labelStyle}>{tb('city')}</label>
-          <input
+          <label htmlFor="order-city" style={labelStyle}>{tb('city')}</label>
+          <input id="order-city"
             type="text" value={value.city} onChange={(e) => set({ city: e.target.value })}
             required
             style={inputStyle(f('city'))}
@@ -50,8 +50,8 @@ export function StepShipping({
           />
         </div>
         <div>
-          <label style={labelStyle}>{tb('postalCode')}</label>
-          <input
+          <label htmlFor="order-zip" style={labelStyle}>{tb('postalCode')}</label>
+          <input id="order-zip"
             type="text" value={value.postal_code} onChange={(e) => set({ postal_code: e.target.value })}
             required
             style={inputStyle(f('zip'))}
@@ -61,8 +61,8 @@ export function StepShipping({
       </div>
 
       <div>
-        <label style={labelStyle}>{tb('country')}</label>
-        <select
+        <label htmlFor="order-country" style={labelStyle}>{tb('country')}</label>
+        <select id="order-country"
           value={value.country} onChange={(e) => set({ country: e.target.value })}
           style={{ ...inputStyle(f('country')), cursor: 'pointer' }}
           onFocus={() => setFocus('country')} onBlur={() => setFocus(null)}

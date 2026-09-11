@@ -68,6 +68,13 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             return (
               <button
                 key={amt}
+                type="button"
+                // The selected amount was signalled by colour alone: a pink
+                // border, a pink background and a 4 % scale. A screen-reader
+                // user had no way to know which amount was armed before paying,
+                // and neither did anyone reading the screen in bright sunlight.
+                // aria-pressed states it outright.
+                aria-pressed={active}
                 onClick={() => { setSelectedAmount(cents); setCustom(''); setShowCustom(false); }}
                 style={{
                   padding: '16px 6px', borderRadius: 12,
@@ -107,6 +114,11 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             </span>
             <input
               type="number" inputMode="decimal" placeholder={t('customAmount')} value={custom} autoFocus
+              // The field had no label at all, only a placeholder — which
+              // disappears the moment anything is typed, leaving a screen
+              // reader with an unnamed number box on the payment screen.
+              aria-label={t('customAmount')}
+              aria-describedby={customInvalid ? 'custom-amount-error' : undefined}
               onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
               onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
               style={{
@@ -122,7 +134,11 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
           </div>
         )}
         {customInvalid && (
-          <p style={{ margin: '6px 2px 0', fontSize: 11.5, color: 'var(--error)', fontFamily: 'var(--font)' }}>
+          <p
+            id="custom-amount-error"
+            role="alert"
+            style={{ margin: '6px 2px 0', fontSize: 11.5, color: 'var(--error)', fontFamily: 'var(--font)' }}
+          >
             {t('minAmount', { min: fmtCents.format(0.5) })}
           </p>
         )}

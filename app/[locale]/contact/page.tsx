@@ -44,7 +44,7 @@ export default async function ContactPage({
           <LanguageSwitcher />
           <Link href="/pricing" style={{
             padding: '7px 14px', textDecoration: 'none',
-            color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500,
+            color: 'var(--text-2)', fontSize: 13, fontWeight: 500,
           }}>{tc('pricing')}</Link>
         </nav>
       </header>

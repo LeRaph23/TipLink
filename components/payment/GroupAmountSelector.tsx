@@ -36,6 +36,10 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
     : selectedAmount;
 
   const hasAmount = tipAmount !== null && tipAmount >= 50;
+  // Mirrors AmountSelector. Without it, typing an amount under the 0,50 €
+  // minimum in the team flow made the entire checkout block disappear with no
+  // explanation: `hasAmount` went false and nothing said why.
+  const customInvalid = custom.trim() !== '' && (tipAmount === null || tipAmount < 50);
 
   // The tipper covers the whole cost of the transaction on top of their tip, so
   // the team shares 100 % of what was chosen.
@@ -69,6 +73,13 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
             return (
               <button
                 key={amt}
+                type="button"
+                // The selected amount was signalled by colour alone: a pink
+                // border, a pink background and a 4 % scale. A screen-reader
+                // user had no way to know which amount was armed before paying,
+                // and neither did anyone reading the screen in bright sunlight.
+                // aria-pressed states it outright.
+                aria-pressed={active}
                 onClick={() => { setSelectedAmount(cents); setCustom(''); setShowCustom(false); }}
                 style={{
                   padding: '16px 6px', borderRadius: 12,
@@ -108,18 +119,32 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
             </span>
             <input
               type="number" inputMode="decimal" placeholder={t('group.customAmountLabel')} value={custom} autoFocus
+              // No label, only a placeholder, which vanishes as soon as a digit
+              // is typed. Same fix as the single-recipient selector.
+              aria-label={t('group.customAmountLabel')}
+              aria-invalid={customInvalid}
+              aria-describedby={customInvalid ? 'group-custom-amount-error' : undefined}
               onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
               onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
               style={{
                 width: '100%', background: 'var(--surface-2)',
-                border: `1.5px solid ${customFocus ? 'var(--accent)' : 'var(--border)'}`,
+                border: `1.5px solid ${customInvalid ? 'var(--error)' : customFocus ? 'var(--accent)' : 'var(--border)'}`,
                 borderRadius: 'var(--radius-sm)', padding: '11px 12px 11px 28px',
                 color: 'var(--text)', fontSize: 16, outline: 'none',
-                boxShadow: customFocus ? '0 0 0 3px var(--accent-muted)' : 'none',
+                boxShadow: customFocus ? `0 0 0 3px ${customInvalid ? 'color-mix(in oklch, var(--error) 18%, transparent)' : 'var(--accent-muted)'}` : 'none',
                 fontFamily: 'var(--font)',
               }}
             />
           </div>
+        )}
+        {customInvalid && (
+          <p
+            id="group-custom-amount-error"
+            role="alert"
+            style={{ margin: '6px 2px 0', fontSize: 11.5, color: 'var(--error)', fontFamily: 'var(--font)' }}
+          >
+            {t('minAmount', { min: fmtCents.format(0.5) })}
+          </p>
         )}
       </div>
 

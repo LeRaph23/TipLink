@@ -10,7 +10,7 @@ export default async function LocaleNotFound() {
       background: 'var(--bg)', padding: '24px', textAlign: 'center',
     }}>
       <div className="fade-up">
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 96, fontWeight: 800, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.04)', lineHeight: 1, marginBottom: 16, userSelect: 'none' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 96, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--border-subtle)', lineHeight: 1, marginBottom: 16, userSelect: 'none' }}>
           404
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: 8 }}>{t('title')}</h2>

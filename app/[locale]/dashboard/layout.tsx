@@ -5,6 +5,13 @@ import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import { VerifyBanner } from '@/components/dashboard/VerifyBanner';
 import { getEstablishmentPayability } from '@/lib/stripe/establishment-account';
 import { NOINDEX_METADATA } from '@/lib/seo/metadata';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+import {
+  BASE_CLIENT_NAMESPACES,
+  DASHBOARD_NAMESPACES,
+  pickNamespaces,
+} from '@/lib/i18n/client-namespaces';
 
 // Authenticated area: never indexable. See NOINDEX_METADATA.
 export const metadata = NOINDEX_METADATA;
@@ -48,14 +55,25 @@ export default async function DashboardLayout({
 
   const userName = staffProfile?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? '';
 
+  // The `dashboard` namespace is 21 KB and is reached only from this subtree,
+  // so it is provided here rather than on every route. A nested provider
+  // replaces the context rather than extending it, hence the base set is
+  // re-included. See lib/i18n/client-namespaces.ts.
+  const messages = pickNamespaces(await getMessages(), [
+    ...BASE_CLIENT_NAMESPACES,
+    ...DASHBOARD_NAMESPACES,
+  ]);
+
   return (
-    <DashboardShell
-      userRoles={roles ?? []}
-      userEmail={user.email ?? ''}
-      userName={userName}
-    >
-      {payability && <VerifyBanner payability={payability} locale={locale} />}
-      {children}
-    </DashboardShell>
+    <NextIntlClientProvider messages={messages}>
+      <DashboardShell
+        userRoles={roles ?? []}
+        userEmail={user.email ?? ''}
+        userName={userName}
+      >
+        {payability && <VerifyBanner payability={payability} locale={locale} />}
+        {children}
+      </DashboardShell>
+    </NextIntlClientProvider>
   );
 }

@@ -79,7 +79,8 @@
     "terms": "CGU",
     "arrowRight": "→",
     "language": "Langue",
-    "close": "Fermer"
+    "close": "Fermer",
+    "yourOrder": "Votre commande"
   },
   "imageUpload": {
     "upload": "Téléverser une image",
