@@ -132,7 +132,10 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
       {hasAmount && tipAmount && (
         <div style={{ textAlign: 'center', margin: '-4px 0 0' }}>
           <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: 0 }}>
-            {fmt.format(tipAmount / 100)} pourboire&nbsp;+&nbsp;{fmtCents.format(serviceFee / 100)} frais de service{' '}
+            {t('feeBreakdown', {
+              tip: fmt.format(tipAmount / 100),
+              fee: fmtCents.format(serviceFee / 100),
+            })}{' '}
             <button
               type="button"
               onClick={() => setShowFeeInfo((v) => !v)}
@@ -150,7 +153,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             </button>
             {' = '}
             <strong style={{ color: 'var(--text-2)', fontWeight: 700 }}>
-              {fmtCents.format(totalAmount / 100)} débités
+              {t('feeTotal', { total: fmtCents.format(totalAmount / 100) })}
             </strong>
           </p>
           {showFeeInfo && (

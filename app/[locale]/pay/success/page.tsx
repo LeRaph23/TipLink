@@ -127,13 +127,55 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
       case 'succeeded': return 'succeeded';
       case 'processing': return 'processing';
       case 'requires_payment_method': return 'requires_payment_method';
-      default: return sp.redirect_status === undefined ? 'succeeded' : 'failed';
+      // An unrecognised value is a failure. A MISSING one is not: it used to
+      // fall through to 'succeeded', so a bare GET of /pay/success — a
+      // bookmark, a shared link, back-then-forward — rendered the green tick
+      // and "Merci !" for a payment that never happened. That case is caught
+      // before this runs; anything reaching here carries a payment_intent.
+      default: return 'failed';
     }
   })();
 
   // Demo mode: no PaymentIntent exists — values come straight from the query
   // string the demo pay button built. Nothing is ever charged or persisted.
   const isDemo = sp.demo === '1';
+
+  // Nothing to confirm. Stripe always returns here with ?payment_intent=…, so
+  // its absence means the visitor did not arrive from a payment at all. Saying
+  // so plainly beats both alternatives: claiming success is a lie, and
+  // "Votre carte a été refusée" would alarm someone who simply opened a
+  // bookmark.
+  if (!isDemo && !sp.payment_intent) {
+    return (
+      <main style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--bg)', padding: 24,
+      }}>
+        <div style={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800,
+            letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 10,
+          }}>
+            {t('nothingToShow')}
+          </h1>
+          <p style={{ fontSize: 14.5, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 24 }}>
+            {t('nothingToShowBody')}
+          </p>
+          <Link
+            href="/"
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              minHeight: 44, padding: '0 20px', borderRadius: 12,
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--text-2)', fontSize: 14, fontWeight: 600, textDecoration: 'none',
+            }}
+          >
+            {t('nothingToShowCta')}
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   // Server-side verification: retrieve real status and amount from Stripe
   let status: RedirectStatus = isDemo ? 'succeeded' : queryStatus;

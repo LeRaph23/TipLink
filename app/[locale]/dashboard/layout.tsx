@@ -4,6 +4,10 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import { VerifyBanner } from '@/components/dashboard/VerifyBanner';
 import { getEstablishmentPayability } from '@/lib/stripe/establishment-account';
+import { NOINDEX_METADATA } from '@/lib/seo/metadata';
+
+// Authenticated area: never indexable. See NOINDEX_METADATA.
+export const metadata = NOINDEX_METADATA;
 
 export default async function DashboardLayout({
   children,

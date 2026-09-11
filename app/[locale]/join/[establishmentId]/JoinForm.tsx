@@ -136,6 +136,11 @@ export function JoinForm({
         setSelectedProfile(match);
       }
       setStep('name-photo');
+    }).catch((err: unknown) => {
+      // Unhandled before. A failed session lookup left isAuthenticated false
+      // with no explanation, stranding the wizard on its welcome step: the
+      // visitor could start the flow but never finish it.
+      console.error('[join] session lookup failed', err);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -177,18 +182,30 @@ export function JoinForm({
   }
 
   async function submitJoin() {
-    const res = await fetch('/api/staff/join', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        establishmentId,
-        fullName: effectiveName,
-        selectedProfileId: selectedProfile?.id ?? null,
-        avatarUrl,
-        locale,
-        teamToken,
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch('/api/staff/join', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          establishmentId,
+          fullName: effectiveName,
+          selectedProfileId: selectedProfile?.id ?? null,
+          avatarUrl,
+          locale,
+          teamToken,
+        }),
+      });
+    } catch (err) {
+      // A dropped connection — a waiter on café wifi, which is exactly who
+      // uses this screen. The rejection used to go unhandled, so setLoading
+      // never ran and no message appeared: the button sat on its spinner for
+      // ever and only a page reload escaped.
+      console.error('[join] network error', err);
+      setError(tAuth('errorGeneric'));
+      setLoading(false);
+      return;
+    }
 
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };

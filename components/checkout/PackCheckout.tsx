@@ -237,7 +237,20 @@ function InnerCheckout({
       setError(null);
       fetchTax(addr.country, addr.postal_code)
         .then(setTax)
-        .catch(() => { taxKeyRef.current = ''; setTax(null); })
+        .catch((err: unknown) => {
+          // Swallowed before. With `canPay = !!tax`, a failed VAT lookup left
+          // the pay button disabled under the label "Renseignez votre adresse
+          // de livraison" — telling a buyer who had just filled in a complete
+          // address to fill in their address, with no error and no way to
+          // retry. Clearing taxKeyRef alone was not a recovery: the address
+          // had not changed, so nothing would fetch again.
+          console.error('[checkout] VAT lookup failed', err);
+          taxKeyRef.current = '';
+          setTax(null);
+          setError(
+            'Impossible de calculer la TVA pour cette adresse. Vérifiez le pays et le code postal, ou réessayez dans un instant.',
+          );
+        })
         .finally(() => setTaxLoading(false));
     },
     [fetchTax]
