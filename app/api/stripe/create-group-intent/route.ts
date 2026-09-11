@@ -5,6 +5,8 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { computeTipFee, computeTipTotal, resolveTipFeeConfig } from '@/lib/pricing/tip-fees';
+import { canAcceptTips } from '@/lib/tips/payable';
+import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 
 export const runtime = 'nodejs';
 
@@ -50,12 +52,18 @@ export async function POST(request: NextRequest) {
   // Validate establishment and resolve platform fee
   const { data: estab } = await supabase
     .from('establishments')
-    .select('id, group_id')
+    .select('id, group_id, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, is_demo')
     .eq('id', establishmentId)
     .is('deleted_at', null)
     .single();
 
   if (!estab) return NextResponse.json({ error: 'Establishment not found' }, { status: 404 });
+
+  // Same gate the tip page applies via is_payable. Without it a direct POST
+  // charged the card of someone tipping a salon that cannot be paid.
+  if (!canAcceptTips(estab)) {
+    return NextResponse.json({ error: 'establishment_not_payable' }, { status: 409 });
+  }
 
   // Deferred onboarding: every ACTIVE staff member shares the tip, even those
   // who haven't finished Stripe onboarding yet — their share is held on the
@@ -106,6 +114,11 @@ export async function POST(request: NextRequest) {
       staff_id: null,
       establishment_id: establishmentId,
       status: 'pending',
+      // Explicit from the outset. Left unset, a tip whose webhook transfer
+      // block never ran stayed NULL, and every cron that could have rescued it
+      // filters on ('pending','failed') — so it became money nothing would
+      // ever look at again. See migration 00080.
+      transfer_status: 'pending',
       idempotency_key: idempotencyKey,
       metadata: {
         source: 'group_tip',
@@ -139,38 +152,54 @@ export async function POST(request: NextRequest) {
 
   const transferGroup = `grp_${transactionId}`;
   const netForStaff = tipAmount;
-  const staffIds = activeStaff.map((s) => s.id).join(',');
 
-  const intent = await stripe.paymentIntents.create(
-    {
-      amount,
-      currency: currency.toLowerCase(),
-      automatic_payment_methods: { enabled: true },
-      transfer_group: transferGroup,
-      ...(customerEmail ? { receipt_email: customerEmail } : {}),
-      payment_method_options: {
-        card: { request_three_d_secure: 'automatic' },
-      },
-      metadata: {
-        transaction_id: transactionId,
-        group_tip: 'true',
-        establishment_id: establishmentId,
-        tip_amount: String(tipAmount),
-        service_fee: String(serviceFee),
-        fee_bps: String(feeConfig.bps),
-        fee_fixed_cents: String(feeConfig.fixedCents),
-        net_for_staff: String(netForStaff),
-        staff_ids: staffIds,
+  try {
+    const intent = await stripe.paymentIntents.create(
+      {
+        amount,
+        currency: currency.toLowerCase(),
+        automatic_payment_methods: { enabled: true },
         transfer_group: transferGroup,
+        ...(customerEmail ? { receipt_email: customerEmail } : {}),
+        payment_method_options: {
+          card: { request_three_d_secure: 'automatic' },
+        },
+        // No `staff_ids` here. It was the joined list of every active staff
+        // member's UUID, and Stripe caps a metadata VALUE at 500 characters: 13
+        // ids fit, the 14th overflowed and the create call threw. Nothing ever
+        // read the field either, because the webhook re-queries staff_profiles
+        // when it splits the tip. So a restaurant with fourteen servers had a
+        // dead team-tip button, broken by a value with no reader.
+        metadata: {
+          transaction_id: transactionId,
+          group_tip: 'true',
+          establishment_id: establishmentId,
+          tip_amount: String(tipAmount),
+          service_fee: String(serviceFee),
+          fee_bps: String(feeConfig.bps),
+          fee_fixed_cents: String(feeConfig.fixedCents),
+          net_for_staff: String(netForStaff),
+          transfer_group: transferGroup,
+        },
       },
-    },
-    { idempotencyKey }
-  );
+      { idempotencyKey }
+    );
 
-  return NextResponse.json({
-    clientSecret: intent.client_secret,
-    paymentIntentId: intent.id,
-    transactionId,
-    staffCount: activeStaff.length,
-  });
+    return NextResponse.json({
+      clientSecret: intent.client_secret,
+      paymentIntentId: intent.id,
+      transactionId,
+      staffCount: activeStaff.length,
+    });
+  } catch (err) {
+    // Matches create-intent. Unwrapped, a Stripe throw escaped the handler and
+    // the tipper got a 500 with no JSON body, which the client then crashed on
+    // while parsing. The pending transaction row stays as-is: no charge
+    // happened.
+    console.error('[create-group-intent]', err instanceof Error ? err.message : err);
+    if (isUpstreamUnavailable(err)) {
+      return NextResponse.json({ error: 'payment_unavailable' }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'payment_failed' }, { status: 500 });
+  }
 }

@@ -8,6 +8,11 @@ import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe
 import { createPackInvoiceForPaymentIntent } from '@/lib/stripe/pack-invoice';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
+import {
+  voidCommercialSaleForOrder,
+  restoreCommercialSaleForOrder,
+  freezeCommercialForOrder,
+} from '@/lib/commercial/sales';
 import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 import { readAccountStatus } from '@/lib/stripe/connect';
@@ -1593,7 +1598,12 @@ async function voidAmbassadorCommissionByPaymentIntent(
 ): Promise<void> {
   const orderId = await resolveSmarttagOrderIdByPaymentIntent(supabase, paymentIntentId);
   if (!orderId) return;
+  // A pack is attributed to an ambassador OR a commercial, never both, and each
+  // helper no-ops on an order that is not its own. Only the ambassador half
+  // used to run here, so a refunded pack sold by a commercial left a live,
+  // withdrawable commission behind.
   await voidAmbassadorSaleForOrder(supabase, orderId, reason);
+  await voidCommercialSaleForOrder(supabase, orderId, reason);
 }
 
 /** Un-voids the ambassador commission tied to a charge's SmartTag order. */
@@ -1604,6 +1614,7 @@ async function restoreAmbassadorCommissionByPaymentIntent(
   const orderId = await resolveSmarttagOrderIdByPaymentIntent(supabase, paymentIntentId);
   if (!orderId) return;
   await restoreAmbassadorSaleForOrder(supabase, orderId);
+  await restoreCommercialSaleForOrder(supabase, orderId);
 }
 
 /**
@@ -1633,6 +1644,13 @@ async function handlePackDisputeOpened(
   }
 
   await voidAmbassadorSaleForOrder(supabase, orderId, 'pack_dispute_opened');
+
+  // Same treatment for a pack sold through the Commerciaux Pros programme:
+  // freeze the seller's withdrawals while the money is at risk, and void the
+  // commission. Neither happened before, so a commercial could charge back
+  // their own sale and keep the commission, repeatably.
+  await freezeCommercialForOrder(supabase, orderId);
+  await voidCommercialSaleForOrder(supabase, orderId, 'pack_dispute_opened');
 }
 
 async function attributeAmbassadorSale(

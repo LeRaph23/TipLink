@@ -15,7 +15,34 @@ export const runtime = 'nodejs';
 // still undelivered after this many days goes back to them. 90 keeps us safely
 // inside Stripe's ~180-day card-refund window (a refund to an expired card
 // fails beyond that). Configurable via env to tune without a deploy.
-const EXPIRY_DAYS = Number(process.env.UNCLAIMED_TIP_EXPIRY_DAYS ?? 90);
+const DEFAULT_EXPIRY_DAYS = 90;
+
+/**
+ * Days before an undelivered tip is returned to the customer.
+ *
+ * Parsed defensively because this is the one variable in the file that can
+ * refund real money. Read as a bare `Number(process.env.X ?? 90)` it had two
+ * ways to go wrong, neither of them loud: a non-numeric value produced NaN, and
+ * `new Date(NaN).toISOString()` throws, killing the whole cron; and `0` is not
+ * nullish, so `?? 90` let it through and every undelivered tip would have been
+ * refunded on the spot. Anything not a sane positive integer falls back to the
+ * default and says so.
+ */
+function resolveExpiryDays(): number {
+  const raw = process.env.UNCLAIMED_TIP_EXPIRY_DAYS;
+  if (raw === undefined || raw.trim() === '') return DEFAULT_EXPIRY_DAYS;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 180) {
+    console.error(
+      `[unclaimed-tips-expire] UNCLAIMED_TIP_EXPIRY_DAYS="${raw}" is not an integer between 1 and 180 — ` +
+      `falling back to ${DEFAULT_EXPIRY_DAYS}. (180 is Stripe's card-refund window.)`
+    );
+    return DEFAULT_EXPIRY_DAYS;
+  }
+  return parsed;
+}
+
+const EXPIRY_DAYS = resolveExpiryDays();
 
 export async function POST(req: Request) {
   if (!isAuthorizedCronRequest(req)) {
@@ -30,9 +57,10 @@ export async function POST(req: Request) {
     .select('id, stripe_charge_id, refunded_amount, metadata')
     .eq('status', 'succeeded')
     .is('stripe_transfer_id', null)
-    .in('transfer_status', ['pending', 'failed'])
+    .or('transfer_status.is.null,transfer_status.in.(pending,failed)')
     .lt('succeeded_at', cutoff)
     .not('stripe_charge_id', 'is', null)
+    .order('succeeded_at', { ascending: true })
     .limit(200);
 
   const rows = (rowsRaw ?? []) as unknown as Array<{
@@ -52,6 +80,23 @@ export async function POST(req: Request) {
     // of pocket on a failure it did not cause.
     const amount = Number(r.metadata?.tip_amount);
     if (!chargeId || !Number.isFinite(amount) || amount <= 0) {
+      // Not refundable without a human. Record why, rather than counting it and
+      // moving on: an untouched row stays in this query for ever and holds one
+      // of the 200 slots, so enough of them would crowd out the tips that can
+      // actually be returned. 'failed' keeps it in the reconcile cron's view,
+      // where attempts burn and it surfaces in the exhausted count.
+      console.error('[unclaimed-tips-expire] not refundable', {
+        transactionId: r.id,
+        hasCharge: !!chargeId,
+        amount,
+      });
+      await service
+        .from('transactions')
+        .update({
+          transfer_status: 'failed',
+          transfer_error: 'expiry_blocked:no_tip_amount',
+        } as never)
+        .eq('id', r.id);
       failed++;
       continue;
     }

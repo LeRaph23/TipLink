@@ -32,16 +32,25 @@ export default async function AnalyticsPage({
   const now = Date.now();
   const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
 
+  // Read the per-employee allocations, not the transactions.
+  //
+  // `transactions.amount` is what the customer paid, which since the 00073 fee
+  // model is the tip PLUS the service fee added on top. Charting it showed the
+  // manager a number the salon never receives, ~25 c + 5 % per tip above the
+  // bank. And a group tip has `staff_id: null`, so filtering transactions by
+  // staff id dropped them entirely: a restaurant using only the team tag saw a
+  // chart flat at zero while money was coming in daily.
   const { data: txs } = await supabase
-    .from('transactions')
-    .select('amount, currency, created_at, staff_id')
+    .from('tip_allocations')
+    .select('amount, allocated_at, staff_id, transactions(currency)')
     .in('staff_id', staffIds.length ? staffIds : ['00000000-0000-0000-0000-000000000000'])
-    .eq('status', 'succeeded')
-    .gte('created_at', thirtyDaysAgo)
-    .order('created_at', { ascending: true })
+    .eq('status', 'allocated')
+    .gte('allocated_at', thirtyDaysAgo)
+    .order('allocated_at', { ascending: true })
     .limit(TX_LIMIT);
 
-  const currency = txs?.[0]?.currency ?? 'EUR';
+  const currency =
+    (txs?.[0]?.transactions as { currency?: string } | null)?.currency ?? 'EUR';
 
   // Bucket by day.
   const byDay = new Map<string, number>();
@@ -51,7 +60,8 @@ export default async function AnalyticsPage({
     byDay.set(key, 0);
   }
   for (const row of txs ?? []) {
-    const key = row.created_at.slice(0, 10);
+    if (!row.allocated_at) continue;
+    const key = row.allocated_at.slice(0, 10);
     byDay.set(key, (byDay.get(key) ?? 0) + row.amount);
   }
   const dailySeries = Array.from(byDay.entries()).map(([date, amount]) => ({

@@ -6,6 +6,7 @@ import { generateIdempotencyKey } from '@/lib/stripe/idempotency';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 import { computeTipFee, computeTipTotal, resolveTipFeeConfig } from '@/lib/pricing/tip-fees';
+import { canAcceptTips } from '@/lib/tips/payable';
 
 export const runtime = 'nodejs';
 
@@ -87,10 +88,19 @@ export async function POST(request: NextRequest) {
   if (staff.establishment_id) {
     const { data: estab } = await supabase
       .from('establishments')
-      .select('group_id')
+      .select('group_id, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, is_demo')
       .eq('id', staff.establishment_id)
       .is('deleted_at', null)
       .maybeSingle();
+
+    // The tip PAGE gates on this (is_payable, migration 00074) but the API
+    // behind it did not, so a direct POST charged the customer for a salon that
+    // cannot receive the money. The transfer then failed and the tip sat on the
+    // platform for 90 days before being refunded, minus a service fee the
+    // customer never got back.
+    if (!estab || !canAcceptTips(estab)) {
+      return NextResponse.json({ error: 'establishment_not_payable' }, { status: 409 });
+    }
     if (estab?.group_id) {
       const { data: group } = await supabase
         .from('groups')
@@ -128,6 +138,11 @@ export async function POST(request: NextRequest) {
       staff_id: staffId,
       establishment_id: staff.establishment_id,
       status: 'pending',
+      // Explicit from the outset. Left unset, a tip whose webhook transfer
+      // block never ran stayed NULL, and every cron that could have rescued it
+      // filters on ('pending','failed') — so it became money nothing would
+      // ever look at again. See migration 00080.
+      transfer_status: 'pending',
       idempotency_key: idempotencyKey,
       metadata: {
         source: 'nfc',

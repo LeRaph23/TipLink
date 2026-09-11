@@ -21,7 +21,67 @@ import {
 
 export const runtime = 'nodejs';
 
-const LIMIT = 200;
+/** Rows per page. Pagination, not a ceiling — see `eachGroup`. */
+const PAGE_SIZE = 200;
+
+/**
+ * Hard stop, so a pagination bug cannot spin for ever inside a cron.
+ * 100 pages is 20 000 groups; crossing it is a real signal, not a limit to
+ * raise quietly.
+ */
+const MAX_PAGES = 100;
+
+/**
+ * Walks every group matching `plan`, a page at a time.
+ *
+ * This used to be a bare `.limit(200)` with no ORDER BY on both the Pro and the
+ * free queries. Two things followed. Past 200 groups the rest were simply never
+ * processed, and the route still answered `{ ok: true }` with `failed: 0`, so
+ * nothing anywhere said so. And with no ordering Postgres was free to return a
+ * different arbitrary 200 each month, so a given group could be skipped
+ * indefinitely rather than merely last.
+ *
+ * The monthly statement is the Digitip Pro feature. Silently not sending it to
+ * the 201st paying customer is the worst shape this bug could take.
+ *
+ * Keyset pagination on `id` rather than `.range()`: the set is stable under
+ * concurrent inserts, which matters because a group created while this runs
+ * would otherwise shift every later page and drop a row.
+ */
+async function* eachGroup(
+  service: ReturnType<typeof createServiceClient>,
+  plan: 'pro' | 'free',
+): AsyncGenerator<{ id: string; name: string | null; accountant_email?: string | null }> {
+  let cursor: string | null = null;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    let q = service
+      .from('groups')
+      .select('id, name, accountant_email')
+      .is('deleted_at', null)
+      .order('id', { ascending: true })
+      .limit(PAGE_SIZE);
+
+    q = plan === 'pro' ? q.eq('plan', 'pro') : q.neq('plan', 'pro');
+    if (cursor) q = q.gt('id', cursor);
+
+    const { data, error } = await q;
+    if (error) {
+      console.error('[monthly-statements] group page failed', { plan, page, error });
+      return;
+    }
+    if (!data?.length) return;
+
+    for (const group of data) yield group;
+
+    if (data.length < PAGE_SIZE) return;
+    cursor = data[data.length - 1].id;
+
+    if (page === MAX_PAGES - 1) {
+      console.error('[monthly-statements] page cap reached, groups may be unprocessed', { plan });
+    }
+  }
+}
 
 /**
  * Sends last month's payroll statement to every Pro group, and to their
@@ -45,18 +105,11 @@ export async function POST(req: Request) {
   const month = previousMonth();
   const period = monthPeriod(month);
 
-  const { data: groups } = await service
-    .from('groups')
-    .select('id, name, accountant_email')
-    .eq('plan', 'pro')
-    .is('deleted_at', null)
-    .limit(LIMIT);
-
   let sent = 0;
   let skipped = 0;
   let failed = 0;
 
-  for (const group of groups ?? []) {
+  for await (const group of eachGroup(service, 'pro')) {
     const dedupKey = `monthly_statement:${group.id}:${month}`;
     try {
       const { data: already } = await service
@@ -109,7 +162,8 @@ export async function POST(req: Request) {
 
       await sendMonthlyStatement({
         to: [...recipients],
-        establishmentName: group.name,
+        // `groups.name` is nullable; the free recap below already falls back.
+        establishmentName: group.name ?? 'Votre établissement',
         monthLabel,
         staffCount: dataset.summary.length,
         totalFormatted,
@@ -164,14 +218,7 @@ async function sendFreeRecaps(
 ): Promise<{ sent: number; skipped: number; failed: number }> {
   const tally = { sent: 0, skipped: 0, failed: 0 };
 
-  const { data: groups } = await service
-    .from('groups')
-    .select('id, name')
-    .neq('plan', 'pro')
-    .is('deleted_at', null)
-    .limit(LIMIT);
-
-  for (const group of groups ?? []) {
+  for await (const group of eachGroup(service, 'free')) {
     try {
       const dataset = await buildPayrollSummary(service, group.id, period);
       if (dataset.totals.count < 1) { tally.skipped++; continue; }

@@ -132,47 +132,81 @@ export default async function DashboardPage({
   // UUID column (Postgres syntax error), so skip the queries entirely.
   const staffId = staffProfile?.id ?? null;
 
-  const { data: recentTransactions } = staffId
+  // Same correction as the totals below: the employee's share, from
+  // tip_allocations, and therefore including the group tips that carry
+  // `staff_id: null` on the transaction itself. `transactions.currency` still
+  // comes along, since an allocation has no currency of its own.
+  const { data: recentAllocations } = staffId
     ? await supabase
-        .from('transactions')
-        .select('id, amount, currency, created_at, status')
+        .from('tip_allocations')
+        .select('id, amount, allocated_at, status, transactions(currency)')
         .eq('staff_id', staffId)
-        .order('created_at', { ascending: false })
+        .order('allocated_at', { ascending: false })
         .limit(5)
     : { data: null };
 
+  const recentTransactions = (recentAllocations ?? []).map((a) => ({
+    id: a.id,
+    amount: a.amount,
+    currency: (a.transactions as { currency?: string } | null)?.currency ?? 'EUR',
+    created_at: a.allocated_at,
+    // tip_allocations uses 'allocated' / 'reversed'; StatusBadge speaks the
+    // transaction vocabulary, so map onto the equivalent it already renders.
+    status: a.status === 'reversed' ? 'refunded' : 'succeeded',
+  }));
+
+  // Earnings come from tip_allocations, not transactions, for two reasons.
+  //
+  // `transactions.amount` is what the CUSTOMER paid: since the 00073 fee model
+  // that is the tip PLUS the service fee the tipper adds on top. Summing it
+  // overstated every figure on this page by 25 c + 5 % per tip, so the weekly
+  // email said "encaissé 105 €" where the bank showed 100 € and the Relevés
+  // page — which already read tip_allocations — said 100 € too.
+  //
+  // And a group tip is written with `staff_id: null`, its per-person split
+  // living only in tip_allocations. Filtering transactions on staff_id
+  // therefore showed 0 € forever to every employee of a restaurant that only
+  // uses the team tag.
   const { data: trendWindow } = staffId
     ? await supabase
-        .from('transactions')
-        .select('amount, created_at, status')
+        .from('tip_allocations')
+        .select('amount, allocated_at')
         .eq('staff_id', staffId)
-        .eq('status', 'succeeded')
-        .gte('created_at', fourteenDaysAgoIso)
+        .eq('status', 'allocated')
+        .gte('allocated_at', fourteenDaysAgoIso)
     : { data: null };
 
   // All-time aggregate. A single SELECT sum() would be cleaner, but
   // staff dashboards only have O(1k) rows so we just fetch amounts.
   const { data: allTimeRows } = staffId
     ? await supabase
-        .from('transactions')
-        .select('amount, currency')
+        .from('tip_allocations')
+        .select('amount')
         .eq('staff_id', staffId)
-        .eq('status', 'succeeded')
+        .eq('status', 'allocated')
     : { data: null };
   const weekMs = 7 * 24 * 60 * 60 * 1000;
-  const thisWeekTxs = trendWindow?.filter((t) => now - new Date(t.created_at).getTime() < weekMs) ?? [];
+  // `allocated_at` is nullable on rows predating 00075's rename. Dropping them
+  // from the trend is right: a row with no date cannot be placed in a week, and
+  // guessing one would quietly distort the comparison the arrow is based on.
+  const datedAllocations = (trendWindow ?? []).flatMap((t) =>
+    t.allocated_at ? [{ amount: t.amount, at: new Date(t.allocated_at).getTime() }] : [],
+  );
+  const thisWeekTxs = datedAllocations.filter((t) => now - t.at < weekMs);
   const thisWeekTotal = thisWeekTxs.reduce((sum, t) => sum + t.amount, 0);
-  const lastWeekTotal = trendWindow?.filter(t => {
-    const d = now - new Date(t.created_at).getTime();
-    return d >= weekMs && d < 2 * weekMs;
-  }).reduce((sum, t) => sum + t.amount, 0) ?? 0;
+  const lastWeekTotal = datedAllocations
+    .filter((t) => {
+      const d = now - t.at;
+      return d >= weekMs && d < 2 * weekMs;
+    })
+    .reduce((sum, t) => sum + t.amount, 0);
 
   const minDataCents = 1000; // 10€
   const trend = lastWeekTotal >= minDataCents
     ? Math.round(((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100)
     : undefined;
 
-  const currency = allTimeRows?.[0]?.currency ?? recentTransactions?.[0]?.currency ?? 'EUR';
+  const currency = recentTransactions[0]?.currency ?? 'EUR';
   const fmt = new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 });
   const totalEarnings = allTimeRows?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
 
@@ -274,7 +308,7 @@ export default async function DashboardPage({
               </tr>
             </thead>
             <tbody>
-              {!recentTransactions?.length ? (
+              {!recentTransactions.length ? (
                 <tr>
                   <td colSpan={3} style={{ padding: '36px 16px', textAlign: 'center' }}>
                     <div style={{ color: 'var(--text-3)', fontSize: 13 }}>{t('noTips')}</div>
@@ -302,7 +336,9 @@ export default async function DashboardPage({
               ) : recentTransactions.map(tx => (
                 <tr key={tx.id} className="dash-row" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '11px 16px', color: 'var(--text-3)', fontSize: 12.5 }}>
-                    {new Date(tx.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {tx.created_at
+                      ? new Date(tx.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+                      : '—'}
                   </td>
                   <td style={{ padding: '11px 16px', fontWeight: 700, letterSpacing: '-0.02em' }}>
                     {fmt.format(tx.amount / 100)}

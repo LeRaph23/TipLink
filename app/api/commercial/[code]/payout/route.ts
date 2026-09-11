@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
+import { settlePayoutTransferError } from '@/lib/stripe/payout-settlement';
 import { authenticateCommercialRequest } from '@/lib/auth/commercial-session';
 import { COMMERCIAL_MIN_PAYOUT_CENTS } from '@/lib/commercial-tiers';
 
@@ -173,11 +174,46 @@ export async function POST(
 
       return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Stripe error';
       console.error('commercial payout transfer failed', err);
+      // Same reasoning as the ambassador route: a throw is not proof the money
+      // stayed put, and releasing the balance on an unconfirmed failure is how
+      // the same funds get transferred twice.
+      const settlement = await settlePayoutTransferError(err, {
+        destination: com.stripe_account_id,
+        payoutId: inserted.id,
+      });
+
+      if (settlement.outcome === 'paid') {
+        await service
+          .from('commercial_payouts')
+          .update({
+            status: 'paid',
+            stripe_transfer_id: settlement.transferId,
+            paid_at: new Date().toISOString(),
+          })
+          .eq('id', inserted.id);
+        return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
+      }
+
+      if (settlement.outcome === 'indeterminate') {
+        // Stays `pending`, so the amount remains committed and the
+        // one-pending-per-commercial index (migration 00081) blocks a retry
+        // until a super-admin has resolved it.
+        await service
+          .from('commercial_payouts')
+          .update({ failure_reason: settlement.message })
+          .eq('id', inserted.id);
+        return NextResponse.json({
+          ok: false,
+          amount: inserted.amount_cents,
+          status: 'pending',
+          error: 'Virement en cours de vérification — un administrateur confirmera sous peu.',
+        }, { status: 502 });
+      }
+
       await service
         .from('commercial_payouts')
-        .update({ status: 'failed', failure_reason: msg })
+        .update({ status: 'failed', failure_reason: settlement.message })
         .eq('id', inserted.id);
       return NextResponse.json({
         ok: false,

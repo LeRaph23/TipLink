@@ -271,7 +271,7 @@ export async function getEstablishmentPayability(
       .select('metadata')
       .eq('establishment_id', est.id)
       .eq('status', 'succeeded')
-      .in('transfer_status', ['pending', 'failed'])
+      .or('transfer_status.is.null,transfer_status.in.(pending,failed)')
       .is('stripe_transfer_id', null)
       .limit(500);
 

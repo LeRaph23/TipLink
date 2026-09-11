@@ -13,6 +13,7 @@ import {
 } from '@/lib/email';
 import { stripe } from '@/lib/stripe/client';
 import { voidAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
+import { voidCommercialSaleForOrder } from '@/lib/commercial/sales';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -323,10 +324,13 @@ export async function forceOrderStatus(
 
   if (error) return { ok: false, error: error.message };
 
-  // Force-canceling an order voids the ambassador commission earned on it,
-  // mirroring the regular cancelOrder path.
+  // Force-canceling an order voids the commission earned on it, mirroring the
+  // regular cancelOrder path. Both programmes: a pack is attributed to an
+  // ambassador or a commercial, and each helper no-ops on an order that is not
+  // its own.
   if (newStatus === 'canceled') {
     await voidAmbassadorSaleForOrder(service, orderId, 'order_canceled');
+    await voidCommercialSaleForOrder(service, orderId, 'order_canceled');
   }
 
   await logAdminAction('orders.force_status', { orderId, newStatus });
@@ -431,9 +435,10 @@ export async function cancelOrder(
     .eq('id', orderId);
   if (orderErr) return { ok: false, error: orderErr.message };
 
-  // A canceled order produced no kept revenue — void any ambassador commission
-  // earned on it so it can no longer be counted or withdrawn.
+  // A canceled order produced no kept revenue — void any commission earned on
+  // it, in either programme, so it can no longer be counted or withdrawn.
   await voidAmbassadorSaleForOrder(service, orderId, 'order_canceled');
+  await voidCommercialSaleForOrder(service, orderId, 'order_canceled');
 
   await logAdminAction('orders.cancel', {
     orderId,

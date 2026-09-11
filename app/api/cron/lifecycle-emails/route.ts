@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase/service';
+import { tipAmountOf } from '@/lib/tips/amounts';
 import { isAuthorizedCronRequest } from '@/lib/auth/require-cron';
 import { getBaseUrl } from '@/lib/env';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
@@ -484,7 +485,7 @@ async function runWeeklyRecap(service: Db, dryRun: boolean): Promise<Tally> {
   const now = Date.now();
   const { data: txns } = await service
     .from('transactions')
-    .select('establishment_id, amount, currency')
+    .select('establishment_id, amount, currency, metadata')
     .eq('status', 'succeeded')
     .gte('succeeded_at', new Date(now - 7 * DAY).toISOString())
     .limit(20000);
@@ -493,7 +494,11 @@ async function runWeeklyRecap(service: Db, dryRun: boolean): Promise<Tally> {
   for (const row of txns ?? []) {
     if (!row.establishment_id) continue;
     const cur = agg.get(row.establishment_id) ?? { total: 0, count: 0, currency: row.currency || 'EUR' };
-    cur.total += row.amount ?? 0;
+    // The tip, not the gross charge. This email says "a encaissé X €", and
+    // `amount` is what the CUSTOMER paid — tip plus the service fee added on
+    // top — so it announced roughly 25 c + 5 % per tip more than the salon's
+    // bank showed, every Monday morning.
+    cur.total += tipAmountOf(row);
     cur.count += 1;
     agg.set(row.establishment_id, cur);
   }
