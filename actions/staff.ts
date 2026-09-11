@@ -7,6 +7,8 @@ import { getTranslations } from 'next-intl/server';
 import { sendStaffInviteLink } from '@/lib/staff-invite';
 import { actionError, classifyDbError } from '@/lib/errors/action-error';
 import { staffTipTag, establishmentTipTag } from '@/lib/cache/pay-tags';
+import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
+import { rotateTeamJoinLink } from '@/lib/auth/team-join-link';
 
 interface CreateStaffInput {
   fullName: string;
@@ -290,4 +292,46 @@ export async function deactivateStaffMember(
   const establishmentId = updated[0]?.establishment_id;
   if (establishmentId) updateTag(establishmentTipTag(establishmentId));
   return { success: true };
+}
+
+
+/**
+ * Invalidates every outstanding team-join link for the caller's establishment
+ * and returns a fresh one.
+ *
+ * The link is a bearer credential: whoever holds it can add themselves to this
+ * establishment's team, which puts them on its public tip page and in its
+ * payroll export. So it needs a way back. Bumping
+ * `establishments.team_join_version` breaks every copy of the old URL at once,
+ * which is the only remedy available for a QR code already printed, forwarded
+ * or photographed.
+ *
+ * Gated on getManageScope() rather than a bare session: this writes through the
+ * service client, where RLS is not there to catch a cross-tenant call.
+ */
+export async function regenerateTeamJoinLink(
+  establishmentId: string,
+  locale: string,
+): Promise<{ url: string } | { error: string }> {
+  const scope = await getManageScope();
+  if (!scope) return actionError('forbidden');
+
+  const service = createServiceClient();
+  const { data: est } = await service
+    .from('establishments')
+    .select('id, group_id')
+    .eq('id', establishmentId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (!est?.group_id || !canManageGroup(scope, est.group_id)) return actionError('forbidden');
+
+  const url = await rotateTeamJoinLink(service, establishmentId, locale === 'en' ? 'en' : 'fr');
+  // null means the update did not apply, so nothing was revoked. Saying so is
+  // the point: reporting a rotation that did not happen would leave a manager
+  // believing a leaked link is dead when it still works.
+  if (!url) return actionError('unknown');
+
+  revalidatePath('/dashboard/staff');
+  return { url };
 }

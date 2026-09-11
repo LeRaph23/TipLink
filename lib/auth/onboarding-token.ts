@@ -1,19 +1,13 @@
-import crypto from 'node:crypto';
 import { serverEnv } from '@/lib/env';
+import { b64url, fromB64url, hmac, timingSafeEqualString } from '@/lib/auth/hmac-token';
 
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-function b64url(buf: Buffer): string {
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function fromB64url(s: string): Buffer {
-  const padded = s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4);
-  return Buffer.from(padded, 'base64');
-}
-
+// Signed over the bare payload, with no purpose tag. lib/auth/team-join-token
+// signs over `team:<payload>` with the same secret precisely so that a token
+// minted here can never verify there, and vice versa.
 function sign(payload: string, secret: string): string {
-  return b64url(crypto.createHmac('sha256', secret).update(payload).digest());
+  return hmac(payload, secret);
 }
 
 export function signOnboardingToken(groupId: string, email: string, now: number = Date.now()): string {
@@ -42,9 +36,7 @@ export function verifyOnboardingToken(
   const secret = serverEnv().ONBOARDING_TOKEN_SECRET;
   const expectedSig = sign(payload, secret);
 
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expectedSig);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+  if (!timingSafeEqualString(sig, expectedSig)) {
     return { valid: false, reason: 'bad_signature' };
   }
 

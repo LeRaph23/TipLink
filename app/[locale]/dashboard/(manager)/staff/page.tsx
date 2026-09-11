@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
-import { getBaseUrl } from '@/lib/env';
+import { buildTeamJoinUrl } from '@/lib/auth/team-join-link';
 import { StaffInviteCopy } from './StaffInviteCopy';
 import { MissingEmailRepair } from './MissingEmailRepair';
 import { joinAsStaffMember } from '@/actions/staff';
@@ -61,7 +61,12 @@ export default async function StaffListPage({
         .single()
     : { data: null };
 
-  const joinUrl = est ? `${getBaseUrl()}/join/${est.id}` : null;
+  // Signed, establishment-scoped and revocable. The bare `/join/<id>` URL this
+  // used to be was not a credential at all: the id is public (it is the href of
+  // the "see the team" link on every scanned tag's page), so anyone could join
+  // any salon's team. It also lacked the locale prefix, so it bounced through
+  // the proxy before landing.
+  const joinUrl = est ? await buildTeamJoinUrl(service, est.id, locale) : null;
 
   // Check if the current group admin already has a staff profile
   const isGroupAdmin = !!(roleRow?.group_id);
@@ -135,7 +140,7 @@ export default async function StaffListPage({
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Lien d&apos;invitation équipe
           </div>
-          <StaffInviteCopy url={joinUrl} establishmentName={est?.name ?? ''} />
+          <StaffInviteCopy url={joinUrl} establishmentId={est!.id} establishmentName={est?.name ?? ''} />
         </div>
       )}
 

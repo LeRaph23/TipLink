@@ -80,10 +80,17 @@ export function JoinForm({
   establishmentId,
   establishmentName,
   unclaimedProfiles,
+  teamToken,
 }: {
   establishmentId: string;
   establishmentName: string;
   unclaimedProfiles: UnclaimedProfile[];
+  /**
+   * Signed team-join token from the page URL, forwarded to the join endpoint.
+   * Null for someone who arrived through an emailed invitation: their own
+   * pre-linked profile is what authorises them, not a link.
+   */
+  teamToken: string | null;
 }) {
   const locale = useLocale();
   const t = useTranslations('join');
@@ -179,6 +186,7 @@ export function JoinForm({
         selectedProfileId: selectedProfile?.id ?? null,
         avatarUrl,
         locale,
+        teamToken,
       }),
     });
 

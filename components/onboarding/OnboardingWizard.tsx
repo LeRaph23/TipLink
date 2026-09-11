@@ -399,7 +399,8 @@ export function OnboardingWizard(props: Props) {
       if (!userId) return { error: tAuth('errorGeneric') };
 
       const result = await completeNfcOnboarding({
-        userId,
+        // No userId: the action reads the caller's session. currentUserId()
+        // above still runs, as the check that a session exists at all.
         nfcCodes: state.nfcCodes,
         establishmentName: state.establishmentName,
         address: state.address,

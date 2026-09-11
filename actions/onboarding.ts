@@ -81,7 +81,13 @@ const PostPurchaseSchema = z.object({
 });
 
 const NfcOnboardingSchema = z.object({
-  userId: z.string().uuid(),
+  // No `userId`. It used to be read straight from the request body and the
+  // action only checked that such a user existed, which made this public POST
+  // endpoint a way to mint a group_admin role against any account id. The
+  // caller's session is the only acceptable source, and the wizard has one by
+  // this point: verifying the emailed code is what creates the account, and it
+  // returns a session (see currentUserId() in components/onboarding/
+  // OnboardingWizard.tsx).
   nfcCodes: z.array(z.string().min(1).max(32)).min(1).max(20),
   establishmentName: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
@@ -316,21 +322,26 @@ export async function completeExpressOnboarding(
   return { success: true, establishmentId: est.id, onboardingToken: token };
 }
 
-// For the unauthenticated NFC scan flow.
-// The client-side wizard calls supabase.auth.signUp() BEFORE this action,
-// so the session cookie is set and createClient() can read the new user.
+// For the NFC scan flow.
+//
+// The manager is signed in by the time this runs: verifying the six-digit code
+// creates the account and returns a session. That session is what authorises
+// the call. The action previously took `userId` from its own arguments and
+// merely confirmed the id resolved to some user, which is no authorisation at
+// all for a server action (a public POST endpoint) that goes on to create a
+// group and insert a `group_admin` role for that id.
 export async function completeNfcOnboarding(
   input: z.infer<typeof NfcOnboardingSchema>
 ): Promise<ProvisionResult> {
   const parsed = NfcOnboardingSchema.safeParse(input);
   if (!parsed.success) return actionError('validation', parsed.error, 'completeNfcOnboarding');
 
-  const service = createServiceClient();
-  const { userId, nfcCodes, establishmentName, address, adminFullName, locale } = parsed.data;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return actionError('forbidden');
 
-  // Verify the user exists in Supabase auth (works even before email confirmation)
-  const { data: { user }, error: userErr } = await service.auth.admin.getUserById(userId);
-  if (userErr || !user) return actionError('notFound', userErr, 'completeNfcOnboarding.user');
+  const service = createServiceClient();
+  const { nfcCodes, establishmentName, address, adminFullName, locale } = parsed.data;
 
   const normalizedCodes = nfcCodes.map((c) => c.trim().toLowerCase());
   const slug = await makeUniqueEstablishmentSlug(service, establishmentName);
