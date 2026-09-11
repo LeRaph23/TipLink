@@ -51,3 +51,47 @@ export async function computePackTax(opts: {
 
   return { htAmount, taxAmount, totalAmount, taxRatePercent, country: cc, calculationId: calc.id ?? null };
 }
+
+
+/**
+ * The seller's own country, used for the provisional VAT a PaymentIntent is
+ * created with before a shipping address is known.
+ */
+export const DEFAULT_TAX_COUNTRY = 'FR';
+
+/** French standard rate, in basis points. */
+const DEFAULT_TAX_BPS = 2000;
+
+/**
+ * Provisional VAT applied at PaymentIntent creation.
+ *
+ * Pack prices are stored excl. VAT, and the intent used to be created at the
+ * bare HT amount: VAT was added only if the browser went on to call
+ * /api/billing/pack-tax when the address changed. The only thing stopping a
+ * confirmation before that was a client-side `canPay` flag. Anyone confirming
+ * with the client secret before the address handler ran (or with JS partly
+ * broken) paid 79 euros instead of 94,80, and Digitip still owed the 15,80 to
+ * the DGFiP out of its own margin.
+ *
+ * So the intent is now created already taxed, at the domestic rate. This is
+ * deliberately a flat local computation rather than a Stripe Tax call: it adds
+ * no latency and no new failure mode to the start of checkout, and it is only
+ * ever a floor. The real, address-based calculation replaces it through
+ * /api/billing/pack-tax before the buyer can reach a payable total in the
+ * normal flow, and a `tax_provisional` marker records which of the two a
+ * PaymentIntent is currently carrying.
+ *
+ * Erring high is the safe direction: EU rates run from about 17 % to 27 %, so
+ * a buyer in a cheaper jurisdiction is corrected downward before paying, while
+ * the failure mode this replaces was charging no VAT at all.
+ */
+export function provisionalPackTax(htAmount: number): {
+  htAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  country: string;
+} {
+  const ht = Math.max(0, Math.round(htAmount));
+  const taxAmount = Math.round((ht * DEFAULT_TAX_BPS) / 10_000);
+  return { htAmount: ht, taxAmount, totalAmount: ht + taxAmount, country: DEFAULT_TAX_COUNTRY };
+}
