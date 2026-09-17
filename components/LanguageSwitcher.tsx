@@ -47,7 +47,11 @@ export function LanguageSwitcher({ compact = false, variant = 'auto' }: Props) {
         border: 'var(--border)',
         activeBg: 'var(--accent-muted)',
         activeFg: 'var(--accent)',
-        idleFg: 'var(--text-3)',
+        // --text-2, not --text-3. Measured in the browser: --text-3 (#9898a8)
+        // against the light surface is 2.63:1, which is a large improvement on
+        // the 1.05:1 this control used to have but still under the 4.5:1 WCAG
+        // AA needs for 11-12px text. --text-2 (#5a5a6a) measures 6.27:1.
+        idleFg: 'var(--text-2)',
       }
     : isLight
       ? {
