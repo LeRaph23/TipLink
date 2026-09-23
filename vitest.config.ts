@@ -7,6 +7,8 @@ export default defineConfig({
     globals: true,
     testTimeout: 30000,
     setupFiles: ['./__tests__/setup-env.ts'],
+    // e2e/ holds Playwright specs, run by `npm run e2e` instead.
+    exclude: ['**/node_modules/**', 'e2e/**'],
   },
   resolve: {
     alias: {

@@ -3,6 +3,13 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
+// A local Supabase (http://127.0.0.1:54321, used by scripts/e2e/up.sh) is not
+// covered by the *.supabase.co sources below; allow its exact origin so the
+// browser client can reach it. Hosted projects add nothing here.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL) : null;
+const extraSupabaseOrigin =
+  supabaseUrl && !supabaseUrl.hostname.endsWith('.supabase.co') ? ` ${supabaseUrl.origin}` : '';
+
 const CSP = [
   "default-src 'self'",
   // Next.js inline scripts + Stripe.js. connect-js.stripe.com serves the
@@ -15,10 +22,10 @@ const CSP = [
   // Supabase REST/Realtime + Stripe API calls (from browser SDK). The address
   // autocomplete hits the IGN geocoder through our own /api/onboarding/geocode
   // proxy, so it stays under 'self' and needs no extra host here.
-  "connect-src 'self' https://api.stripe.com https://connect.stripe.com https://connect-js.stripe.com https://*.supabase.co wss://*.supabase.co",
+  `connect-src 'self' https://api.stripe.com https://connect.stripe.com https://connect-js.stripe.com https://*.supabase.co wss://*.supabase.co${extraSupabaseOrigin}`,
   // Avatars and logos live in Supabase Storage (public-media bucket).
   // Carto tiles power the salon map.
-  "img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com",
+  `img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com${extraSupabaseOrigin}`,
   // Tailwind injects inline styles; no external stylesheet CDN
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",

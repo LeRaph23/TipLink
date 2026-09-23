@@ -10,6 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rls": "vitest run __tests__/rls",
+    "e2e:up": "scripts/e2e/up.sh",
+    "e2e:down": "scripts/e2e/down.sh",
+    "e2e": "playwright test",
     "db:types": "supabase gen types typescript --local > types/database.ts",
     "db:migrate": "supabase db push",
     "setup:stripe": "npx tsx scripts/stripe-setup.ts",
@@ -40,6 +43,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

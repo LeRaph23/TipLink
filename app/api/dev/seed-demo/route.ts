@@ -138,6 +138,18 @@ export async function POST() {
       }
     }
 
+    // The dashboard layout sends a group_admin whose group has not finished
+    // onboarding back to /onboarding, so the demo group must be marked done.
+    step = 'groups.update(onboarding)';
+    {
+      const { error: upErr } = await admin
+        .from('groups')
+        .update({ onboarding_completed_at: new Date().toISOString() })
+        .eq('id', groupId)
+        .is('onboarding_completed_at', null);
+      if (upErr) fail(upErr);
+    }
+
     // Best-effort billing patch — tolerant to missing columns (migration not pushed).
     step = 'groups.update(billing)';
     {
