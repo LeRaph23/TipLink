@@ -1224,7 +1224,7 @@
     "verify": {
       "title": "Confirm your email",
       "subtitle": "We will send you a 6 digit code. That is also how you will sign in later.",
-      "prefilled": "Your manager prefilled your email. Change it if you need to."
+      "invitedAs": "Use the address your manager invited you with: {hint}"
     }
   },
   "acceptInvite": {

@@ -1224,7 +1224,7 @@
     "verify": {
       "title": "Confirmez votre email",
       "subtitle": "Nous vous envoyons un code à 6 chiffres. C'est aussi comme ça que vous vous connecterez ensuite.",
-      "prefilled": "Votre responsable a pré-renseigné votre email. Vous pouvez le modifier si nécessaire."
+      "invitedAs": "Utilisez l'adresse à laquelle votre responsable vous a invité(e) : {hint}"
     }
   },
   "acceptInvite": {

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
+import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { JoinForm } from './JoinForm';
 
@@ -36,21 +37,27 @@ export default async function JoinPage({
     .or('is_active.eq.false,user_id.is.null')
     .order('full_name');
 
-  // For profiles already linked to an auth user (invited by email), fetch their email
-  const profilesWithEmails: { id: string; full_name: string; email?: string }[] = [];
+  // This page is public (the establishment id also appears on the tip page a
+  // customer lands on after a scan), so it must not disclose who was invited:
+  // an invited profile only carries a masked hint of its address. The visitor's
+  // own pending profile, if any, is resolved here from the session instead.
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  const ownProfileId = pendingProfiles?.find((p) => user && p.user_id === user.id)?.id ?? null;
+
+  const profiles: { id: string; full_name: string; emailHint?: string }[] = [];
   if (pendingProfiles && pendingProfiles.length > 0) {
     await Promise.all(
       pendingProfiles.map(async (p) => {
-        let email: string | undefined;
+        let emailHint: string | undefined;
         if (p.user_id) {
           const { data } = await service.auth.admin.getUserById(p.user_id);
-          email = data?.user?.email ?? undefined;
+          emailHint = maskEmail(data?.user?.email);
         }
-        profilesWithEmails.push({ id: p.id, full_name: p.full_name, email });
+        profiles.push({ id: p.id, full_name: p.full_name, emailHint });
       })
     );
     // Sort by full_name after async operations
-    profilesWithEmails.sort((a, b) => a.full_name.localeCompare(b.full_name, 'fr'));
+    profiles.sort((a, b) => a.full_name.localeCompare(b.full_name, 'fr'));
   }
 
   return (
@@ -93,7 +100,8 @@ export default async function JoinPage({
         <JoinForm
           establishmentId={est.id}
           establishmentName={est.name}
-          unclaimedProfiles={profilesWithEmails}
+          unclaimedProfiles={profiles}
+          ownProfileId={ownProfileId}
         />
 
         <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-3)', marginTop: 24 }}>
@@ -102,4 +110,12 @@ export default async function JoinPage({
       </div>
     </main>
   );
+}
+
+/** "marc.serveur@exemple.fr" -> "m•••@exemple.fr": enough to recognise, not to reuse. */
+function maskEmail(email: string | undefined): string | undefined {
+  if (!email) return undefined;
+  const at = email.indexOf('@');
+  if (at < 1) return undefined;
+  return `${email[0]}•••${email.slice(at)}`;
 }

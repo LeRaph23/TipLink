@@ -39,6 +39,26 @@ export async function POST(req: Request) {
   if (!est) return NextResponse.json({ error: 'Establishment not found' }, { status: 404 });
 
   if (selectedProfileId) {
+    // A profile created by an email invite already belongs to the invited
+    // account: only that account may claim it. The join link is not a secret
+    // (the establishment id is on the public tip page), so without this anyone
+    // could sign up with their own address and take over a colleague's profile.
+    // Profiles pre-created without an email (user_id null) stay open to the
+    // link, which is what that kind of profile is for.
+    const { data: target } = await service
+      .from('staff_profiles')
+      .select('user_id')
+      .eq('id', selectedProfileId)
+      .eq('establishment_id', establishmentId)
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (target?.user_id && target.user_id !== user.id) {
+      return NextResponse.json(
+        { error: "Ce profil est réservé à la personne invitée. Connectez-vous avec l'adresse de l'invitation." },
+        { status: 403 }
+      );
+    }
+
     // Claiming an existing pending profile. The UPDATE is guarded by
     // `is_active = false` so two users racing for the same invite link
     // cannot both win — the second UPDATE matches 0 rows.
