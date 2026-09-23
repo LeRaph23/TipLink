@@ -1211,7 +1211,9 @@
       "trialDaysLeft": "{days, plural, one {# day left} other {# days left}}",
       "trialBody": "When the trial ends, the subscription starts at {price} per month excl. VAT. You can stop before then and pay nothing.",
       "trialBodyNoPrice": "When the trial ends, the subscription starts automatically. You can stop before then and pay nothing.",
-      "trialEnded": "Your trial ended on {date}. Google reviews and the full export are switched off again."
+      "trialEnded": "Your trial ended on {date}. Google reviews and the full export are switched off again.",
+      "canceledTitle": "Subscription cancelled",
+      "canceledBody": "Digitip Pro stays active until {date}, then stops. You will not be charged. You can resume it until then."
     },
     "verifyBanner": {
       "titleHeld": "{amount} is waiting for you",

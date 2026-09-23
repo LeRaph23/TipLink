@@ -1112,6 +1112,9 @@ async function syncSubscription(
   const plan = planForSubscriptionStatus(sub.status);
   const item = sub.items?.data?.[0];
   const periodEnd = item?.current_period_end ?? null;
+  const cancelAt = sub.status === 'canceled'
+    ? null
+    : sub.cancel_at ?? (sub.cancel_at_period_end ? periodEnd : null);
 
   await supabase
     .from('groups')
@@ -1123,6 +1126,9 @@ async function syncSubscription(
         ? new Date(periodEnd * 1000).toISOString()
         : null,
       trial_ends_at: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+      // A cancellation from the portal ends the subscription at the period end:
+      // the status does not change until then, only cancel_at does.
+      subscription_cancel_at: cancelAt ? new Date(cancelAt * 1000).toISOString() : null,
     } as never)
     .eq('id', groupId);
 }

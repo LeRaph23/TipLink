@@ -71,7 +71,7 @@ export default async function BillingPage({
     primaryGroupId
       ? service
           .from('groups')
-          .select('plan, subscription_status, trial_ends_at')
+          .select('plan, subscription_status, trial_ends_at, subscription_cancel_at')
           .eq('id', primaryGroupId)
           .is('deleted_at', null)
           .maybeSingle()
@@ -216,7 +216,8 @@ export default async function BillingPage({
             locale={locale === 'en' ? 'en' : 'fr'}
             pricing={proPricing}
             justPaid={justPaid}
-          trial={trial}
+            trial={trial}
+            cancelAt={planRow?.subscription_cancel_at ?? null}
           />
         </section>
       )}
