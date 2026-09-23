@@ -26,8 +26,8 @@ export function StepBilling({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
-        <label style={labelStyle}>{tb('legalName')}</label>
-        <input
+        <label htmlFor="order-legal" style={labelStyle}>{tb('legalName')}</label>
+        <input id="order-legal"
           type="text" value={value.legal_name}
           onChange={(e) => onChange({ ...value, legal_name: e.target.value })}
           placeholder={tb('legalNamePlaceholder')} required autoFocus
@@ -37,8 +37,8 @@ export function StepBilling({
       </div>
 
       <div>
-        <label style={labelStyle}>{tb('vatNumber')}</label>
-        <input
+        <label htmlFor="order-vat" style={labelStyle}>{tb('vatNumber')}</label>
+        <input id="order-vat"
           type="text" value={value.vat_number}
           onChange={(e) => onChange({ ...value, vat_number: e.target.value.toUpperCase() })}
           placeholder="FR12345678901"
@@ -73,33 +73,40 @@ export function StepBilling({
           <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-2)' }}>
             {tb('billingAddress')}
           </div>
-          <input
+          <input id="order-bline1"
+            aria-label={tb('addrLine1')}
             type="text" value={billing.line1} onChange={(e) => setBilling({ line1: e.target.value })}
             placeholder={tb('addrLine1')} required
             style={inputStyle(f('bline1'))}
             onFocus={() => setFocus('bline1')} onBlur={() => setFocus(null)}
           />
-          <input
+          <input id="order-bline2"
+            aria-label={tb('addrLine2')}
             type="text" value={billing.line2 ?? ''} onChange={(e) => setBilling({ line2: e.target.value })}
             placeholder={tb('addrLine2')}
             style={inputStyle(f('bline2'))}
             onFocus={() => setFocus('bline2')} onBlur={() => setFocus(null)}
           />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 12 }}>
-            <input
+            <input id="order-bcity"
+              aria-label={tb('city')}
               type="text" value={billing.city} onChange={(e) => setBilling({ city: e.target.value })}
               placeholder={tb('city')} required
               style={inputStyle(f('bcity'))}
               onFocus={() => setFocus('bcity')} onBlur={() => setFocus(null)}
             />
-            <input
+            <input id="order-bzip"
+              aria-label={tb('postalCode')}
               type="text" value={billing.postal_code} onChange={(e) => setBilling({ postal_code: e.target.value })}
               placeholder={tb('postalCode')} required
               style={inputStyle(f('bzip'))}
               onFocus={() => setFocus('bzip')} onBlur={() => setFocus(null)}
             />
           </div>
-          <select
+          <select id="order-bcountry"
+            // The only control in the billing block with neither a label nor a
+            // placeholder to borrow a name from.
+            aria-label={tb('country')}
             value={billing.country} onChange={(e) => setBilling({ country: e.target.value })}
             style={{ ...inputStyle(f('bcountry')), cursor: 'pointer' }}
             onFocus={() => setFocus('bcountry')} onBlur={() => setFocus(null)}

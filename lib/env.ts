@@ -68,7 +68,7 @@ if (!parsed.success) {
 
 export const publicEnv = parsed.data;
 
-const serverSchema = z.object({
+export const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(10),
   STRIPE_SECRET_KEY: z.string().min(10),
   STRIPE_WEBHOOK_SECRET: z.string().min(10),

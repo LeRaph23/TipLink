@@ -30,6 +30,12 @@ export default async function LoginPage({
   const { locale } = await params;
   const sp = await searchParams;
   const verified = sp.verified === 'true';
+  // /auth/callback redirects here with ?error=auth_callback_failed when a
+  // sign-in link is expired or already consumed. The parameter was never read,
+  // so a staff member whose invitation had lapsed landed on a blank form with
+  // no idea why they had been bounced, and no reason to think retrying would
+  // help.
+  const linkExpired = sp.error === 'auth_callback_failed';
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -63,7 +69,7 @@ export default async function LoginPage({
           borderRadius: 'var(--radius-lg)', padding: 28,
           boxShadow: 'var(--shadow), 0 0 0 1px rgba(255,255,255,0.02)',
         }}>
-          <LoginForm verified={verified} />
+          <LoginForm verified={verified} linkExpired={linkExpired} />
         </div>
 
       </div>

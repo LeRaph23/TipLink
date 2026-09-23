@@ -5,6 +5,7 @@ import { getPackPricing } from '@/lib/stripe/pricing';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase/service';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
+import { provisionalPackTax } from '@/lib/stripe/tax';
 
 export const runtime = 'nodejs';
 
@@ -82,10 +83,18 @@ export async function POST(request: NextRequest) {
       }
       discountAmount = Math.floor((baseAmount * promo.percentage_off) / 100);
     }
-    const amount = Math.max(0, baseAmount - discountAmount);
+    const htAmount = Math.max(0, baseAmount - discountAmount);
+
+    // Created already taxed, at the domestic rate. The intent used to be
+    // created at the bare HT amount, with VAT added only if the browser later
+    // called /api/billing/pack-tax — so the sole guard against paying 79 euros
+    // instead of 94,80 was a client-side flag, and the VAT was owed regardless.
+    // /api/billing/pack-tax replaces this with the real address-based figure
+    // before the buyer reaches a payable total in the normal flow.
+    const provisional = provisionalPackTax(htAmount);
 
     const intent = await stripe.paymentIntents.create({
-      amount,
+      amount: provisional.totalAmount,
       currency: pricing.currency,
       automatic_payment_methods: { enabled: true },
       description: pricing.productName,
@@ -96,6 +105,14 @@ export async function POST(request: NextRequest) {
         locale,
         base_amount: String(baseAmount),
         discount_amount: String(discountAmount),
+        // Always set, so the invoice builder never has to fall through to its
+        // "VAT included in the price" branch and produce a document that
+        // contradicts the HT price advertised on the site.
+        ht_amount: String(provisional.htAmount),
+        tax_amount: String(provisional.taxAmount),
+        tax_country: provisional.country,
+        // Cleared by pack-tax once a real shipping address has been priced.
+        tax_provisional: 'true',
         ...(promo ? { promo_code: promo.code, promo_code_id: promo.promo_code_id } : {}),
       },
     });
@@ -103,9 +120,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: intent.client_secret,
       paymentIntentId: intent.id,
-      amount,
+      amount: provisional.totalAmount,
       baseAmount,
       discountAmount,
+      htAmount: provisional.htAmount,
+      taxAmount: provisional.taxAmount,
+      taxProvisional: true,
       promoCode: promo?.code ?? null,
     });
   } catch (err) {

@@ -81,3 +81,31 @@ export function buildPageMetadata({
       : {}),
   };
 }
+
+
+/**
+ * Metadata for a whole non-indexable subtree, exported from that subtree's
+ * layout so every page under it inherits it.
+ *
+ * lib/seo/routes.ts lists fourteen NOINDEX_PREFIXES and its own comment says
+ * each page beneath them still needs `buildPageMetadata({ noindex: true })`.
+ * Exactly two files in the repository did. Everything else — /pay, /join,
+ * /receipt, /onboarding, /signup and some forty /dashboard pages — had no
+ * generateMetadata at all and therefore inherited `robots: index, follow` from
+ * the locale layout. /receipt/[id], a private financial document, served
+ * `<meta name="robots" content="index, follow">`, and a robots.txt Disallow
+ * does not prevent indexing of a URL someone links to, as app/robots.ts says
+ * in its own comment.
+ *
+ * Applied at the layout rather than page by page: it cannot then be forgotten
+ * on the next page added under one of these prefixes, which is precisely how
+ * it was forgotten on the last sixty.
+ */
+export const NOINDEX_METADATA = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false },
+  },
+} as const;

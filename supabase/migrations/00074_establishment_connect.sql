@@ -51,6 +51,13 @@ CREATE INDEX IF NOT EXISTS idx_establishments_stripe_account
 -- Demo establishments stay payable so the fake-payment flow keeps working.
 -- Return type unchanged from 00073, but the body changes — replace in place.
 
+-- `CREATE OR REPLACE FUNCTION` cannot change a function's return type: adding,
+-- removing or retyping an OUT column raises 42P13 ("cannot change return type of
+-- existing function"). The signature below differs from the previous definition,
+-- so the function has to be dropped first or a fresh replay of this folder dies
+-- here. Dropping also discards the grants, hence the REVOKE/GRANT that follow.
+DROP FUNCTION IF EXISTS public.get_public_staff(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_public_staff(p_staff_id uuid)
 RETURNS TABLE (
   id uuid,
@@ -100,6 +107,13 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_public_staff(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_public_staff(uuid) TO anon, authenticated;
+
+-- `CREATE OR REPLACE FUNCTION` cannot change a function's return type: adding,
+-- removing or retyping an OUT column raises 42P13 ("cannot change return type of
+-- existing function"). The signature below differs from the previous definition,
+-- so the function has to be dropped first or a fresh replay of this folder dies
+-- here. Dropping also discards the grants, hence the REVOKE/GRANT that follow.
+DROP FUNCTION IF EXISTS public.get_public_group_staff(uuid);
 
 CREATE OR REPLACE FUNCTION public.get_public_group_staff(p_establishment_id uuid)
 RETURNS TABLE (
