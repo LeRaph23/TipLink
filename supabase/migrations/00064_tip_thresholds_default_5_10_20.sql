@@ -3,6 +3,13 @@
 -- default. Groups that customised their thresholds (anything other than the old
 -- default) are left untouched.
 
+-- `CREATE OR REPLACE FUNCTION` cannot change a function's return type: adding,
+-- removing or retyping an OUT column raises 42P13 ("cannot change return type of
+-- existing function"). The signature below differs from the previous definition,
+-- so the function has to be dropped first or a fresh replay of this folder dies
+-- here. Dropping also discards the grants, hence the REVOKE/GRANT that follow.
+DROP FUNCTION IF EXISTS public.get_public_staff(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_public_staff(p_staff_id uuid)
  RETURNS TABLE(id uuid, full_name text, avatar_url text, establishment_name text, establishment_currency character, tip_thresholds jsonb, is_payable boolean)
  LANGUAGE sql STABLE SECURITY DEFINER
@@ -27,6 +34,17 @@ AS $function$
   JOIN groups g ON g.id = e.group_id
   WHERE s.id = p_staff_id;
 $function$;
+
+REVOKE ALL ON FUNCTION public.get_public_staff(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_public_staff(uuid) TO anon, authenticated;
+
+
+-- `CREATE OR REPLACE FUNCTION` cannot change a function's return type: adding,
+-- removing or retyping an OUT column raises 42P13 ("cannot change return type of
+-- existing function"). The signature below differs from the previous definition,
+-- so the function has to be dropped first or a fresh replay of this folder dies
+-- here. Dropping also discards the grants, hence the REVOKE/GRANT that follow.
+DROP FUNCTION IF EXISTS public.get_public_group_staff(uuid);
 
 CREATE OR REPLACE FUNCTION public.get_public_group_staff(p_establishment_id uuid)
  RETURNS TABLE(establishment_id uuid, establishment_name text, establishment_currency character, group_logo_url text, tip_thresholds jsonb, staff_id uuid, full_name text, avatar_url text, is_payable boolean)
@@ -58,6 +76,10 @@ AS $function$
     AND g.deleted_at IS NULL
   ORDER BY s.full_name NULLS LAST;
 $function$;
+
+REVOKE ALL ON FUNCTION public.get_public_group_staff(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_public_group_staff(uuid) TO anon, authenticated;
+
 
 -- Migrate groups still on the previous default.
 UPDATE public.groups

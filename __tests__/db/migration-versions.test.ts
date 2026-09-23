@@ -86,6 +86,68 @@ describe('supabase migrations', () => {
     expect(offenders).toEqual([]);
   });
 
+
+  it('drops a function before redefining it with a different return type', () => {
+    // `CREATE OR REPLACE FUNCTION` cannot change a function's return type.
+    // Adding, removing or retyping an OUT column raises 42P13, so the migration
+    // has to DROP the function first.
+    //
+    // Five migrations did not, and a fresh replay died on the first of them —
+    // 00023 widening `get_public_staff` from 7 columns to 8. That means this
+    // folder could never rebuild the database, and had not been able to for a
+    // long time. Nothing reported it because the replay only happens in the
+    // `supabase start` job, and that job is newer than the breakage.
+    const returnsTable = (body: string, from: number): string[] | null => {
+      const m = /RETURNS\s+TABLE\s*\(/gi;
+      m.lastIndex = from;
+      const hit = m.exec(body);
+      if (!hit) return null;
+      // Balance parentheses: a column type like `char(3)` contains one, so
+      // stopping at the first `)` truncates the list and invents differences.
+      let depth = 1;
+      let i = m.lastIndex;
+      for (; i < body.length && depth > 0; i++) {
+        if (body[i] === '(') depth++;
+        else if (body[i] === ')') depth--;
+      }
+      const cols: string[] = [];
+      let cur = '';
+      let d = 0;
+      for (const ch of body.slice(m.lastIndex, i - 1)) {
+        if (ch === '(') d++;
+        else if (ch === ')') d--;
+        if (ch === ',' && d === 0) { cols.push(cur); cur = ''; } else cur += ch;
+      }
+      cols.push(cur);
+      return cols.map((c) => c.trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean);
+    };
+
+    const seen = new Map<string, { file: string; cols: string[] }>();
+    const offenders: string[] = [];
+    for (const f of files) {
+      const body = readFileSync(join(DIR, f), 'utf8');
+      for (const m of body.matchAll(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.([a-z0-9_]+)\s*\(/gi)) {
+        const fn = m[1].toLowerCase();
+        const cols = returnsTable(body, m.index!);
+        if (!cols) continue; // scalar return: widening is not the failure mode here
+        const prev = seen.get(fn);
+        seen.set(fn, { file: f, cols });
+        if (!prev || prev.cols.join('|') === cols.join('|')) continue;
+        const dropped = new RegExp(
+          `DROP\\s+FUNCTION\\s+(?:IF\\s+EXISTS\\s+)?public\\.${fn}\\b`,
+          'i',
+        ).test(body.slice(0, m.index!));
+        if (!dropped) {
+          offenders.push(
+            `${f}: ${fn} changes its return type since ${prev.file} ` +
+              `(${prev.cols.length} -> ${cols.length} columns) with no DROP FUNCTION first`,
+          );
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('guards CREATE POLICY in new migrations', () => {
     // CREATE POLICY has no IF NOT EXISTS in Postgres, so an unguarded one makes
     // its migration fail on any re-apply.

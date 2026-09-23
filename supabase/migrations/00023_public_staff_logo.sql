@@ -1,6 +1,13 @@
 -- Add group_logo_url to the public staff RPC so it can be displayed
 -- on the individual staff tip page (/pay/[staffId]).
 
+-- `CREATE OR REPLACE FUNCTION` cannot change a function's return type: adding,
+-- removing or retyping an OUT column raises 42P13 ("cannot change return type of
+-- existing function"). The signature below differs from the previous definition,
+-- so the function has to be dropped first or a fresh replay of this folder dies
+-- here. Dropping also discards the grants, hence the REVOKE/GRANT that follow.
+DROP FUNCTION IF EXISTS public.get_public_staff(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_public_staff(p_staff_id uuid)
 RETURNS TABLE (
   id uuid,
