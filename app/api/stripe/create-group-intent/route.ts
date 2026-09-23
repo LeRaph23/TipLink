@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { TIP_MAX_CENTS, TIP_MIN_CENTS } from '@/lib/tips/limits';
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -15,7 +16,7 @@ const RATE_LIMIT = { limit: 5, windowMs: 60_000 };
 const BodySchema = z.object({
   establishmentId: z.string().uuid(),
   amount: z.number().int().positive(),
-  tipAmount: z.number().int().min(50).max(100_000_00),
+  tipAmount: z.number().int().min(TIP_MIN_CENTS).max(TIP_MAX_CENTS),
   currency: z.enum(['eur', 'EUR', 'usd', 'USD', 'gbp', 'GBP']),
   nonce: z.string().min(8).max(128),
   customerEmail: z.string().email().optional(),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { TIP_MAX_CENTS, TIP_MIN_CENTS } from '@/lib/tips/limits';
 import { useTranslations } from 'next-intl';
 import { TipCheckout } from './TipCheckout';
 import { DemoPayButton } from './DemoPayButton';
@@ -35,10 +36,11 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
     ? Math.round((parseFloat(custom) || 0) * 100)
     : selectedAmount;
 
-  const hasAmount = tipAmount !== null && tipAmount >= 50;
+  const tooHigh = tipAmount !== null && tipAmount > TIP_MAX_CENTS;
+  const hasAmount = tipAmount !== null && tipAmount >= TIP_MIN_CENTS && !tooHigh;
   // Below the 0.50 minimum, with something actually typed → show an inline hint
   // instead of silently hiding the checkout.
-  const customInvalid = custom.trim() !== '' && (tipAmount === null || tipAmount < 50);
+  const customInvalid = custom.trim() !== '' && (tipAmount === null || tipAmount < TIP_MIN_CENTS || tooHigh);
 
   // The tipper covers the whole cost of the transaction on top of their tip, so
   // the recipient keeps 100 % of what was chosen.
@@ -139,7 +141,9 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             role="alert"
             style={{ margin: '6px 2px 0', fontSize: 11.5, color: 'var(--error)', fontFamily: 'var(--font)' }}
           >
-            {t('minAmount', { min: fmtCents.format(0.5) })}
+            {tooHigh
+              ? t('maxAmount', { max: fmtCents.format(TIP_MAX_CENTS / 100) })
+              : t('minAmount', { min: fmtCents.format(TIP_MIN_CENTS / 100) })}
           </p>
         )}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { TIP_MAX_CENTS, TIP_MIN_CENTS } from '@/lib/tips/limits';
 import { useTranslations } from 'next-intl';
 import { GroupTipCheckout } from './GroupTipCheckout';
 import { DemoPayButton } from './DemoPayButton';
@@ -35,11 +36,12 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
     ? Math.round((parseFloat(custom) || 0) * 100)
     : selectedAmount;
 
-  const hasAmount = tipAmount !== null && tipAmount >= 50;
+  const tooHigh = tipAmount !== null && tipAmount > TIP_MAX_CENTS;
+  const hasAmount = tipAmount !== null && tipAmount >= TIP_MIN_CENTS && !tooHigh;
   // Mirrors AmountSelector. Without it, typing an amount under the 0,50 €
   // minimum in the team flow made the entire checkout block disappear with no
   // explanation: `hasAmount` went false and nothing said why.
-  const customInvalid = custom.trim() !== '' && (tipAmount === null || tipAmount < 50);
+  const customInvalid = custom.trim() !== '' && (tipAmount === null || tipAmount < TIP_MIN_CENTS || tooHigh);
 
   // The tipper covers the whole cost of the transaction on top of their tip, so
   // the team shares 100 % of what was chosen.
@@ -143,7 +145,9 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
             role="alert"
             style={{ margin: '6px 2px 0', fontSize: 11.5, color: 'var(--error)', fontFamily: 'var(--font)' }}
           >
-            {t('minAmount', { min: fmtCents.format(0.5) })}
+            {tooHigh
+              ? t('maxAmount', { max: fmtCents.format(TIP_MAX_CENTS / 100) })
+              : t('minAmount', { min: fmtCents.format(TIP_MIN_CENTS / 100) })}
           </p>
         )}
       </div>

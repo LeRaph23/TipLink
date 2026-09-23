@@ -696,7 +696,8 @@
       "badge": "Demo mode",
       "banner": "Demo: no real payment",
       "payButton": "Pay {amount} (demo)"
-    }
+    },
+    "maxAmount": "Maximum amount {max}"
   },
   "dashboard": {
     "welcome": "Welcome back,",
