@@ -4,7 +4,13 @@
  * - Anon can call the RPC (SECURITY DEFINER + explicit GRANT).
  * - The RPC NEVER exposes sensitive columns (stripe_account_id,
  *   user_id, establishment_id).
- * - `is_payable` correctly reflects onboarding state.
+ * - `is_payable` correctly reflects the ESTABLISHMENT's Connect state.
+ *
+ * Migration 00074 moved payability from the staff member to the establishment:
+ * tips are charged to the establishment's Connect account, so a staff member's
+ * own onboarding_status no longer has any bearing on it. These tests were
+ * written before that and asserted the old rule; they had never run, because
+ * the RLS suite had no Supabase to run against until CI gained one.
  *
  * Prerequisites: npx supabase start
  */
@@ -26,8 +32,10 @@ describe.skipIf(skipIfNoLocal)('get_public_staff RPC', () => {
 
   let groupId: string;
   let establishmentId: string;
+  let establishmentUnpayableId: string;
   let staffReadyId: string;
   let staffNotReadyId: string;
+  let staffInactiveId: string;
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -47,10 +55,30 @@ describe.skipIf(skipIfNoLocal)('get_public_staff RPC', () => {
         slug: `rpc-test-est-${ts}`,
         country: 'FR',
         currency: 'EUR',
+        // Payability lives here since 00074, not on the staff row.
+        stripe_account_id: 'acct_test_ready',
+        stripe_charges_enabled: true,
+        stripe_payouts_enabled: true,
       })
       .select('id')
       .single();
     establishmentId = est!.id;
+
+    // Same shape, but Connect never finished: this is what makes a staff
+    // member unpayable now.
+    const { data: estUnpayable } = await serviceClient
+      .from('establishments')
+      .insert({
+        group_id: groupId,
+        name: 'RPC Test Est (no Connect)',
+        business_type: 'restaurant',
+        slug: `rpc-test-est-unpayable-${ts}`,
+        country: 'FR',
+        currency: 'EUR',
+      })
+      .select('id')
+      .single();
+    establishmentUnpayableId = estUnpayable!.id;
 
     const { data: ready } = await serviceClient
       .from('staff_profiles')
@@ -67,21 +95,36 @@ describe.skipIf(skipIfNoLocal)('get_public_staff RPC', () => {
     const { data: notReady } = await serviceClient
       .from('staff_profiles')
       .insert({
-        establishment_id: establishmentId,
+        establishment_id: establishmentUnpayableId,
         full_name: 'Pending Staff',
         onboarding_status: 'pending',
       })
       .select('id')
       .single();
     staffNotReadyId = notReady!.id;
+
+    const { data: inactive } = await serviceClient
+      .from('staff_profiles')
+      .insert({
+        establishment_id: establishmentId,
+        full_name: 'Inactive Staff',
+        onboarding_status: 'complete',
+        is_active: false,
+      })
+      .select('id')
+      .single();
+    staffInactiveId = inactive!.id;
   });
 
   afterAll(async () => {
     await serviceClient
       .from('staff_profiles')
       .delete()
-      .in('id', [staffReadyId, staffNotReadyId]);
-    await serviceClient.from('establishments').delete().eq('id', establishmentId);
+      .in('id', [staffReadyId, staffNotReadyId, staffInactiveId]);
+    await serviceClient
+      .from('establishments')
+      .delete()
+      .in('id', [establishmentId, establishmentUnpayableId]);
     await serviceClient.from('groups').delete().eq('id', groupId);
   });
 
@@ -105,10 +148,20 @@ describe.skipIf(skipIfNoLocal)('get_public_staff RPC', () => {
     expect(row).not.toHaveProperty('establishment_id');
   });
 
-  it('is_payable is false when onboarding is not complete', async () => {
+  it('is_payable is false when the establishment has not finished Connect', async () => {
     const anon = createClient(SUPABASE_URL, ANON_KEY);
     const { data } = await anon.rpc('get_public_staff', {
       p_staff_id: staffNotReadyId,
+    });
+    expect((data![0] as Record<string, unknown>).is_payable).toBe(false);
+  });
+
+  it('is_payable is false for an inactive staff member', async () => {
+    // The establishment here IS payable, so this pins the staff half of the
+    // rule — otherwise the test above would pass for the wrong reason.
+    const anon = createClient(SUPABASE_URL, ANON_KEY);
+    const { data } = await anon.rpc('get_public_staff', {
+      p_staff_id: staffInactiveId,
     });
     expect((data![0] as Record<string, unknown>).is_payable).toBe(false);
   });
@@ -164,6 +217,7 @@ describe.skipIf(skipIfNoLocal)('resolve_sticker_establishment RPC', () => {
       .select('id')
       .single();
     establishmentId = est!.id;
+
 
     // Mixed-case short_id, like a nanoid() batch sticker.
     shortId = `AbXz${ts.toString(36)}`;
