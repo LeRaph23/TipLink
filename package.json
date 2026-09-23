@@ -12,6 +12,7 @@
     "test:rls": "vitest run __tests__/rls",
     "e2e:up": "scripts/e2e/up.sh",
     "e2e:down": "scripts/e2e/down.sh",
+    "e2e:payable": "npx -y tsx scripts/e2e/payable.ts",
     "e2e": "playwright test",
     "db:types": "supabase gen types typescript --local > types/database.ts",
     "db:migrate": "supabase db push",

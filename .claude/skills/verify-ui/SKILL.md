@@ -77,8 +77,18 @@ tips and `/pricing` cannot work and their specs are skipped. To enable:
    E2E_STRIPE_PRODUCT_PACK_DUO=prod_...
    E2E_STRIPE_WEBHOOK_SECRET=whsec_...   # printed by `stripe listen`
    ```
+   For Digitip Pro, also `npx tsx scripts/stripe-setup.ts pro` (same key) and add
+   `E2E_STRIPE_PRICE_PRO_MONTHLY=price_...` / `E2E_STRIPE_PRICE_PRO_YEARLY=price_...`,
+   and save the customer portal once in the Stripe TEST dashboard
+   (Settings → Billing → Customer portal).
 4. `npm run e2e:up` (restarts next when the env changed). `up.sh` refuses
    anything but a `sk_test_` / `rk_test_` key.
+5. To take tips without Stripe's embedded onboarding (a popup an automated
+   browser cannot drive): `npm run e2e:payable [-- "<establishment name or id>"]`.
+   It links a TEST connected account the platform verifies itself
+   (`requirement_collection: 'application'`, Stripe test values), assigns a tag
+   if none, and prints the scan URL. Everything after that is the app's real
+   code; the embedded onboarding form itself is not exercised.
 
 Test card `4242 4242 4242 4242`, any future date, any CVC.
 
