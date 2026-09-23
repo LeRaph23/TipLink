@@ -127,33 +127,20 @@ export default async function DashboardPage({
   const now = Date.now();
   const fourteenDaysAgoIso = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString();
 
-  // All tip queries below filter on the staff profile id. Without a profile
-  // there are no tips — and filtering on an empty staff_id would send '' to a
-  // UUID column (Postgres syntax error), so skip the queries entirely.
+  // Whose tips this page counts. An employee (or an admin who also takes tips)
+  // sees their own share. An admin with no staff profile takes no tips, so
+  // "my tips" would read 0 € forever while the team is being paid: they see
+  // the shares of every establishment in their group instead. Filtering on an
+  // empty staff_id would also send '' to a UUID column, hence the explicit null.
   const staffId = staffProfile?.id ?? null;
-
-  // Same correction as the totals below: the employee's share, from
-  // tip_allocations, and therefore including the group tips that carry
-  // `staff_id: null` on the transaction itself. `transactions.currency` still
-  // comes along, since an allocation has no currency of its own.
-  const { data: recentAllocations } = staffId
-    ? await supabase
-        .from('tip_allocations')
-        .select('id, amount, allocated_at, status, transactions(currency)')
-        .eq('staff_id', staffId)
-        .order('allocated_at', { ascending: false })
-        .limit(5)
-    : { data: null };
-
-  const recentTransactions = (recentAllocations ?? []).map((a) => ({
-    id: a.id,
-    amount: a.amount,
-    currency: (a.transactions as { currency?: string } | null)?.currency ?? 'EUR',
-    created_at: a.allocated_at,
-    // tip_allocations uses 'allocated' / 'reversed'; StatusBadge speaks the
-    // transaction vocabulary, so map onto the equivalent it already renders.
-    status: a.status === 'reversed' ? 'refunded' : 'succeeded',
-  }));
+  const teamEstablishmentIds = !staffId && adminGroupId
+    ? ((await createServiceClient()
+        .from('establishments')
+        .select('id')
+        .eq('group_id', adminGroupId)
+        .is('deleted_at', null)).data ?? []).map((e) => e.id)
+    : [];
+  const teamScope = !staffId && teamEstablishmentIds.length > 0;
 
   // Earnings come from tip_allocations, not transactions, for two reasons.
   //
@@ -167,24 +154,34 @@ export default async function DashboardPage({
   // living only in tip_allocations. Filtering transactions on staff_id
   // therefore showed 0 € forever to every employee of a restaurant that only
   // uses the team tag.
-  const { data: trendWindow } = staffId
-    ? await supabase
-        .from('tip_allocations')
-        .select('amount, allocated_at')
+  //
+  // One read covers the recent list, the weekly trend and the all-time total;
+  // these dashboards hold O(1k) rows.
+  const ALLOC_COLUMNS = 'id, amount, allocated_at, status, transactions!inner(currency, establishment_id)';
+  const { data: allocationRows } = staffId
+    ? await supabase.from('tip_allocations').select(ALLOC_COLUMNS)
         .eq('staff_id', staffId)
-        .eq('status', 'allocated')
-        .gte('allocated_at', fourteenDaysAgoIso)
-    : { data: null };
+        .order('allocated_at', { ascending: false, nullsFirst: false })
+    : teamScope
+      ? await supabase.from('tip_allocations').select(ALLOC_COLUMNS)
+          .in('transactions.establishment_id', teamEstablishmentIds)
+          .order('allocated_at', { ascending: false, nullsFirst: false })
+      : { data: null };
+  const allocations = allocationRows ?? [];
 
-  // All-time aggregate. A single SELECT sum() would be cleaner, but
-  // staff dashboards only have O(1k) rows so we just fetch amounts.
-  const { data: allTimeRows } = staffId
-    ? await supabase
-        .from('tip_allocations')
-        .select('amount')
-        .eq('staff_id', staffId)
-        .eq('status', 'allocated')
-    : { data: null };
+  const recentTransactions = allocations.slice(0, 5).map((a) => ({
+    id: a.id,
+    amount: a.amount,
+    currency: (a.transactions as { currency?: string } | null)?.currency ?? 'EUR',
+    created_at: a.allocated_at,
+    // tip_allocations uses 'allocated' / 'reversed'; StatusBadge speaks the
+    // transaction vocabulary, so map onto the equivalent it already renders.
+    status: a.status === 'reversed' ? 'refunded' : 'succeeded',
+  }));
+
+  const earned = allocations.filter((a) => a.status === 'allocated');
+  const trendWindow = earned.filter((a) => a.allocated_at && a.allocated_at >= fourteenDaysAgoIso);
+  const allTimeRows = earned;
   const weekMs = 7 * 24 * 60 * 60 * 1000;
   // `allocated_at` is nullable on rows predating 00075's rename. Dropping them
   // from the trend is right: a row with no date cannot be placed in a week, and
@@ -277,7 +274,7 @@ export default async function DashboardPage({
 
 
       <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
-        <StatCard label={t('totalEarned')} value={totalEarnings / 100} format="currency" currency={currency} locale={locale} sub={t('allTime')} />
+        <StatCard label={t('totalEarned')} value={totalEarnings / 100} format="currency" currency={currency} locale={locale} sub={teamScope ? `${t('allTime')} · ${t('home.wholeTeam')}` : t('allTime')} />
         <StatCard
           label={t('thisWeek')}
           value={thisWeekTotal / 100}

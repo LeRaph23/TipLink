@@ -118,6 +118,7 @@ describe('Stripe Webhook Handler', () => {
     const { createServiceClient } = await import('@/lib/supabase/service');
     const txnUpdateEqChain = {
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
     };
     const updateFn = vi.fn().mockReturnValue(txnUpdateEqChain);
 
@@ -153,6 +154,9 @@ describe('Stripe Webhook Handler', () => {
         stripe_payment_intent_id: 'pi_test_123',
       })
     );
+    // A tip paid after a declined attempt on the same form was marked failed
+    // by payment_intent.payment_failed; the success must still land.
+    expect(txnUpdateEqChain.in).toHaveBeenCalledWith('status', ['pending', 'failed']);
   });
 
   it('payment_intent.succeeded with non-succeeded status is a no-op on transactions', async () => {
@@ -539,6 +543,64 @@ describe('Stripe Webhook Handler', () => {
     expect(res.status).toBe(200);
     expect(groupUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ plan: 'pro', stripe_subscription_id: 'sub_123', subscription_status: 'active' })
+    );
+  });
+
+  it('a cancellation at period end keeps Pro and records when it ends', async () => {
+    // What the Stripe portal sends by default: still trialing, cancel_at set.
+    const mockEvent = {
+      id: 'evt_sub_cancel_scheduled',
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: 'sub_456',
+          status: 'trialing',
+          customer: 'cus_456',
+          metadata: { group_id: 'group-2' },
+          cancel_at_period_end: true,
+          cancel_at: 1893456000,
+          trial_end: 1893456000,
+          items: { data: [{ current_period_end: 1893456000 }] },
+        },
+      },
+    };
+
+    const { stripe } = await import('@/lib/stripe/client');
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as never);
+
+    const { createServiceClient } = await import('@/lib/supabase/service');
+    const groupUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    const mockSupabase = {
+      from: vi.fn((table: string) => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        update: table === 'groups'
+          ? groupUpdate
+          : vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      })),
+    };
+    vi.mocked(createServiceClient).mockReturnValue(mockSupabase as never);
+
+    const { POST } = await import('@/app/api/webhooks/stripe/route');
+    const res = await POST(
+      new NextRequest('https://test.example.com/api/webhooks/stripe', {
+        method: 'POST',
+        body: JSON.stringify(mockEvent),
+        headers: { 'stripe-signature': 'valid-sig' },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(groupUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        plan: 'pro',
+        subscription_status: 'trialing',
+        subscription_cancel_at: new Date(1893456000 * 1000).toISOString(),
+      })
     );
   });
 

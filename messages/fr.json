@@ -779,7 +779,8 @@
       "trendVsPrev": "vs sem. préc.",
       "adminReceiveTipsTitle": "Recevez vous aussi des pourboires",
       "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires sur votre compte bancaire.",
-      "adminReceiveTipsCta": "Configurer →"
+      "adminReceiveTipsCta": "Configurer →",
+      "wholeTeam": "toute l'équipe"
     },
     "txs": {
       "title": "Transactions",
@@ -789,7 +790,9 @@
       "colAmount": "Montant",
       "colStatus": "Statut",
       "colReceipt": "Reçu",
-      "empty": "Aucune transaction pour l'instant"
+      "empty": "Aucune transaction pour l'instant",
+      "statusReceived": "Reçu",
+      "statusReversed": "Remboursé"
     },
     "staff": {
       "title": "Équipe",
@@ -1208,7 +1211,9 @@
       "trialDaysLeft": "{days, plural, one {# jour restant} other {# jours restants}}",
       "trialBody": "À la fin de l'essai, l'abonnement démarre à {price} HT par mois. Vous pouvez l'arrêter avant, sans rien payer.",
       "trialBodyNoPrice": "À la fin de l'essai, l'abonnement démarre automatiquement. Vous pouvez l'arrêter avant, sans rien payer.",
-      "trialEnded": "Votre essai s'est terminé le {date}. Les avis Google et l'export complet sont de nouveau désactivés."
+      "trialEnded": "Votre essai s'est terminé le {date}. Les avis Google et l'export complet sont de nouveau désactivés.",
+      "canceledTitle": "Abonnement résilié",
+      "canceledBody": "Digitip Pro reste actif jusqu'au {date}, puis s'arrête. Rien ne sera prélevé. Vous pouvez le réactiver d'ici là."
     },
     "verifyBanner": {
       "titleHeld": "{amount} vous attendent",

@@ -32,13 +32,22 @@ export default async function StaffDetailPage({
     );
   }
 
-  const { data: recentTips } = await supabase
-    .from('transactions')
-    .select('id, amount, currency, created_at, status')
+  // What this employee earned, from tip_allocations, as on the statements page.
+  // `transactions.amount` includes the service fee the tipper paid on top, and
+  // a group tip carries no staff_id on the transaction at all.
+  const { data: allocations } = await supabase
+    .from('tip_allocations')
+    .select('id, amount, allocated_at, created_at, transactions(currency)')
     .eq('staff_id', id)
-    .eq('status', 'succeeded')
+    .eq('status', 'allocated')
     .order('created_at', { ascending: false })
     .limit(5);
+  const recentTips = (allocations ?? []).map((a) => ({
+    id: a.id,
+    amount: a.amount,
+    currency: (a.transactions as { currency?: string } | null)?.currency ?? 'EUR',
+    created_at: a.allocated_at ?? a.created_at,
+  }));
 
   const est = Array.isArray(staff.establishments) ? staff.establishments[0] : staff.establishments;
 
@@ -118,7 +127,7 @@ export default async function StaffDetailPage({
         }}
       />
 
-      {recentTips && recentTips.length > 0 && (
+      {recentTips.length > 0 && (
         <div style={{ marginTop: 28 }}>
           <h2 style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>
             {t('detail.recentTips')}

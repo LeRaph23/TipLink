@@ -169,8 +169,14 @@ async function handleEvent(
       const keptFee = Number.isFinite(dbServiceFee) ? dbServiceFee + deducted : null;
 
       // Mark the transaction succeeded. Persist transfer_group into metadata so
-      // the reconcile cron can replay held transfers later. Idempotent: the
-      // `status='pending'` guard makes a duplicate delivery a no-op.
+      // the reconcile cron can replay held transfers later. Idempotent: a
+      // duplicate delivery finds the row already succeeded and matches nothing.
+      // 'failed' is accepted too: payment_intent.payment_failed fires on every
+      // declined attempt, yet the customer can fix the card on the same form
+      // and the same PaymentIntent then succeeds. Only accepting 'pending' left
+      // such a tip marked failed forever while it was allocated, transferred
+      // and counted everywhere else. The reverse stays impossible: the failed
+      // handler still only moves a 'pending' row.
       await supabase
         .from('transactions')
         .update({
@@ -182,7 +188,7 @@ async function handleEvent(
           metadata: { ...curMeta, ...(transferGroup ? { transfer_group: transferGroup } : {}) },
         } as never)
         .eq('id', transactionId)
-        .eq('status', 'pending');
+        .in('status', ['pending', 'failed']);
 
       // ── Attribution + one transfer to the establishment ──────────────────
       // Two separate things happen here, and keeping them apart matters:
@@ -1106,6 +1112,9 @@ async function syncSubscription(
   const plan = planForSubscriptionStatus(sub.status);
   const item = sub.items?.data?.[0];
   const periodEnd = item?.current_period_end ?? null;
+  const cancelAt = sub.status === 'canceled'
+    ? null
+    : sub.cancel_at ?? (sub.cancel_at_period_end ? periodEnd : null);
 
   await supabase
     .from('groups')
@@ -1117,6 +1126,9 @@ async function syncSubscription(
         ? new Date(periodEnd * 1000).toISOString()
         : null,
       trial_ends_at: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+      // A cancellation from the portal ends the subscription at the period end:
+      // the status does not change until then, only cancel_at does.
+      subscription_cancel_at: cancelAt ? new Date(cancelAt * 1000).toISOString() : null,
     } as never)
     .eq('id', groupId);
 }

@@ -48,6 +48,10 @@ if ! npx supabase status >/dev/null 2>&1; then
   npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,postgres-meta,supavisor,realtime >"$STATE_DIR/supabase.log" 2>&1 \
     || { tail -30 "$STATE_DIR/supabase.log"; exit 1; }
 fi
+# A database created before a `git pull` misses the migrations that came with
+# it; apply whatever is pending on every run.
+npx supabase migration up --local >"$STATE_DIR/migrations.log" 2>&1 \
+  || { tail -30 "$STATE_DIR/migrations.log"; exit 1; }
 eval "$(npx supabase status -o env 2>/dev/null | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')"
 
 DB="$(docker ps --format '{{.Names}}' | grep '^supabase_db_' | head -1)"

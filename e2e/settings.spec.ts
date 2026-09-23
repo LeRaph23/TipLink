@@ -29,3 +29,23 @@ test('a group on the default three tip amounts keeps three, without a duplicate'
   await page.getByRole('button', { name: /enregistrer/i }).first().click();
   await expect(page.getByText('Chaque montant ne peut apparaître qu’une fois.')).toBeVisible();
 });
+
+test('a cancelled Pro subscription says when it ends instead of announcing a charge', async ({ page }) => {
+  const { group_id } = seed();
+  const inTwoWeeks = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();
+  await admin(`/rest/v1/groups?id=eq.${group_id}`, {
+    method: 'PATCH',
+    body: { plan: 'pro', subscription_status: 'trialing', trial_ends_at: inTwoWeeks, subscription_cancel_at: inTwoWeeks },
+  });
+  try {
+    await login(page);
+    await page.goto('/fr/dashboard/billing');
+    await expect(page.getByText('Abonnement résilié')).toBeVisible();
+    await expect(page.getByText(/l'abonnement démarre/)).toHaveCount(0);
+  } finally {
+    await admin(`/rest/v1/groups?id=eq.${group_id}`, {
+      method: 'PATCH',
+      body: { plan: 'free', subscription_status: null, trial_ends_at: null, subscription_cancel_at: null },
+    });
+  }
+});

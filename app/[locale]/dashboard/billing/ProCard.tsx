@@ -25,9 +25,11 @@ type Props = {
   justPaid?: boolean;
   /** Where the group stands in its trial, if it ever started one. */
   trial: TrialState;
+  /** When a cancelled subscription ends (ISO), or null when it renews. */
+  cancelAt?: string | null;
 };
 
-export function ProCard({ groupId, isPro, locale, pricing, justPaid = false, trial }: Props) {
+export function ProCard({ groupId, isPro, locale, pricing, justPaid = false, trial, cancelAt = null }: Props) {
   const t = useTranslations('dashboard.pro');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +89,12 @@ export function ProCard({ groupId, isPro, locale, pricing, justPaid = false, tri
   }
 
   if (isPro) {
-    const trialing = trial.state === 'trialing' ? trial : null;
+    // A subscription cancelled from the portal stays trialing/active until its
+    // end date: say that, rather than announce the charge it will not make.
+    const endsOn = cancelAt
+      ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(cancelAt))
+      : null;
+    const trialing = !endsOn && trial.state === 'trialing' ? trial : null;
     return (
       <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
@@ -98,7 +105,7 @@ export function ProCard({ groupId, isPro, locale, pricing, justPaid = false, tri
             Pro
           </span>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-            {trialing ? t('trialTitle') : t('activeTitle')}
+            {endsOn ? t('canceledTitle') : trialing ? t('trialTitle') : t('activeTitle')}
           </div>
           {/* The number of days left, in the one place somebody would look for
               it. A trial whose end nobody sees coming produces a surprise
@@ -114,7 +121,9 @@ export function ProCard({ groupId, isPro, locale, pricing, justPaid = false, tri
           )}
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 14 }}>
-          {trialing
+          {endsOn
+            ? t('canceledBody', { date: endsOn })
+            : trialing
             ? (pricing.monthly
                 ? t('trialBody', { price: money(pricing.monthly) })
                 : t('trialBodyNoPrice'))
