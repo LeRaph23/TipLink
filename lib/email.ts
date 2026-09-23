@@ -737,6 +737,7 @@ export async function sendAmbassadorPayoutAdmin(opts: {
 // ─── Admin — new SmartTag order alert ─────────────────────────────────────────
 
 export async function sendAdminNewOrder(opts: {
+  to: string[];
   customerName: string;
   customerEmail?: string | null;
   pack: string;
@@ -745,16 +746,16 @@ export async function sendAdminNewOrder(opts: {
   promoCode?: string | null;
   locale: string;
 }): Promise<void> {
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (!resend || !adminEmail) return;
+  if (!resend) throw new Error('RESEND_API_KEY is not set');
+  if (opts.to.length === 0) throw new Error('no admin recipient');
 
-  const { customerName, customerEmail, pack, quantity, orderId, promoCode, locale } = opts;
+  const { to, customerName, customerEmail, pack, quantity, orderId, promoCode, locale } = opts;
   const shortRef = orderId.slice(0, 8).toUpperCase();
   const label = packLabel(pack, locale);
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM,
-    to: adminEmail,
+    to,
     ...(customerEmail ? { replyTo: customerEmail } : {}),
     subject: `Nouvelle commande · ${label} · ${customerName}`,
     html: themedLayout(`
@@ -775,6 +776,7 @@ export async function sendAdminNewOrder(opts: {
       </table>
     </td></tr>`),
   });
+  if (error) throw new Error(`Admin order alert not sent: ${error.message}`);
 }
 
 // ─── Order delivered ──────────────────────────────────────────────────────────
