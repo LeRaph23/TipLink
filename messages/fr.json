@@ -697,7 +697,11 @@
       "banner": "Démo : aucun paiement réel",
       "payButton": "Payer {amount} (démo)"
     },
-    "maxAmount": "Montant maximum {max}"
+    "maxAmount": "Montant maximum {max}",
+    "successTip": "Pourboire",
+    "successFee": "Frais de service",
+    "successTotal": "Total débité",
+    "successReceipt": "Voir mon reçu (PDF / imprimer)"
   },
   "dashboard": {
     "welcome": "Bon retour,",

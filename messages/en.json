@@ -697,7 +697,11 @@
       "banner": "Demo: no real payment",
       "payButton": "Pay {amount} (demo)"
     },
-    "maxAmount": "Maximum amount {max}"
+    "maxAmount": "Maximum amount {max}",
+    "successTip": "Tip",
+    "successFee": "Service fee",
+    "successTotal": "Total charged",
+    "successReceipt": "View my receipt (PDF / print)"
   },
   "dashboard": {
     "welcome": "Welcome back,",
