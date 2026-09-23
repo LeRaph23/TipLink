@@ -118,6 +118,7 @@ describe('Stripe Webhook Handler', () => {
     const { createServiceClient } = await import('@/lib/supabase/service');
     const txnUpdateEqChain = {
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
     };
     const updateFn = vi.fn().mockReturnValue(txnUpdateEqChain);
 
@@ -153,6 +154,9 @@ describe('Stripe Webhook Handler', () => {
         stripe_payment_intent_id: 'pi_test_123',
       })
     );
+    // A tip paid after a declined attempt on the same form was marked failed
+    // by payment_intent.payment_failed; the success must still land.
+    expect(txnUpdateEqChain.in).toHaveBeenCalledWith('status', ['pending', 'failed']);
   });
 
   it('payment_intent.succeeded with non-succeeded status is a no-op on transactions', async () => {

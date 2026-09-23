@@ -169,8 +169,14 @@ async function handleEvent(
       const keptFee = Number.isFinite(dbServiceFee) ? dbServiceFee + deducted : null;
 
       // Mark the transaction succeeded. Persist transfer_group into metadata so
-      // the reconcile cron can replay held transfers later. Idempotent: the
-      // `status='pending'` guard makes a duplicate delivery a no-op.
+      // the reconcile cron can replay held transfers later. Idempotent: a
+      // duplicate delivery finds the row already succeeded and matches nothing.
+      // 'failed' is accepted too: payment_intent.payment_failed fires on every
+      // declined attempt, yet the customer can fix the card on the same form
+      // and the same PaymentIntent then succeeds. Only accepting 'pending' left
+      // such a tip marked failed forever while it was allocated, transferred
+      // and counted everywhere else. The reverse stays impossible: the failed
+      // handler still only moves a 'pending' row.
       await supabase
         .from('transactions')
         .update({
@@ -182,7 +188,7 @@ async function handleEvent(
           metadata: { ...curMeta, ...(transferGroup ? { transfer_group: transferGroup } : {}) },
         } as never)
         .eq('id', transactionId)
-        .eq('status', 'pending');
+        .in('status', ['pending', 'failed']);
 
       // ── Attribution + one transfer to the establishment ──────────────────
       // Two separate things happen here, and keeping them apart matters:
