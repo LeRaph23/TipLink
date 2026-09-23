@@ -32,6 +32,7 @@ test('manager and employee dashboards show the tips, not 0 € nor the fees', as
 
   // What the webhook writes for two paid tips: the transaction carries what
   // the customer paid, the allocation carries the tip.
+  const txnIds: string[] = [];
   for (const [gross, tip] of [[1075, 1000], [813, 750]]) {
     const [txn] = await admin<{ id: string }[]>('/rest/v1/transactions', {
       method: 'POST',
@@ -40,6 +41,7 @@ test('manager and employee dashboards show the tips, not 0 € nor the fees', as
         idempotency_key: `tips-dash-${stamp}-${gross}`, metadata: { tip_amount: tip, service_fee: gross - tip },
       },
     });
+    txnIds.push(txn.id);
     await admin('/rest/v1/tip_allocations', {
       method: 'POST',
       body: { transaction_id: txn.id, staff_id: staff.id, amount: tip, status: 'allocated', allocated_at: new Date().toISOString() },
@@ -56,6 +58,17 @@ test('manager and employee dashboards show the tips, not 0 € nor the fees', as
   await page.goto(`/fr/dashboard/staff/${staff.id}`);
   await expect(page.getByText('10,00 €')).toBeVisible();
   await expect(page.getByText('10,75 €')).toHaveCount(0);
+
+  // The receipt splits what the card was charged into tip and service fee.
+  await page.goto(`/fr/receipt/${txnIds[0]}`);
+  await expect(page.getByRole('row', { name: /Pourboire\s+10,00/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Frais de service\s+0,75/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Total débité\s+10,75/ })).toBeVisible();
+
+  // Without an account, a made-up payment secret opens nothing.
+  await page.context().clearCookies();
+  const res = await page.goto(`/fr/receipt/${txnIds[0]}?pi=pi_fake&cs=pi_fake_secret_x`);
+  expect(res?.status()).toBe(404);
 
   // Employee: their own share, the same figure.
   await page.context().clearCookies();

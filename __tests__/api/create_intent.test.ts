@@ -144,6 +144,18 @@ describe('POST /api/stripe/create-intent', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400 when the tip is above the 500 € ceiling', async () => {
+    // Otherwise well-formed: without the ceiling this reaches the staff lookup.
+    const { POST } = await import('@/app/api/stripe/create-intent/route');
+    const res = await POST(
+      buildRequest(
+        { staffId: '550e8400-e29b-41d4-a716-446655440002', amount: 52_501, tipAmount: 50_001, currency: 'EUR', nonce: 'nonce-over-ceiling' },
+        '10.0.0.7'
+      )
+    );
+    expect(res.status).toBe(400);
+  });
+
   it('404 when staff is not found / not ready', async () => {
     const { createServiceClient } = await import('@/lib/supabase/service');
     vi.mocked(createServiceClient).mockReturnValue(

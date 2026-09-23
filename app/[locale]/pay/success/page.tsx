@@ -12,6 +12,8 @@ interface Props {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{
     payment_intent?: string;
+    // Appended by Stripe to the return URL; proves this visitor made the payment.
+    payment_intent_client_secret?: string;
     redirect_status?: string;
     // Demo mode (no real charge): the pay page routes here directly.
     demo?: string;
@@ -183,6 +185,11 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   let currency: string | null = isDemo ? (sp.cur?.toUpperCase() ?? 'EUR') : null;
   let staffId: string | null = isDemo ? (sp.staff ?? null) : null;
   let establishmentId: string | null = isDemo ? (sp.establishment ?? null) : null;
+  // The tip and the service fee the tipper added on top, as written server-side
+  // at intent creation, so the customer sees what the total is made of.
+  let tipCents: number | null = null;
+  let feeCents: number | null = null;
+  let receiptTransactionId: string | null = null;
 
   if (!isDemo && sp.payment_intent && sp.redirect_status === 'succeeded') {
     try {
@@ -195,6 +202,11 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
       currency = pi.currency?.toUpperCase() ?? null;
       staffId = pi.metadata?.staff_id ?? null;
       establishmentId = pi.metadata?.establishment_id ?? null;
+      const tip = Number(pi.metadata?.tip_amount);
+      const fee = Number(pi.metadata?.service_fee);
+      tipCents = Number.isFinite(tip) && tip > 0 ? tip : null;
+      feeCents = tipCents !== null && Number.isFinite(fee) && fee > 0 ? fee : null;
+      receiptTransactionId = pi.metadata?.transaction_id ?? null;
     } catch {
       // Stripe unreachable — keep query-param as fallback
     }
@@ -250,8 +262,12 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
     status === 'processing' ? 'rgba(251,191,36,0.08)' :
     'rgba(239,68,68,0.08)';
 
-  const fmtAmount = amountCents !== null && currency
-    ? new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 }).format(amountCents / 100)
+  const money = (cents: number) =>
+    new Intl.NumberFormat(locale, { style: 'currency', currency: currency ?? 'EUR', minimumFractionDigits: 2 }).format(cents / 100);
+  const fmtAmount = amountCents !== null && currency ? money(amountCents) : null;
+  // Opens without an account: the receipt page checks the client secret.
+  const receiptHref = status === 'succeeded' && receiptTransactionId && sp.payment_intent && sp.payment_intent_client_secret
+    ? `/receipt/${receiptTransactionId}?pi=${encodeURIComponent(sp.payment_intent)}&cs=${encodeURIComponent(sp.payment_intent_client_secret)}`
     : null;
 
   return (
@@ -288,9 +304,21 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
           borderRadius: 'var(--radius-lg)', padding: 20, textAlign: 'left', marginBottom: 20,
           boxShadow: 'var(--shadow)',
         }}>
+          {tipCents !== null && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successTip')}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{money(tipCents)}</span>
+            </div>
+          )}
+          {feeCents !== null && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successFee')}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{money(feeCents)}</span>
+            </div>
+          )}
           {fmtAmount && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: staffName ? '1px solid var(--border-subtle)' : undefined }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successAmount')}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{tipCents !== null ? t('successTotal') : t('successAmount')}</span>
               <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmtAmount}</span>
             </div>
           )}
@@ -311,6 +339,16 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {receiptHref && (
+            <Link href={receiptHref} style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '10px 20px', borderRadius: 'var(--radius)',
+              background: 'var(--surface-2)', border: '1px solid var(--border)',
+              color: 'var(--text)', fontSize: 13, fontWeight: 600, textDecoration: 'none',
+            }}>
+              {t('successReceipt')}
+            </Link>
+          )}
           {status !== 'succeeded' && staffId && (
             <Link href={`/pay/${staffId}`} style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
