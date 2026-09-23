@@ -17,7 +17,7 @@ npm run e2e:down        # stop next (needed after next.config / env changes); --
 ```
 
 Demo manager: `demo@tiplink.dev` (group "Demo Bistro", 4 staff, 40
-transactions). Login is by **email code**: codes land in Mailpit at
+transactions); super admin: `admin@tiplink.dev`. Login is by **email code**: codes land in Mailpit at
 http://127.0.0.1:54324 — read the latest with
 `curl -s localhost:54324/api/v1/messages` then `/api/v1/message/<ID>` (field `Text`).
 
@@ -53,11 +53,38 @@ npx playwright test e2e/x.spec.ts # one file
 
 Artifacts: `.e2e/report` (HTML), `.e2e/test-results` (screenshot, video, trace on failure).
 
+## Stripe (test mode) for the purchase and tip flows
+
+Without it the stack runs on dummy keys: pack purchase, Connect onboarding,
+tips and `/pricing` cannot work and their specs are skipped. To enable:
+
+1. Create the catalogue in the TEST account once:
+   `STRIPE_SECRET_KEY=sk_test_... npx tsx scripts/stripe-setup.ts packs`
+2. Forward webhooks (one listener covers platform and Connect events, the
+   route tries the same secret for both):
+   `stripe listen --forward-to localhost:3000/api/webhooks/stripe --forward-connect-to localhost:3000/api/webhooks/stripe`
+3. Write `.env.e2e` at the repo root (ignored by git):
+   ```
+   E2E_STRIPE_SECRET_KEY=sk_test_...
+   E2E_STRIPE_PUBLISHABLE_KEY=pk_test_...
+   E2E_STRIPE_PRODUCT_PACK_SOLO=prod_...
+   E2E_STRIPE_PRODUCT_PACK_DUO=prod_...
+   E2E_STRIPE_WEBHOOK_SECRET=whsec_...   # printed by `stripe listen`
+   ```
+4. `npm run e2e:up` (restarts next when the env changed). `up.sh` refuses
+   anything but a `sk_test_` / `rk_test_` key.
+
+Test card `4242 4242 4242 4242`, any future date, any CVC.
+
+## Accounts
+
+- `demo@tiplink.dev`: manager of "Demo Bistro" (seeded data).
+- `admin@tiplink.dev`: super admin (orders, SmartTag stock, fulfilment).
+Both log in by email code (Mailpit).
+
 ## Limits
 
-- Stripe: dummy keys by default, so payment forms, Connect onboarding and
-  `/pricing` cannot work; specs needing it are skipped. Export
-  `E2E_STRIPE_SECRET_KEY`, `E2E_STRIPE_PUBLISHABLE_KEY`,
-  `E2E_STRIPE_PRODUCT_PACK_SOLO/DUO` (test mode only) before `e2e:up` to enable them.
 - Realtime is disabled (its container needs IPv6).
 - Migration `00023` is skipped on purpose (never applied in production, see up.sh).
+- Transactional emails go through Resend, not Mailpit: without `RESEND_API_KEY`
+  they are skipped (only Supabase auth codes reach Mailpit).
