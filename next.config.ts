@@ -14,7 +14,9 @@ const CSP = [
   "default-src 'self'",
   // Next.js inline scripts + Stripe.js. connect-js.stripe.com serves the
   // Connect embedded components loader (@stripe/connect-js).
-  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://connect.stripe.com https://connect-js.stripe.com",
+  // connect.facebook.net serves the Meta pixel, loaded only after the visitor
+  // accepts advertising cookies (components/marketing/MetaPixel.tsx).
+  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://connect.stripe.com https://connect-js.stripe.com https://connect.facebook.net",
   // Stripe Elements / Connect iframes. The embedded onboarding, account
   // management, payouts and notification banner components all render inside
   // an iframe served from connect-js.stripe.com.
@@ -22,10 +24,11 @@ const CSP = [
   // Supabase REST/Realtime + Stripe API calls (from browser SDK). The address
   // autocomplete hits the IGN geocoder through our own /api/onboarding/geocode
   // proxy, so it stays under 'self' and needs no extra host here.
-  `connect-src 'self' https://api.stripe.com https://connect.stripe.com https://connect-js.stripe.com https://*.supabase.co wss://*.supabase.co${extraSupabaseOrigin}`,
+  `connect-src 'self' https://api.stripe.com https://connect.stripe.com https://connect-js.stripe.com https://*.supabase.co wss://*.supabase.co https://www.facebook.com${extraSupabaseOrigin}`,
   // Avatars and logos live in Supabase Storage (public-media bucket).
-  // Carto tiles power the salon map.
-  `img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com${extraSupabaseOrigin}`,
+  // Carto tiles power the salon map. www.facebook.com receives the pixel's
+  // events, as an image request or a fetch depending on the browser.
+  `img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com https://www.facebook.com${extraSupabaseOrigin}`,
   // Tailwind injects inline styles; no external stylesheet CDN
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",

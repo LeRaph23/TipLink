@@ -118,7 +118,7 @@
   },
   "legal": {
     "lastUpdated": "Last updated",
-    "updatedDate": "May 5, 2026",
+    "updatedDate": "September 23, 2026",
     "backHome": "Back to home",
     "privacy": {
       "title": "Privacy Policy",
@@ -130,13 +130,13 @@
       "s3Title": "3. Payments & Stripe",
       "s3Body": "Card data is collected and processed exclusively by Stripe. Digitip servers never see or store card numbers. Stripe acts as an independent data controller for payment and KYC data. See stripe.com/privacy for details.",
       "s4Title": "4. Sharing",
-      "s4Body": "We share data only with: Stripe (payments), Supabase (authentication & database hosting, EU region), Resend/our email provider (transactional emails), and authorities when legally required.",
+      "s4Body": "We share data only with: Stripe (payments), Supabase (authentication & database hosting, EU region), Resend/our email provider (transactional emails), Meta to measure our ads only if you accepted it (see section 7), and authorities when legally required.",
       "s5Title": "5. Retention",
       "s5Body": "Account data is kept as long as your account is active, plus 3 years for commercial records. Accounting records (invoices, tips) are kept 10 years as required by law. You can request deletion at any time.",
       "s6Title": "6. Your rights (GDPR)",
       "s6Body": "You can access, correct, delete or export your data, object to processing, and lodge a complaint with your local data protection authority (CNIL in France). Email privacy@digitip.app to exercise your rights.",
       "s7Title": "7. Cookies",
-      "s7Body": "We use strictly necessary cookies for authentication and session management. We do not use advertising cookies or third-party trackers.",
+      "s7Body": "We use strictly necessary cookies for authentication and session management, which do not require your consent. On our presentation and ordering pages we also keep, for 30 days, the name of the advertising campaign that brought you (utm_ parameters), with no identifier, to know which campaigns lead to orders; it serves no other purpose and is not combined with any third-party data. Only with your consent, given or refused in the banner shown on those pages, we use the pixel of Meta Platforms Ireland Ltd. (_fbp and _fbc cookies) to measure visits and purchases coming from our ads on Facebook and Instagram. If you accepted it and place an order, we also send Meta, through its Conversions API, the order amount, your email address in hashed form (SHA-256), your country, your IP address and your browser, to link the purchase to the ad. Meta and Digitip are joint controllers for this collection; Meta then processes the data under its own policy (facebook.com/privacy/policy). Your choice is kept for 6 months and can be changed at any time below. Refusing has no effect on your use of the site.",
       "s8Title": "8. Security",
       "s8Body": "Data is encrypted in transit (TLS 1.2+) and at rest. Access is restricted to authorised staff. We conduct regular security reviews.",
       "s9Title": "9. Contact",
@@ -189,7 +189,7 @@
     "s5Title": "5. Hyperlinks",
     "s5Body": "Linking to digitip.app is permitted, provided such links do not damage the image of YUZU LABS SAS or create confusion as to the origin of content. YUZU LABS SAS accepts no liability for the content of third-party sites linked from this site.",
     "s6Title": "6. Personal data & cookies",
-    "s6Body": "The processing of personal data collected on digitip.app is described in the Privacy Policy available on this site. Data controller: YUZU LABS SAS, privacy@digitip.app. We use only strictly necessary cookies for authentication and security. No advertising cookies or third-party trackers.",
+    "s6Body": "The processing of personal data collected on digitip.app is described in the Privacy Policy available on this site. Data controller: YUZU LABS SAS, privacy@digitip.app. We use strictly necessary cookies for authentication and security, a record of the originating ad campaign with no identifier, and, only with your consent, Meta's advertising pixel. Details are in the Cookies section of the Privacy Policy.",
     "s7Title": "7. Applicable law",
     "s7Body": "This legal notice is governed by French law. In the event of a dispute and after an attempt at amicable resolution, French courts shall have sole jurisdiction."
   },
@@ -1026,7 +1026,15 @@
           "canceled": "Canceled"
         },
         "targetEstablishment": "Destination business",
-        "working": "Working…"
+        "working": "Working…",
+        "colSource": "Source",
+        "sourceDirect": "Direct",
+        "acquisitionTitle": "Acquisition, last 30 days",
+        "acquisitionHint": "Paid orders by originating campaign (utm_ parameters of the last tagged visit, within 30 days). \"Direct\": no tagged visit before the purchase.",
+        "acquisitionSource": "Source",
+        "acquisitionCampaign": "Campaign",
+        "acquisitionOrders": "Orders",
+        "acquisitionEmpty": "No paid order in the last 30 days."
       },
       "transactions": {
         "title": "Transactions",
@@ -1363,5 +1371,12 @@
       "confirmed": "Address confirmed. You are signed in."
     },
     "signOut": "Sign out"
+  },
+  "consent": {
+    "text": "We use a Meta advertising cookie to measure how well our ads work. It is only set if you accept it.",
+    "accept": "Accept",
+    "refuse": "Decline",
+    "learnMore": "Learn more",
+    "manage": "Manage cookies"
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { adContextMetadata } from '@/lib/marketing/ad-context';
 
 export const runtime = 'nodejs';
 
@@ -58,7 +59,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unsupported PI' }, { status: 400 });
     }
     await stripe.paymentIntents.update(piId, {
-      metadata: { ...intent.metadata, customer_email: body.email },
+      metadata: {
+        ...intent.metadata,
+        customer_email: body.email,
+        // Read again here, just before payment: the intent was created as the
+        // page loaded, before the buyer had answered the consent banner and
+        // before the pixel had set its cookies.
+        ...adContextMetadata(request),
+      },
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

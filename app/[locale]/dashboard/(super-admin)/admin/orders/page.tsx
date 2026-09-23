@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { summarizeAttribution } from '@/lib/marketing/attribution';
 
 // Never serve a stale RSC payload — admins expect to see new orders the
 // instant Stripe finishes the webhook.
@@ -54,12 +55,25 @@ export default async function AdminOrdersPage({
 
   let query = supabase
     .from('smarttag_orders')
-    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, created_at, promo_code, discount_amount, groups(id, name)')
+    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, created_at, promo_code, discount_amount, attribution, groups(id, name)')
     .order('created_at', { ascending: false })
     .limit(200);
   if (status) query = query.eq('status', status as (typeof STATUS_ORDER)[number]);
 
-  const { data: orders } = await query;
+  // Paid orders of the last 30 days, whatever the status filter: this is what
+  // a paid campaign is judged on, and it must not move when the list is filtered.
+  const now = new Date();
+  const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ data: orders }, { data: recentPaid }] = await Promise.all([
+    query,
+    supabase
+      .from('smarttag_orders')
+      .select('attribution')
+      .gte('created_at', since)
+      .not('status', 'in', '(pending_payment,canceled)'),
+  ]);
+  const acquisition = summarizeAttribution(recentPaid ?? []);
+  const cell = { padding: '9px 14px', borderBottom: '1px solid var(--border-subtle)' } as const;
 
   return (
     <div>
@@ -69,6 +83,41 @@ export default async function AdminOrdersPage({
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 3 }}>{t('subtitle')}</p>
       </div>
+
+      <section style={{
+        background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius)', padding: '16px 0 4px', marginBottom: 22,
+      }}>
+        <div style={{ padding: '0 14px 10px' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{t('acquisitionTitle')}</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.5 }}>{t('acquisitionHint')}</p>
+        </div>
+        {acquisition.length === 0 ? (
+          <p style={{ padding: '6px 14px 12px', fontSize: 13, color: 'var(--text-3)' }}>{t('acquisitionEmpty')}</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr>
+                {[t('acquisitionSource'), t('acquisitionCampaign'), t('acquisitionOrders')].map((h, i) => (
+                  <th key={i} style={{
+                    ...cell, textAlign: i === 2 ? 'right' : 'left', fontSize: 11, fontWeight: 600,
+                    color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {acquisition.map((row) => (
+                <tr key={`${row.source ?? ''}|${row.campaign ?? ''}`}>
+                  <td style={{ ...cell, color: 'var(--text)', fontWeight: 500 }}>{row.source ?? t('sourceDirect')}</td>
+                  <td style={{ ...cell, color: 'var(--text-2)' }}>{row.campaign ?? '—'}</td>
+                  <td style={{ ...cell, textAlign: 'right', color: 'var(--text)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{row.orders}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         <Link
@@ -110,7 +159,7 @@ export default async function AdminOrdersPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('colGroup'), t('colPack'), t('colQuantity'), t('colProgress'), t('colStatus'), t('colDate')].map((h, i) => (
+                {[t('colGroup'), t('colPack'), t('colQuantity'), t('colProgress'), t('colStatus'), t('colSource'), t('colDate')].map((h, i) => (
                   <th key={i} style={{
                     padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
                     textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)',
@@ -122,6 +171,7 @@ export default async function AdminOrdersPage({
               {orders.map((o) => {
                 const group = o.groups as { id: string; name: string } | null;
                 const hasPromo = !!o.promo_code;
+                const attribution = o.attribution as { source?: string; campaign?: string } | null;
                 return (
                   <tr key={o.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '11px 14px' }}>
@@ -148,6 +198,11 @@ export default async function AdminOrdersPage({
                     </td>
                     <td style={{ padding: '11px 14px' }}>
                       <StatusBadge status={o.status} label={t(`status.${o.status}`)} />
+                    </td>
+                    <td style={{ padding: '11px 14px', color: 'var(--text-2)' }}>
+                      {attribution?.source
+                        ? `${attribution.source}${attribution.campaign ? ` · ${attribution.campaign}` : ''}`
+                        : <span style={{ color: 'var(--text-3)' }}>{t('sourceDirect')}</span>}
                     </td>
                     <td style={{ padding: '11px 14px', color: 'var(--text-3)' }}>
                       {new Date(o.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}

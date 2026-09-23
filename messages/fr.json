@@ -118,7 +118,7 @@
   },
   "legal": {
     "lastUpdated": "Dernière mise à jour",
-    "updatedDate": "5 mai 2026",
+    "updatedDate": "23 septembre 2026",
     "backHome": "Retour à l'accueil",
     "privacy": {
       "title": "Politique de confidentialité",
@@ -130,13 +130,13 @@
       "s3Title": "3. Paiements & Stripe",
       "s3Body": "Les données de carte sont collectées et traitées exclusivement par Stripe. Les serveurs Digitip ne voient ni ne stockent jamais de numéros de carte. Stripe agit en responsable de traitement indépendant pour les données de paiement et de KYC. Voir stripe.com/privacy.",
       "s4Title": "4. Partage des données",
-      "s4Body": "Nous partageons vos données uniquement avec : Stripe (paiements), Supabase (authentification et hébergement base de données, région UE), notre prestataire d'emails transactionnels, et les autorités lorsque la loi l'exige.",
+      "s4Body": "Nous partageons vos données uniquement avec : Stripe (paiements), Supabase (authentification et hébergement base de données, région UE), notre prestataire d'emails transactionnels, Meta pour la mesure de nos publicités uniquement si vous l'avez accepté (voir section 7), et les autorités lorsque la loi l'exige.",
       "s5Title": "5. Conservation",
       "s5Body": "Les données de compte sont conservées tant que votre compte est actif, plus 3 ans pour les archives commerciales. Les documents comptables (factures, pourboires) sont conservés 10 ans conformément à la loi. Vous pouvez demander la suppression à tout moment.",
       "s6Title": "6. Vos droits (RGPD)",
       "s6Body": "Vous pouvez accéder, rectifier, supprimer ou exporter vos données, vous opposer au traitement, et introduire une réclamation auprès de la CNIL. Écrivez à privacy@digitip.app pour exercer vos droits.",
       "s7Title": "7. Cookies",
-      "s7Body": "Nous utilisons uniquement des cookies strictement nécessaires à l'authentification et à la gestion de session. Aucun cookie publicitaire, aucun traqueur tiers.",
+      "s7Body": "Nous utilisons des cookies strictement nécessaires à l'authentification et à la gestion de session, qui ne demandent pas votre accord. Sur nos pages de présentation et de commande, nous conservons aussi pendant 30 jours le nom de la campagne publicitaire qui vous a amené (paramètres utm_), sans aucun identifiant, pour savoir quelles campagnes produisent des commandes ; il ne sert à rien d'autre et n'est croisé avec aucune donnée tierce. Avec votre accord seulement, donné ou refusé dans le bandeau affiché sur ces pages, nous utilisons le pixel de Meta Platforms Ireland Ltd. (cookies _fbp et _fbc) pour mesurer les visites et les achats issus de nos publicités sur Facebook et Instagram. Si vous l'avez accepté et passez commande, nous transmettons aussi à Meta, via son API Conversions, le montant de la commande, votre adresse email sous forme chiffrée (hachage SHA-256), votre pays, votre adresse IP et votre navigateur, afin de relier l'achat à la publicité. Meta et Digitip sont responsables conjoints de cette collecte ; Meta traite ensuite ces données selon sa propre politique (facebook.com/privacy/policy). Votre choix est conservé 6 mois et peut être modifié à tout moment ci-dessous. Le refuser n'a aucune conséquence sur l'utilisation du site.",
       "s8Title": "8. Sécurité",
       "s8Body": "Les données sont chiffrées en transit (TLS 1.2+) et au repos. L'accès est limité au personnel habilité. Nous menons régulièrement des revues de sécurité.",
       "s9Title": "9. Contact",
@@ -189,7 +189,7 @@
     "s5Title": "5. Liens hypertextes",
     "s5Body": "La mise en place de liens hypertextes vers le site digitip.app est autorisée, sous réserve qu'ils ne portent pas atteinte à l'image de YUZU LABS SAS et n'induisent pas de confusion sur l'origine des contenus. YUZU LABS SAS décline toute responsabilité quant au contenu des sites tiers vers lesquels des liens sont proposés.",
     "s6Title": "6. Données personnelles & cookies",
-    "s6Body": "Le traitement des données personnelles collectées sur digitip.app est décrit dans la Politique de confidentialité accessible sur ce site. Responsable du traitement : YUZU LABS SAS, privacy@digitip.app. Nous utilisons uniquement des cookies strictement nécessaires à l'authentification et à la sécurité. Aucun cookie publicitaire ni traceur tiers.",
+    "s6Body": "Le traitement des données personnelles collectées sur digitip.app est décrit dans la Politique de confidentialité accessible sur ce site. Responsable du traitement : YUZU LABS SAS, privacy@digitip.app. Nous utilisons des cookies strictement nécessaires à l'authentification et à la sécurité, une mesure de la campagne publicitaire d'origine sans identifiant, et, uniquement avec votre accord, le pixel publicitaire de Meta. Le détail figure à la section Cookies de la Politique de confidentialité.",
     "s7Title": "7. Droit applicable",
     "s7Body": "Les présentes mentions légales sont régies par le droit français. En cas de litige et après tentative de résolution amiable, les tribunaux français seront seuls compétents."
   },
@@ -1026,7 +1026,15 @@
           "canceled": "Annulée"
         },
         "targetEstablishment": "Établissement destinataire",
-        "working": "En cours…"
+        "working": "En cours…",
+        "colSource": "Source",
+        "sourceDirect": "Directe",
+        "acquisitionTitle": "Acquisition, 30 derniers jours",
+        "acquisitionHint": "Commandes payées par campagne d'origine (paramètres utm_ de la dernière visite taguée, sur 30 jours). « Directe » : aucune visite taguée avant l'achat.",
+        "acquisitionSource": "Source",
+        "acquisitionCampaign": "Campagne",
+        "acquisitionOrders": "Commandes",
+        "acquisitionEmpty": "Aucune commande payée sur les 30 derniers jours."
       },
       "transactions": {
         "title": "Transactions",
@@ -1363,5 +1371,12 @@
       "confirmed": "Adresse confirmée. Vous êtes connecté."
     },
     "signOut": "Déconnexion"
+  },
+  "consent": {
+    "text": "Nous utilisons un cookie publicitaire Meta pour mesurer l'efficacité de nos publicités. Il n'est déposé que si vous l'acceptez.",
+    "accept": "Accepter",
+    "refuse": "Refuser",
+    "learnMore": "En savoir plus",
+    "manage": "Gérer les cookies"
   }
 }

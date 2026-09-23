@@ -27,6 +27,7 @@ export const BASE_CLIENT_NAMESPACES = [
   'auth',
   'checkout',
   'common',
+  'consent',
   'contact',
   'error',
   'imageUpload',

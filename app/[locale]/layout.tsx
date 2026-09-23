@@ -8,6 +8,8 @@ import { routing } from '@/i18n/routing';
 import { BASE_URL, pageAlternates } from '@/lib/seo';
 import '../globals.css';
 import { BASE_CLIENT_NAMESPACES, pickNamespaces } from '@/lib/i18n/client-namespaces';
+import { publicEnv } from '@/lib/env';
+import { MetaPixel } from '@/components/marketing/MetaPixel';
 
 const jakarta = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
@@ -273,7 +275,12 @@ export default async function LocaleLayout({
         ))}
       </head>
       <body className="min-h-full flex flex-col antialiased">
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          {publicEnv.NEXT_PUBLIC_META_PIXEL_ID && (
+            <MetaPixel pixelId={publicEnv.NEXT_PUBLIC_META_PIXEL_ID} />
+          )}
+        </NextIntlClientProvider>
         <Analytics />
       </body>
     </html>

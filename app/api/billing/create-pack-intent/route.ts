@@ -6,6 +6,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase/service';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 import { provisionalPackTax } from '@/lib/stripe/tax';
+import { adContextMetadata } from '@/lib/marketing/ad-context';
 
 export const runtime = 'nodejs';
 
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest) {
         // Cleared by pack-tax once a real shipping address has been priced.
         tax_provisional: 'true',
         ...(promo ? { promo_code: promo.code, promo_code_id: promo.promo_code_id } : {}),
+        ...adContextMetadata(request),
       },
     });
 
