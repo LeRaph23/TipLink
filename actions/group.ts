@@ -49,10 +49,14 @@ export async function updateGroup(
 
   if (input.tipThresholds !== undefined) {
     const currentSettings = (current?.settings as Record<string, unknown> | null) ?? {};
-    const cleaned = input.tipThresholds
-      .filter((v) => typeof v === 'number' && v >= 2 && v < 10000)
-      .slice(0, 4);
-    if (cleaned.length !== 4) return { error: 'Les quatre montants doivent être au minimum 2 €.' };
+    // Three or four amounts (new groups default to three), each shown once on
+    // the tip page: a repeated amount would be a duplicate button.
+    const valid = input.tipThresholds.filter((v) => typeof v === 'number' && v >= 2 && v < 10000);
+    if (valid.length !== input.tipThresholds.length || valid.length < 3 || valid.length > 4) {
+      return { error: 'Indiquez 3 ou 4 montants, chacun d’au moins 2 €.' };
+    }
+    if (new Set(valid).size !== valid.length) return { error: 'Chaque montant ne peut apparaître qu’une fois.' };
+    const cleaned = valid;
     patch.settings = { ...currentSettings, tip_thresholds: cleaned };
   }
 

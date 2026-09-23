@@ -896,7 +896,7 @@
       "logoHelp": "PNG ou SVG, format carré, 2 Mo max.",
       "teamName": "Nom de l'équipe",
       "sectionTips": "Montants de pourboire par défaut",
-      "tipsHelp": "Affichés sur la page de pourboire. Quatre boutons du plus petit au plus grand.",
+      "tipsHelp": "Affichés sur la page de pourboire, du plus petit au plus grand. Trois ou quatre montants : laissez la dernière case vide pour n'en proposer que trois.",
       "sectionLegal": "Informations légales",
       "legalName": "Raison sociale",
       "vatNumber": "Numéro de TVA",
@@ -1361,6 +1361,7 @@
       "subtitle": "Nous vous envoyons un code à 6 chiffres. Pas de mot de passe à retenir.",
       "send": "Recevoir mon code",
       "confirmed": "Adresse confirmée. Vous êtes connecté."
-    }
+    },
+    "signOut": "Déconnexion"
   }
 }

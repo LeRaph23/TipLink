@@ -69,6 +69,14 @@ export function OrderFulfillment({
   const [error, setError] = useState<string | null>(null);
   const [forceStatus, setForceStatus] = useState<OrderStatus>(status as OrderStatus);
   const [forceTracking, setForceTracking] = useState(trackingNumber ?? '');
+  // Assign/ship/deliver refresh the page with a new status; the override form
+  // must follow it, or "Appliquer" would silently move the order back.
+  const [shownStatus, setShownStatus] = useState(status);
+  if (status !== shownStatus) {
+    setShownStatus(status);
+    setForceStatus(status as OrderStatus);
+    setForceTracking(trackingNumber ?? '');
+  }
   const [toast, setToast] = useState<string | null>(null);
   const [notes, setNotes] = useState(internalNotes);
   const [cancelReason, setCancelReason] = useState('');

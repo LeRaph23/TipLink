@@ -47,3 +47,6 @@ next-env.d.ts
 # AI-generated scratch images
 Gemini_Generated_Image_*.png
 
+
+# local e2e stack state (scripts/e2e)
+/.e2e/

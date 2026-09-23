@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { normalizeGoogleReviewUrl } from '@/lib/google-review-url';
 
 export interface ReviewSelection {
   placeId: string | null;
@@ -136,15 +137,15 @@ export function GoogleReviewPicker({
   }
 
   function applyManual() {
-    const v = manualUrl.trim();
-    if (!v) {
+    // Same rule as the server actions, which silently drop anything this
+    // rejects: accepting it here would show "linked" for a link never saved.
+    const url = normalizeGoogleReviewUrl(manualUrl);
+    if (!url) {
       setManualError(t('manualInvalid'));
       return;
     }
     setManualError(null);
-    // Server-side actions normalise/validate further; here we just accept a
-    // non-empty value so the manager isn't blocked by client-side guessing.
-    onChange({ placeId: null, reviewUrl: v });
+    onChange({ placeId: null, reviewUrl: url });
   }
 
   const inputStyle: React.CSSProperties = {

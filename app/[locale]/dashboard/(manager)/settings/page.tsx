@@ -52,8 +52,9 @@ export default async function SettingsPage({
   const rawThresholds = Array.isArray(settingsObj.tip_thresholds)
     ? (settingsObj.tip_thresholds as number[])
     : [1, 2, 5, 10];
+  // Groups default to three amounts (5/10/20); the form's fourth slot is then
+  // left empty rather than padded with a copy of the last one.
   const tipThresholds = rawThresholds.slice(0, 4);
-  while (tipThresholds.length < 4) tipThresholds.push(tipThresholds[tipThresholds.length - 1] ?? 1);
 
   return (
     <div style={{ maxWidth: 640 }}>

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local e2e stack output (Playwright reports, traces): scripts/e2e.
+    ".e2e/**",
   ]),
 ]);
 

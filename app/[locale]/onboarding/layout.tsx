@@ -1,4 +1,5 @@
 import { setRequestLocale } from 'next-intl/server';
+import { OnboardingSignOut } from '@/components/onboarding/OnboardingSignOut';
 import { NOINDEX_METADATA } from '@/lib/seo/metadata';
 
 // Authenticated area: never indexable. See NOINDEX_METADATA.
@@ -34,6 +35,7 @@ export default async function OnboardingLayout({
           letterSpacing: '-0.03em',
           fontFamily: 'var(--font-poppins), sans-serif',
         }}>DigiTip</span>
+        <OnboardingSignOut />
       </header>
       <main style={{
         flex: 1,

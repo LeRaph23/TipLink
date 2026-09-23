@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "browser": {
+      "command": "bash",
+      "args": ["scripts/e2e/browser-mcp.sh"]
+    }
+  }
+}
