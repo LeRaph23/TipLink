@@ -836,7 +836,7 @@
       "logoHelp": "PNG or SVG, square format, max 2 MB.",
       "teamName": "Team name",
       "sectionTips": "Default tip amounts",
-      "tipsHelp": "Shown on the tip page. Four buttons from lowest to highest.",
+      "tipsHelp": "Shown on the tip page, from lowest to highest. Three or four amounts: leave the last box empty to offer only three.",
       "sectionLegal": "Business info",
       "legalName": "Legal name",
       "vatNumber": "VAT number",

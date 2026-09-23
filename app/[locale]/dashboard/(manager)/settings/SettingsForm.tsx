@@ -76,8 +76,9 @@ export function SettingsForm({
   const [legalName, setLegalName] = useState(initial.legalName ?? '');
   const [vatNumber, setVatNumber] = useState(initial.vatNumber ?? '');
   const [accountantEmail, setAccountantEmail] = useState(initial.accountantEmail ?? '');
+  // Four slots, the fourth optional: new groups start with three amounts.
   const [thresholds, setThresholds] = useState<string[]>(
-    initial.tipThresholds.map((v) => String(v))
+    [0, 1, 2, 3].map((i) => (initial.tipThresholds[i] !== undefined ? String(initial.tipThresholds[i]) : ''))
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -90,7 +91,7 @@ export function SettingsForm({
     setSaved(false);
     setError(null);
 
-    const parsed = thresholds.map((v) => Number.parseFloat(v));
+    const parsed = thresholds.filter((v) => v.trim() !== '').map((v) => Number.parseFloat(v));
     if (parsed.some((v) => !Number.isFinite(v) || v <= 0)) {
       setError('Invalid tip amounts');
       setSaving(false);
@@ -161,7 +162,8 @@ export function SettingsForm({
               style={fieldStyle(focus === `thr-${i}`)}
               onFocus={() => setFocus(`thr-${i}`)}
               onBlur={() => setFocus(null)}
-              required
+              required={i < 3}
+              placeholder={i === 3 ? '—' : undefined}
             />
           ))}
         </div>
