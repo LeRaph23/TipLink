@@ -125,14 +125,21 @@ jobs:
           npm run test:rls 2>&1 | tee rls-output.txt
         env:
           CI: "true"
+          NO_COLOR: "1"
 
       - name: Assert the RLS tests actually ran
         run: |
-          if grep -qE '[0-9]+ skipped' rls-output.txt; then
+          # vitest colours its summary, so in the raw log `Tests` and the count
+          # are separated by escape sequences rather than spaces and a literal
+          # `Tests +[0-9]+ passed` never matches. The first version of this
+          # guard matched the raw file and failed a run where all 31 tests had
+          # just passed. Strip the escapes before matching.
+          sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g' rls-output.txt > rls-plain.txt
+          if grep -qE '[0-9]+ skipped' rls-plain.txt; then
             echo "::error::RLS tests were skipped. They must run — that is the point of this job."
             exit 1
           fi
-          grep -qE 'Tests +[0-9]+ passed' rls-output.txt || {
+          grep -qE 'Tests +[0-9]+ passed' rls-plain.txt || {
             echo "::error::No passing RLS tests were reported."
             exit 1
           }
