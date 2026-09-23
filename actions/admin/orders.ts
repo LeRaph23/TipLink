@@ -10,8 +10,10 @@ import {
   sendOrderConfirmation,
   sendOrderCanceled,
   sendOrderCustomNote,
+  normalizeTrackingNumber,
 } from '@/lib/email';
 import { stripe } from '@/lib/stripe/client';
+import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 import { voidCommercialSaleForOrder } from '@/lib/commercial/sales';
 
@@ -52,6 +54,14 @@ async function getGroupAdminEmail(groupId: string): Promise<{ email: string; loc
   return { email: user.email, locale };
 }
 
+// The express onboarding page rejects a link without a signed token and
+// redirects to login, so an unsigned link is a dead button in the email.
+function expressOnboardingUrl(base: string, groupId: string, email: string): string {
+  return `${base}/fr/onboarding?group=${groupId}` +
+    `&token=${encodeURIComponent(signOnboardingToken(groupId, email))}` +
+    `&email=${encodeURIComponent(email)}`;
+}
+
 /**
  * Resolve the customer email for an order, regardless of whether the group
  * has finished onboarding yet. Tries the group_admin user first, then falls
@@ -61,7 +71,7 @@ async function getGroupAdminEmail(groupId: string): Promise<{ email: string; loc
  */
 async function resolveOrderRecipient(
   orderId: string
-): Promise<{ email: string; locale: string; onboardingUrl: string | null } | null> {
+): Promise<{ email: string; locale: string; onboardingUrl: string | null; setupRequired: boolean } | null> {
   const service = createServiceClient();
   const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
 
@@ -79,6 +89,7 @@ async function resolveOrderRecipient(
       email: admin.email,
       locale: admin.locale,
       onboardingUrl: `${base}/dashboard`,
+      setupRequired: false,
     };
   }
 
@@ -96,7 +107,8 @@ async function resolveOrderRecipient(
         return {
           email: customer.email,
           locale: 'fr',
-          onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(customer.email)}`,
+          onboardingUrl: expressOnboardingUrl(base, order.group_id, customer.email),
+          setupRequired: true,
         };
       }
     } catch { /* swallow — fall through */ }
@@ -116,7 +128,8 @@ async function resolveOrderRecipient(
           return {
             email,
             locale: 'fr',
-            onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(email)}`,
+            onboardingUrl: expressOnboardingUrl(base, order.group_id, email),
+            setupRequired: true,
           };
         }
       }
@@ -220,7 +233,7 @@ export async function markOrderShipped(
     .update({
       status: 'shipped',
       shipped_at: new Date().toISOString(),
-      tracking_number: trackingNumber ?? null,
+      tracking_number: normalizeTrackingNumber(trackingNumber),
     })
     .eq('id', orderId)
     .not('status', 'in', '(shipped,delivered,canceled)')
@@ -245,9 +258,10 @@ export async function markOrderShipped(
       pack: shipped.pack,
       quantity: shipped.quantity,
       orderId: shipped.id,
-      trackingNumber: trackingNumber ?? null,
+      trackingNumber,
       locale: recipient.locale,
       onboardingUrl: recipient.onboardingUrl,
+      setupRequired: recipient.setupRequired,
     });
   } catch (e) {
     console.error('[orders] shipping email failed', { orderId, e });
@@ -290,7 +304,8 @@ export async function forceOrderStatus(
 
   if (newStatus === 'shipped') {
     patch.shipped_at = new Date().toISOString();
-    if (trackingNumber) patch.tracking_number = trackingNumber;
+    const tn = normalizeTrackingNumber(trackingNumber);
+    if (tn) patch.tracking_number = tn;
   }
   if (newStatus === 'delivered') {
     patch.delivered_at = new Date().toISOString();
@@ -495,6 +510,7 @@ export async function resendOrderEmail(
         trackingNumber: order.tracking_number,
         locale: recipient.locale,
         onboardingUrl: recipient.onboardingUrl,
+        setupRequired: recipient.setupRequired,
       });
     } else if (kind === 'delivered') {
       await sendOrderDelivered({
