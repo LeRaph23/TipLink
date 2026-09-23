@@ -1001,7 +1001,7 @@
         "fulfillCount": "Tags à assigner ({remaining} restant)",
         "stockAvailable": "{n} tags disponibles en stock",
         "fulfillConfirm": "Assigner depuis le stock",
-        "trackingNumber": "Numéro de suivi",
+        "trackingNumber": "Numéro de suivi La Poste (facultatif)",
         "markShipped": "Marquer comme expédiée",
         "markDelivered": "Marquer comme livrée",
         "nothingToDo": "Rien à faire sur cette commande pour l'instant.",

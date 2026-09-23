@@ -1001,7 +1001,7 @@
         "fulfillCount": "Tags to assign ({remaining} remaining)",
         "stockAvailable": "{n} tags available in stock",
         "fulfillConfirm": "Assign from stock",
-        "trackingNumber": "Tracking number",
+        "trackingNumber": "La Poste tracking number (optional)",
         "markShipped": "Mark as shipped",
         "markDelivered": "Mark as delivered",
         "nothingToDo": "Nothing to do on this order right now.",

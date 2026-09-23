@@ -10,6 +10,7 @@ import {
   sendOrderConfirmation,
   sendOrderCanceled,
   sendOrderCustomNote,
+  normalizeTrackingNumber,
 } from '@/lib/email';
 import { stripe } from '@/lib/stripe/client';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
@@ -70,7 +71,7 @@ function expressOnboardingUrl(base: string, groupId: string, email: string): str
  */
 async function resolveOrderRecipient(
   orderId: string
-): Promise<{ email: string; locale: string; onboardingUrl: string | null } | null> {
+): Promise<{ email: string; locale: string; onboardingUrl: string | null; setupRequired: boolean } | null> {
   const service = createServiceClient();
   const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
 
@@ -88,6 +89,7 @@ async function resolveOrderRecipient(
       email: admin.email,
       locale: admin.locale,
       onboardingUrl: `${base}/dashboard`,
+      setupRequired: false,
     };
   }
 
@@ -106,6 +108,7 @@ async function resolveOrderRecipient(
           email: customer.email,
           locale: 'fr',
           onboardingUrl: expressOnboardingUrl(base, order.group_id, customer.email),
+          setupRequired: true,
         };
       }
     } catch { /* swallow — fall through */ }
@@ -126,6 +129,7 @@ async function resolveOrderRecipient(
             email,
             locale: 'fr',
             onboardingUrl: expressOnboardingUrl(base, order.group_id, email),
+            setupRequired: true,
           };
         }
       }
@@ -229,7 +233,7 @@ export async function markOrderShipped(
     .update({
       status: 'shipped',
       shipped_at: new Date().toISOString(),
-      tracking_number: trackingNumber ?? null,
+      tracking_number: normalizeTrackingNumber(trackingNumber),
     })
     .eq('id', orderId)
     .not('status', 'in', '(shipped,delivered,canceled)')
@@ -254,9 +258,10 @@ export async function markOrderShipped(
       pack: shipped.pack,
       quantity: shipped.quantity,
       orderId: shipped.id,
-      trackingNumber: trackingNumber ?? null,
+      trackingNumber,
       locale: recipient.locale,
       onboardingUrl: recipient.onboardingUrl,
+      setupRequired: recipient.setupRequired,
     });
   } catch (e) {
     console.error('[orders] shipping email failed', { orderId, e });
@@ -299,7 +304,8 @@ export async function forceOrderStatus(
 
   if (newStatus === 'shipped') {
     patch.shipped_at = new Date().toISOString();
-    if (trackingNumber) patch.tracking_number = trackingNumber;
+    const tn = normalizeTrackingNumber(trackingNumber);
+    if (tn) patch.tracking_number = tn;
   }
   if (newStatus === 'delivered') {
     patch.delivered_at = new Date().toISOString();
@@ -504,6 +510,7 @@ export async function resendOrderEmail(
         trackingNumber: order.tracking_number,
         locale: recipient.locale,
         onboardingUrl: recipient.onboardingUrl,
+        setupRequired: recipient.setupRequired,
       });
     } else if (kind === 'delivered') {
       await sendOrderDelivered({
