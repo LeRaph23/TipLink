@@ -62,7 +62,13 @@ tips and `/pricing` cannot work and their specs are skipped. To enable:
    `STRIPE_SECRET_KEY=sk_test_... npx tsx scripts/stripe-setup.ts packs`
 2. Forward webhooks (one listener covers platform and Connect events, the
    route tries the same secret for both):
-   `stripe listen --forward-to localhost:3000/api/webhooks/stripe --forward-connect-to localhost:3000/api/webhooks/stripe`
+   ```
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe \
+     --forward-connect-to localhost:3000/api/webhooks/stripe \
+     --events account.application.deauthorized,account.updated,charge.dispute.closed,charge.dispute.created,charge.dispute.funds_reinstated,charge.dispute.funds_withdrawn,charge.refunded,checkout.session.completed,customer.subscription.created,customer.subscription.deleted,customer.subscription.updated,invoice.paid,invoice.payment_failed,payment_intent.payment_failed,payment_intent.succeeded,payout.failed,payout.paid,radar.early_fraud_warning.created,transfer.reversed
+   ```
+   (the events handled in app/api/webhooks/stripe/route.ts; recent CLIs require
+   the list). `stripe listen --print-secret` gives the whsec without listening.
 3. Write `.env.e2e` at the repo root (ignored by git):
    ```
    E2E_STRIPE_SECRET_KEY=sk_test_...
