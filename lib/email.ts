@@ -304,7 +304,9 @@ export async function sendOrderShipped(opts: {
       </td></tr>`
     : '';
 
-  await resend.emails.send({
+  // Resend reports a rejected send in the result, not by throwing. Surface it
+  // so the admin action can tell the admin the customer was not notified.
+  const { error } = await resend.emails.send({
     from: FROM,
     to,
     subject,
@@ -334,6 +336,7 @@ export async function sendOrderShipped(opts: {
       <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${footer}</p>
     </td></tr>`),
   });
+  if (error) throw new Error(`Shipping email not sent: ${error.message}`);
 }
 
 // ─── Payment failed (tipper) ──────────────────────────────────────────────────

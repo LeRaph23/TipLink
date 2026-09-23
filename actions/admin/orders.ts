@@ -211,72 +211,51 @@ export async function markOrderShipped(
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  const { data: order } = await auth.supabase
-    .from('smarttag_orders')
-    .select('id, group_id, pack, quantity')
-    .eq('id', orderId)
-    .single();
-
-  const { error } = await auth.supabase
+  // Only the call that actually moves the order to "shipped" sends the email:
+  // a double click or a second tab matches no row and stops here, so the
+  // customer is told once. "Renvoyer l'email expédition" stays the explicit
+  // way to send it again.
+  const { data: shipped, error } = await auth.supabase
     .from('smarttag_orders')
     .update({
       status: 'shipped',
       shipped_at: new Date().toISOString(),
       tracking_number: trackingNumber ?? null,
     })
-    .eq('id', orderId);
+    .eq('id', orderId)
+    .not('status', 'in', '(shipped,delivered,canceled)')
+    .select('id, pack, quantity')
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+  if (!shipped) return { ok: false, error: 'Commande déjà expédiée ou annulée : aucun email envoyé.' };
 
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
   revalidatePath('/dashboard/billing');
   await logAdminAction('orders.mark_shipped', { orderId });
 
-  if (order) {
-    (async () => {
-      try {
-        const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
-        let to: string | null = null;
-        let locale = 'fr';
-        let onboardingUrl: string | null = null;
-
-        const adminContact = await getGroupAdminEmail(order.group_id);
-        if (adminContact) {
-          to = adminContact.email;
-          locale = adminContact.locale;
-          onboardingUrl = `${base}/dashboard`;
-        } else {
-          // Express checkout group — retrieve customer email from Stripe
-          const service = createServiceClient();
-          const { data: grp } = await service
-            .from('groups')
-            .select('stripe_customer_id')
-            .eq('id', order.group_id)
-            .single();
-
-          if (grp?.stripe_customer_id) {
-            const customer = await stripe.customers.retrieve(grp.stripe_customer_id);
-            if (!customer.deleted && customer.email) {
-              to = customer.email;
-              onboardingUrl = `${base}/fr/onboarding?group=${order.group_id}`;
-            }
-          }
-        }
-
-        if (to) {
-          await sendOrderShipped({
-            to,
-            pack: order.pack,
-            quantity: order.quantity,
-            orderId: order.id,
-            trackingNumber: trackingNumber ?? null,
-            locale,
-            onboardingUrl,
-          });
-        }
-      } catch { /* never break the action */ }
-    })();
+  // Awaited, not fire-and-forget: on Vercel the function can be frozen as soon
+  // as the action returns, which silently dropped the email.
+  try {
+    const recipient = await resolveOrderRecipient(orderId);
+    if (!recipient) throw new Error('aucune adresse email trouvée pour ce client');
+    await sendOrderShipped({
+      to: recipient.email,
+      pack: shipped.pack,
+      quantity: shipped.quantity,
+      orderId: shipped.id,
+      trackingNumber: trackingNumber ?? null,
+      locale: recipient.locale,
+      onboardingUrl: recipient.onboardingUrl,
+    });
+  } catch (e) {
+    console.error('[orders] shipping email failed', { orderId, e });
+    const msg = e instanceof Error ? e.message : 'erreur inconnue';
+    return {
+      ok: false,
+      error: `Commande marquée expédiée, mais l'email n'est pas parti (${msg}). Utilise « Renvoyer l'email expédition ».`,
+    };
   }
 
   return { ok: true, data: null };

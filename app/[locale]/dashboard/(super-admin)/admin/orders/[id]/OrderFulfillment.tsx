@@ -180,8 +180,10 @@ export function OrderFulfillment({
                 onClick={() => {
                   startTransition(async () => {
                     const res = await markOrderShipped(orderId, tracking || undefined);
+                    // The order can be shipped even when the email failed, so
+                    // refresh either way to show the new status.
                     if (!res.ok) flash(res.error);
-                    else router.refresh();
+                    router.refresh();
                   });
                 }}
               >
