@@ -49,6 +49,12 @@ const publicSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
     .optional(),
+  // Meta pixel id (digits only). When unset, no pixel, no consent banner and
+  // no Conversions API call: the site behaves exactly as it did before.
+  NEXT_PUBLIC_META_PIXEL_ID: z.preprocess(
+    (raw) => (typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : undefined),
+    z.string().regex(/^\d{5,20}$/, 'expected the numeric pixel id').optional(),
+  ),
 });
 
 const parsed = publicSchema.safeParse({
@@ -57,6 +63,7 @@ const parsed = publicSchema.safeParse({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   NEXT_PUBLIC_LAUNCH_OFFER_ENDS_AT: process.env.NEXT_PUBLIC_LAUNCH_OFFER_ENDS_AT,
+  NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID,
 });
 
 if (!parsed.success) {
@@ -114,6 +121,13 @@ export const serverSchema = z.object({
   // digitip.app transactional traffic. Optional — when missing, the commercial
   // cold-email cron skips sends with a logged warning.
   BREVO_API_KEY: optionalSecret('BREVO_API_KEY', 10),
+  // Meta Conversions API access token (Events Manager > pixel > Settings).
+  // Optional: without it, paid orders are still attributed in our own
+  // database, but only the browser pixel reports purchases to Meta.
+  META_CAPI_ACCESS_TOKEN: optionalSecret('META_CAPI_ACCESS_TOKEN', 20),
+  // Set only while checking the setup in Events Manager's "Test events" tab;
+  // events sent with it do not count toward the ads' optimisation.
+  META_CAPI_TEST_EVENT_CODE: optionalSecret('META_CAPI_TEST_EVENT_CODE', 3),
 });
 
 let serverCache: z.infer<typeof serverSchema> | null = null;
@@ -137,6 +151,8 @@ export function serverEnv() {
     AMBASSADOR_SESSION_SECRET: process.env.AMBASSADOR_SESSION_SECRET,
     COMMERCIAL_SESSION_SECRET: process.env.COMMERCIAL_SESSION_SECRET,
     BREVO_API_KEY: process.env.BREVO_API_KEY,
+    META_CAPI_ACCESS_TOKEN: process.env.META_CAPI_ACCESS_TOKEN,
+    META_CAPI_TEST_EVENT_CODE: process.env.META_CAPI_TEST_EVENT_CODE,
   });
   if (!res.success) {
     const issues = res.error.issues

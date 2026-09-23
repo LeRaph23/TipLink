@@ -2029,6 +2029,7 @@ export type Database = {
       }
       smarttag_orders: {
         Row: {
+          attribution: Json | null
           created_at: string
           delivered_at: string | null
           discount_amount: number
@@ -2052,6 +2053,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attribution?: Json | null
           created_at?: string
           delivered_at?: string | null
           discount_amount?: number
@@ -2075,6 +2077,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attribution?: Json | null
           created_at?: string
           delivered_at?: string | null
           discount_amount?: number

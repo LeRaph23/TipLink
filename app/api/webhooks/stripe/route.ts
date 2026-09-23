@@ -20,6 +20,9 @@ import { readAccountStatus } from '@/lib/stripe/connect';
 import { planForSubscriptionStatus } from '@/lib/billing/entitlements';
 import { splitEqually, allocateToOne, type Allocation } from '@/lib/tips/allocation';
 import { revalidateEstablishmentTipPages } from '@/lib/stripe/establishment-account';
+import { attributionFromMetadata } from '@/lib/marketing/attribution';
+import { sendMetaPurchase } from '@/lib/meta/capi';
+import { publicEnv, serverEnv } from '@/lib/env';
 
 // MUST be nodejs: stripe.webhooks.constructEvent() uses Node.js crypto module
 export const runtime = 'nodejs';
@@ -1118,6 +1121,57 @@ async function syncSubscription(
     .eq('id', groupId);
 }
 
+// ─── Ad attribution and Meta reporting for pack orders ──────────────────────
+
+function orderAttribution(intent: Stripe.PaymentIntent): import('@/types/database').Json | null {
+  const attribution = attributionFromMetadata(intent.metadata);
+  return attribution ? (attribution as unknown as import('@/types/database').Json) : null;
+}
+
+/**
+ * Reports a paid pack to Meta's Conversions API, under the PaymentIntent id the
+ * success page also gives the browser pixel, so Meta counts it once. Only for
+ * a buyer who accepted advertising cookies, and only when Meta is configured.
+ */
+async function reportPackPurchaseToMeta(
+  intent: Stripe.PaymentIntent,
+  order: { pack: 'solo' | 'duo'; quantity: number; email: string | null; country: string | null },
+): Promise<void> {
+  if (intent.metadata?.ad_consent !== 'granted') return;
+  const pixelId = publicEnv.NEXT_PUBLIC_META_PIXEL_ID;
+  if (!pixelId) return;
+  const env = serverEnv();
+  if (!env.META_CAPI_ACCESS_TOKEN) return;
+
+  const discount = Number(intent.metadata?.discount_amount ?? 0) || 0;
+  const ht = Number(intent.metadata?.ht_amount ?? NaN);
+  const valueCents = Number.isFinite(ht)
+    ? ht
+    : Math.max(0, (Number(intent.metadata?.base_amount ?? 0) || 0) - discount);
+  const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
+  const locale = intent.metadata?.locale === 'fr' ? 'fr' : 'en';
+
+  await sendMetaPurchase({
+    pixelId,
+    accessToken: env.META_CAPI_ACCESS_TOKEN,
+    testEventCode: env.META_CAPI_TEST_EVENT_CODE ?? null,
+    eventId: intent.id,
+    // The payment, not the intent: the intent can be created long before.
+    eventTime: new Date(),
+    eventSourceUrl: base ? `${base}/${locale}/order/success` : null,
+    valueCents,
+    currency: intent.currency,
+    contentId: order.pack,
+    quantity: order.quantity,
+    email: order.email,
+    country: order.country,
+    fbp: intent.metadata?.meta_fbp ?? null,
+    fbc: intent.metadata?.meta_fbc ?? null,
+    clientIp: intent.metadata?.client_ip ?? null,
+    userAgent: intent.metadata?.client_ua ?? null,
+  });
+}
+
 // ─── Hardware pack express (embedded /checkout) ──────────────────────────────
 
 async function handlePackExpressPaid(
@@ -1246,6 +1300,7 @@ async function handlePackExpressPaid(
       promo_code: promoCodeStr,
       promo_code_id: promoCodeId,
       discount_amount: discountAmount,
+      attribution: orderAttribution(intent),
     })
     .select('id')
     .single();
@@ -1253,6 +1308,15 @@ async function handlePackExpressPaid(
   if (orderErr || !newOrder) {
     throw new Error(`pack-express: failed to create smarttag_order — ${orderErr?.message ?? 'unknown'}`);
   }
+
+  // Right after the order exists: a later step that throws makes Stripe retry,
+  // and the retry exits at the idempotency check above without reaching here.
+  await reportPackPurchaseToMeta(intent, {
+    pack,
+    quantity,
+    email,
+    country: shipping?.address?.country ?? null,
+  });
 
   // Issue a downloadable invoice for the order. The embedded checkout pays a
   // raw PaymentIntent, so Stripe's invoice_creation (Checkout-only) can't
@@ -1436,6 +1500,7 @@ async function handlePackOrderPaid(
         promo_code: promoCodeStr,
         promo_code_id: promoCodeId,
         discount_amount: discountAmount,
+        attribution: orderAttribution(intent),
       },
       { onConflict: 'stripe_payment_intent_id' }
     )
@@ -1472,6 +1537,13 @@ async function handlePackOrderPaid(
     customerName: shipping?.name ?? buyerEmail ?? 'Client inconnu',
     customerEmail: buyerEmail,
     pack, quantity, orderId: order.id, promoCode: promoCodeStr, locale,
+  });
+
+  await reportPackPurchaseToMeta(intent, {
+    pack,
+    quantity,
+    email: buyerEmail,
+    country: shipping?.address?.country ?? null,
   });
 
   // Auto-provision a starter establishment so the tip flow works immediately.

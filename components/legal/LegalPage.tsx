@@ -1,7 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-export type LegalSection = { title: string; body: string };
+export type LegalSection = { title: string; body: string; action?: React.ReactNode };
 
 type LegalPath = '/privacy' | '/terms' | '/mentions-legales' | '/cgv';
 
@@ -69,6 +69,7 @@ export function LegalPage({
             <p style={{ fontSize: 14.5, color: 'var(--text-2)', lineHeight: 1.8 }}>
               {s.body}
             </p>
+            {s.action && <div style={{ marginTop: 10, fontSize: 14.5, color: 'var(--text)' }}>{s.action}</div>}
           </section>
         ))}
 

@@ -6,6 +6,7 @@ import { PACKS, type PackId } from '@/lib/env';
 import { getPackPricing } from '@/lib/stripe/pricing';
 import { computePackTax } from '@/lib/stripe/tax';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { adContextMetadata } from '@/lib/marketing/ad-context';
 
 export const runtime = 'nodejs';
 
@@ -251,6 +252,7 @@ export async function POST(request: NextRequest) {
       tax_country: tax.country,
       ...(promoCodeStr ? { promo_code: promoCodeStr } : {}),
       ...(promoCodeId ? { promo_code_id: promoCodeId } : {}),
+      ...adContextMetadata(request),
     },
   });
 

@@ -1,11 +1,17 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { stripe } from '@/lib/stripe/client';
+import { PixelPurchase } from '@/components/marketing/PixelPurchase';
 
 type PackInfo = {
   label: string;
   quantity: number;
   amount: string;
+  // For the pixel's purchase event, which reports revenue excluding VAT.
+  paymentIntentId: string;
+  pack: 'solo' | 'duo';
+  htCents: number;
+  currency: string;
 };
 
 async function resolvePack(paymentIntentId: string | undefined, locale: string): Promise<PackInfo | null> {
@@ -22,10 +28,15 @@ async function resolvePack(paymentIntentId: string | undefined, locale: string):
       currency: intent.currency.toUpperCase(),
       minimumFractionDigits: 2,
     });
+    const ht = Number(intent.metadata?.ht_amount ?? NaN);
     return {
       label: pack === 'solo' ? 'Pack Solo' : 'Pack Duo',
       quantity,
       amount: fmt.format(intent.amount / 100),
+      paymentIntentId: intent.id,
+      pack,
+      htCents: Number.isFinite(ht) ? ht : intent.amount,
+      currency: intent.currency,
     };
   } catch {
     return null;
@@ -69,6 +80,16 @@ export default async function OrderSuccessPage({
         <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 24 }}>
           {t('body')}
         </p>
+
+        {packInfo && (
+          <PixelPurchase
+            eventId={packInfo.paymentIntentId}
+            valueCents={packInfo.htCents}
+            currency={packInfo.currency}
+            pack={packInfo.pack}
+            quantity={packInfo.quantity}
+          />
+        )}
 
         {/* Order summary (only when we have a PI) */}
         {packInfo && (

@@ -2,6 +2,12 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
+import {
+  ATTRIBUTION_COOKIE,
+  ATTRIBUTION_MAX_AGE_S,
+  attributionFromUrl,
+  serializeAttribution,
+} from './lib/marketing/attribution';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -89,7 +95,22 @@ export async function proxy(request: NextRequest) {
     return intlResponse;
   }
 
-  // 3) Supabase session refresh — only where auth actually matters.
+  // 3) Ad attribution: a visit tagged with utm_* parameters replaces whatever
+  //    campaign was remembered before (last touch). Set here rather than in a
+  //    client component so it holds even when the visitor never runs our JS
+  //    before paying, and it costs nothing on untagged requests.
+  const attribution = attributionFromUrl(request.nextUrl.searchParams, pathname);
+  if (attribution) {
+    intlResponse.cookies.set(ATTRIBUTION_COOKIE, serializeAttribution(attribution), {
+      maxAge: ATTRIBUTION_MAX_AGE_S,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: request.nextUrl.protocol === 'https:',
+      path: '/',
+    });
+  }
+
+  // 4) Supabase session refresh — only where auth actually matters.
   //    Strip the locale prefix first so we can decide cheaply whether this
   //    request needs a Supabase round-trip at all.
   const localePrefix = routing.locales.find(

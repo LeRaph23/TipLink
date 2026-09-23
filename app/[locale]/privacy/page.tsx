@@ -1,6 +1,8 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { LegalPage } from '@/components/legal/LegalPage';
 import { buildPageMetadata } from '@/lib/seo';
+import { publicEnv } from '@/lib/env';
+import { CookieSettingsLink } from '@/components/marketing/MetaPixel';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -22,9 +24,15 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
   const t = await getTranslations('legal.privacy');
   const tl = await getTranslations('legal');
   const tc = await getTranslations('common');
+  const tconsent = await getTranslations('consent');
 
   const sections = (['s1','s2','s3','s4','s5','s6','s7','s8','s9'] as const).map((k) => ({
     title: t(`${k}Title`), body: t(`${k}Body`),
+    // Withdrawing consent has to be as easy as giving it: the banner reopens
+    // from here. Only offered when the pixel it controls is configured.
+    action: k === 's7' && publicEnv.NEXT_PUBLIC_META_PIXEL_ID
+      ? <CookieSettingsLink label={tconsent('manage')} />
+      : undefined,
   }));
 
   const navLinks = [
