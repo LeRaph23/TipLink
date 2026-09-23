@@ -779,7 +779,8 @@
       "trendVsPrev": "vs sem. préc.",
       "adminReceiveTipsTitle": "Recevez vous aussi des pourboires",
       "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires sur votre compte bancaire.",
-      "adminReceiveTipsCta": "Configurer →"
+      "adminReceiveTipsCta": "Configurer →",
+      "wholeTeam": "toute l'équipe"
     },
     "txs": {
       "title": "Transactions",
@@ -789,7 +790,9 @@
       "colAmount": "Montant",
       "colStatus": "Statut",
       "colReceipt": "Reçu",
-      "empty": "Aucune transaction pour l'instant"
+      "empty": "Aucune transaction pour l'instant",
+      "statusReceived": "Reçu",
+      "statusReversed": "Remboursé"
     },
     "staff": {
       "title": "Équipe",

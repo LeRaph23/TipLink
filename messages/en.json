@@ -779,7 +779,8 @@
       "trendVsPrev": "vs prev. week",
       "adminReceiveTipsTitle": "Receive tips too",
       "adminReceiveTipsBody": "As an admin, you can also appear in the list and receive tips in your bank account.",
-      "adminReceiveTipsCta": "Set up →"
+      "adminReceiveTipsCta": "Set up →",
+      "wholeTeam": "whole team"
     },
     "txs": {
       "title": "Transactions",
@@ -789,7 +790,9 @@
       "colAmount": "Amount",
       "colStatus": "Status",
       "colReceipt": "Receipt",
-      "empty": "No transactions yet"
+      "empty": "No transactions yet",
+      "statusReceived": "Received",
+      "statusReversed": "Refunded"
     },
     "staff": {
       "title": "Staff",
