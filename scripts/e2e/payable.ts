@@ -47,6 +47,11 @@ if (!/^(sk|rk)_test_/.test(key) || key.includes('e2e_dummy')) {
   fail('Stripe is not in TEST mode on the local stack: put your sk_test_ keys in .env.e2e, then `npm run e2e:up`.');
 }
 const stripe = new Stripe(key, { apiVersion: '2026-03-25.dahlia' });
+const publishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
+if (!/^pk_test_/.test(publishableKey) || publishableKey.includes('e2e_dummy')) {
+  fail('E2E_STRIPE_PUBLISHABLE_KEY (pk_test_...) is missing from .env.e2e: account tokens need it.');
+}
+const publishable = new Stripe(publishableKey, { apiVersion: '2026-03-25.dahlia' });
 
 const SUPABASE = env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -96,10 +101,33 @@ async function findEstablishment(arg: string | undefined): Promise<Establishment
 
 // Stripe's documented test values: they pass verification instantly in test
 // mode and are rejected in live mode.
+//
+// A platform based in France may not send legal-entity details or the terms
+// acceptance on accounts.create when it collects requirements itself: they
+// must arrive as an account token, which Stripe only issues against the
+// PUBLISHABLE key (normally from Stripe.js in the browser).
 async function createVerifiedTestAccount(estab: Establishment): Promise<string> {
+  const email = `e2e+${estab.id.slice(0, 8)}@exemple.fr`;
+  const token = await publishable.tokens.create({
+    account: {
+      business_type: 'individual',
+      individual: {
+        first_name: 'Jenny',
+        last_name: 'Rosen',
+        email,
+        phone: '+33612345678',
+        dob: { day: 1, month: 1, year: 1901 },
+        address: { line1: 'address_full_match', city: 'Paris', postal_code: '75001', country: 'FR' },
+        verification: { document: { front: 'file_identity_document_success' } },
+      },
+      tos_shown_and_accepted: true,
+    },
+  });
+
   const account = await stripe.accounts.create({
     country: 'FR',
-    email: `e2e+${estab.id.slice(0, 8)}@exemple.fr`,
+    email,
+    account_token: token.id,
     controller: {
       stripe_dashboard: { type: 'none' },
       requirement_collection: 'application',
@@ -110,23 +138,12 @@ async function createVerifiedTestAccount(estab: Establishment): Promise<string> 
       card_payments: { requested: true },
       transfers: { requested: true },
     },
-    business_type: 'individual',
-    individual: {
-      first_name: 'Jenny',
-      last_name: 'Rosen',
-      email: `e2e+${estab.id.slice(0, 8)}@exemple.fr`,
-      phone: '+33612345678',
-      dob: { day: 1, month: 1, year: 1901 },
-      address: { line1: 'address_full_match', city: 'Paris', postal_code: '75001', country: 'FR' },
-      verification: { document: { front: 'file_identity_document_success' } },
-    },
     business_profile: {
       mcc: '5812',
       name: estab.name,
       url: 'https://accessible.stripe.com',
       product_description: 'Pourboires (compte de test e2e)',
     },
-    tos_acceptance: { date: Math.floor(Date.now() / 1000), ip: '127.0.0.1' },
     external_account: {
       object: 'bank_account',
       country: 'FR',
