@@ -23,7 +23,12 @@ log() { printf '\033[36m[e2e]\033[0m %s\n' "$*"; }
 
 # --- 1. Docker ---------------------------------------------------------------
 if ! docker info >/dev/null 2>&1; then
-  [ "$(uname)" = "Darwin" ] && { echo "Docker is not running: start Docker Desktop, then re-run."; exit 1; }
+  # Only a bare Linux box (e.g. a cloud container) runs its own daemon; on
+  # macOS and on Windows/WSL the daemon belongs to Docker Desktop.
+  if [ "$(uname)" = "Darwin" ] || grep -qi microsoft /proc/version 2>/dev/null || ! command -v dockerd >/dev/null; then
+    echo "Docker is not running: start Docker Desktop (on Windows, enable WSL integration for this distro), then re-run."
+    exit 1
+  fi
   log "starting dockerd"
   (nohup dockerd >"$STATE_DIR/dockerd.log" 2>&1 &)
   for _ in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
