@@ -25,8 +25,9 @@ if (!key) {
   process.exit(1);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const stripe = new Stripe(key, { apiVersion: '2025-04-30' as any });
+// Same version as lib/stripe/client.ts, so the catalogue is created with the
+// API shape the app reads it with.
+const stripe = new Stripe(key, { apiVersion: '2026-03-25.dahlia' });
 
 const PACKS = [
   { id: 'plaque_solo', name: 'Plaque époxy NFC — Solo (1 plaque)', amount: 6900, env: 'STRIPE_PRODUCT_PACK_SOLO' },
