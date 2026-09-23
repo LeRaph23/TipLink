@@ -12,6 +12,7 @@ import {
   sendOrderCustomNote,
 } from '@/lib/email';
 import { stripe } from '@/lib/stripe/client';
+import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 import { voidCommercialSaleForOrder } from '@/lib/commercial/sales';
 
@@ -50,6 +51,14 @@ async function getGroupAdminEmail(groupId: string): Promise<{ email: string; loc
 
   const locale = (user.user_metadata?.locale as string | undefined) ?? 'fr';
   return { email: user.email, locale };
+}
+
+// The express onboarding page rejects a link without a signed token and
+// redirects to login, so an unsigned link is a dead button in the email.
+function expressOnboardingUrl(base: string, groupId: string, email: string): string {
+  return `${base}/fr/onboarding?group=${groupId}` +
+    `&token=${encodeURIComponent(signOnboardingToken(groupId, email))}` +
+    `&email=${encodeURIComponent(email)}`;
 }
 
 /**
@@ -96,7 +105,7 @@ async function resolveOrderRecipient(
         return {
           email: customer.email,
           locale: 'fr',
-          onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(customer.email)}`,
+          onboardingUrl: expressOnboardingUrl(base, order.group_id, customer.email),
         };
       }
     } catch { /* swallow — fall through */ }
@@ -116,7 +125,7 @@ async function resolveOrderRecipient(
           return {
             email,
             locale: 'fr',
-            onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(email)}`,
+            onboardingUrl: expressOnboardingUrl(base, order.group_id, email),
           };
         }
       }
