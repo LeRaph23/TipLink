@@ -1,4 +1,5 @@
 import { setRequestLocale } from 'next-intl/server';
+import { OnboardingSignOut } from '@/components/onboarding/OnboardingSignOut';
 
 export default async function OnboardingLayout({
   children,
@@ -30,6 +31,7 @@ export default async function OnboardingLayout({
           letterSpacing: '-0.03em',
           fontFamily: 'var(--font-poppins), sans-serif',
         }}>DigiTip</span>
+        <OnboardingSignOut />
       </header>
       <main style={{
         flex: 1,

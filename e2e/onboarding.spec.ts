@@ -39,3 +39,22 @@ test('the Google review step refuses a link that would never be saved', async ({
   await page.getByRole('button', { name: 'Enregistrer le lien' }).click();
   await expect(page.getByText('Saisissez un lien d’avis Google valide.')).toHaveCount(0);
 });
+
+test('a manager stuck in onboarding can sign out', async ({ page }) => {
+  const stamp = Date.now();
+  const email = `gerant.out.${stamp}@exemple.fr`;
+  const userId = await createUser(email);
+  const [group] = await admin<{ id: string }[]>('/rest/v1/groups', {
+    method: 'POST',
+    body: { name: `Café Sortie ${stamp}`, settings: {} },
+  });
+  await admin('/rest/v1/user_roles', { method: 'POST', body: { user_id: userId, role: 'group_admin', group_id: group.id } });
+  await login(page, email);
+  await page.goto('/fr/onboarding');
+
+  await page.getByRole('button', { name: 'Déconnexion' }).click();
+  await expect(page).toHaveURL(/\/fr\/login/);
+  // Signed out for real: the dashboard now asks to log in again.
+  await page.goto('/fr/dashboard');
+  await expect(page).toHaveURL(/\/fr\/login/);
+});
