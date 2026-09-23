@@ -14,7 +14,7 @@ const banner: React.CSSProperties = {
   fontWeight: 500,
 };
 
-export function LoginForm({ verified }: { verified?: boolean }) {
+export function LoginForm({ verified, linkExpired }: { verified?: boolean; linkExpired?: boolean }) {
   const router = useRouter();
   const t = useTranslations('auth');
 
@@ -23,6 +23,20 @@ export function LoginForm({ verified }: { verified?: boolean }) {
       {/* Kept one release past the switch: confirmation links sent under the
           password flow still land here with ?verified=true. */}
       {verified && <div style={banner}>✓ {t('emailVerifiedBanner')}</div>}
+
+      {linkExpired && (
+        <div
+          role="alert"
+          style={{
+            ...banner,
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#b91c1c',
+          }}
+        >
+          {t('linkExpiredBanner')}
+        </div>
+      )}
 
       <EmailOtpForm
         // Signing in must never create the account. An unknown address that

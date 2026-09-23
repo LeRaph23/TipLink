@@ -1,5 +1,9 @@
 import { setRequestLocale } from 'next-intl/server';
 import { OnboardingSignOut } from '@/components/onboarding/OnboardingSignOut';
+import { NOINDEX_METADATA } from '@/lib/seo/metadata';
+
+// Authenticated area: never indexable. See NOINDEX_METADATA.
+export const metadata = NOINDEX_METADATA;
 
 export default async function OnboardingLayout({
   children,

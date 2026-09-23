@@ -10,9 +10,12 @@ import {
   sendOrderConfirmation,
   sendOrderCanceled,
   sendOrderCustomNote,
+  normalizeTrackingNumber,
 } from '@/lib/email';
 import { stripe } from '@/lib/stripe/client';
+import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
+import { voidCommercialSaleForOrder } from '@/lib/commercial/sales';
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -51,6 +54,14 @@ async function getGroupAdminEmail(groupId: string): Promise<{ email: string; loc
   return { email: user.email, locale };
 }
 
+// The express onboarding page rejects a link without a signed token and
+// redirects to login, so an unsigned link is a dead button in the email.
+function expressOnboardingUrl(base: string, groupId: string, email: string): string {
+  return `${base}/fr/onboarding?group=${groupId}` +
+    `&token=${encodeURIComponent(signOnboardingToken(groupId, email))}` +
+    `&email=${encodeURIComponent(email)}`;
+}
+
 /**
  * Resolve the customer email for an order, regardless of whether the group
  * has finished onboarding yet. Tries the group_admin user first, then falls
@@ -60,7 +71,7 @@ async function getGroupAdminEmail(groupId: string): Promise<{ email: string; loc
  */
 async function resolveOrderRecipient(
   orderId: string
-): Promise<{ email: string; locale: string; onboardingUrl: string | null } | null> {
+): Promise<{ email: string; locale: string; onboardingUrl: string | null; setupRequired: boolean } | null> {
   const service = createServiceClient();
   const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
 
@@ -78,6 +89,7 @@ async function resolveOrderRecipient(
       email: admin.email,
       locale: admin.locale,
       onboardingUrl: `${base}/dashboard`,
+      setupRequired: false,
     };
   }
 
@@ -95,7 +107,8 @@ async function resolveOrderRecipient(
         return {
           email: customer.email,
           locale: 'fr',
-          onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(customer.email)}`,
+          onboardingUrl: expressOnboardingUrl(base, order.group_id, customer.email),
+          setupRequired: true,
         };
       }
     } catch { /* swallow — fall through */ }
@@ -115,7 +128,8 @@ async function resolveOrderRecipient(
           return {
             email,
             locale: 'fr',
-            onboardingUrl: `${base}/fr/onboarding?group=${order.group_id}&email=${encodeURIComponent(email)}`,
+            onboardingUrl: expressOnboardingUrl(base, order.group_id, email),
+            setupRequired: true,
           };
         }
       }
@@ -210,72 +224,52 @@ export async function markOrderShipped(
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  const { data: order } = await auth.supabase
-    .from('smarttag_orders')
-    .select('id, group_id, pack, quantity')
-    .eq('id', orderId)
-    .single();
-
-  const { error } = await auth.supabase
+  // Only the call that actually moves the order to "shipped" sends the email:
+  // a double click or a second tab matches no row and stops here, so the
+  // customer is told once. "Renvoyer l'email expédition" stays the explicit
+  // way to send it again.
+  const { data: shipped, error } = await auth.supabase
     .from('smarttag_orders')
     .update({
       status: 'shipped',
       shipped_at: new Date().toISOString(),
-      tracking_number: trackingNumber ?? null,
+      tracking_number: normalizeTrackingNumber(trackingNumber),
     })
-    .eq('id', orderId);
+    .eq('id', orderId)
+    .not('status', 'in', '(shipped,delivered,canceled)')
+    .select('id, pack, quantity')
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+  if (!shipped) return { ok: false, error: 'Commande déjà expédiée ou annulée : aucun email envoyé.' };
 
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
   revalidatePath('/dashboard/billing');
   await logAdminAction('orders.mark_shipped', { orderId });
 
-  if (order) {
-    (async () => {
-      try {
-        const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? '';
-        let to: string | null = null;
-        let locale = 'fr';
-        let onboardingUrl: string | null = null;
-
-        const adminContact = await getGroupAdminEmail(order.group_id);
-        if (adminContact) {
-          to = adminContact.email;
-          locale = adminContact.locale;
-          onboardingUrl = `${base}/dashboard`;
-        } else {
-          // Express checkout group — retrieve customer email from Stripe
-          const service = createServiceClient();
-          const { data: grp } = await service
-            .from('groups')
-            .select('stripe_customer_id')
-            .eq('id', order.group_id)
-            .single();
-
-          if (grp?.stripe_customer_id) {
-            const customer = await stripe.customers.retrieve(grp.stripe_customer_id);
-            if (!customer.deleted && customer.email) {
-              to = customer.email;
-              onboardingUrl = `${base}/fr/onboarding?group=${order.group_id}`;
-            }
-          }
-        }
-
-        if (to) {
-          await sendOrderShipped({
-            to,
-            pack: order.pack,
-            quantity: order.quantity,
-            orderId: order.id,
-            trackingNumber: trackingNumber ?? null,
-            locale,
-            onboardingUrl,
-          });
-        }
-      } catch { /* never break the action */ }
-    })();
+  // Awaited, not fire-and-forget: on Vercel the function can be frozen as soon
+  // as the action returns, which silently dropped the email.
+  try {
+    const recipient = await resolveOrderRecipient(orderId);
+    if (!recipient) throw new Error('aucune adresse email trouvée pour ce client');
+    await sendOrderShipped({
+      to: recipient.email,
+      pack: shipped.pack,
+      quantity: shipped.quantity,
+      orderId: shipped.id,
+      trackingNumber,
+      locale: recipient.locale,
+      onboardingUrl: recipient.onboardingUrl,
+      setupRequired: recipient.setupRequired,
+    });
+  } catch (e) {
+    console.error('[orders] shipping email failed', { orderId, e });
+    const msg = e instanceof Error ? e.message : 'erreur inconnue';
+    return {
+      ok: false,
+      error: `Commande marquée expédiée, mais l'email n'est pas parti (${msg}). Utilise « Renvoyer l'email expédition ».`,
+    };
   }
 
   return { ok: true, data: null };
@@ -310,7 +304,8 @@ export async function forceOrderStatus(
 
   if (newStatus === 'shipped') {
     patch.shipped_at = new Date().toISOString();
-    if (trackingNumber) patch.tracking_number = trackingNumber;
+    const tn = normalizeTrackingNumber(trackingNumber);
+    if (tn) patch.tracking_number = tn;
   }
   if (newStatus === 'delivered') {
     patch.delivered_at = new Date().toISOString();
@@ -323,10 +318,13 @@ export async function forceOrderStatus(
 
   if (error) return { ok: false, error: error.message };
 
-  // Force-canceling an order voids the ambassador commission earned on it,
-  // mirroring the regular cancelOrder path.
+  // Force-canceling an order voids the commission earned on it, mirroring the
+  // regular cancelOrder path. Both programmes: a pack is attributed to an
+  // ambassador or a commercial, and each helper no-ops on an order that is not
+  // its own.
   if (newStatus === 'canceled') {
     await voidAmbassadorSaleForOrder(service, orderId, 'order_canceled');
+    await voidCommercialSaleForOrder(service, orderId, 'order_canceled');
   }
 
   await logAdminAction('orders.force_status', { orderId, newStatus });
@@ -431,9 +429,10 @@ export async function cancelOrder(
     .eq('id', orderId);
   if (orderErr) return { ok: false, error: orderErr.message };
 
-  // A canceled order produced no kept revenue — void any ambassador commission
-  // earned on it so it can no longer be counted or withdrawn.
+  // A canceled order produced no kept revenue — void any commission earned on
+  // it, in either programme, so it can no longer be counted or withdrawn.
   await voidAmbassadorSaleForOrder(service, orderId, 'order_canceled');
+  await voidCommercialSaleForOrder(service, orderId, 'order_canceled');
 
   await logAdminAction('orders.cancel', {
     orderId,
@@ -511,6 +510,7 @@ export async function resendOrderEmail(
         trackingNumber: order.tracking_number,
         locale: recipient.locale,
         onboardingUrl: recipient.onboardingUrl,
+        setupRequired: recipient.setupRequired,
       });
     } else if (kind === 'delivered') {
       await sendOrderDelivered({

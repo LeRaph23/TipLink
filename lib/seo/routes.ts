@@ -65,6 +65,10 @@ export const NOINDEX_PREFIXES: readonly string[] = [
   '/auth',
   '/signup',
   '/lp',
+  // Addressable error screen. proxy.ts redirects failed SmartTag scans to
+  // /<locale>/not-found, so it is a real URL and must be classified here; an
+  // error page has nothing to index.
+  '/not-found',
 ];
 
 /** robots.txt disallow list, kept in step with NOINDEX_PREFIXES. */

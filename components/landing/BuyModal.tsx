@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
@@ -25,14 +25,55 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
   const router = useRouter();
   const [selectedPack, setSelectedPack] = useState<Pack>(initialPack);
   const [loading, setLoading] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
+  // Escape was already handled. Tab was not: focus walked straight out of the
+  // dialog and into the landing page behind it, which is still fully
+  // interactive and, to a screen reader, was never covered at all.
   const handleKey = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') onClose();
+    if (e.key === 'Escape') { onClose(); return; }
+    if (e.key !== 'Tab') return;
+
+    const root = dialogRef.current;
+    if (!root) return;
+    const focusable = root.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+
+    if (e.shiftKey && (active === first || !root.contains(active))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
   }, [onClose]);
+
   useEffect(() => {
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [handleKey]);
+
+  // Move focus in on open and hand it back on close, so a keyboard user is not
+  // left at the top of the page behind the overlay.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+
+    // The page behind must not scroll under the overlay.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
 
   function handleCheckout() {
     setLoading(true);
@@ -48,6 +89,9 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
   return (
     <div
       className="fade-in"
+      // Backdrop: mouse-dismiss only, which is why Escape and the labelled
+      // close button both exist. Deliberately not given a role, so assistive
+      // technology sees the dialog below and not a clickable div.
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -57,17 +101,32 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
         padding: '20px',
       }}
     >
-      <div className="scale-in" style={{
+      <div
+        className="scale-in"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        style={{
         background: '#fff', borderRadius: 20, width: '100%', maxWidth: 560,
         boxShadow: '0 24px 80px rgba(0,0,0,0.18)',
         overflow: 'hidden',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid #e6e6f0' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 800, color: '#0f1020', letterSpacing: '-0.02em' }}>
-            Votre commande
+          <h2 id={titleId} style={{ fontSize: 17, fontWeight: 800, color: '#0f1020', letterSpacing: '-0.02em' }}>
+            {tc('yourOrder')}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b6d85', lineHeight: 1, padding: 4 }}>✕</button>
+          <button
+            type="button"
+            onClick={onClose}
+            // The whole content was the character ✕, which reads as nothing.
+            aria-label={tc('close')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b6d85', lineHeight: 1, padding: 4 }}
+          >
+            <span aria-hidden>✕</span>
+          </button>
         </div>
 
         <div style={{ padding: '22px 28px' }}>

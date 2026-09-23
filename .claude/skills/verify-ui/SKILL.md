@@ -91,6 +91,5 @@ Both log in by email code (Mailpit).
 ## Limits
 
 - Realtime is disabled (its container needs IPv6).
-- Migration `00023` is skipped on purpose (never applied in production, see up.sh).
 - Transactional emails go through Resend, not Mailpit: without `RESEND_API_KEY`
   they are skipped (only Supabase auth codes reach Mailpit).

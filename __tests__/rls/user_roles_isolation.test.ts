@@ -1,8 +1,15 @@
 /**
  * RLS — user_roles isolation.
  *
- * Verifies a regular user cannot read another user's roles, and cannot grant
- * themselves a super_admin role.
+ * Verifies a regular user cannot read the roles of a user in ANOTHER tenant,
+ * and cannot grant themselves a super_admin role.
+ *
+ * The cross-tenant part is the whole point. `user_roles_select_own` deliberately
+ * allows `group_id = ANY(get_my_group_ids())`, so a group_admin CAN see the
+ * roles attached to their own group — the team management screens need exactly
+ * that. This test used to put both users in the same group and then assert they
+ * could not see each other, which asserted the opposite of the intended design;
+ * it had never run to say so.
  *
  * Prerequisites:
  *   - Run: npx supabase start
@@ -27,6 +34,7 @@ describe.skipIf(skipIfNoLocal)('user_roles RLS isolation', () => {
       });
 
   let groupId: string;
+  let groupBId: string;
   let userAEmail: string;
   let userAId: string;
   let userBId: string;
@@ -38,6 +46,14 @@ describe.skipIf(skipIfNoLocal)('user_roles RLS isolation', () => {
       .select('id')
       .single();
     groupId = group!.id;
+
+    // A separate tenant. Same group would make user B a legitimate peer.
+    const { data: groupB } = await service
+      .from('groups')
+      .insert({ name: 'Roles RLS Group B', settings: {} })
+      .select('id')
+      .single();
+    groupBId = groupB!.id;
 
     userAEmail = `roles-rls-a-${Date.now()}@test.local`;
     const { data: a } = await service.auth.admin.createUser({
@@ -54,12 +70,12 @@ describe.skipIf(skipIfNoLocal)('user_roles RLS isolation', () => {
       email_confirm: true,
     });
     userBId = b.user!.id;
-    await service.from('user_roles').insert({ user_id: userBId, role: 'group_admin', group_id: groupId });
+    await service.from('user_roles').insert({ user_id: userBId, role: 'group_admin', group_id: groupBId });
   });
 
   afterAll(async () => {
     await service.from('user_roles').delete().in('user_id', [userAId, userBId]);
-    await service.from('groups').delete().eq('id', groupId);
+    await service.from('groups').delete().in('id', [groupId, groupBId]);
     if (userAId) await service.auth.admin.deleteUser(userAId);
     if (userBId) await service.auth.admin.deleteUser(userBId);
   });
@@ -74,7 +90,7 @@ describe.skipIf(skipIfNoLocal)('user_roles RLS isolation', () => {
     return client;
   }
 
-  it('user A cannot read user B roles', async () => {
+  it('user A cannot read the roles of a user in another group', async () => {
     const client = await clientAsUserA();
     const { data } = await client.from('user_roles').select('id').eq('user_id', userBId);
     expect(data ?? []).toHaveLength(0);

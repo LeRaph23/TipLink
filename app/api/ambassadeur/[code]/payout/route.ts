@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
+import { settlePayoutTransferError } from '@/lib/stripe/payout-settlement';
 import { verifyCookieValue } from '../auth/route';
 import { computeTotalBaseCommission, MIN_PAYOUT_CENTS } from '@/lib/ambassador-tiers';
 import { sumCreditedReferralCents } from '@/lib/referrals';
@@ -229,13 +230,52 @@ export async function POST(
       void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'paid');
       return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Stripe error';
       console.error('ambassador payout transfer failed', err);
-      // The transfer is the only money movement, so a failure here means no
-      // funds left the platform — the `failed` row frees the balance again.
+      // A throw does not mean the money stayed put: on a timeout Stripe may
+      // have created the transfer and lost the response. Ask before deciding,
+      // because marking this `failed` releases the amount back into the
+      // withdrawable balance, and the next request would mint a fresh payout
+      // row with a fresh idempotency key — a second, real transfer.
+      const settlement = await settlePayoutTransferError(err, {
+        destination: amb.stripe_account_id,
+        payoutId: inserted.id,
+      });
+
+      if (settlement.outcome === 'paid') {
+        await service
+          .from('ambassador_payouts')
+          .update({
+            status: 'paid',
+            stripe_transfer_id: settlement.transferId,
+            paid_at: new Date().toISOString(),
+          })
+          .eq('id', inserted.id);
+        void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'paid');
+        return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
+      }
+
+      if (settlement.outcome === 'indeterminate') {
+        // Leave the row `pending`. That keeps the amount committed in
+        // computeAvailableCents AND, through the one-pending-per-ambassador
+        // unique index, blocks another request until a super-admin resolves it.
+        // Freeing money we cannot account for is the one outcome worth ruling
+        // out here.
+        await service
+          .from('ambassador_payouts')
+          .update({ failure_reason: settlement.message })
+          .eq('id', inserted.id);
+        void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'failed');
+        return NextResponse.json({
+          ok: false,
+          amount: inserted.amount_cents,
+          status: 'pending',
+          error: 'Virement en cours de vérification — un administrateur confirmera sous peu.',
+        }, { status: 502 });
+      }
+
       await service
         .from('ambassador_payouts')
-        .update({ status: 'failed', failure_reason: msg })
+        .update({ status: 'failed', failure_reason: settlement.message })
         .eq('id', inserted.id);
       void notifySuperAdminsOfPayout(service, amb.name, inserted.amount_cents, 'failed');
       return NextResponse.json({

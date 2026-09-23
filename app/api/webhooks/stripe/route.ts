@@ -3,11 +3,17 @@ import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
+import { getSuperAdminEmails } from '@/lib/admin/super-admins';
 import { onTipSucceeded } from '@/lib/email/lifecycle-events';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
 import { createPackInvoiceForPaymentIntent } from '@/lib/stripe/pack-invoice';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder, restoreAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
+import {
+  voidCommercialSaleForOrder,
+  restoreCommercialSaleForOrder,
+  freezeCommercialForOrder,
+} from '@/lib/commercial/sales';
 import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 import { readAccountStatus } from '@/lib/stripe/connect';
@@ -786,11 +792,6 @@ async function handleEvent(
           throw new Error(`express checkout: failed to create smarttag_order — ${newOrderErr?.message ?? 'unknown'}`);
         }
 
-        // Best-effort: auto-assign available unencoded tags from pool to this order
-        if (newOrder?.id) {
-          await autoAssignTagsToOrder(supabase, newOrder.id, quantity);
-        }
-
         // Ambassador attribution for express checkout
         if (newOrder?.id && expressPromoCode) {
           await attributeAmbassadorSale(
@@ -833,17 +834,17 @@ business_type: 'beauty',
             setupUrl,
             locale: expressLocale,
           }).catch((err) => console.error('[email] sendOrderConfirmation failed', err));
-
-          await sendAdminNewOrder({
-            customerName: legalName,
-            customerEmail: email,
-            pack,
-            quantity,
-            orderId: newOrder.id,
-            promoCode: expressPromoCode,
-            locale: expressLocale,
-          }).catch((err) => console.error('[email] sendAdminNewOrder failed', err));
         }
+
+        await notifyAdminsOfNewOrder(supabase, {
+          customerName: legalName,
+          customerEmail: email,
+          pack,
+          quantity,
+          orderId: newOrder.id,
+          promoCode: expressPromoCode,
+          locale: expressLocale,
+        });
 
         break;
       }
@@ -943,12 +944,6 @@ business_type: 'beauty',
         throw new Error(`auth checkout: failed to upsert smarttag_order — ${upsertErr?.message ?? 'unknown'}`);
       }
 
-      // Best-effort: auto-assign available tags from pool to this order
-      if (upsertedOrder?.id) {
-        const orderQty = quantity ?? (pack === 'solo' ? 1 : 2);
-        await autoAssignTagsToOrder(supabase, upsertedOrder.id, orderQty);
-      }
-
       // Send order confirmation email to the group admin
       if (upsertedOrder) {
         try {
@@ -980,7 +975,7 @@ business_type: 'beauty',
         const authLocale = session.locale?.startsWith('fr') ? 'fr' : 'en';
         const authQty = quantity ?? (pack === 'solo' ? 1 : 2);
         const customerName = session.customer_details?.name ?? session.customer_details?.email ?? 'Unknown';
-        await sendAdminNewOrder({
+        await notifyAdminsOfNewOrder(supabase, {
           customerName,
           customerEmail: session.customer_details?.email ?? undefined,
           pack,
@@ -988,7 +983,7 @@ business_type: 'beauty',
           orderId: upsertedOrder.id,
           promoCode: promoCodeStr,
           locale: authLocale,
-        }).catch(() => {});
+        });
       }
 
       // Ambassador attribution for authenticated checkout
@@ -1290,8 +1285,6 @@ async function handlePackExpressPaid(
   }
 
   if (newOrder?.id) {
-    await autoAssignTagsToOrder(supabase, newOrder.id, quantity);
-
     // Increment promo redemption count (best-effort)
     if (promoCodeId) {
       try {
@@ -1341,8 +1334,10 @@ business_type: 'beauty',
       setupUrl,
       locale,
     }).catch((err) => console.error('[email] sendOrderConfirmation failed', err));
+  }
 
-    await sendAdminNewOrder({
+  if (newOrder) {
+    await notifyAdminsOfNewOrder(supabase, {
       customerName: legalName,
       customerEmail: email,
       pack,
@@ -1350,7 +1345,7 @@ business_type: 'beauty',
       orderId: newOrder.id,
       promoCode: promoCodeStr,
       locale,
-    }).catch(() => {});
+    });
   }
 }
 
@@ -1451,29 +1446,33 @@ async function handlePackOrderPaid(
     throw new Error(`pack-order: failed to upsert smarttag_order — ${orderErr?.message ?? 'unknown'}`);
   }
 
-  await autoAssignTagsToOrder(supabase, order.id, quantity);
-
   if (promoCodeStr) {
     await attributeAmbassadorSale(supabase, promoCodeStr, order.id, pack, shipping?.name ?? '');
   }
 
-  // Order confirmation to the buyer + admin alert.
+  // Order confirmation to the buyer.
   const userId = intent.metadata?.user_id;
+  let buyerEmail: string | null = null;
   if (userId) {
     try {
       const { data: { user: buyer } } = await supabase.auth.admin.getUserById(userId);
-      if (buyer?.email) {
+      buyerEmail = buyer?.email ?? null;
+      if (buyerEmail) {
         await sendOrderConfirmation({
-          to: buyer.email, pack, quantity, orderId: order.id, invoicePdfUrl, locale,
+          to: buyerEmail, pack, quantity, orderId: order.id, invoicePdfUrl, locale,
         }).catch((err) => console.error('[email] sendOrderConfirmation failed', err));
-        await sendAdminNewOrder({
-          customerName: shipping?.name ?? buyer.email,
-          customerEmail: buyer.email,
-          pack, quantity, orderId: order.id, promoCode: promoCodeStr, locale,
-        }).catch(() => {});
       }
-    } catch { /* non-blocking */ }
+    } catch (err) {
+      console.error('[pack-order] buyer lookup failed', err);
+    }
   }
+
+  // Admin alert, whether or not the buyer's email could be resolved.
+  await notifyAdminsOfNewOrder(supabase, {
+    customerName: shipping?.name ?? buyerEmail ?? 'Client inconnu',
+    customerEmail: buyerEmail,
+    pack, quantity, orderId: order.id, promoCode: promoCodeStr, locale,
+  });
 
   // Auto-provision a starter establishment so the tip flow works immediately.
   const { data: existingEst } = await supabase
@@ -1507,42 +1506,24 @@ business_type: 'beauty',
   }
 }
 
-// ─── SmartTag auto-assignment ─────────────────────────────────────────────────
+// ─── Admin new-order alert ────────────────────────────────────────────────────
 
-// Picks `needed` unassigned tags from the pool and links them to the order.
-// Best-effort: silently skips if the pool is empty or partially full.
-async function autoAssignTagsToOrder(
+// Every paid order emails ADMIN_NOTIFICATION_EMAIL and every super admin, so
+// a missing env var no longer silences the alert. Failures are logged, never
+// thrown: the order is already paid and must not be retried over an email.
+async function notifyAdminsOfNewOrder(
   supabase: ReturnType<typeof createServiceClient>,
-  orderId: string,
-  needed: number
+  order: Omit<Parameters<typeof sendAdminNewOrder>[0], 'to'>,
 ): Promise<void> {
   try {
-    // Find IDs of tags already claimed by any order (to exclude them)
-    const { data: claimed } = await supabase
-      .from('smarttag_order_tags')
-      .select('sticker_id');
-
-    const claimedIds = (claimed ?? []).map((r) => r.sticker_id);
-
-    // Pick `needed` free tags
-    const query = supabase
-      .from('nfc_stickers')
-      .select('id')
-      .is('establishment_id', null)
-      .limit(needed);
-
-    const freeTagsQuery = claimedIds.length > 0
-      ? query.not('id', 'in', `(${claimedIds.join(',')})`)
-      : query;
-
-    const { data: freeTags } = await freeTagsQuery;
-    if (!freeTags?.length) return;
-
-    await supabase.from('smarttag_order_tags').insert(
-      freeTags.map((t) => ({ order_id: orderId, sticker_id: t.id }))
-    );
-  } catch {
-    // Never break the webhook — tag assignment is best-effort
+    const superAdmins = await getSuperAdminEmails(supabase);
+    const to = [...new Set([
+      ...(process.env.ADMIN_NOTIFICATION_EMAIL ? [process.env.ADMIN_NOTIFICATION_EMAIL] : []),
+      ...superAdmins,
+    ])];
+    await sendAdminNewOrder({ ...order, to });
+  } catch (err) {
+    console.error('[email] admin new-order alert failed', { orderId: order.orderId, err });
   }
 }
 
@@ -1593,7 +1574,12 @@ async function voidAmbassadorCommissionByPaymentIntent(
 ): Promise<void> {
   const orderId = await resolveSmarttagOrderIdByPaymentIntent(supabase, paymentIntentId);
   if (!orderId) return;
+  // A pack is attributed to an ambassador OR a commercial, never both, and each
+  // helper no-ops on an order that is not its own. Only the ambassador half
+  // used to run here, so a refunded pack sold by a commercial left a live,
+  // withdrawable commission behind.
   await voidAmbassadorSaleForOrder(supabase, orderId, reason);
+  await voidCommercialSaleForOrder(supabase, orderId, reason);
 }
 
 /** Un-voids the ambassador commission tied to a charge's SmartTag order. */
@@ -1604,6 +1590,7 @@ async function restoreAmbassadorCommissionByPaymentIntent(
   const orderId = await resolveSmarttagOrderIdByPaymentIntent(supabase, paymentIntentId);
   if (!orderId) return;
   await restoreAmbassadorSaleForOrder(supabase, orderId);
+  await restoreCommercialSaleForOrder(supabase, orderId);
 }
 
 /**
@@ -1633,6 +1620,13 @@ async function handlePackDisputeOpened(
   }
 
   await voidAmbassadorSaleForOrder(supabase, orderId, 'pack_dispute_opened');
+
+  // Same treatment for a pack sold through the Commerciaux Pros programme:
+  // freeze the seller's withdrawals while the money is at risk, and void the
+  // commission. Neither happened before, so a commercial could charge back
+  // their own sale and keep the commission, repeatably.
+  await freezeCommercialForOrder(supabase, orderId);
+  await voidCommercialSaleForOrder(supabase, orderId, 'pack_dispute_opened');
 }
 
 async function attributeAmbassadorSale(

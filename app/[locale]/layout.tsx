@@ -7,6 +7,7 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { routing } from '@/i18n/routing';
 import { BASE_URL, pageAlternates } from '@/lib/seo';
 import '../globals.css';
+import { BASE_CLIENT_NAMESPACES, pickNamespaces } from '@/lib/i18n/client-namespaces';
 
 const jakarta = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
@@ -243,7 +244,11 @@ export default async function LocaleLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
 
   setRequestLocale(locale);
-  const messages = await getMessages();
+  // Only the namespaces a client component can actually reach from an
+  // arbitrary route. `dashboard` and `landing` are provided by their own
+  // subtrees instead — together they are half the catalogue, and neither is
+  // needed on the tipping page. See lib/i18n/client-namespaces.ts.
+  const messages = pickNamespaces(await getMessages(), BASE_CLIENT_NAMESPACES);
   const jsonLd = buildJsonLd(locale);
 
   return (

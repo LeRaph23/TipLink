@@ -10,9 +10,10 @@ import { createClient } from '@/lib/supabase/client';
  * reach until onboarding is finished, and /login sends a signed-in manager
  * straight back here, so without this a wrong account could only be left by
  * clearing cookies. Hidden when there is no session (the anonymous scan flow).
+ * Its label lives under `onboarding`: `dashboard` messages are not sent here.
  */
 export function OnboardingSignOut() {
-  const t = useTranslations('dashboard.nav');
+  const t = useTranslations('onboarding');
   const router = useRouter();
   const [signedIn, setSignedIn] = useState(false);
 

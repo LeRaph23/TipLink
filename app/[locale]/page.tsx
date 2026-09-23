@@ -11,6 +11,13 @@ import {
   type FaqItem,
 } from '@/lib/seo';
 import { getAllPackPricing } from '@/lib/stripe/pricing';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+import {
+  BASE_CLIENT_NAMESPACES,
+  LANDING_NAMESPACES,
+  pickNamespaces,
+} from '@/lib/i18n/client-namespaces';
 
 // Server wrapper around the (client) landing body.
 //
@@ -98,10 +105,19 @@ export default async function Home({
       : []),
   ]);
 
+  // `landing` is 11 KB and this is the only page that renders LandingPage, so
+  // it does not belong in the catalogue shipped to the tipping page.
+  const messages = pickNamespaces(await getMessages(), [
+    ...BASE_CLIENT_NAMESPACES,
+    ...LANDING_NAMESPACES,
+  ]);
+
   return (
     <>
       <JsonLd data={graph} />
-      <LandingPage pricing={pricing} />
+      <NextIntlClientProvider messages={messages}>
+        <LandingPage pricing={pricing} />
+      </NextIntlClientProvider>
     </>
   );
 }

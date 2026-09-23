@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { EstablishmentDigitipCopy } from './EstablishmentDigitipCopy';
 import { PageHeader } from '@/components/dashboard/ui';
+import { tipAmountOf } from '@/lib/tips/amounts';
 
 export default async function EstablishmentsPage({
   params,
@@ -45,7 +46,7 @@ export default async function EstablishmentsPage({
   const { data: txns } = estIds.length
     ? await service
         .from('transactions')
-        .select('establishment_id, amount')
+        .select('establishment_id, amount, metadata')
         .in('establishment_id', estIds)
         .eq('status', 'succeeded')
         .gte('created_at', since28)
@@ -53,7 +54,9 @@ export default async function EstablishmentsPage({
 
   const tipsByEst = new Map<string, number>();
   for (const tx of txns ?? []) {
-    tipsByEst.set(tx.establishment_id, (tipsByEst.get(tx.establishment_id) ?? 0) + tx.amount);
+    // The tip, not the gross charge: `amount` includes the service fee the
+    // tipper paid on top, which never reaches the establishment.
+    tipsByEst.set(tx.establishment_id, (tipsByEst.get(tx.establishment_id) ?? 0) + tipAmountOf(tx));
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? '';

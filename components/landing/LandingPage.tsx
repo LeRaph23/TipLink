@@ -6,7 +6,25 @@ import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
-import { BuyModal } from '@/components/landing/BuyModal';
+import dynamic from 'next/dynamic';
+
+/**
+ * The order modal, fetched on demand.
+ *
+ * It is 247 lines and renders only behind `{cartPack && …}`, so every visitor
+ * who never clicks "commander" was downloading a dialog they never see, inside
+ * the landing page's own chunk. Deferring it costs nothing at the moment it is
+ * wanted: a click tolerates the few dozen milliseconds a fetch takes, and the
+ * modal itself is unchanged.
+ *
+ * Same pattern as the dashboard charts and the salon map. `ssr: false` because
+ * it never mounts on first render, so there is nothing useful to produce on the
+ * server.
+ */
+const BuyModal = dynamic(
+  () => import('@/components/landing/BuyModal').then((m) => m.BuyModal),
+  { ssr: false },
+);
 import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
 import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFlag';
 import type { PackPricing } from '@/lib/stripe/pricing';

@@ -29,11 +29,15 @@ export async function POST(req: Request) {
       id, amount, currency, stripe_charge_id, metadata, transfer_attempts,
       establishments(stripe_account_id)
     `)
-    .in('transfer_status', ['pending', 'failed'])
+    .or('transfer_status.is.null,transfer_status.in.(pending,failed)')
     .is('stripe_transfer_id', null)
     .eq('status', 'succeeded')
     .lt('created_at', cutoff)
     .lt('transfer_attempts', MAX_ATTEMPTS)
+    // Oldest first, and deterministic. Without an ORDER BY, Postgres was free
+    // to return a different arbitrary 100 each night, so a given stuck tip
+    // might or might not be looked at.
+    .order('created_at', { ascending: true })
     .limit(100);
 
   let processed = 0;
@@ -60,15 +64,38 @@ export async function POST(req: Request) {
     const amount = Number(r.metadata?.tip_amount);
 
     // The establishment's account was detached, or the transaction predates the
-    // fee model. Neither is retryable without a human — count it, don't burn an
-    // attempt, and let the exhausted query below surface it.
+    // fee model. Neither is retryable without a human.
+    //
+    // This used to `continue` without touching the row, on the stated
+    // assumption that the exhausted query below would surface it. It could
+    // not: that query counts transfer_attempts >= MAX_ATTEMPTS, and skipping
+    // the increment meant a blocked row never reached it. So the row stayed in
+    // the selection for ever, holding one of the 100 slots, every night. Past
+    // a hundred such rows the cron did nothing but re-read the same dead ones
+    // and no genuinely retryable transfer was ever attempted again.
+    //
+    // Burning the attempt is what lets it age out of the retry window and into
+    // the exhausted count, which is the signal a human is meant to act on.
     if (!account || !chargeId || !currency || !Number.isFinite(amount) || amount <= 0) {
+      const reason = !account
+        ? 'no_connect_account'
+        : !chargeId
+          ? 'no_charge'
+          : 'no_tip_amount';
       console.error('[reconcile] tip transfer blocked', {
         transactionId: r.id,
-        hasAccount: !!account,
-        hasCharge: !!chargeId,
+        reason,
+        attempts: r.transfer_attempts + 1,
         amount,
       });
+      await service
+        .from('transactions')
+        .update({
+          transfer_status: 'failed',
+          transfer_error: `blocked:${reason}`,
+          transfer_attempts: r.transfer_attempts + 1,
+        } as never)
+        .eq('id', r.id);
       blocked++;
       continue;
     }
@@ -121,7 +148,12 @@ export async function POST(req: Request) {
   const { count: exhausted } = await service
     .from('transactions')
     .select('id', { count: 'exact', head: true })
-    .in('transfer_status', ['pending', 'failed'])
+    .or('transfer_status.is.null,transfer_status.in.(pending,failed)')
+    // Mirror the retry selection exactly. Without these two the count drifted
+    // looser than the loop above, so the number reported for triage did not
+    // describe the same set of rows the cron had given up on.
+    .is('stripe_transfer_id', null)
+    .eq('status', 'succeeded')
     .gte('transfer_attempts', MAX_ATTEMPTS);
 
   if ((exhausted ?? 0) > 0) {

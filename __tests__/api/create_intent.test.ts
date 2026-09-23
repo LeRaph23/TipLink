@@ -32,6 +32,8 @@ function buildRequest(body: unknown, ip = '1.2.3.4'): NextRequest {
 
 function supabaseMock(opts: {
   staff?: { stripe_account_id: string; onboarding_status: string; establishment_id: string } | null;
+  /** Whether the establishment's Connect account can take charges and pay out. */
+  establishmentPayable?: boolean;
   insertError?: { code: string } | null;
   existingTxnId?: string | null;
   platformFeeBps?: number;
@@ -63,7 +65,18 @@ function supabaseMock(opts: {
           eq: vi.fn().mockReturnThis(),
           is: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({
-            data: opts.staff?.establishment_id ? { group_id: 'group-1' } : null,
+            // Payable by default. The route now applies the same is_payable
+            // rule the tip page does (migration 00074): without it a direct
+            // POST charged the customer for a salon that cannot be paid.
+            data: opts.staff?.establishment_id
+              ? {
+                  group_id: 'group-1',
+                  stripe_account_id: opts.establishmentPayable === false ? null : 'acct_est_1',
+                  stripe_charges_enabled: opts.establishmentPayable !== false,
+                  stripe_payouts_enabled: opts.establishmentPayable !== false,
+                  is_demo: false,
+                }
+              : null,
             error: null,
           }),
         };
@@ -326,5 +339,32 @@ describe('POST /api/stripe/create-intent', () => {
     );
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe('Amount mismatch');
+  });
+
+  // The gate the tip page already applied via is_payable, now applied by the
+  // API behind it. Without this a direct POST charged the card and the transfer
+  // then failed with no_connect_account, leaving the money on the platform for
+  // 90 days before a refund that keeps the service fee.
+  it('409s rather than charging for an establishment that cannot be paid', async () => {
+    const { createServiceClient } = await import('@/lib/supabase/service');
+    const { stripe } = await import('@/lib/stripe/client');
+    vi.mocked(createServiceClient).mockReturnValue(
+      supabaseMock({
+        staff: { stripe_account_id: 'acct_1', onboarding_status: 'complete', establishment_id: 'est-1' },
+        establishmentPayable: false,
+      }) as never,
+    );
+
+    const { POST } = await import('@/app/api/stripe/create-intent/route');
+    const res = await POST(
+      buildRequest(
+        { staffId: '550e8400-e29b-41d4-a716-446655440009', amount: 525, tipAmount: 500, currency: 'eur', nonce: 'nonce-payable-1' },
+        '9.9.9.9',
+      ),
+    );
+
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe('establishment_not_payable');
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
   });
 });

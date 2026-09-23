@@ -77,6 +77,9 @@ export async function POST(request: NextRequest) {
         ht_amount: String(tax.htAmount),
         tax_amount: String(tax.taxAmount),
         tax_country: tax.country,
+        // This figure is address-based, so it supersedes the provisional
+        // domestic VAT the intent was created with.
+        tax_provisional: 'false',
         ...(vatNumber ? { vat_number: vatNumber } : {}),
       },
     });

@@ -29,8 +29,8 @@ export function StepAccount({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
-        <label style={labelStyle}>{ta('fullName')}</label>
-        <input
+        <label htmlFor="order-name" style={labelStyle}>{ta('fullName')}</label>
+        <input id="order-name"
           type="text" value={value.full_name}
           onChange={(e) => onChange({ ...value, full_name: e.target.value })}
           required autoFocus autoComplete="name"
@@ -40,8 +40,8 @@ export function StepAccount({
       </div>
 
       <div>
-        <label style={labelStyle}>{ta('emailAddress')}</label>
-        <input
+        <label htmlFor="order-email" style={labelStyle}>{ta('emailAddress')}</label>
+        <input id="order-email"
           type="email" value={value.email}
           onChange={(e) => onChange({ ...value, email: e.target.value.trim() })}
           required autoComplete="email"

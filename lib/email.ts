@@ -260,10 +260,14 @@ export async function sendOrderShipped(opts: {
   trackingNumber?: string | null;
   locale?: string;
   onboardingUrl?: string | null;
+  /** The customer has no account yet: the plaque does nothing until they set one up. */
+  setupRequired?: boolean;
 }): Promise<void> {
-  if (!resend) return;
+  if (!resend) throw new Error('RESEND_API_KEY is not set');
 
-  const { to, pack, quantity, orderId, trackingNumber, locale = 'fr', onboardingUrl } = opts;
+  const { to, pack, quantity, orderId, locale = 'fr', onboardingUrl, setupRequired = false } = opts;
+  const trackingNumber = normalizeTrackingNumber(opts.trackingNumber);
+  const trackingUrl = trackingNumber ? laPosteTrackingUrl(trackingNumber) : null;
   const isFr = locale === 'fr';
   const shortRef = orderId.slice(0, 8).toUpperCase();
   const label = packLabel(pack, locale);
@@ -274,10 +278,10 @@ export async function sendOrderShipped(opts: {
 
   const headline = isFr ? 'Commande expédiée' : 'Order shipped';
   const subline = isFr
-    ? 'Vos SmartTags sont en route !'
-    : 'Your SmartTags are on their way!';
+    ? (quantity > 1 ? 'Vos plaques NFC Digitip sont en route !' : 'Votre plaque NFC Digitip est en route !')
+    : (quantity > 1 ? 'Your Digitip NFC plaques are on their way!' : 'Your Digitip NFC plaque is on its way!');
   const trackingTitle = isFr ? 'Numéro de suivi' : 'Tracking number';
-  const noTracking = isFr ? 'Sera communiqué par transporteur' : 'Provided by carrier';
+  const noTracking = isFr ? 'Non communiqué' : 'Not provided';
   const estDelivery = isFr ? 'Délai estimé' : 'Estimated delivery';
   const estDays = isFr ? '3 à 5 jours ouvrés en Europe' : '3–5 business days in Europe';
   const refLabel = isFr ? 'Référence' : 'Reference';
@@ -286,25 +290,45 @@ export async function sendOrderShipped(opts: {
     ? 'Questions ? Répondez à cet email ou écrivez à support@digitip.app.'
     : 'Questions? Reply to this email or write to support@digitip.app.';
 
+  const trackingSection = trackingUrl
+    ? `<tr><td style="padding:0 32px 24px">
+        <a href="${trackingUrl}" class="neutral-btn" style="display:inline-block;padding:12px 22px;background:#0f0f12;color:#ffffff;font-size:14px;font-weight:600;border-radius:8px;text-decoration:none">
+          ${isFr ? 'Suivre mon colis sur La Poste →' : 'Track my parcel on La Poste →'}
+        </a>
+      </td></tr>`
+    : '';
+
+  // A customer without an account gets a plaque that collects nothing, so the
+  // setup call is the point of the email for them, not an optional extra.
   const onboardingSection = onboardingUrl
     ? `<tr><td style="padding:0 32px 24px">
         <div class="highlight" style="background:#fde7ee;border:1px solid #f4c2d2;border-radius:12px;padding:20px 24px">
           <div class="text-strong" style="font-size:14px;font-weight:700;color:#0f0f12;margin-bottom:8px">
-            ${isFr ? 'Vous voulez prendre de l\'avance ?' : 'Want a head start?'}
+            ${setupRequired
+              ? (isFr ? 'Dernière étape : activez votre compte' : 'Last step: activate your account')
+              : (isFr ? 'Votre espace Digitip' : 'Your Digitip space')}
           </div>
           <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-bottom:16px;line-height:1.6">
-            ${isFr
-              ? 'Vous pouvez configurer votre espace Digitip maintenant, ou attendre la réception de vos SmartTags et simplement scanner l\'un des QR codes. Les deux fonctionnent parfaitement.'
-              : 'You can set up your Digitip space now, or wait until your SmartTags arrive and simply scan one of the QR codes. Both work perfectly.'}
+            ${setupRequired
+              ? (isFr
+                ? 'Votre plaque ne pourra recevoir de pourboires qu\'une fois votre compte créé. Cela prend 5 minutes : faites-le maintenant pour qu\'elle fonctionne dès son arrivée.'
+                : 'Your plaque can only receive tips once your account is set up. It takes 5 minutes: do it now so it works as soon as it arrives.')
+              : (isFr
+                ? 'Votre plaque sera reliée à votre établissement. Vous suivrez les pourboires reçus depuis votre tableau de bord.'
+                : 'Your plaque will be linked to your venue. You will follow the tips it collects from your dashboard.')}
           </div>
           <a href="${onboardingUrl}" class="neutral-btn" style="display:inline-block;padding:10px 20px;background:#0f0f12;color:#ffffff;font-size:13px;font-weight:600;border-radius:8px;text-decoration:none">
-            ${isFr ? 'Configurer maintenant (optionnel) →' : 'Set up now (optional) →'}
+            ${setupRequired
+              ? (isFr ? 'Activer mon compte →' : 'Activate my account →')
+              : (isFr ? 'Ouvrir mon tableau de bord →' : 'Open my dashboard →')}
           </a>
         </div>
       </td></tr>`
     : '';
 
-  await resend.emails.send({
+  // Resend reports a rejected send in the result, not by throwing. Surface it
+  // so the admin action can tell the admin the customer was not notified.
+  const { error } = await resend.emails.send({
     from: FROM,
     to,
     subject,
@@ -323,17 +347,19 @@ export async function sendOrderShipped(opts: {
         ${infoRow(orderLabel, label)}
         ${infoRow(isFr ? 'Quantité' : 'Quantity', String(quantity))}
         ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
-        ${infoRow(trackingTitle, trackingNumber
-          ? `<span class="text-strong" style="font-family:monospace;color:#0f0f12">${trackingNumber}</span>`
+        ${infoRow(trackingTitle, trackingUrl
+          ? `<a href="${trackingUrl}" class="text-strong" style="font-family:monospace;color:#0f0f12;text-decoration:underline">${escapeHtml(trackingNumber!)}</a>`
           : noTracking)}
         ${infoRow(estDelivery, estDays)}
       </table>
     </td></tr>
+    ${trackingSection}
     ${onboardingSection}
     <tr><td style="padding:0 32px 32px">
       <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${footer}</p>
     </td></tr>`),
   });
+  if (error) throw new Error(`Shipping email not sent: ${error.message}`);
 }
 
 // ─── Payment failed (tipper) ──────────────────────────────────────────────────
@@ -734,6 +760,7 @@ export async function sendAmbassadorPayoutAdmin(opts: {
 // ─── Admin — new SmartTag order alert ─────────────────────────────────────────
 
 export async function sendAdminNewOrder(opts: {
+  to: string[];
   customerName: string;
   customerEmail?: string | null;
   pack: string;
@@ -742,16 +769,16 @@ export async function sendAdminNewOrder(opts: {
   promoCode?: string | null;
   locale: string;
 }): Promise<void> {
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (!resend || !adminEmail) return;
+  if (!resend) throw new Error('RESEND_API_KEY is not set');
+  if (opts.to.length === 0) throw new Error('no admin recipient');
 
-  const { customerName, customerEmail, pack, quantity, orderId, promoCode, locale } = opts;
+  const { to, customerName, customerEmail, pack, quantity, orderId, promoCode, locale } = opts;
   const shortRef = orderId.slice(0, 8).toUpperCase();
   const label = packLabel(pack, locale);
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM,
-    to: adminEmail,
+    to,
     ...(customerEmail ? { replyTo: customerEmail } : {}),
     subject: `Nouvelle commande · ${label} · ${customerName}`,
     html: themedLayout(`
@@ -772,6 +799,7 @@ export async function sendAdminNewOrder(opts: {
       </table>
     </td></tr>`),
   });
+  if (error) throw new Error(`Admin order alert not sent: ${error.message}`);
 }
 
 // ─── Order delivered ──────────────────────────────────────────────────────────
@@ -960,6 +988,16 @@ export async function sendOrderCustomNote(opts: {
       <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${signature}</p>
     </td></tr>`),
   });
+}
+
+/** La Poste / Colissimo numbers are printed with spaces; the tracker wants them bare. */
+export function normalizeTrackingNumber(raw: string | null | undefined): string | null {
+  const n = (raw ?? '').replace(/[\s-]+/g, '').toUpperCase();
+  return n || null;
+}
+
+export function laPosteTrackingUrl(trackingNumber: string): string {
+  return `https://www.laposte.fr/outils/suivre-vos-envois?code=${encodeURIComponent(trackingNumber)}`;
 }
 
 function escapeHtml(s: string): string {

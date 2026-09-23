@@ -37,16 +37,14 @@ fi
 
 # --- 2. Supabase -------------------------------------------------------------
 # Realtime is off: its container needs IPv6, which sandboxed runners lack, and
-# the app works without live updates. Migrations are applied by hand below
-# because two files share the 00043 version, which `supabase start` rejects.
+# the app works without live updates. `supabase start` applies the migrations.
 export SUPABASE_REALTIME_ENABLED=false
-export SUPABASE_DB_MIGRATIONS_ENABLED=false
 if [ "${1:-}" = "--reset" ]; then
   log "resetting local Supabase"
   npx supabase stop --no-backup >/dev/null 2>&1 || true
 fi
 if ! npx supabase status >/dev/null 2>&1; then
-  log "starting local Supabase (first run pulls images, ~2 min)"
+  log "starting local Supabase and applying migrations (first run pulls images, ~2 min)"
   npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,postgres-meta,supavisor,realtime >"$STATE_DIR/supabase.log" 2>&1 \
     || { tail -30 "$STATE_DIR/supabase.log"; exit 1; }
 fi
@@ -54,21 +52,6 @@ eval "$(npx supabase status -o env 2>/dev/null | grep -E '^(API_URL|ANON_KEY|SER
 
 DB="$(docker ps --format '{{.Names}}' | grep '^supabase_db_' | head -1)"
 psql_db() { docker exec -i "$DB" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q "$@"; }
-if [ "$(psql_db -tAc "select to_regclass('public.groups') is not null")" != "t" ]; then
-  log "applying migrations"
-  for f in supabase/migrations/*.sql; do
-    if ! psql_db -1 <"$f" >/dev/null 2>"$STATE_DIR/migration.err"; then
-      # 00023 cannot run on any database (CREATE OR REPLACE changing OUT
-      # columns); production never got it either, as the function dumped in
-      # 00064 shows. Skipping it reproduces production's schema.
-      case "$(basename "$f")" in
-        00023_public_staff_logo.sql) log "skipping $(basename "$f") (never applied in production)";;
-        *) echo "migration failed: $f"; cat "$STATE_DIR/migration.err"; exit 1;;
-      esac
-    fi
-  done
-  psql_db -c "NOTIFY pgrst, 'reload schema'" >/dev/null
-fi
 
 # --- 3. Env ------------------------------------------------------------------
 # Optional Stripe TEST-mode values (see .claude/skills/verify-ui/SKILL.md),

@@ -9,8 +9,7 @@ import { Icon, type IconName } from '@/components/ambassadeur/icons';
 interface UnclaimedProfile {
   id: string;
   full_name: string;
-  /** Masked address of an email invite ("m•••@exemple.fr"), never the full one. */
-  emailHint?: string;
+  email?: string;
 }
 
 type Step = 'welcome' | 'identity' | 'name-photo' | 'verify';
@@ -81,13 +80,17 @@ export function JoinForm({
   establishmentId,
   establishmentName,
   unclaimedProfiles,
-  ownProfileId,
+  teamToken,
 }: {
   establishmentId: string;
   establishmentName: string;
   unclaimedProfiles: UnclaimedProfile[];
-  /** The visitor's own pending profile, resolved server-side from the session. */
-  ownProfileId: string | null;
+  /**
+   * Signed team-join token from the page URL, forwarded to the join endpoint.
+   * Null for someone who arrived through an emailed invitation: their own
+   * pre-linked profile is what authorises them, not a link.
+   */
+  teamToken: string | null;
 }) {
   const locale = useLocale();
   const t = useTranslations('join');
@@ -121,15 +124,23 @@ export function JoinForm({
       // email on the account. Only treat the email as known when the session
       // actually carries one — otherwise we must still ask for it.
       if (user.email) { setHasSessionEmail(true); setEmail(user.email); }
-      const profileId = (user.user_metadata?.staff_profile_id as string | undefined) ?? ownProfileId;
-      const match = profileId ? unclaimedProfiles.find((p) => p.id === profileId) : undefined;
+      const profileId = user.user_metadata?.staff_profile_id as string | undefined;
+      const byId = profileId ? unclaimedProfiles.find((p) => p.id === profileId) : undefined;
+      const byEmail = user.email ? unclaimedProfiles.find((p) => p.email === user.email) : undefined;
+      const match = byId ?? byEmail;
       if (match) {
         const parts = match.full_name.trim().split(/\s+/);
         setFirstName(parts[0] ?? '');
         setLastName(parts.slice(1).join(' '));
+        if (match.email) setEmail(match.email);
         setSelectedProfile(match);
       }
       setStep('name-photo');
+    }).catch((err: unknown) => {
+      // Unhandled before. A failed session lookup left isAuthenticated false
+      // with no explanation, stranding the wizard on its welcome step: the
+      // visitor could start the flow but never finish it.
+      console.error('[join] session lookup failed', err);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -142,6 +153,7 @@ export function JoinForm({
     const parts = p.full_name.trim().split(/\s+/);
     setFirstName(parts[0] ?? '');
     setLastName(parts.slice(1).join(' '));
+    if (p.email) setEmail(p.email);
     setStep('name-photo');
   }
 
@@ -170,24 +182,35 @@ export function JoinForm({
   }
 
   async function submitJoin() {
-    const res = await fetch('/api/staff/join', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        establishmentId,
-        fullName: effectiveName,
-        selectedProfileId: selectedProfile?.id ?? null,
-        avatarUrl,
-        locale,
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch('/api/staff/join', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          establishmentId,
+          fullName: effectiveName,
+          selectedProfileId: selectedProfile?.id ?? null,
+          avatarUrl,
+          locale,
+          teamToken,
+        }),
+      });
+    } catch (err) {
+      // A dropped connection — a waiter on café wifi, which is exactly who
+      // uses this screen. The rejection used to go unhandled, so setLoading
+      // never ran and no message appeared: the button sat on its spinner for
+      // ever and only a page reload escaped.
+      console.error('[join] network error', err);
+      setError(tAuth('errorGeneric'));
+      setLoading(false);
+      return;
+    }
 
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       console.error('[join] profile creation failed', res.status, body.error);
-      // 403 carries a message meant for the visitor (profile reserved for the
-      // invited address); other failures stay generic.
-      setError(res.status === 403 && body.error ? body.error : tAuth('errorGeneric'));
+      setError(tAuth('errorGeneric'));
       setLoading(false);
       return;
     }
@@ -419,13 +442,13 @@ export function JoinForm({
         {t('verify.subtitle')}
       </p>
 
-      {selectedProfile?.emailHint && (
+      {selectedProfile?.email && (
         <div style={{
           padding: '10px 14px', borderRadius: 10,
           background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
           fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12,
         }}>
-          {t('verify.invitedAs', { hint: selectedProfile.emailHint })}
+          {t('verify.prefilled')}
         </div>
       )}
 
