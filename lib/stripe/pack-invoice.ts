@@ -31,10 +31,36 @@ export async function createPackInvoiceForPaymentIntent(opts: {
     }
   }
 
+  // The amount charged already includes VAT (metadata written by the pack
+  // intent routes): the fallback invoice must show it too, at the French rate,
+  // rather than a single VAT-less line.
+  const chargedVat = Number(paymentIntent.metadata?.tax_amount ?? 0) > 0;
   return buildInvoice({
     paymentIntent, customerId, description,
     lineAmount: paymentIntent.amount, taxBehavior: 'inclusive', automaticTax: false,
+    taxRateId: chargedVat ? await frenchVatInclusiveRate() : undefined,
   });
+}
+
+/** A reusable Stripe tax rate "TVA 20 %" (inclusive, France), created once. */
+async function frenchVatInclusiveRate(): Promise<string> {
+  const existing = await stripe.taxRates.list({ active: true, inclusive: true, limit: 100 });
+  const found = existing.data.find((r) => r.metadata?.digitip === 'fr-vat-20-inclusive');
+  if (found) return found.id;
+  const created = await stripe.taxRates.create(
+    {
+      display_name: 'TVA',
+      description: 'TVA France 20 %',
+      jurisdiction: 'FR',
+      country: 'FR',
+      percentage: 20,
+      inclusive: true,
+      tax_type: 'vat',
+      metadata: { digitip: 'fr-vat-20-inclusive' },
+    },
+    { idempotencyKey: 'digitip-fr-vat-20-inclusive' },
+  );
+  return created.id;
 }
 
 async function buildInvoice(opts: {
@@ -44,9 +70,10 @@ async function buildInvoice(opts: {
   lineAmount: number;
   taxBehavior: 'inclusive' | 'exclusive';
   automaticTax: boolean;
+  taxRateId?: string;
 }): Promise<PackInvoiceResult> {
-  const { paymentIntent, customerId, description, lineAmount, taxBehavior, automaticTax } = opts;
-  const suffix = automaticTax ? 'tax' : 'flat';
+  const { paymentIntent, customerId, description, lineAmount, taxBehavior, automaticTax, taxRateId } = opts;
+  const suffix = automaticTax ? 'tax' : taxRateId ? 'vat20' : 'flat';
 
   const invoice = await stripe.invoices.create(
     {
@@ -66,10 +93,21 @@ async function buildInvoice(opts: {
       amount: lineAmount,
       currency: paymentIntent.currency,
       description,
-      tax_behavior: taxBehavior,
+      ...(taxRateId ? { tax_rates: [taxRateId] } : { tax_behavior: taxBehavior }),
     },
     { idempotencyKey: `pack-inv-item:${paymentIntent.id}:${suffix}` },
   );
+
+  if (automaticTax) {
+    // Stripe Tax recomputes the VAT here. If it disagrees with what was
+    // charged (e.g. no registration: 0 % while the buyer paid 20 %), an
+    // invoice for a different total must not go out; the caller falls back.
+    const draft = await stripe.invoices.retrieve(invoice.id);
+    if (draft.total !== paymentIntent.amount) {
+      await stripe.invoices.del(invoice.id);
+      throw new Error(`automatic tax invoice total ${draft.total} != charged ${paymentIntent.amount}`);
+    }
+  }
 
   await stripe.invoices.finalizeInvoice(invoice.id, { auto_advance: false });
   const paid = await stripe.invoices.pay(invoice.id, { paid_out_of_band: true });

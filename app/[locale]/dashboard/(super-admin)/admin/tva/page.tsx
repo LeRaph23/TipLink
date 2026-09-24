@@ -70,6 +70,14 @@ export default async function AdminVatPage({
         </div>
       )}
 
+      {summary && summary.frenchInvoicesWithoutVat.length > 0 && (
+        <div style={{ padding: 12, borderRadius: 8, marginBottom: 20, background: 'var(--warning-bg, #fffbeb)', border: '1px solid #f59e0b', color: 'var(--text)', fontSize: 13, lineHeight: 1.6 }}>
+          ⚠️ {summary.frenchInvoicesWithoutVat.length} facture{summary.frenchInvoicesWithoutVat.length > 1 ? 's' : ''} à un client français
+          sans TVA : {summary.frenchInvoicesWithoutVat.join(', ')}. Une vente en France porte toujours 20 % de TVA :
+          vérifie qu’elle a été annulée par un avoir et refaite avec TVA, et que Stripe Tax a bien l’immatriculation France.
+        </div>
+      )}
+
       {summary && (
         <>
           <Section title={`TVA collectée ${year}`}>

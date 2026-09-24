@@ -59,6 +59,8 @@ describe('the corrected-invoice case nets out', () => {
     expect(s.buckets.find((b) => b.ratePercent === 0)?.htCents).toBe(0);
     expect(s.totalVatCents).toBe(1317);
     expect(s.totalTtcCents).toBe(7900);
+    // The VAT-less 0001 is flagged so it gets looked at, even though it was credited.
+    expect(s.frenchInvoicesWithoutVat).toEqual(['0001']);
   });
 
   it('exports a French CSV', () => {

@@ -46,6 +46,8 @@ export type VatSummary = {
   totalVatCents: number;
   totalTtcCents: number;
   bySource: Record<VatSource, { htCents: number; vatCents: number; lines: number }>;
+  /** French invoices issued without VAT: always an error unless cancelled by a credit note. */
+  frenchInvoicesWithoutVat: string[];
 };
 
 /** Splits a VAT-inclusive amount; the VAT is rounded to the cent, the base takes the rest. */
@@ -101,6 +103,9 @@ export function summarize(year: number, lines: VatLine[]): VatSummary {
     totalVatCents: sorted.reduce((s, b) => s + b.vatCents, 0),
     totalTtcCents: sorted.reduce((s, b) => s + b.ttcCents, 0),
     bySource,
+    frenchInvoicesWithoutVat: lines
+      .filter((l) => l.source === 'invoice' && l.country === 'FR' && l.vatCents === 0 && l.htCents > 0)
+      .map((l) => l.reference),
   };
 }
 
