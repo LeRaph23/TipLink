@@ -1,6 +1,14 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { ReceiptLink } from '@/components/dashboard/ReceiptLink';
+import { RefundButton } from './RefundButton';
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'En attente',
+  succeeded: 'Reçu',
+  failed: 'Échoué',
+  refunded: 'Remboursé',
+};
 
 function formatAmount(cents: number, currency = 'EUR', locale = 'fr') {
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(cents / 100);
@@ -20,7 +28,7 @@ function StatusBadge({ status }: { status: string }) {
       borderRadius: 100, fontSize: 11, fontWeight: 600, background: bg, color, whiteSpace: 'nowrap',
     }}>
       <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
-      {status}
+      {STATUS_LABEL[status] ?? status}
     </span>
   );
 }
@@ -140,7 +148,7 @@ export default async function AdminTransactionsPage({
         <select name="status" defaultValue={sp.status ?? ''} style={inputCompact}>
           <option value="">{t('anyStatus')}</option>
           {['pending', 'succeeded', 'failed', 'refunded'].map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
           ))}
         </select>
         <select name="group" defaultValue={sp.group ?? ''} style={inputCompact}>
@@ -210,9 +218,12 @@ export default async function AdminTransactionsPage({
                     <td style={{ padding: '10px 14px', color: 'var(--text-2)' }}>{staff?.full_name ?? '—'}</td>
                     <td style={{ padding: '10px 14px' }}><StatusBadge status={r.status} /></td>
                     <td style={{ padding: '10px 14px' }}>
-                      {r.status === 'succeeded'
-                        ? <ReceiptLink transactionId={r.id} />
-                        : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                      {r.status === 'succeeded' ? (
+                        <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                          <ReceiptLink transactionId={r.id} />
+                          <RefundButton transactionId={r.id} amountLabel={formatAmount(r.amount, r.currency.toUpperCase(), locale)} />
+                        </span>
+                      ) : <span style={{ color: 'var(--text-3)' }}>—</span>}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       {r.stripe_payment_intent_id ? (

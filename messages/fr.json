@@ -1058,7 +1058,7 @@
       "transactions": {
         "title": "Transactions",
         "subtitle": "{n} transactions · {volume} de volume réussi",
-        "subtitleFiltered": "{shown} lignes affichées (max 500) · {total} transactions correspondant aux filtres · {volume} volume réussi (statut succeeded)",
+        "subtitleFiltered": "{shown} lignes affichées (max 500) · {total} transactions correspondant aux filtres · {volume} de paiements reçus",
         "rpcFallback": "Les totaux exacts nécessitent la migration SQL 00019 (admin_transactions_summary). Affichage approximatif sur la page courante.",
         "truncatedList": "Plus de {limit} transactions correspondent aux filtres, affinez la période ou le groupe.",
         "empty": "Aucune transaction ne correspond à ces filtres.",

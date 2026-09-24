@@ -102,7 +102,7 @@ export function OrderFulfillment({
 
   function notify(msg: string) {
     setToast(msg);
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 8000);
   }
 
   const statusLabels: Record<OrderStatus, string> = {
@@ -191,6 +191,7 @@ export function OrderFulfillment({
                 style={primaryBtn}
                 disabled={pending}
                 onClick={() => {
+                  if (!window.confirm(`Marquer la commande comme expédiée${tracking ? ` (suivi ${tracking})` : ' sans numéro de suivi'} ? Le client reçoit l’email d’expédition.`)) return;
                   startTransition(async () => {
                     const res = await markOrderShipped(orderId, tracking || undefined);
                     // The order can be shipped even when the email failed, so
@@ -209,6 +210,7 @@ export function OrderFulfillment({
             style={secondaryBtn}
             disabled={pending}
             onClick={() => {
+              if (!window.confirm('Marquer la commande comme livrée ? Le client reçoit l’email de livraison.')) return;
               startTransition(async () => {
                 const res = await markOrderDelivered(orderId);
                 if (!res.ok) flash(res.error);
@@ -267,6 +269,11 @@ export function OrderFulfillment({
             }}
             disabled={pending || forceStatus === status}
             onClick={() => {
+              const unencoded = ['ready_to_ship', 'shipped', 'delivered'].includes(forceStatus) && encodedCount < quantity;
+              if (!window.confirm(
+                `Forcer le statut « ${statusLabels[forceStatus]} » ?` +
+                (unencoded ? `\n\nAttention : seulement ${encodedCount}/${quantity} tag(s) encodé(s) pour cette commande.` : ''),
+              )) return;
               startTransition(async () => {
                 const res = await forceOrderStatus(orderId, forceStatus, forceTracking || undefined);
                 if (!res.ok) flash(res.error);
