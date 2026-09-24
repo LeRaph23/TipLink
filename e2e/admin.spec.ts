@@ -64,3 +64,18 @@ test('a free message to the customer carries the attached files', async ({ page 
   );
   expect(logs.map((l) => l.metadata.attachments)).toEqual([['Invoice-0002.pdf']]);
 });
+
+test('the VAT return page opens and offers the CSV journal', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await login(page, 'admin@tiplink.dev');
+  await page.goto('/fr/dashboard/admin/tva');
+  await expect(page.getByRole('heading', { name: 'TVA à déclarer' })).toBeVisible();
+  // Without Stripe keys the report cannot read invoices and says so rather
+  // than showing a partial total.
+  await expect(
+    page.getByText('TVA collectée ' + new Date().getUTCFullYear()).or(page.getByText('Impossible de calculer le rapport')),
+  ).toBeVisible();
+  const csv = page.getByRole('link', { name: /Télécharger le détail/ });
+  await expect(csv).toHaveAttribute('href', /\/api\/admin\/vat-report\?year=\d{4}/);
+  expect(errors, 'uncaught page errors').toEqual([]);
+});

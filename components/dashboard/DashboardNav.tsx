@@ -180,6 +180,7 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
     { href: '/dashboard/admin/establishments', label: ta('establishments'), icon: <EstIcon /> },
     { href: '/dashboard/admin/groups',         label: ta('groups'),      icon: <GroupIcon /> },
     { href: '/dashboard/admin/promo-codes',   label: ta('promoCodes'),  icon: <TagIcon /> },
+    { href: '/dashboard/admin/tva',           label: ta('vat'),         icon: <ListIcon /> },
     { href: '/dashboard/admin/ambassadeurs',  label: ta('ambassadeurs'), icon: <UsersIcon /> },
     { href: '/dashboard/admin/cold-email',    label: ta('prospects'),    icon: <MailIcon /> },
   ];
