@@ -129,7 +129,6 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     promoCode: string | null;
   } | null>(null);
 
-  const currentStep = parseStep(searchParams.get('step'));
 
   // Hydrate from localStorage once
   useEffect(() => {
@@ -166,24 +165,15 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     }
   }, [state, pack, hydrated]);
 
-  const goToStep = useCallback((s: Step) => {
+  const goToStep = (s: Step) => {
     setError(null);
     const params = new URLSearchParams(searchParams.toString());
     params.set('step', s);
     router.replace(`/order/${pack}?${params.toString()}`, { scroll: false });
-  }, [pack, router, searchParams]);
-
-  // A step past what the order allows is never shown: Back after paying lands
-  // on ?step=review with the order already cleared, and a reload restores the
-  // URL but not the verified code. Send the buyer to the first step to fill.
-  const reachable = maxReachable(state, activeSteps, otpVerified || isAuthenticated);
-  useEffect(() => {
-    if (!hydrated || payment) return;
-    if (activeSteps.indexOf(currentStep) > activeSteps.indexOf(reachable)) goToStep(reachable);
-  }, [hydrated, payment, currentStep, reachable, activeSteps, goToStep]);
+  };
 
   // If pack switch in step 1, update URL pack segment
-  const handlePackChange = useCallback((p: PackId) => {
+  const handlePackChange = (p: PackId) => {
     dispatch({ type: 'setPack', pack: p });
     if (p !== pack) {
       // Move state from old storage key to new one
@@ -197,7 +187,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       const params = new URLSearchParams(searchParams.toString());
       router.replace(`/order/${p}?${params.toString()}`, { scroll: false });
     }
-  }, [pack, router, searchParams]);
+  };
 
   const handleExit = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -206,6 +196,16 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     try { window.localStorage.removeItem(STORAGE_KEY(pack)); } catch { /* ignore */ }
     router.push('/');
   }, [pack, router, t]);
+
+  // A step past what the order allows is never shown: Back after paying lands
+  // on ?step=review with the order already cleared, and a reload restores the
+  // URL but not the verified code. The first step still to fill is shown
+  // instead (the stepper and Continue then move on from there).
+  const requestedStep = parseStep(searchParams.get('step'));
+  const reachableStep = maxReachable(state, activeSteps, otpVerified || isAuthenticated);
+  const currentStep = activeSteps.indexOf(requestedStep) > activeSteps.indexOf(reachableStep)
+    ? reachableStep
+    : requestedStep;
 
   const validateCurrent = (): string | null => {
     switch (currentStep) {

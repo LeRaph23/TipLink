@@ -25,6 +25,6 @@ test('a reload shows the saved address, never empty fields to type into', async 
 test('a step past what the order allows sends back to the first step to fill', async ({ page }) => {
   // What Back after paying opens: the review step, with the order cleared.
   await page.goto('/fr/order/solo?step=review');
-  await expect(page).toHaveURL(/step=shipping/);
+  await expect(page.locator('#order-line1')).toBeVisible();
   await expect(page.getByRole('button', { name: /Procéder au paiement/ })).toHaveCount(0);
 });
