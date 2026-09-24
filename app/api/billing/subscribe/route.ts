@@ -96,6 +96,8 @@ export async function POST(request: NextRequest) {
           name: group.name,
           ...(user?.email ? { email: user.email } : {}),
           metadata: { group_id: group.id },
+          // Stripe's own emails (invoices, receipts, credit notes) default to English.
+          preferred_locales: [locale],
         },
         { idempotencyKey: `pro-customer:${group.id}` },
       );
