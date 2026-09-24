@@ -156,7 +156,7 @@ export const COMPARISONS: ComparisonMeta[] = [
       {
         question: 'Qui reçoit les pourboires ?',
         answer:
-          "Avec Digitip, la somme part sur le compte bancaire du bénéficiaire choisi par le client, sans transiter par l'établissement. Vérifiez ce point chez tout concurrent : c'est ce qui détermine votre charge administrative.",
+          "Avec Digitip, la somme est versée sur le compte de l'établissement, et chaque pourboire est attribué à la personne choisie par le client. Un relevé mensuel par salarié permet de les reverser avec la paie sans ressaisie. Vérifiez ce point chez tout concurrent : c'est ce qui détermine votre charge administrative.",
       },
     ],
     sources: [

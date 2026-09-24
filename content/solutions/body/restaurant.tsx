@@ -93,15 +93,12 @@ export default function Body() {
 
       <h2>Ce que ça coûte</h2>
       <p>
-        La plaque est un achat unique, sans abonnement. La plateforme prélève 5 % sur les
-        pourboires encaissés, plus des frais de service fixes par transaction. Sans
+        La plaque est un achat unique, sans abonnement. Aucun prélèvement sur les pourboires : le client ajoute des frais de service (0,25 € + 5 % du pourboire) et vous recevez 100 % du pourboire. Sans
         pourboire, vous ne payez rien : il n&apos;y a pas de coût fixe mensuel qui tourne
         pendant une saison creuse.
       </p>
       <p>
-        Sur un pourboire de 10 €, le client règle 10,25 € : 9,50 € reviennent au
-        bénéficiaire, 0,45 € couvrent les frais de paiement bancaires, 0,30 € reviennent à
-        Digitip.
+        Sur un pourboire de 10 €, le client règle 10,75 € : les 10 € sont versés à l&apos;établissement, qui les redistribue à l&apos;équipe ; sur les 0,75 € de frais, environ 0,41 € couvrent les frais de paiement Stripe et 0,34 € reviennent à Digitip.
       </p>
     </>
   );

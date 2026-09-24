@@ -39,7 +39,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Mes serveurs doivent-ils faire des démarches ?',
         answer:
-          "Chaque bénéficiaire connecte une fois son compte bancaire via une vérification d'identité imposée par la réglementation anti-blanchiment. Comptez quelques minutes, une seule fois.",
+          "Non. C'est l'établissement qui fait vérifier son compte une fois (vérification d'identité imposée par la réglementation anti-blanchiment, quelques minutes). Vos serveurs rejoignent l'équipe en un clic pour suivre leurs pourboires, sans aucune démarche bancaire.",
       },
       {
         question: 'Et si un serveur quitte l\'établissement ?',
@@ -148,7 +148,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Comment gérer les coiffeurs en location de fauteuil ?',
         answer:
-          "Un indépendant en location de fauteuil encaisse pour lui-même : il peut avoir son propre profil et son propre compte bancaire, sans que les sommes transitent par le salon.",
+          "Un indépendant en location de fauteuil encaisse pour lui-même : il peut ouvrir son propre espace Digitip, avec sa plaque et son propre compte, sans que les sommes transitent par le salon.",
       },
       {
         question: 'Est-ce que ça met le client mal à l\'aise ?',
@@ -186,7 +186,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Comment gérer un studio avec plusieurs artistes ?',
         answer:
-          "Chaque artiste a son propre profil et son propre compte bancaire. Le client choisit qui il récompense, et la somme part directement chez cette personne sans transiter par le studio.",
+          "Chaque artiste a son propre profil : le client choisit qui il récompense, et le pourboire est attribué à cet artiste sur le relevé du studio, qui le lui reverse. Un artiste indépendant peut aussi ouvrir son propre espace Digitip, avec son propre compte.",
       },
       {
         question: 'Suis-je concerné par l\'exonération jusqu\'en 2028 ?',

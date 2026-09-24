@@ -82,7 +82,7 @@ export function OrderFulfillment({
   const [notes, setNotes] = useState(internalNotes);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelEmail, setCancelEmail] = useState(true);
-  const [customSubject, setCustomSubject] = useState('Update concernant votre commande Digitip');
+  const [customSubject, setCustomSubject] = useState('Des nouvelles de votre commande Digitip');
   const [customBody, setCustomBody] = useState('');
   const [customFiles, setCustomFiles] = useState<File[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);

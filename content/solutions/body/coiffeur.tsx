@@ -28,9 +28,7 @@ export default function Body() {
         inoccupés à des coiffeurs indépendants.
       </p>
       <p>
-        Un indépendant en location de fauteuil encaisse pour son propre compte. Il peut
-        avoir son profil et son compte bancaire propres, sans que les sommes transitent par
-        le salon. Pour le gérant, cela évite d&apos;avoir à gérer et reverser des
+        Un indépendant en location de fauteuil encaisse pour son propre compte. Il peut ouvrir son propre espace Digitip, avec sa plaque et son propre compte, sans que les sommes transitent par le salon. Pour le gérant, cela évite d&apos;avoir à gérer et reverser des
         pourboires qui ne lui reviennent pas ; pour l&apos;indépendant, l&apos;argent
         arrive directement.
       </p>
@@ -79,14 +77,13 @@ export default function Body() {
 
       <h2>Ce que ça coûte</h2>
       <p>
-        Achat unique de la plaque, sans abonnement. Commission de 5 % sur les pourboires
-        encaissés, plus des frais de service fixes par transaction. Aucun pourboire, aucun
+        Achat unique de la plaque, sans abonnement. Aucun prélèvement sur les pourboires : le client ajoute des frais de service (0,25 € + 5 % du pourboire) et vous recevez 100 % du pourboire. Aucun pourboire, aucun
         frais.
       </p>
       <p>
         Ce modèle importe particulièrement en coiffure : avec huit à douze clients par jour
         et un taux de déclenchement modéré, un abonnement mensuel fixe peut coûter plus
-        cher que ce qu&apos;il rapporte. Une commission proportionnelle suit le volume réel.
+        cher que ce qu&apos;il rapporte. Ici, rien de fixe : les frais ne portent que sur les pourboires laissés, et c&apos;est le client qui les règle.
       </p>
     </>
   );

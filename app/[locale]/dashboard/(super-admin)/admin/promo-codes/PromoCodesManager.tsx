@@ -91,11 +91,11 @@ function PromoForm({
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         <label>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 5 }}>Code (ex: SUMMER20)</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 5 }}>Code (ex. : BIENVENUE10)</div>
           <input
             type="text" style={input} value={v.code}
             onChange={e => update({ code: e.target.value.toUpperCase() })}
-            placeholder="SUMMER20" maxLength={20}
+            placeholder="BIENVENUE10" maxLength={20}
           />
         </label>
         <label>

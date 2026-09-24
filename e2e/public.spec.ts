@@ -24,3 +24,10 @@ test('unknown NFC short id lands on not-found', async ({ page }) => {
   await page.goto('/s/zzzz9999');
   await expect(page).toHaveURL(/not-found/);
 });
+
+test('an unknown French URL shows the French 404 page', async ({ page }) => {
+  const res = await page.goto('/fr/cette-page-nexiste-pas');
+  expect(res?.status()).toBe(404);
+  await expect(page.getByText(/introuvable/i).first()).toBeVisible();
+  await expect(page.getByText('This page could not be found')).toHaveCount(0);
+});

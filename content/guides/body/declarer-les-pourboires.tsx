@@ -59,11 +59,7 @@ export default function Body() {
 
       <h2>Ce que Digitip fournit</h2>
       <p>
-        Les pourboires encaissés via Digitip vont directement sur le compte bancaire du
-        bénéficiaire désigné par le client, après une vérification d&apos;identité imposée
-        par la réglementation anti-blanchiment. L&apos;administrateur dispose d&apos;un
-        relevé mensuel des montants versés à chaque bénéficiaire — de quoi documenter les
-        sommes sans ressaisie.
+        Les pourboires encaissés via Digitip sont versés sur le compte de l&apos;établissement, vérifié par Stripe comme l&apos;impose la réglementation anti-blanchiment. Chaque pourboire est attribué à la personne choisie par le client (ou réparti entre l&apos;équipe), et l&apos;administrateur dispose d&apos;un relevé mensuel des montants par salarié — de quoi les reverser avec la paie et documenter les sommes sans ressaisie.
       </p>
       <p>
         Digitip n&apos;est pas l&apos;employeur des bénéficiaires, n&apos;intervient pas

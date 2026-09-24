@@ -23,7 +23,7 @@ export function StaffInviteCopy({
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const smsText = `Bonjour ! ${establishmentName} vous invite à rejoindre Digitip pour recevoir vos pourboires directement sur votre compte bancaire. Rejoignez l'équipe ici : ${currentUrl}`;
+  const smsText = `Bonjour ! ${establishmentName} vous invite à rejoindre Digitip pour suivre vos pourboires, laissés par les clients depuis leur téléphone. Rejoignez l'équipe ici : ${currentUrl}`;
 
   function regenerate() {
     setRotateError(null);

@@ -54,8 +54,7 @@ export default function Body() {
       <h2>Le cas des barbiers en location de poste</h2>
       <p>
         Beaucoup de barbershops fonctionnent avec des indépendants qui louent leur poste
-        plutôt qu&apos;avec des salariés. Dans ce cas chacun encaisse pour lui-même, et
-        chacun peut avoir son propre profil et son propre compte bancaire.
+        plutôt qu&apos;avec des salariés. Dans ce cas chacun encaisse pour lui-même, et chacun peut ouvrir son propre espace Digitip, avec sa plaque et son propre compte.
       </p>
       <p>
         Pour le gérant, ça évite d&apos;encaisser puis de reverser des sommes qui ne lui
@@ -88,14 +87,12 @@ export default function Body() {
 
       <h2>Ce que ça coûte</h2>
       <p>
-        Achat unique de la plaque, sans abonnement. 5 % de commission sur les pourboires
-        encaissés, plus des frais de service fixes par transaction. Sans pourboire, rien
+        Achat unique de la plaque, sans abonnement. Aucun prélèvement sur les pourboires : le client ajoute des frais de service (0,25 € + 5 % du pourboire) et vous recevez 100 % du pourboire. Sans pourboire, rien
         n&apos;est dû.
       </p>
       <p>
         Ce modèle compte particulièrement dans un métier saisonnier, où janvier ne
-        ressemble pas à décembre : une commission proportionnelle suit votre activité réelle
-        au lieu de tourner à vide.
+        ressemble pas à décembre : aucun coût fixe ne tourne à vide : les frais ne portent que sur les pourboires réellement laissés, et c&apos;est le client qui les règle.
       </p>
     </>
   );

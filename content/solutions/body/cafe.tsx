@@ -78,8 +78,7 @@ export default function Body() {
 
       <h2>Ce que ça coûte</h2>
       <p>
-        Achat unique de la plaque, sans abonnement. Commission de 5 % sur les pourboires
-        encaissés, plus des frais de service fixes par transaction. Rien à payer les mois
+        Achat unique de la plaque, sans abonnement. Aucun prélèvement sur les pourboires : le client ajoute des frais de service (0,25 € + 5 % du pourboire) et vous recevez 100 % du pourboire. Rien à payer les mois
         sans pourboire.
       </p>
       <p>

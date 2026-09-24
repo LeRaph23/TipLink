@@ -198,13 +198,13 @@
     "title": "Terms of Sale",
     "intro": "These Terms of Sale (ToS) govern all orders for products and services placed on digitip.app. By confirming an order, the buyer unconditionally accepts these Terms. Seller: YUZU LABS SAS, 11 rue de Lorraine, 68490 Petit-Landau, SIREN 994 879 013, contact@digitip.app.",
     "s1Title": "1. Products and services",
-    "s1Body": "YUZU LABS SAS sells under the Digitip brand: (1) pre-programmed NFC epoxy plaques (\"SmartTags\") enabling customers to leave contactless tips, and (2) access to the Digitip software platform (dashboard, staff management, analytics). Essential product characteristics are detailed on the order pages.",
+    "s1Body": "YUZU LABS SAS sells under the Digitip brand: (1) pre-programmed NFC epoxy plaques (\"SmartTags\") enabling customers to leave contactless tips, and (2) access to the Digitip software platform (dashboard, staff management, analytics). Essential product characteristics are detailed on the order pages. The Digitip Pro subscription, monthly or yearly, is paid in advance and renews automatically at each term. It can be cancelled at any time from the Billing page: cancellation takes effect at the end of the period already paid, with no pro-rata refund, and the account then returns to the free plan. Any free trial is shown before subscribing; unless cancelled before it ends, the subscription starts when it ends.",
     "s2Title": "2. Pricing",
     "s2Body": "Prices are shown in euros excluding VAT. Applicable VAT is calculated by Stripe at checkout based on your country of tax residence. YUZU LABS SAS reserves the right to change prices at any time; orders are invoiced at the price shown at the time of confirmation. Delivery is free across Europe.",
     "s3Title": "3. Orders",
     "s3Body": "Any order placed on digitip.app constitutes acceptance of these Terms, the prices, and the product descriptions. YUZU LABS SAS reserves the right to refuse or cancel any order in cases of suspected fraud, unresolved prior dispute, or product unavailability. A confirmation email is sent within 24 hours of validation.",
     "s4Title": "4. Payment",
-    "s4Body": "Payment is made in full online at the time of order via Stripe (debit/credit card, Apple Pay, Google Pay). Payment data is collected and processed exclusively by Stripe: YUZU LABS SAS servers never see or store any banking data. In the event of payment failure, the order is automatically cancelled.",
+    "s4Body": "Payment is made in full online at the time of order via Stripe (debit/credit card, Apple Pay, Google Pay). Payment data is collected and processed exclusively by Stripe: YUZU LABS SAS servers never see or store any banking data. In the event of payment failure, the order is automatically cancelled. For business buyers, any amount unpaid when due automatically bears late-payment interest at three times the French statutory interest rate and a fixed recovery fee of €40 (article L441-10 of the French Commercial Code). No discount is granted for early payment.",
     "s5Title": "5. Delivery",
     "s5Body": "SmartTags are dispatched from France within 3 to 5 business days following payment confirmation. Delivery is free across Europe. A tracking email is sent upon shipment. YUZU LABS SAS cannot be held liable for delays attributable to the carrier, force majeure, or incorrect delivery information provided by the buyer.",
     "s6Title": "6. Right of withdrawal",
@@ -218,7 +218,7 @@
     "s10Title": "10. Liability",
     "s10Body": "YUZU LABS SAS cannot be held liable for indirect damages (lost profits, loss of customers, data loss) related to the use or inability to use SmartTags or the platform. The liability of YUZU LABS SAS is limited to amounts actually paid by the buyer in the 12 months preceding the loss.",
     "s11Title": "11. Disputes and mediation",
-    "s11Body": "In the event of an unresolved dispute, any consumer may use a free approved mediator: CM2C, Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris (www.cm2c.net). The European Commission also provides an online dispute resolution platform: ec.europa.eu/consumers/odr. Disputes between professionals fall under the exclusive jurisdiction of the courts of the Colmar Court of Appeal, unless mandatory law provides otherwise. These Terms are governed by French law."
+    "s11Body": "In the event of an unresolved dispute, any consumer may use a free approved mediator: CM2C, Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris (www.cm2c.net). Disputes between professionals fall under the exclusive jurisdiction of the courts of the Colmar Court of Appeal, unless mandatory law provides otherwise. These Terms are governed by French law."
   },
   "orderSuccess": {
     "title": "Order confirmed!",
@@ -259,7 +259,7 @@
       "cta": "Order now",
       "b1": "Named tipping: the client chooses who to reward",
       "b2": "Pay for the plaque once. Tipping itself never has a subscription.",
-      "b3": "Paid straight to your bank account via Stripe",
+      "b3": "Paid into your business account via Stripe",
       "b4": "No app, no cash: just a tap or QR code"
     },
     "product": {
@@ -570,7 +570,7 @@
     "pack": {
       "title": "Confirm your pack",
       "subtitle": "You can change size at any time. Every pack includes pre-programmed SmartTags, the mobile app, and the dashboard.",
-      "quantity": "{count} SmartTags",
+      "quantity": "{count, plural, one {# SmartTag} other {# SmartTags}}",
       "oneTime": "One-time payment",
       "switchPack": "Switch pack"
     },
@@ -657,7 +657,7 @@
     "notReadyBack": "Back to Digitip",
     "notReadyTipGroup": "Tip the team instead →",
     "group": {
-      "pickStaffTitle": "Choose your stylist",
+      "pickStaffTitle": "Who would you like to thank?",
       "pickStaffSubtitle": "Pick whoever you like to leave a tip.",
       "noStaff": "No team members are ready to receive tips yet.",
       "poweredBy": "Powered by Digitip",
@@ -793,7 +793,7 @@
       "last7days": "Last 7 days",
       "trendVsPrev": "vs prev. week",
       "adminReceiveTipsTitle": "Receive tips too",
-      "adminReceiveTipsBody": "As an admin, you can also appear in the list and receive tips in your bank account.",
+      "adminReceiveTipsBody": "As an admin, you can also appear in the list: tips meant for you show on the team statement, like everyone else's.",
       "adminReceiveTipsCta": "Set up →",
       "wholeTeam": "whole team"
     },
@@ -1279,9 +1279,9 @@
     "continue": "Continue →",
     "welcome": {
       "title": "Join {name}",
-      "subtitle": "Your tips, in your bank account.",
+      "subtitle": "Your tips, finally cashless.",
       "bullet1": "Your clients tip you from their phone, no cash, no app.",
-      "bullet2": "You receive the money in your bank account.",
+      "bullet2": "Follow your tips in real time; your workplace pays them to you with your salary.",
       "bullet3": "Ready in 2 minutes.",
       "start": "Get started →"
     },

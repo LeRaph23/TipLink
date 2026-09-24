@@ -113,15 +113,10 @@ export default async function ComparisonPage({ params }: Props) {
         <p>
           Si vous voulez uniquement rendre le pourboire possible, sans toucher à votre
           caisse ni à votre parcours de paiement, et sans engagement mensuel. La plaque
-          s&apos;achète une fois, s&apos;installe en deux minutes, et la commission de 5 %
-          ne s&apos;applique qu&apos;aux pourboires réellement encaissés : sans pourboire,
-          vous ne payez rien.
+          s&apos;achète une fois, s&apos;installe en deux minutes, et rien n&apos;est prélevé sur les pourboires : le client règle des frais de service (0,25 € + 5 %) seulement quand il en laisse un. Sans pourboire, vous ne payez rien.
         </p>
         <p>
-          C&apos;est aussi le bon choix si vous tenez à ce que la somme aille directement
-          sur le compte bancaire de la personne que le client a choisie, sans transiter
-          par l&apos;établissement : c&apos;est ce qui vous évite d&apos;avoir à encaisser,
-          tracer et reverser des sommes qui ne vous reviennent pas.
+          C&apos;est aussi le bon choix si vous voulez que chaque pourboire soit tracé et attribué automatiquement : l&apos;argent arrive sur le compte de l&apos;établissement, et le relevé mensuel par salarié indique exactement quoi reverser avec la paie, sans calcul ni ressaisie.
         </p>
 
         <h2>Comment vérifier par vous-même</h2>
