@@ -53,6 +53,18 @@ test('manager and employee dashboards show the tips, not 0 € nor the fees', as
   await page.goto('/fr/dashboard');
   await expect(totalCard(page)).toContainText('17,50');
   await expect(totalCard(page)).toContainText("toute l'équipe");
+
+  // The figure must not depend on the count-up animation: a tab the browser
+  // does not paint (background, automated) froze it mid-way. Without
+  // JavaScript the server-rendered value is all there is.
+  const noJs = await page.context().browser()!.newContext({
+    javaScriptEnabled: false,
+    storageState: await page.context().storageState(),
+  });
+  const staticPage = await noJs.newPage();
+  await staticPage.goto(new URL('/fr/dashboard', page.url()).toString());
+  await expect(totalCard(staticPage)).toContainText('17,50');
+  await noJs.close();
   await page.goto('/fr/dashboard/transactions');
   await expect(page.getByText('Total reçu: 17,50 €')).toBeVisible();
   await page.goto(`/fr/dashboard/staff/${staff.id}`);

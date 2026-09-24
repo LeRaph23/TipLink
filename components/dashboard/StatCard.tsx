@@ -18,13 +18,21 @@ export function StatCard({ label, value, format, locale, currency = 'EUR', sub, 
     ? new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 })
     : new Intl.NumberFormat(locale);
 
-  const [display, setDisplay] = useState(0);
+  // Starts on the real value: it is what the server renders, what a
+  // screenshot or a background tab shows, and what stays if the animation
+  // below never gets to run. The QA run read "4,31 €" for 37,50 € and "0"
+  // for 3 tips because the count-up was frozen mid-way in a tab the browser
+  // did not paint.
+  const [display, setDisplay] = useState(value);
   useEffect(() => {
-    let raf = 0;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      raf = requestAnimationFrame(() => setDisplay(value));
+    if (
+      document.visibilityState !== 'visible' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      const raf = requestAnimationFrame(() => setDisplay(value));
       return () => cancelAnimationFrame(raf);
     }
+    let raf = 0;
     const t0 = performance.now();
     const tick = (now: number) => {
       const p = Math.min(1, (now - t0) / 800);
@@ -32,7 +40,9 @@ export function StatCard({ label, value, format, locale, currency = 'EUR', sub, 
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    // Frames can stop at any time (tab hidden mid-animation): land anyway.
+    const land = setTimeout(() => setDisplay(value), 1000);
+    return () => { cancelAnimationFrame(raf); clearTimeout(land); };
   }, [value]);
 
   return (

@@ -64,7 +64,10 @@ export function AnalyticsChartsImpl({ daily, topStaff, currency, locale, labels 
                   labelFormatter={(v) => new Date(String(v)).toLocaleDateString(locale, { day: 'numeric', month: 'long' })}
                   contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                 />
-                <Line type="monotone" dataKey="total" stroke="#E57A97" strokeWidth={2} dot={false} />
+                {/* No draw-in animation: it runs frame by frame and freezes wherever
+                    the browser stops painting (a background tab), which left
+                    a flat line and a 0,5 € bar for a 38 € employee. */}
+                <Line type="monotone" dataKey="total" stroke="#E57A97" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -88,7 +91,7 @@ export function AnalyticsChartsImpl({ daily, topStaff, currency, locale, labels 
                   formatter={(v) => fmt.format(Number(v ?? 0))}
                   contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                 />
-                <Bar dataKey="total" fill="#EC97B0" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="total" fill="#EC97B0" radius={[0, 6, 6, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>

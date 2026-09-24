@@ -45,6 +45,13 @@ export function MissingEmailRepair({
         setErrors((e) => ({ ...e, [id]: res.error }));
         return;
       }
+      // The action reports whether the invitation email actually left (it
+      // fails when the address already has an account, or when email is not
+      // configured). Hiding the row regardless looked like a success.
+      if (!res.invited) {
+        setErrors((e) => ({ ...e, [id]: "L'invitation n'a pas pu être envoyée. Cette adresse a peut-être déjà un compte : partagez plutôt le lien d'équipe ci-dessous." }));
+        return;
+      }
       trackEvent('staff_invite_repaired');
       setSent((s) => ({ ...s, [id]: true }));
       router.refresh();
