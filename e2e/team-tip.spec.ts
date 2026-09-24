@@ -12,7 +12,7 @@ test('a payable establishment takes team tips before anyone has joined', async (
     method: 'POST',
     body: {
       group_id, name: `Bistro Invités ${suffix}`, slug: `bistro-invites-${suffix}`, business_type: 'restaurant',
-      country: 'FR', currency: 'eur', stripe_account_id: 'acct_e2e_invited',
+      country: 'FR', currency: 'eur', stripe_account_id: `acct_e2e_inv_${suffix}`,
       stripe_charges_enabled: true, stripe_payouts_enabled: true,
     },
   });
@@ -43,7 +43,7 @@ test('an establishment with nobody on the team still says so', async ({ page }) 
     method: 'POST',
     body: {
       group_id, name: `Bistro Vide ${suffix}`, slug: `bistro-vide-${suffix}`, business_type: 'restaurant',
-      country: 'FR', currency: 'eur', stripe_account_id: 'acct_e2e_empty',
+      country: 'FR', currency: 'eur', stripe_account_id: `acct_e2e_empty_${suffix}`,
       stripe_charges_enabled: true, stripe_payouts_enabled: true,
     },
   });
