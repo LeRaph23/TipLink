@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   loadConnectAndInitialize,
   type CustomFontSource,
@@ -118,6 +118,12 @@ export function ConnectProvider({
   errorFallback = null,
 }: Props) {
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  // A failed session request used to leave Stripe's own generic "Un problème
+  // est survenu" in the iframe with no way out (fifth QA run: a 502 while the
+  // account was being created). We catch it, say what happened and offer to
+  // retry, which builds a fresh Connect instance.
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const fetchClientSecret = useCallback(async (): Promise<string> => {
     const res = await fetch('/api/stripe/account-session', {
@@ -129,9 +135,11 @@ export function ConnectProvider({
         ...(legalForm ? { legalForm } : {}),
       }),
     });
-    if (!res.ok) throw new Error(`account-session failed with ${res.status}`);
-    const data = (await res.json()) as { clientSecret?: string };
-    if (!data.clientSecret) throw new Error('account-session returned no client secret');
+    const data = res.ok ? ((await res.json()) as { clientSecret?: string }) : {};
+    if (!data.clientSecret) {
+      setFailed(true);
+      throw new Error(`account-session failed with ${res.status}`);
+    }
     return data.clientSecret;
   }, [establishmentId, token, legalForm]);
 
@@ -154,7 +162,7 @@ export function ConnectProvider({
       return null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [publishableKey, establishmentId]);
+  }, [publishableKey, establishmentId, attempt]);
 
   // Re-push the palette when the theme toggle rewrites `data-theme` on <html>.
   // Without this the iframe keeps the colours it was born with, and the form
@@ -172,6 +180,31 @@ export function ConnectProvider({
   }, [instance]);
 
   if (!instance) return <>{errorFallback}</>;
+
+  if (failed) {
+    return (
+      <div role="alert" style={{
+        padding: '20px 22px', borderRadius: 14, background: 'var(--surface)',
+        border: '1px solid var(--border)', color: 'var(--text)', fontSize: 14, lineHeight: 1.6,
+      }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Le formulaire de vérification n’a pas pu s’ouvrir.</div>
+        <div style={{ color: 'var(--text-2)', marginBottom: 14 }}>
+          Stripe, notre partenaire de paiement, n’a pas répondu. Réessayez dans un instant ; si cela persiste,
+          écrivez-nous à support@digitip.app et nous finaliserons l’activation avec vous.
+        </div>
+        <button
+          type="button"
+          onClick={() => { setFailed(false); setAttempt((n) => n + 1); }}
+          style={{
+            padding: '10px 18px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #E57A97, #EC97B0)', color: '#fff', fontWeight: 700, fontSize: 14,
+          }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <ConnectComponentsProvider connectInstance={instance}>
