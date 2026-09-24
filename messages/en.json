@@ -49,7 +49,8 @@
     "errTaxAddress": "We could not calculate VAT for this address. Check the country and postcode, or try again in a moment.",
     "errEmailRequired": "Please enter an email: it is required to send your invoice and setup link.",
     "errAddressRequired": "Enter your shipping address so we can calculate VAT.",
-    "errPaymentFailed": "The payment failed."
+    "errPaymentFailed": "The payment failed.",
+    "errPromoApply": "Could not apply the code right now. Please try again."
   },
   "metadata": {
     "title": "Digitip: cashless tips via NFC | digitip.app",
