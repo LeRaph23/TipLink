@@ -20,7 +20,8 @@ import { trackEvent } from '@/lib/analytics';
 interface WizardState {
   nfcCodes: string[];
   establishmentName: string;
-  businessType: 'restaurant' | 'beauty';
+  /** Empty until the manager picks (or Google tells us) their trade. */
+  businessType: 'restaurant' | 'beauty' | '';
   address: string;
   googlePlaceId: string;
   googleReviewUrl: string;
@@ -68,9 +69,9 @@ const EXPRESS_STEPS: ExpressStep[] = ['google-review', 'confirm', 'admin-name', 
  */
 const STORAGE_PREFIX = 'digitip.onboarding.';
 
-function readStored(mode: string): Partial<WizardState> | null {
+function readStored(key: string): Partial<WizardState> | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_PREFIX + mode);
+    const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
     return raw ? (JSON.parse(raw) as Partial<WizardState>) : null;
   } catch {
     // Private mode, blocked site data, corrupt JSON. An empty wizard is the
@@ -175,6 +176,11 @@ export function OnboardingWizard(props: Props) {
   const stepIndex = Math.max(0, steps.indexOf(requestedStep as never));
   const currentStep = steps[stepIndex] as ScanStep | AuthStep;
 
+  // Saved answers belong to one run: this tag, or this group. Keyed on the mode
+  // alone, a second account set up on the same device found the previous
+  // one's answers already filled in (fifth QA run).
+  const storageKey = `${mode}.${mode === 'scan' ? props.initialCode : props.groupId ?? 'self'}`;
+
   const [state, dispatch] = useReducer(
     (s: WizardState, patch: Partial<WizardState>) => ({ ...s, ...patch }),
     undefined,
@@ -184,10 +190,10 @@ export function OnboardingWizard(props: Props) {
       const base: WizardState = {
         nfcCodes: mode === 'scan' ? [props.initialCode] : [],
         establishmentName: props.establishment?.name ?? '',
-        // Every real creation path used to hardcode 'beauty', so the column said
-        // "beauty" for every establishment in production regardless of trade.
-        // Defaulted rather than left null because the column is NOT NULL.
-        businessType: 'beauty',
+        // Not pre-selected: a default (it used to be 'beauty') showed a
+        // restaurant owner "Coiffure" already ticked (fifth QA run). Google's
+        // listing fills it when known; otherwise the manager picks.
+        businessType: '',
         address: props.establishment?.address ?? '',
         googlePlaceId: '',
         googleReviewUrl: '',
@@ -195,7 +201,7 @@ export function OnboardingWizard(props: Props) {
         adminEmail: mode === 'express' ? props.initialEmail : '',
       };
       if (typeof window === 'undefined') return base;
-      const stored = readStored(mode);
+      const stored = readStored(storageKey);
       // The tag comes from the URL the sticker points at, and the express
       // token is bound to its own group: neither may be restored from a
       // previous run in this browser.
@@ -217,11 +223,11 @@ export function OnboardingWizard(props: Props) {
   useEffect(() => {
     if (done) return;
     try {
-      window.localStorage.setItem(STORAGE_PREFIX + mode, JSON.stringify(state));
+      window.localStorage.setItem(STORAGE_PREFIX + storageKey, JSON.stringify(state));
     } catch {
       // Storage full or blocked. The wizard still works in one sitting.
     }
-  }, [state, mode, done]);
+  }, [state, storageKey, done]);
 
   // Provisioning and finishing are one click, but they are two round-trips: if
   // the second fails, a retry must not create a second group, and it must still
@@ -265,7 +271,7 @@ export function OnboardingWizard(props: Props) {
         case 'google-review': return true;
         // The trade always has a value, so the two free-text fields decide.
         case 'confirm':
-          return state.establishmentName.trim().length > 0 && state.address.trim().length > 0;
+          return state.establishmentName.trim().length > 0 && state.address.trim().length > 0 && state.businessType !== '';
         case 'admin-name': return state.adminFullName.trim().length > 0;
         // The step gates itself: the finish button only appears once the code
         // has been verified, so navigation never has to hold it shut.
@@ -353,7 +359,7 @@ export function OnboardingWizard(props: Props) {
       // The run is over; leaving the answers behind would prefill the next
       // establishment created from this browser with the previous one's name.
       try {
-        window.localStorage.removeItem(STORAGE_PREFIX + mode);
+        window.localStorage.removeItem(STORAGE_PREFIX + storageKey);
       } catch {
         // Nothing was written in the first place.
       }
@@ -394,6 +400,10 @@ export function OnboardingWizard(props: Props) {
   async function provision(): Promise<
     { establishmentId: string; onboardingToken?: string } | { error: string }
   > {
+    // The confirm step cannot be passed without a trade; this narrows the type.
+    const businessType = state.businessType;
+    if (!businessType) return { error: tAuth('errorGeneric') };
+
     if (mode === 'scan') {
       const userId = await currentUserId();
       if (!userId) return { error: tAuth('errorGeneric') };
@@ -407,7 +417,7 @@ export function OnboardingWizard(props: Props) {
         googlePlaceId: state.googlePlaceId || undefined,
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
-        businessType: state.businessType,
+        businessType,
         locale: locale as 'fr' | 'en',
       });
       return 'error' in result
@@ -427,7 +437,7 @@ export function OnboardingWizard(props: Props) {
         googlePlaceId: state.googlePlaceId || undefined,
         googleReviewUrl: state.googleReviewUrl || undefined,
         adminFullName: state.adminFullName,
-        businessType: state.businessType,
+        businessType,
         locale: locale as 'fr' | 'en',
         userId,
       });
@@ -442,7 +452,7 @@ export function OnboardingWizard(props: Props) {
       googlePlaceId: state.googlePlaceId || undefined,
       googleReviewUrl: state.googleReviewUrl || undefined,
       adminFullName: state.adminFullName,
-      businessType: state.businessType,
+      businessType,
       locale: locale as 'fr' | 'en',
     });
     return 'error' in result

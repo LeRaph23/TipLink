@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   csvCell,
+  parisDateTime,
   journalCsv,
   monthPeriod,
   previousMonth,
@@ -22,7 +23,8 @@ describe('csvCell', () => {
   });
 
   it('quotes and escapes anything that would break the column layout', () => {
-    expect(csvCell('Dupont, Marie')).toBe('"Dupont, Marie"');
+    expect(csvCell('Dupont; Marie')).toBe('"Dupont; Marie"');
+    expect(csvCell('Dupont, Marie')).toBe('Dupont, Marie');
     expect(csvCell('L\'"Atelier"')).toBe('"L\'""Atelier"""');
     expect(csvCell('line\nbreak')).toBe('"line\nbreak"');
   });
@@ -48,10 +50,10 @@ describe('summaryCsv', () => {
     });
 
     const lines = csv.replace('﻿', '').trim().split('\r\n');
-    expect(lines[0]).toBe('Employe,Periode,Nb pourboires,Montant a verser (EUR)');
-    expect(lines[1]).toBe('Marie Dupont,2026-07,12,45.30');
-    // The comma in the name must not become a column separator.
-    expect(lines[2]).toBe('"Léa, Martin",2026-07,3,9.00');
+    // French Excel: semicolons and decimal commas.
+    expect(lines[0]).toBe('Employé;Période;Nombre de pourboires;Montant à verser (€)');
+    expect(lines[1]).toBe('Marie Dupont;2026-07;12;45,30');
+    expect(lines[2]).toBe('Léa, Martin;2026-07;3;9,00');
   });
 
   it('renders a header even with nothing to report', () => {
@@ -69,6 +71,7 @@ describe('journalCsv', () => {
     const csv = journalCsv([
       {
         date: '2026-07-14',
+        time: '21:05',
         staffName: 'Marie',
         tipCents: 250,
         feeCents: 50,
@@ -78,7 +81,14 @@ describe('journalCsv', () => {
     ]);
     const lines = csv.replace('﻿', '').trim().split('\r\n');
     // 5,00 € tip split in two, 0,50 € of fee, 5,50 € debited.
-    expect(lines[1]).toBe('2026-07-14,Marie,2.50,0.50,5.50,txn-1');
+    expect(lines[1]).toBe('2026-07-14;21:05;Marie;2,50;0,50;5,50;txn-1');
+  });
+});
+
+describe('parisDateTime', () => {
+  it('shows the time on a French clock, summer and winter', () => {
+    expect(parisDateTime('2026-09-24T13:44:00Z')).toEqual({ date: '2026-09-24', time: '15:44' });
+    expect(parisDateTime('2026-01-31T23:30:00Z')).toEqual({ date: '2026-02-01', time: '00:30' });
   });
 });
 
