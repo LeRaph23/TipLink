@@ -150,6 +150,8 @@ export async function POST(request: NextRequest) {
       email: user.email ?? undefined,
       name: group.legal_name ?? undefined,
       metadata: { group_id: group.id },
+      // Stripe's own emails (invoices, receipts, credit notes) default to English.
+      preferred_locales: [body.locale === 'en' ? 'en' : 'fr'],
       ...(group.vat_number
         ? {
             tax_id_data: [{ type: 'eu_vat', value: group.vat_number }],

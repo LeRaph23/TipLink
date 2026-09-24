@@ -1270,6 +1270,8 @@ async function handlePackExpressPaid(
               }
             : {}),
           metadata: { source: 'pack-express', payment_intent: intent.id },
+          // Stripe's own emails (invoices, receipts, credit notes) default to English.
+          preferred_locales: [locale],
         },
         { idempotencyKey: `pack-express-customer:${intent.id}` },
       );

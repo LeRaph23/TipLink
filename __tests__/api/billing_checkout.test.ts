@@ -185,6 +185,29 @@ describe('POST /api/billing/checkout', () => {
     expect(call.metadata?.pack).toBe('duo');
   });
 
+  it('creates the Stripe customer in French so its invoices and receipts are too', async () => {
+    const { createClient } = await import('@/lib/supabase/server');
+    const { createServiceClient } = await import('@/lib/supabase/service');
+    const { stripe } = await import('@/lib/stripe/client');
+
+    vi.mocked(createClient).mockResolvedValue(
+      serverClientMock({ id: 'u1', email: 'owner@acme.test' }) as never
+    );
+    vi.mocked(createServiceClient).mockReturnValue(
+      serviceClientMock({ existingGroup: { id: 'grp-1', stripe_customer_id: null } }) as never
+    );
+    await primePricingMocks();
+    vi.mocked(stripe.customers.create).mockResolvedValue({ id: 'cus_new' } as never);
+
+    const { POST } = await import('@/app/api/billing/checkout/route');
+    const res = await POST(
+      buildRequest({ pack: 'duo', locale: 'fr', business: validBusiness }, '8.8.8.8')
+    );
+
+    expect(res.status).toBe(200);
+    expect(vi.mocked(stripe.customers.create).mock.calls[0][0]?.preferred_locales).toEqual(['fr']);
+  });
+
   it('returns 400 when the shipping address is missing', async () => {
     const { createClient } = await import('@/lib/supabase/server');
     const { createServiceClient } = await import('@/lib/supabase/service');
