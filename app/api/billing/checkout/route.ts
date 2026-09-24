@@ -194,6 +194,11 @@ export async function POST(request: NextRequest) {
         discountAmount = Math.floor((baseAmount * promoRow.percentage_off) / 100);
       }
     }
+    // A code the buyer typed and we then silently dropped would show up as a
+    // surprise on the card statement: refuse, so the review step can say so.
+    if (!promoCodeStr) {
+      return NextResponse.json({ error: 'promo_invalid' }, { status: 400 });
+    }
   }
 
   const htAmount = Math.max(0, baseAmount - discountAmount);

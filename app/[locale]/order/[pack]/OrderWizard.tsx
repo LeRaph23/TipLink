@@ -125,6 +125,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     taxAmount: number;
     totalAmount: number;
     taxRatePercent: number | null;
+    discountAmount: number;
+    promoCode: string | null;
   } | null>(null);
 
   const currentStep = parseStep(searchParams.get('step'));
@@ -170,6 +172,15 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     params.set('step', s);
     router.replace(`/order/${pack}?${params.toString()}`, { scroll: false });
   }, [pack, router, searchParams]);
+
+  // A step past what the order allows is never shown: Back after paying lands
+  // on ?step=review with the order already cleared, and a reload restores the
+  // URL but not the verified code. Send the buyer to the first step to fill.
+  const reachable = maxReachable(state, activeSteps, otpVerified || isAuthenticated);
+  useEffect(() => {
+    if (!hydrated || payment) return;
+    if (activeSteps.indexOf(currentStep) > activeSteps.indexOf(reachable)) goToStep(reachable);
+  }, [hydrated, payment, currentStep, reachable, activeSteps, goToStep]);
 
   // If pack switch in step 1, update URL pack segment
   const handlePackChange = useCallback((p: PackId) => {
@@ -260,7 +271,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         console.error('[order] checkout failed', res.status, data.error);
-        setError('checkout_failed');
+        setError(data.error === 'promo_invalid' ? 'promo_invalid' : 'checkout_failed');
         setSubmitting(false);
         return;
       }
@@ -271,6 +282,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         htAmount?: number;
         taxAmount?: number;
         taxRatePercent?: number | null;
+        discountAmount?: number;
+        promoCode?: string | null;
       };
       if (!data.clientSecret) {
         setError('checkout_failed::missing_secret');
@@ -285,6 +298,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         taxAmount: data.taxAmount ?? 0,
         totalAmount: data.amount ?? 0,
         taxRatePercent: data.taxRatePercent ?? null,
+        discountAmount: data.discountAmount ?? 0,
+        promoCode: data.promoCode ?? null,
       });
       setSubmitting(false);
     } catch (e) {
@@ -414,12 +429,22 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
           taxAmount={payment.taxAmount}
           totalAmount={payment.totalAmount}
           taxRatePercent={payment.taxRatePercent}
+          discountAmount={payment.discountAmount}
+          promoCode={payment.promoCode}
         />
       </OrderLayout>
     );
   }
 
   const showSummary = currentStep !== 'pack';
+
+  if (!hydrated) {
+    return (
+      <div aria-busy="true" style={{ minHeight: '60vh', display: 'grid', placeItems: 'center', color: 'var(--text-3)', fontSize: 14 }}>
+        {locale === 'fr' ? 'Chargement de votre commande…' : 'Loading your order…'}
+      </div>
+    );
+  }
 
   return (
     <OrderLayout

@@ -108,7 +108,10 @@ export function EmailOtpForm({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {phase === 'email' ? (
         <>
-          <div>
+          {/* A locked address is already on screen in the caller's own field;
+              a second, read-only copy of it only made people wonder which one
+              to fill in. */}
+          <div hidden={lockEmail}>
             <label style={labelStyle} htmlFor="otp-email">{t('emailAddress')}</label>
             <input
               id="otp-email"

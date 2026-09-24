@@ -621,6 +621,7 @@
       "billing_invalid": "Adresse de facturation incomplète.",
       "full_name_required": "Merci d'indiquer votre nom.",
       "email_invalid": "Adresse email invalide.",
+      "promo_invalid": "Ce code promo est invalide ou expiré. Corrigez-le ou retirez-le pour continuer.",
       "checkout_failed": "Le paiement n'a pas pu aboutir. Réessayez dans un instant.",
       "code_required": "Confirmez votre adresse email avec le code reçu avant de continuer."
     }
