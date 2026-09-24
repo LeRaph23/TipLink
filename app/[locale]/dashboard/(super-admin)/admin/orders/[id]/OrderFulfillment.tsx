@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES } from '@/lib/admin/email-attachments';
 import {
   fulfillOrder,
   markOrderShipped,
@@ -83,6 +84,10 @@ export function OrderFulfillment({
   const [cancelEmail, setCancelEmail] = useState(true);
   const [customSubject, setCustomSubject] = useState('Update concernant votre commande Digitip');
   const [customBody, setCustomBody] = useState('');
+  const [customFiles, setCustomFiles] = useState<File[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const filesBytes = customFiles.reduce((sum, f) => sum + f.size, 0);
+  const filesTooBig = customFiles.length > MAX_ATTACHMENTS || filesBytes > MAX_ATTACHMENTS_BYTES;
   const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   const remaining = quantity - encodedCount;
@@ -339,16 +344,65 @@ export function OrderFulfillment({
             rows={5}
             style={{ ...input, fontFamily: 'var(--font)', resize: 'vertical' }}
           />
+          <div style={{ display: 'grid', gap: 6 }}>
+            <input
+              ref={fileInput}
+              type="file"
+              multiple
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                // Picking again adds to the list rather than replacing it.
+                setCustomFiles((prev) => [...prev, ...picked.filter((f) => !prev.some((p) => p.name === f.name && p.size === f.size))]);
+                e.target.value = '';
+              }}
+            />
+            <div>
+              <button type="button" style={secondaryBtn} disabled={pending} onClick={() => fileInput.current?.click()}>
+                Joindre des fichiers
+              </button>
+              <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8 }}>
+                PDF, image, TXT ou CSV · {MAX_ATTACHMENTS} fichiers et 4 Mo max
+              </span>
+            </div>
+            {customFiles.map((f) => (
+              <div key={`${f.name}-${f.size}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                <span>📎 {f.name}</span>
+                <span style={{ color: 'var(--text-3)', fontSize: 11 }}>{Math.max(1, Math.round(f.size / 1024))} Ko</span>
+                <button
+                  type="button"
+                  aria-label={`Retirer ${f.name}`}
+                  style={{ ...secondaryBtn, padding: '2px 8px' }}
+                  disabled={pending}
+                  onClick={() => setCustomFiles((prev) => prev.filter((p) => p !== f))}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {filesTooBig && (
+              <div style={{ fontSize: 12, color: 'var(--danger, #dc2626)' }}>
+                Trop de fichiers ou trop lourds : {MAX_ATTACHMENTS} fichiers et 4 Mo au total maximum.
+              </div>
+            )}
+          </div>
           <div>
             <button
               type="button"
               style={primaryBtn}
-              disabled={pending || customBody.trim().length < 5 || customSubject.trim().length < 3}
+              disabled={pending || filesTooBig || customBody.trim().length < 5 || customSubject.trim().length < 3}
               onClick={() => {
                 startTransition(async () => {
-                  const res = await sendCustomOrderEmail(orderId, customSubject, customBody);
+                  const files = new FormData();
+                  for (const f of customFiles) files.append('files', f);
+                  const res = await sendCustomOrderEmail(orderId, customSubject, customBody, files);
                   if (!res.ok) flash(res.error);
-                  else { setCustomBody(''); notify(`Email envoyé à ${res.data.to}`); }
+                  else {
+                    setCustomBody('');
+                    setCustomFiles([]);
+                    notify(`Email envoyé à ${res.data.to}${customFiles.length ? ` (${customFiles.length} pièce${customFiles.length > 1 ? 's' : ''} jointe${customFiles.length > 1 ? 's' : ''})` : ''}`);
+                  }
                 });
               }}
             >

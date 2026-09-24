@@ -59,6 +59,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Admin emails to customers can carry attachments (lib/admin/email-attachments.ts
+    // caps them at 4 MB); the 1 MB default would reject an invoice plus a photo.
+    serverActions: { bodySizeLimit: '5mb' },
+  },
   async redirects() {
     return [
       // `/pricing` is an English segment on a French-primary site, and French

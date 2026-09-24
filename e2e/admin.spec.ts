@@ -34,3 +34,33 @@ test('the status override follows the order after it ships', async ({ page }) =>
   await page.getByRole('button', { name: 'Marquer comme expédiée' }).click();
   await expect(override).toHaveValue('shipped');
 });
+
+test('a free message to the customer carries the attached files', async ({ page }) => {
+  const { group_id } = seed();
+  const [order] = await admin<{ id: string }[]>('/rest/v1/smarttag_orders', {
+    method: 'POST',
+    body: { group_id, pack: 'solo', quantity: 1, status: 'shipped' },
+  });
+
+  await login(page, 'admin@tiplink.dev');
+  await page.goto(`/fr/dashboard/admin/orders/${order.id}`);
+  await page.getByPlaceholder(/Bonjour, on a pris/).fill('Voici votre facture corrigée.');
+
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Joindre des fichiers' }).click();
+  await (await chooser).setFiles([
+    { name: 'Invoice-0002.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 facture') },
+    { name: 'Avoir-01.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 avoir') },
+  ]);
+  await expect(page.getByText('📎 Invoice-0002.pdf')).toBeVisible();
+  await page.getByRole('button', { name: 'Retirer Avoir-01.pdf' }).click();
+
+  await page.getByRole('button', { name: 'Envoyer le message' }).click();
+  await expect(page.getByText(/Email envoyé à .* \(1 pièce jointe\)/)).toBeVisible();
+
+  // The server action logs what it actually received.
+  const logs = await admin<{ metadata: { attachments?: string[] } }[]>(
+    `/rest/v1/admin_audit_log?action=eq.orders.custom_email&metadata->>orderId=eq.${order.id}&select=metadata`
+  );
+  expect(logs.map((l) => l.metadata.attachments)).toEqual([['Invoice-0002.pdf']]);
+});

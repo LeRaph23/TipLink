@@ -13,6 +13,7 @@ import {
   normalizeTrackingNumber,
 } from '@/lib/email';
 import { stripe } from '@/lib/stripe/client';
+import { readAttachments } from '@/lib/admin/email-attachments';
 import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { voidAmbassadorSaleForOrder } from '@/lib/ambassadeur/sales';
 import { voidCommercialSaleForOrder } from '@/lib/commercial/sales';
@@ -543,10 +544,16 @@ export async function resendOrderEmail(
 export async function sendCustomOrderEmail(
   orderId: string,
   subject: string,
-  body: string
+  body: string,
+  files?: FormData
 ): Promise<Result<{ to: string }>> {
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
+
+  const read = await readAttachments(
+    (files?.getAll('files') ?? []).filter((f): f is File => f instanceof File)
+  );
+  if (!read.ok) return { ok: false, error: read.error };
 
   const cleanSubject = subject.trim();
   const cleanBody = body.trim();
@@ -567,13 +574,19 @@ export async function sendCustomOrderEmail(
       subject: cleanSubject,
       bodyText: cleanBody,
       locale: recipient.locale,
+      attachments: read.attachments,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Email failed';
     return { ok: false, error: msg };
   }
 
-  await logAdminAction('orders.custom_email', { orderId, subjectLength: cleanSubject.length, bodyLength: cleanBody.length });
+  await logAdminAction('orders.custom_email', {
+    orderId,
+    subjectLength: cleanSubject.length,
+    bodyLength: cleanBody.length,
+    attachments: read.attachments.map((a) => a.filename),
+  });
   return { ok: true, data: { to: recipient.email } };
 }
 

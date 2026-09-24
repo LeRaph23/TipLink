@@ -954,10 +954,11 @@ export async function sendOrderCustomNote(opts: {
   subject: string;
   bodyText: string;
   locale?: string;
+  attachments?: { filename: string; content: Buffer }[];
 }): Promise<void> {
   if (!resend) return;
 
-  const { to, orderId, subject, bodyText, locale = 'fr' } = opts;
+  const { to, orderId, subject, bodyText, locale = 'fr', attachments = [] } = opts;
   const isFr = locale === 'fr';
   const shortRef = orderId.slice(0, 8).toUpperCase();
   const refLabel = isFr ? 'Référence commande' : 'Order reference';
@@ -987,6 +988,7 @@ export async function sendOrderCustomNote(opts: {
     <tr><td style="padding:0 32px 32px">
       <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${signature}</p>
     </td></tr>`),
+    ...(attachments.length ? { attachments } : {}),
   });
 }
 
