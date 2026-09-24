@@ -45,7 +45,7 @@ export function StepAccount({
           type="email" value={value.email}
           onChange={(e) => onChange({ ...value, email: e.target.value.trim() })}
           required autoComplete="email"
-          placeholder="you@example.com"
+          placeholder="vous@exemple.fr"
           style={inputStyle(f('email'))}
           onFocus={() => setFocus('email')} onBlur={() => setFocus(null)}
         />

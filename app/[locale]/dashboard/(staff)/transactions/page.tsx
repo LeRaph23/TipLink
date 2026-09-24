@@ -56,12 +56,12 @@ export default async function StaffTransactionsPage({
   const { data: allocations } = staffProfile
     ? await supabase.from('tip_allocations').select(ALLOC_COLUMNS)
         .eq('staff_id', staffProfile.id)
-        .order('created_at', { ascending: false })
+        .order('allocated_at', { ascending: false, nullsFirst: false })
         .limit(100)
     : teamEstablishmentIds.length > 0
       ? await supabase.from('tip_allocations').select(ALLOC_COLUMNS)
           .in('transactions.establishment_id', teamEstablishmentIds)
-          .order('created_at', { ascending: false })
+          .order('allocated_at', { ascending: false, nullsFirst: false })
           .limit(100)
       : { data: null };
 

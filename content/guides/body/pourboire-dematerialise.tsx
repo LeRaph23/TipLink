@@ -88,14 +88,10 @@ export default function Body() {
       <h2>Comment Digitip se situe</h2>
       <p>
         Digitip est une plaque NFC avec QR code de secours, achetée une fois, sans
-        abonnement. Le client choisit le bénéficiaire, la somme part sur le compte bancaire
-        de cette personne. La plateforme prélève 5 % sur les pourboires encaissés, plus des
-        frais de service fixes par transaction ; sans pourboire, rien n&apos;est dû.
+        abonnement. Le client choisit à qui il laisse son pourboire ; la somme est versée sur le compte de l&apos;établissement, qui la redistribue avec la paie. Rien n&apos;est prélevé sur le pourboire : le client ajoute des frais de service (0,25 € + 5 %) ; sans pourboire, rien n&apos;est dû.
       </p>
       <p>
-        Sur un pourboire de 10 €, le client règle 10,25 € : 9,50 € reviennent au
-        bénéficiaire, 0,45 € couvrent les frais de paiement Stripe, 0,30 € reviennent à
-        Digitip.
+        Sur un pourboire de 10 €, le client règle 10,75 € : les 10 € sont versés à l&apos;établissement, qui les redistribue à l&apos;équipe ; sur les 0,75 € de frais, environ 0,41 € couvrent les frais de paiement Stripe et 0,34 € reviennent à Digitip.
       </p>
 
       <h2>Quand ça ne vaut pas le coup</h2>

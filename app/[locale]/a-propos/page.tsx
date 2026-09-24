@@ -125,11 +125,7 @@ export default async function AboutPage({
 
             <h2>Comment nous gagnons de l&apos;argent</h2>
             <p>
-              La plaque est vendue une fois, sans abonnement. La plateforme prélève ensuite
-              5 % sur les pourboires effectivement encaissés, plus des frais de service
-              fixes par transaction. Sans pourboire, rien n&apos;est dû. Sur un pourboire
-              de 10 €, le client règle 10,25 € : 9,50 € reviennent au bénéficiaire, 0,45 €
-              couvrent les frais de paiement Stripe, 0,30 € reviennent à Digitip.
+              La plaque est vendue une fois, sans abonnement. Nous ne prélevons rien sur les pourboires : la personne qui laisse un pourboire règle en plus des frais de service (0,25 € + 5 % du pourboire). Sans pourboire, rien n&apos;est dû. Sur un pourboire de 10 €, le client règle 10,75 € : les 10 € sont versés à l&apos;établissement, qui les redistribue à l&apos;équipe ; sur les 0,75 € de frais, environ 0,41 € couvrent les frais de paiement Stripe et 0,34 € reviennent à Digitip.
             </p>
 
             <h2>Nous écrire</h2>

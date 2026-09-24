@@ -180,7 +180,7 @@
     "title": "Mentions légales",
     "intro": "Conformément aux articles 6-III et 19 de la loi n° 2004-575 du 21 juin 2004 pour la Confiance dans l'Économie Numérique (LCEN), les informations suivantes sont portées à la connaissance des utilisateurs du site digitip.app.",
     "s1Title": "1. Éditeur du site",
-    "s1Body": "Le site digitip.app est édité par la société YUZU LABS, SAS au capital de 100 €, immatriculée au Registre National des Entreprises (RNE) sous le numéro SIREN 994 879 013. SIRET siège : 994 879 013 00013. Siège social : 11 rue de Lorraine, 68490 Petit-Landau, France. Code APE/NAF : 62.01Z, Programmation informatique. N° TVA intracommunautaire : FR13 994 879 013. Contact : contact@digitip.app.",
+    "s1Body": "Le site digitip.app est édité par la société YUZU LABS, SAS au capital de 100 €, immatriculée au RCS de Mulhouse et au Registre national des entreprises sous le numéro SIREN 994 879 013. SIRET siège : 994 879 013 00013. Siège social : 11 rue de Lorraine, 68490 Petit-Landau, France. Code APE/NAF : 62.01Z, Programmation informatique. N° TVA intracommunautaire : FR13 994 879 013. Contact : contact@digitip.app.",
     "s2Title": "2. Directeur de la publication",
     "s2Body": "Raphaël Meyer. Contact : contact@digitip.app.",
     "s3Title": "3. Hébergement",
@@ -198,13 +198,13 @@
     "title": "Conditions Générales de Vente",
     "intro": "Les présentes Conditions Générales de Vente (CGV) régissent toute commande de produits et services passée sur digitip.app. En validant une commande, l'acheteur accepte sans réserve les présentes CGV. Vendeur : YUZU LABS SAS, 11 rue de Lorraine, 68490 Petit-Landau, SIREN 994 879 013, contact@digitip.app.",
     "s1Title": "1. Produits et services",
-    "s1Body": "YUZU LABS SAS commercialise sous la marque Digitip : (1) des plaques époxy NFC pré-programmées (« SmartTags ») permettant à des clients finaux de verser des pourboires sans contact, et (2) l'accès à la plateforme logicielle Digitip (tableau de bord, gestion du personnel, statistiques). Les caractéristiques essentielles de chaque produit sont détaillées sur les pages de commande.",
+    "s1Body": "YUZU LABS SAS commercialise sous la marque Digitip : (1) des plaques époxy NFC pré-programmées (« SmartTags ») permettant à des clients finaux de verser des pourboires sans contact, et (2) l'accès à la plateforme logicielle Digitip (tableau de bord, gestion du personnel, statistiques). Les caractéristiques essentielles de chaque produit sont détaillées sur les pages de commande. L'abonnement Digitip Pro, mensuel ou annuel, est payable d'avance et reconduit tacitement à chaque échéance. Il peut être résilié à tout moment depuis l'espace Facturation : la résiliation prend effet à la fin de la période déjà payée, sans remboursement au prorata, et le compte repasse alors à l'offre gratuite. Une éventuelle période d'essai gratuite est indiquée avant la souscription ; sans résiliation avant son terme, l'abonnement démarre à son issue.",
     "s2Title": "2. Prix",
     "s2Body": "Les prix sont affichés en euros hors taxes (HT). La TVA applicable est calculée par Stripe à l'étape de paiement selon votre pays de résidence fiscale. YUZU LABS SAS se réserve le droit de modifier ses tarifs à tout moment ; toute commande est facturée au prix affiché au moment de sa validation. Les frais de livraison sont offerts dans toute l'Europe.",
     "s3Title": "3. Commandes",
     "s3Body": "Toute commande passée sur digitip.app vaut acceptation des présentes CGV, des prix et des descriptions des produits commandés. YUZU LABS SAS se réserve le droit de refuser ou d'annuler toute commande en cas de suspicion de fraude, de litige antérieur non résolu ou d'indisponibilité du produit. Un email de confirmation est adressé dans les 24 heures suivant la validation.",
     "s4Title": "4. Paiement",
-    "s4Body": "Le paiement s'effectue intégralement en ligne au moment de la commande via Stripe (carte bancaire, Apple Pay, Google Pay). Les données de paiement sont collectées et traitées exclusivement par Stripe : les serveurs de YUZU LABS SAS ne voient ni ne stockent aucune donnée bancaire. En cas d'échec du paiement, la commande est automatiquement annulée.",
+    "s4Body": "Le paiement s'effectue intégralement en ligne au moment de la commande via Stripe (carte bancaire, Apple Pay, Google Pay). Les données de paiement sont collectées et traitées exclusivement par Stripe : les serveurs de YUZU LABS SAS ne voient ni ne stockent aucune donnée bancaire. En cas d'échec du paiement, la commande est automatiquement annulée. Pour les acheteurs professionnels, toute somme non réglée à son échéance entraîne de plein droit des pénalités de retard au taux de trois fois le taux d'intérêt légal et une indemnité forfaitaire pour frais de recouvrement de 40 € (article L441-10 du Code de commerce). Aucun escompte n'est accordé pour paiement anticipé.",
     "s5Title": "5. Livraison",
     "s5Body": "Les SmartTags sont expédiés depuis la France dans un délai de 3 à 5 jours ouvrés après confirmation du paiement. La livraison est offerte dans toute l'Europe. Un email de suivi est transmis dès l'expédition. YUZU LABS SAS ne saurait être tenue responsable des retards imputables au transporteur, à un cas de force majeure, ou à des informations de livraison erronées fournies par l'acheteur.",
     "s6Title": "6. Droit de rétractation",
@@ -214,11 +214,11 @@
     "s8Title": "8. Service après-vente",
     "s8Body": "Pour toute demande SAV, contactez contact@digitip.app en précisant votre numéro de commande. YUZU LABS SAS s'engage à répondre dans un délai de 48 heures ouvrées et à traiter tout remplacement garanti dans les 5 jours ouvrés suivant la confirmation.",
     "s9Title": "9. Frais de service sur les pourboires",
-    "s9Body": "L'utilisation de la plateforme Digitip pour encaisser des pourboires ne donne lieu à aucun prélèvement sur les pourboires collectés : le bénéficiaire perçoit l'intégralité du montant choisi par le client. Les frais de service (une part fixe de 0,25 € par transaction et une part variable de 5 % du pourboire) sont ajoutés au montant du pourboire et réglés par la personne qui le laisse, qui en est informée du montant exact avant de valider son paiement. Ces frais couvrent le traitement des paiements (Stripe), l'hébergement de l'infrastructure, la lutte contre la fraude et le maintien du service. En l'absence de pourboire, aucun frais n'est dû.",
+    "s9Body": "L'utilisation de la plateforme Digitip pour encaisser des pourboires ne donne lieu à aucun prélèvement sur les pourboires collectés : l'intégralité du montant choisi par le client est versée sur le compte de l'établissement bénéficiaire. Les frais de service (une part fixe de 0,25 € par transaction et une part variable de 5 % du pourboire) sont ajoutés au montant du pourboire et réglés par la personne qui le laisse, qui est informée de leur montant exact avant de valider son paiement. Ces frais couvrent le traitement des paiements (Stripe), l'hébergement de l'infrastructure, la lutte contre la fraude et le maintien du service. En l'absence de pourboire, aucun frais n'est dû.",
     "s10Title": "10. Responsabilité",
     "s10Body": "YUZU LABS SAS ne saurait être tenue responsable des dommages indirects (manque à gagner, perte de clientèle, perte de données) liés à l'utilisation ou à l'impossibilité d'utilisation des SmartTags ou de la plateforme. La responsabilité de YUZU LABS SAS est limitée au montant effectivement payé par l'acheteur au cours des 12 mois précédant le dommage.",
     "s11Title": "11. Médiation et litiges",
-    "s11Body": "En cas de litige non résolu amiablement, tout consommateur peut recourir gratuitement à un médiateur agréé : CM2C, Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris (www.cm2c.net). La Commission européenne met également à disposition une plateforme de résolution en ligne des litiges : ec.europa.eu/consumers/odr. Les litiges entre professionnels relèvent de la compétence exclusive des tribunaux du ressort de la Cour d'appel de Colmar, sauf disposition impérative contraire. Les présentes CGV sont régies par le droit français."
+    "s11Body": "En cas de litige non résolu amiablement, tout consommateur peut recourir gratuitement à un médiateur agréé : CM2C, Centre de la Médiation de la Consommation de Conciliateurs de Justice, 14 rue Saint-Jean, 75017 Paris (www.cm2c.net). Les litiges entre professionnels relèvent de la compétence exclusive des tribunaux du ressort de la Cour d'appel de Colmar, sauf disposition impérative contraire. Les présentes CGV sont régies par le droit français."
   },
   "orderSuccess": {
     "title": "Commande confirmée !",
@@ -229,7 +229,15 @@
       "s1": "Paiement reçu",
       "s2": "Programmation des SmartTags",
       "s3": "Expédition sous 3 jours ouvrés"
-    }
+    },
+    "discount": "Remise",
+    "totalHt": "Total HT",
+    "vat": "TVA",
+    "totalTtc": "Total payé TTC",
+    "orderRef": "Commande n° {ref}",
+    "ctaSetup": "Configurer mon espace maintenant →",
+    "ctaDashboard": "Accéder à mon espace →",
+    "preparing": "Votre espace est en cours de préparation. Rechargez cette page dans quelques secondes pour le configurer, ou utilisez le lien reçu par e-mail."
   },
   "landing": {
     "promoBanner": "OFFRE DE LANCEMENT : Livraison offerte en Europe",
@@ -251,7 +259,7 @@
       "cta": "Commander maintenant",
       "b1": "Pourboire nominatif : le client choisit qui récompenser",
       "b2": "Payez la plaque une fois. Les pourboires, eux, n'ont jamais d'abonnement.",
-      "b3": "Versé directement sur votre compte bancaire via Stripe",
+      "b3": "Versé sur le compte de votre établissement via Stripe",
       "b4": "Zéro app, zéro cash : un simple tap ou QR code"
     },
     "product": {
@@ -266,7 +274,7 @@
       "packSLabel": "1 emplacement",
       "packMLabel": "2 emplacements",
       "packLLabel": "3+ emplacements",
-      "bullet1": "Paiement unique, 0 frais mensuel sur vos pourboires",
+      "bullet1": "Paiement unique, aucun frais mensuel sur vos pourboires",
       "bullet2": "0 % prélevé sur les pourboires",
       "bullet3": "Résine époxy haute densité, conçue pour durer",
       "bullet4": "Entreprise française",
@@ -392,7 +400,7 @@
       "g2body": "Un SmartTag cassé ou défectueux ? On vous en envoie un neuf. Gratuitement. À vie.",
       "g3title": "Livraison offerte",
       "g3body": "Frais de port offerts sur toute l'Europe, quel que soit le pack commandé.",
-      "g4title": "0 frais mensuel sur vos pourboires",
+      "g4title": "Aucun frais mensuel sur vos pourboires",
       "g4body": "Vous payez la plaque une fois, puis vous encaissez à vie. Les pourboires ne demandent jamais d'abonnement."
     },
     "footer": {
@@ -516,7 +524,7 @@
       "stepTitle": "Informations entreprise",
       "stepSubtitle": "Nécessaire pour la facturation. Modifiable plus tard.",
       "legalName": "Raison sociale",
-      "legalNamePlaceholder": "Acme Hospitality SAS",
+      "legalNamePlaceholder": "SAS Le Bistrot",
       "vatNumber": "Numéro de TVA (optionnel)",
       "vatHint": "Entreprises UE : indiquez votre TVA pour l'auto-liquidation.",
       "shippingAddress": "Adresse de livraison",
@@ -540,7 +548,7 @@
     "resendCodeIn": "Renvoyer dans {seconds} s",
     "changeEmail": "Changer d'adresse",
     "errorInvalidCode": "Ce code est incorrect ou expiré. Demandez-en un nouveau.",
-    "errorNoAccount": "Aucun compte avec cette adresse. Vérifiez l'orthographe ou créez votre compte."
+    "errorNoAccount": "Aucun compte avec cette adresse. Vérifiez l'orthographe. Vous venez de commander un pack ? Votre espace s'active avec le lien « Configurer mon espace » de l'e-mail de confirmation."
   },
   "order": {
     "exit": "Quitter",
@@ -562,7 +570,7 @@
     "pack": {
       "title": "Confirmez votre pack",
       "subtitle": "Vous pouvez changer de taille à tout moment. Tous les packs incluent les SmartTags pré-programmés, l'app mobile, et le dashboard.",
-      "quantity": "{count} SmartTags",
+      "quantity": "{count, plural, one {# SmartTag} other {# SmartTags}}",
       "oneTime": "Paiement unique",
       "switchPack": "Changer de pack"
     },
@@ -600,7 +608,7 @@
       "securedBy": "Paiement sécurisé par Stripe",
       "edit": "Modifier",
       "promoCodeLabel": "Code promo (optionnel)",
-      "promoCodePlaceholder": "SUMMER20",
+      "promoCodePlaceholder": "BIENVENUE10",
       "promoCodeHint": "Le code sera appliqué automatiquement lors du paiement."
     },
     "summary": {
@@ -621,6 +629,7 @@
       "billing_invalid": "Adresse de facturation incomplète.",
       "full_name_required": "Merci d'indiquer votre nom.",
       "email_invalid": "Adresse email invalide.",
+      "promo_invalid": "Ce code promo est invalide ou expiré. Corrigez-le ou retirez-le pour continuer.",
       "checkout_failed": "Le paiement n'a pas pu aboutir. Réessayez dans un instant.",
       "code_required": "Confirmez votre adresse email avec le code reçu avant de continuer."
     }
@@ -648,7 +657,7 @@
     "notReadyBack": "Retour à Digitip",
     "notReadyTipGroup": "Laisser un pourboire à l'équipe →",
     "group": {
-      "pickStaffTitle": "Choisissez votre praticien·ne",
+      "pickStaffTitle": "Qui souhaitez-vous remercier ?",
       "pickStaffSubtitle": "Sélectionnez la personne de votre choix pour lui laisser un pourboire.",
       "noStaff": "Aucun membre de l'équipe n'est encore prêt à recevoir des pourboires.",
       "poweredBy": "Propulsé par Digitip",
@@ -705,7 +714,7 @@
     "successReceipt": "Voir mon reçu (PDF / imprimer)"
   },
   "dashboard": {
-    "welcome": "Bon retour,",
+    "welcome": "Bonjour,",
     "totalEarned": "Total perçu",
     "allTime": "Depuis le début",
     "thisWeek": "Cette semaine",
@@ -784,7 +793,7 @@
       "last7days": "7 derniers jours",
       "trendVsPrev": "vs sem. préc.",
       "adminReceiveTipsTitle": "Recevez vous aussi des pourboires",
-      "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste et recevoir des pourboires sur votre compte bancaire.",
+      "adminReceiveTipsBody": "En tant qu'administrateur, vous pouvez aussi apparaître dans la liste : les pourboires qui vous sont destinés figurent sur le relevé de l'équipe, comme ceux des autres membres.",
       "adminReceiveTipsCta": "Configurer →",
       "wholeTeam": "toute l'équipe"
     },
@@ -1049,7 +1058,7 @@
       "transactions": {
         "title": "Transactions",
         "subtitle": "{n} transactions · {volume} de volume réussi",
-        "subtitleFiltered": "{shown} lignes affichées (max 500) · {total} transactions correspondant aux filtres · {volume} volume réussi (statut succeeded)",
+        "subtitleFiltered": "{shown} lignes affichées (max 500) · {total} transactions correspondant aux filtres · {volume} de paiements reçus",
         "rpcFallback": "Les totaux exacts nécessitent la migration SQL 00019 (admin_transactions_summary). Affichage approximatif sur la page courante.",
         "truncatedList": "Plus de {limit} transactions correspondent aux filtres, affinez la période ou le groupe.",
         "empty": "Aucune transaction ne correspond à ces filtres.",
@@ -1270,9 +1279,9 @@
     "continue": "Continuer →",
     "welcome": {
       "title": "Rejoignez {name}",
-      "subtitle": "Vos pourboires, sur votre compte bancaire.",
+      "subtitle": "Vos pourboires, enfin sans espèces.",
       "bullet1": "Vos clients vous laissent un pourboire depuis leur téléphone, sans espèces, sans appli.",
-      "bullet2": "Vous recevez l'argent sur votre compte bancaire.",
+      "bullet2": "Vous suivez vos pourboires en temps réel ; ils vous sont reversés par votre établissement avec la paie.",
       "bullet3": "Prêt(e) en 2 minutes.",
       "start": "Commencer →"
     },

@@ -20,6 +20,8 @@ export type OrderPaymentProps = {
   taxAmount: number;
   totalAmount: number;
   taxRatePercent: number | null;
+  discountAmount?: number;
+  promoCode?: string | null;
 };
 
 // In-page payment for the /order wizard. Shipping/billing were already
@@ -46,6 +48,8 @@ export function OrderPayment(props: OrderPaymentProps) {
         taxAmount={props.taxAmount}
         totalAmount={props.totalAmount}
         taxRatePercent={props.taxRatePercent}
+        discountAmount={props.discountAmount}
+        promoCode={props.promoCode}
       />
     </Elements>
   );
@@ -57,6 +61,8 @@ function PayForm({
   taxAmount,
   totalAmount,
   taxRatePercent,
+  discountAmount = 0,
+  promoCode = null,
 }: Omit<OrderPaymentProps, 'clientSecret'>) {
   const stripe = useStripe();
   const elements = useElements();
@@ -104,6 +110,12 @@ function PayForm({
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
         borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6,
       }}>
+        {discountAmount > 0 && (
+          <Row
+            label={isFr ? `Remise${promoCode ? ` (${promoCode})` : ''}` : `Discount${promoCode ? ` (${promoCode})` : ''}`}
+            value={`−${fmt.format(discountAmount / 100)}`}
+          />
+        )}
         <Row label={isFr ? 'Sous-total HT' : 'Subtotal excl. VAT'} value={fmt.format(htAmount / 100)} />
         <Row
           label={taxRatePercent != null ? `TVA (${taxRatePercent}%)` : 'TVA'}

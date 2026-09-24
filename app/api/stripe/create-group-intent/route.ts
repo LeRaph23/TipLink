@@ -66,15 +66,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'establishment_not_payable' }, { status: 409 });
   }
 
-  // Deferred onboarding: every ACTIVE staff member shares the tip, even those
-  // who haven't finished Stripe onboarding yet — their share is held on the
-  // platform and transferred once they're ready (see webhook). We only require
-  // the establishment to have at least one active staff member to split across.
+  // Every member the manager added shares a team tip, including those who
+  // have not accepted their invitation yet: the money goes to the
+  // establishment's account either way, and a new restaurant must be able to
+  // take tips before its staff have joined (migration 00085). Removed members
+  // (deleted_at) are excluded.
   const { data: activeStaff } = await supabase
     .from('staff_profiles')
     .select('id')
     .eq('establishment_id', establishmentId)
-    .eq('is_active', true)
     .is('deleted_at', null);
 
   if (!activeStaff || activeStaff.length === 0) {

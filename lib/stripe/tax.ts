@@ -47,9 +47,38 @@ export async function computePackTax(opts: {
 
   const taxAmount = calc.tax_amount_exclusive;
   const totalAmount = calc.amount_total;
+
+  // Stripe Tax answers 0 % whenever no registration covers the sale — which
+  // is what happened while France was not registered: packs went out at the
+  // bare HT price and Digitip owed the VAT out of its margin. A sale that
+  // must carry French VAT never goes through at 0 %.
+  if (needsVatFloor(cc, taxAmount, htAmount, EU_VAT_RE.test(vat))) {
+    console.error('[pack-tax] Stripe Tax returned no VAT for a taxable sale; applying 20 % — check Stripe Tax registrations', { country: cc });
+    return { ...provisionalPackTax(htAmount), taxRatePercent: DEFAULT_TAX_BPS / 100, country: cc, calculationId: null };
+  }
+
   const taxRatePercent = Math.round((taxAmount / htAmount) * 10000) / 100;
 
   return { htAmount, taxAmount, totalAmount, taxRatePercent, country: cc, calculationId: calc.id ?? null };
+}
+
+const EU_COUNTRIES = new Set([
+  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR', 'HU',
+  'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK',
+]);
+
+/**
+ * Whether a 0 % answer from Stripe Tax is certainly wrong. A domestic sale
+ * always carries French VAT, business buyer or not. An EU buyer without a VAT
+ * number pays French VAT too while Digitip stays under the 10 000 € EU
+ * distance-selling threshold. Only an EU business (reverse charge) or a buyer
+ * outside the EU (export) is legitimately charged no VAT.
+ */
+export function needsVatFloor(country: string, taxAmount: number, htAmount: number, hasVatId: boolean): boolean {
+  if (htAmount <= 0 || taxAmount > 0) return false;
+  const cc = country.toUpperCase();
+  if (cc === 'FR') return true;
+  return EU_COUNTRIES.has(cc) && !hasVatId;
 }
 
 

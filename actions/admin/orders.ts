@@ -225,6 +225,18 @@ export async function markOrderShipped(
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
+  // A pack goes out with its tags programmed; shipping 0/1 would send the
+  // customer a tag that opens nothing (fifth QA run). The status override
+  // stays available, behind its own confirmation, for the exceptions.
+  const { data: current } = await auth.supabase
+    .from('smarttag_orders')
+    .select('quantity, tags_encoded_count')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (current && (current.tags_encoded_count ?? 0) < current.quantity) {
+    return { ok: false, error: `Encodez d’abord les tags : ${current.tags_encoded_count ?? 0}/${current.quantity} prêts.` };
+  }
+
   // Only the call that actually moves the order to "shipped" sends the email:
   // a double click or a second tab matches no row and stops here, so the
   // customer is told once. "Renvoyer l'email expédition" stays the explicit

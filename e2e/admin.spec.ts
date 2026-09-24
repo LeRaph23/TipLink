@@ -23,7 +23,7 @@ test('the status override follows the order after it ships', async ({ page }) =>
   const { group_id } = seed();
   const [order] = await admin<{ id: string }[]>('/rest/v1/smarttag_orders', {
     method: 'POST',
-    body: { group_id, pack: 'solo', quantity: 1, status: 'ready_to_ship' },
+    body: { group_id, pack: 'solo', quantity: 1, status: 'ready_to_ship', tags_encoded_count: 1 },
   });
 
   await login(page, 'admin@tiplink.dev');
@@ -31,8 +31,28 @@ test('the status override follows the order after it ships', async ({ page }) =>
   const override = page.locator('select').last();
   await expect(override).toHaveValue('ready_to_ship');
 
+  page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Marquer comme expédiée' }).click();
   await expect(override).toHaveValue('shipped');
+});
+
+test('an order cannot ship before its tags are programmed', async ({ page }) => {
+  const { group_id } = seed();
+  const [order] = await admin<{ id: string }[]>('/rest/v1/smarttag_orders', {
+    method: 'POST',
+    body: { group_id, pack: 'solo', quantity: 1, status: 'ready_to_ship', tags_encoded_count: 0 },
+  });
+
+  await login(page, 'admin@tiplink.dev');
+  await page.goto(`/fr/dashboard/admin/orders/${order.id}`);
+  // Declining the confirmation changes nothing…
+  page.once('dialog', (d) => d.dismiss());
+  await page.getByRole('button', { name: 'Marquer comme expédiée' }).click();
+  await expect(page.locator('select').last()).toHaveValue('ready_to_ship');
+  // …and confirming is refused while 0/1 tag is programmed.
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Marquer comme expédiée' }).click();
+  await expect(page.getByText('Encodez d’abord les tags : 0/1 prêts.')).toBeVisible();
 });
 
 test('a free message to the customer carries the attached files', async ({ page }) => {
@@ -78,4 +98,12 @@ test('the VAT return page opens and offers the CSV journal', async ({ page }) =>
   const csv = page.getByRole('link', { name: /Télécharger le détail/ });
   await expect(csv).toHaveAttribute('href', /\/api\/admin\/vat-report\?year=\d{4}/);
   expect(errors, 'uncaught page errors').toEqual([]);
+});
+
+test('admin transactions show French statuses and a refund action', async ({ page }) => {
+  await login(page, 'admin@tiplink.dev');
+  await page.goto('/fr/dashboard/admin/transactions?status=succeeded');
+  await expect(page.getByText(/succeeded/)).toHaveCount(0);
+  await expect(page.locator('tbody').getByText('Reçu', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rembourser' }).first()).toBeVisible();
 });

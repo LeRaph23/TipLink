@@ -208,6 +208,29 @@ describe('POST /api/billing/checkout', () => {
     expect(vi.mocked(stripe.customers.create).mock.calls[0][0]?.preferred_locales).toEqual(['fr']);
   });
 
+  it('refuses an unknown promo code instead of silently charging full price', async () => {
+    const { createClient } = await import('@/lib/supabase/server');
+    const { createServiceClient } = await import('@/lib/supabase/service');
+    const { stripe } = await import('@/lib/stripe/client');
+
+    vi.mocked(createClient).mockResolvedValue(
+      serverClientMock({ id: 'u1', email: 'owner@acme.test' }) as never
+    );
+    vi.mocked(createServiceClient).mockReturnValue(
+      serviceClientMock({ existingGroup: { id: 'grp-1', stripe_customer_id: 'cus_123' } }) as never
+    );
+    await primePricingMocks();
+
+    const { POST } = await import('@/app/api/billing/checkout/route');
+    const res = await POST(
+      buildRequest({ pack: 'duo', promoCode: 'FAUX', business: validBusiness }, '9.9.9.9')
+    );
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('promo_invalid');
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when the shipping address is missing', async () => {
     const { createClient } = await import('@/lib/supabase/server');
     const { createServiceClient } = await import('@/lib/supabase/service');

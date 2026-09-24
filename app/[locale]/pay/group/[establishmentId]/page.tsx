@@ -23,6 +23,10 @@ interface PublicGroupStaffRow {
   full_name: string | null;
   avatar_url: string | null;
   is_payable: boolean | null;
+  /** Migration 00085: the establishment can be paid, whoever has joined. */
+  establishment_payable?: boolean | null;
+  /** Migration 00085: members the manager added, joined or still invited. */
+  team_size?: number | null;
 }
 
 async function fetchGroupStaff(establishmentId: string): Promise<PublicGroupStaffRow[] | null> {
@@ -143,13 +147,20 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
   const header = rows[0]!;
   const payableStaff = rows.filter((r) => r.staff_id && r.is_payable);
   const salonName = header.establishment_name ?? 'Digitip';
+  // A team tip only needs the establishment to be payable and someone on the
+  // team, joined or not: the money goes to the establishment either way. So a
+  // freshly set-up restaurant whose staff have not accepted their invitation
+  // yet still takes tips from its very first customer.
+  const teamSize = header.team_size ?? payableStaff.length;
+  const canTipTeam = (header.establishment_payable ?? payableStaff.length > 0) && teamSize > 0;
+  const showTeamCard = canTipTeam && (teamSize > 1 || payableStaff.length === 0);
 
   return (
     <>
       <HeroCard t={t} salonName={salonName} />
 
       {/* Staff list */}
-      {payableStaff.length === 0 ? (
+      {payableStaff.length === 0 && !canTipTeam ? (
         <div
           style={{
             padding: '28px 24px',
@@ -217,9 +228,9 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
             </Link>
           ))}
 
-          {/* Whole-team split — only when 2+ members, shown last; neutral card,
-              heart icon, no subtitle. */}
-          {payableStaff.length > 1 && (
+          {/* Whole-team split — when 2+ members, or when nobody has joined yet
+              (then it is the only card); shown last, neutral, heart icon. */}
+          {showTeamCard && (
             <Link
               href={`/pay/group/${establishmentId}/team`}
               style={{

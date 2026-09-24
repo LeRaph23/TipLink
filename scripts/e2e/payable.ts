@@ -215,6 +215,7 @@ async function main() {
       stripe_details_submitted: true,
       stripe_charges_enabled: true,
       stripe_payouts_enabled: true,
+      onboarding_status: 'complete',
     },
   });
 

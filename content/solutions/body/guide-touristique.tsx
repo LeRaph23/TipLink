@@ -68,8 +68,7 @@ export default function Body() {
         en janvier, quand vous ne guidez pas.
       </p>
       <p>
-        Ici la plaque s&apos;achète une fois et la commission de 5 % ne s&apos;applique
-        qu&apos;aux pourboires réellement encaissés. Les mois creux ne coûtent rien, et la
+        Ici la plaque s&apos;achète une fois, et les frais de service (0,25 € + 5 %, réglés par le client) ne s&apos;appliquent qu&apos;aux pourboires réellement laissés. Les mois creux ne coûtent rien, et la
         plaque n&apos;a pas de batterie ni d&apos;abonnement à maintenir entre deux saisons.
       </p>
 
