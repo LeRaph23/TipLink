@@ -88,6 +88,10 @@ export default async function JoinPage({
         .select('id, full_name')
         .eq('establishment_id', establishmentId)
         .is('user_id', null)
+        // Same rule as POST /api/staff/join, which only lets an inactive
+        // profile be claimed: offering an active one led to a form that could
+        // only end on "Ce lien n'est plus valide".
+        .eq('is_active', false)
         .is('deleted_at', null)
         .order('full_name');
       visibleProfiles = (unclaimed ?? []).map((p) => ({ id: p.id, full_name: p.full_name }));

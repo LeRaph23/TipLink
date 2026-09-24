@@ -23,7 +23,7 @@ function CardIcon({ size = 22 }: { size?: number }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, label }: { status: string; label: string }) {
   const map: Record<string, [string, string]> = {
     succeeded: ['var(--success-bg)', 'var(--success)'],
     pending:   ['var(--warning-bg)', 'var(--warning)'],
@@ -33,7 +33,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 600, background: bg, color, whiteSpace: 'nowrap' }}>
       {status !== 'failed' && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />}
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {label}
     </span>
   );
 }
@@ -49,6 +49,7 @@ export default async function DashboardPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const t = await getTranslations('dashboard');
+  const tTxs = await getTranslations('dashboard.txs');
 
   const [{ data: staffProfile }, { data: roles }] = await Promise.all([
     supabase
@@ -341,7 +342,7 @@ export default async function DashboardPage({
                     {fmt.format(tx.amount / 100)}
                   </td>
                   <td style={{ padding: '11px 16px' }}>
-                    <StatusBadge status={tx.status} />
+                    <StatusBadge status={tx.status} label={tx.status === 'refunded' ? tTxs('statusReversed') : tTxs('statusReceived')} />
                   </td>
                 </tr>
               ))}

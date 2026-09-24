@@ -311,6 +311,33 @@ export async function POST() {
       if (error) fail(error);
     }
 
+    // 7b. What the webhook writes for every paid tip: who earned it. The
+    // dashboards, statements and analytics read tip_allocations, so demo
+    // tips without them showed on some screens (establishments, admin) and
+    // not on others. Idempotent: only succeeded tips without one get one.
+    step = 'tip_allocations.insert';
+    {
+      const { data: paid } = await admin
+        .from('transactions')
+        .select('id, amount, staff_id, created_at, tip_allocations(id)')
+        .eq('establishment_id', establishmentId)
+        .eq('status', 'succeeded')
+        .not('staff_id', 'is', null);
+      const missing = (paid ?? []).filter((t) => !(t.tip_allocations as unknown[] | null)?.length);
+      if (missing.length > 0) {
+        const { error } = await admin.from('tip_allocations').insert(
+          missing.map((t) => ({
+            transaction_id: t.id,
+            staff_id: t.staff_id!,
+            amount: t.amount,
+            status: 'allocated',
+            allocated_at: t.created_at,
+          })),
+        );
+        if (error) fail(error);
+      }
+    }
+
     // 8. A fulfilled smarttag order. Tolerant if migrations 00007/00012 are
     // not applied yet — we just skip this step and log a warning.
     step = 'smarttag_orders.select';
