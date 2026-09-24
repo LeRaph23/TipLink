@@ -43,19 +43,47 @@ if [ "${1:-}" = "--reset" ]; then
   log "resetting local Supabase"
   npx supabase stop --no-backup >/dev/null 2>&1 || true
 fi
+# After a reboot the containers come back on their own but take a while to be
+# healthy; `supabase start` refuses to run meanwhile. Give them time first.
+if ! npx supabase status >/dev/null 2>&1 && docker ps --format '{{.Names}}' | grep -q '^supabase_db_'; then
+  log "waiting for the local Supabase containers to be ready"
+  for _ in $(seq 1 40); do npx supabase status >/dev/null 2>&1 && break; sleep 3; done
+fi
 if ! npx supabase status >/dev/null 2>&1; then
   log "starting local Supabase and applying migrations (first run pulls images, ~2 min)"
   npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,postgres-meta,supavisor,realtime >"$STATE_DIR/supabase.log" 2>&1 \
     || { tail -30 "$STATE_DIR/supabase.log"; exit 1; }
 fi
+DB="$(docker ps --format '{{.Names}}' | grep '^supabase_db_' | head -1)"
+psql_db() { docker exec -i "$DB" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q "$@"; }
+
+# The app must never run on a schema older than its code: queries on a missing
+# column or policy fail quietly and show up as empty pages and 0 €.
+schema_out_of_date() {
+  "$ROOT/scripts/e2e/down.sh" >/dev/null 2>&1 || true
+  echo
+  echo "⚠️  La base locale n'est pas à jour avec le code : l'app a été arrêtée."
+  echo "    $1"
+  echo "    Pour repartir d'une base propre (les données de test locales sont effacées) :"
+  echo "      npm run e2e:up -- --reset"
+  exit 1
+}
+
+# Databases created by the first version of this script had their migrations
+# applied by hand, without any history: `migration up` would then try to
+# replay everything from 00001 and fail. Only a reset brings them back.
+if [ "$(psql_db -tAc "select count(*) from supabase_migrations.schema_migrations" 2>/dev/null || echo 0)" = "0" ] \
+   && [ "$(psql_db -tAc "select to_regclass('public.groups') is not null")" = "t" ]; then
+  schema_out_of_date "Elle a été créée par une ancienne version de ce script, sans historique de migrations."
+fi
+
 # A database created before a `git pull` misses the migrations that came with
 # it; apply whatever is pending on every run.
 npx supabase migration up --local >"$STATE_DIR/migrations.log" 2>&1 \
-  || { tail -30 "$STATE_DIR/migrations.log"; exit 1; }
+  || { tail -15 "$STATE_DIR/migrations.log"; schema_out_of_date "Une migration a échoué (détail ci-dessus, et dans .e2e/migrations.log)."; }
 eval "$(npx supabase status -o env 2>/dev/null | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')"
 
-DB="$(docker ps --format '{{.Names}}' | grep '^supabase_db_' | head -1)"
-psql_db() { docker exec -i "$DB" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q "$@"; }
+
 
 # --- 3. Env ------------------------------------------------------------------
 # Optional Stripe TEST-mode values (see .claude/skills/verify-ui/SKILL.md),
