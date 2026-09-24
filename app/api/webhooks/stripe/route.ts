@@ -209,7 +209,7 @@ async function handleEvent(
               .from('staff_profiles')
               .select('id')
               .eq('establishment_id', establishmentId)
-              .eq('is_active', true)
+              // Joined or still invited: same team as create-group-intent.
               .is('deleted_at', null)
               .order('id'); // deterministic remainder recipient across replays
             recipients = splitEqually(netForStaff, (staffMembers ?? []).map((m) => m.id));

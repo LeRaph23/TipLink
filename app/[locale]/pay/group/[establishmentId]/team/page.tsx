@@ -16,6 +16,8 @@ interface PublicGroupStaffRow {
   tip_thresholds: number[] | null;
   staff_id: string | null;
   is_payable: boolean | null;
+  establishment_payable?: boolean | null;
+  team_size?: number | null;
   establishment_is_demo?: boolean | null;
   fee_fixed_cents?: number | null;
   fee_bps?: number | null;
@@ -62,10 +64,14 @@ export default async function TeamTipPage({
 
   const header = rows[0]!;
   const payableStaff = rows.filter((r) => r.staff_id && r.is_payable);
-  if (payableStaff.length === 0) notFound();
-  const memberLabel = payableStaff.length === 1
+  // Everyone the manager added shares a team tip, joined or still invited
+  // (see migration 00085); the establishment just has to be payable.
+  const teamSize = header.team_size ?? payableStaff.length;
+  const canTipTeam = (header.establishment_payable ?? payableStaff.length > 0) && teamSize > 0;
+  if (!canTipTeam) notFound();
+  const memberLabel = teamSize === 1
     ? t('group.memberOne')
-    : t('group.memberOther', { count: payableStaff.length });
+    : t('group.memberOther', { count: teamSize });
 
   const salonName = header.establishment_name ?? 'Digitip';
   const currency = (header.establishment_currency ?? 'EUR').toUpperCase();
@@ -129,7 +135,7 @@ export default async function TeamTipPage({
             establishmentId={establishmentId}
             currency={currency}
             thresholds={thresholds}
-            staffCount={payableStaff.length}
+            staffCount={teamSize}
             isDemo={header.establishment_is_demo ?? false}
             feeConfig={resolveTipFeeConfig({
               fixedCents: header.fee_fixed_cents ?? undefined,
