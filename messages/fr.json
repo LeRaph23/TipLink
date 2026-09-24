@@ -49,7 +49,8 @@
     "errTaxAddress": "Impossible de calculer la TVA pour cette adresse. Vérifiez le pays et le code postal, ou réessayez dans un instant.",
     "errEmailRequired": "Merci d’entrer un email : il est obligatoire pour recevoir la facture et le lien de configuration.",
     "errAddressRequired": "Renseignez votre adresse de livraison pour calculer la TVA.",
-    "errPaymentFailed": "Le paiement a échoué."
+    "errPaymentFailed": "Le paiement a échoué.",
+    "errPromoApply": "Impossible d'appliquer le code pour le moment. Réessayez."
   },
   "metadata": {
     "title": "Digitip - Pourboires par CB via NFC | digitip.app",

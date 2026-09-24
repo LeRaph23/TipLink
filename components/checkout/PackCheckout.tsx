@@ -47,19 +47,19 @@ type Tax = { ht: number; tax: number; total: number; ratePct: number | null };
 
 export function PackCheckout({ pack, locale }: Props) {
   const t = useTranslations('checkout');
-  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [promoError, setPromoError] = useState<string | null>(null);
   const [cached, setCached] = useState<CachedIntent | null>(null);
 
-  const requestKey = `${pack}|${locale}|${appliedPromo ?? ''}|${reloadKey}`;
+  // Promo codes are applied to this same intent later (/api/billing/pack-promo),
+  // so only the pack, the locale and an explicit retry create a new one.
+  const requestKey = `${pack}|${locale}|${reloadKey}`;
 
   useEffect(() => {
     const ac = new AbortController();
     fetch('/api/billing/create-pack-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pack, locale, promoCode: appliedPromo ?? undefined }),
+      body: JSON.stringify({ pack, locale }),
       signal: ac.signal,
     })
       .then(async (res) => {
@@ -70,11 +70,6 @@ export function PackCheckout({ pack, locale }: Props) {
           | null;
         if (ac.signal.aborted) return;
         if (!res.ok || !data || !data.clientSecret) {
-          if (appliedPromo && res.status === 400 && data?.error === 'Invalid promo code') {
-            setAppliedPromo(null);
-            setPromoError(t('errPromoInvalid'));
-            return;
-          }
           setCached({
             key: requestKey,
             error: data?.error === 'payment_unavailable'
@@ -83,7 +78,6 @@ export function PackCheckout({ pack, locale }: Props) {
           });
           return;
         }
-        setPromoError(null);
         setCached({
           key: requestKey,
           data: {
@@ -106,7 +100,7 @@ export function PackCheckout({ pack, locale }: Props) {
     // a real Stripe call. requestKey already covers everything that should
     // trigger a refetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pack, locale, appliedPromo, requestKey]);
+  }, [pack, locale, requestKey]);
 
   // Treat any cached result for a stale key as "still loading".
   const isCurrent = cached?.key === requestKey;
@@ -158,9 +152,7 @@ export function PackCheckout({ pack, locale }: Props) {
         baseAmount={data.baseAmount}
         discountAmount={data.discountAmount}
         promoCode={data.promoCode}
-        promoError={promoError}
         clientSecret={data.clientSecret}
-        onApplyPromo={(code) => { setPromoError(null); setAppliedPromo(code); }}
       />
     </Elements>
   );
@@ -173,21 +165,17 @@ interface InnerProps {
   baseAmount: number;
   discountAmount: number;
   promoCode: string | null;
-  promoError: string | null;
   clientSecret: string;
-  onApplyPromo: (code: string | null) => void;
 }
 
 function InnerCheckout({
   pack,
   locale,
-  amount,
+  amount: initialAmount,
   baseAmount,
-  discountAmount,
-  promoCode,
-  promoError,
+  discountAmount: initialDiscount,
+  promoCode: initialPromo,
   clientSecret,
-  onApplyPromo,
 }: InnerProps) {
   const t = useTranslations('checkout');
   const stripe = useStripe();
@@ -195,7 +183,15 @@ function InnerCheckout({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
-  const [promoInput, setPromoInput] = useState(promoCode ?? '');
+  const [promoInput, setPromoInput] = useState(initialPromo ?? '');
+  // Applying a code updates the intent this form already holds (see
+  // /api/billing/pack-promo): the form, and everything typed in it, stays.
+  const [promo, setPromo] = useState({ code: initialPromo, discount: initialDiscount, amount: initialAmount });
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const promoCode = promo.code;
+  const discountAmount = promo.discount;
+  const amount = promo.amount;
 
   // Pack prices are stored excl. VAT (HT). VAT is resolved server-side from
   // the shipping country (Stripe Tax) and the PaymentIntent amount is updated
@@ -355,9 +351,33 @@ function InnerCheckout({
     }
   }
 
-  function handleApplyPromo() {
+  async function handleApplyPromo() {
     const v = promoInput.trim().toUpperCase();
-    onApplyPromo(v || null);
+    setPromoError(null);
+    setPromoBusy(true);
+    try {
+      const res = await fetch('/api/billing/pack-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientSecret, promoCode: v || undefined }),
+      });
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d) {
+        setPromoError(
+          res.status === 400 && d?.error === 'Invalid promo code'
+            ? t('errPromoInvalid')
+            : t('errPromoApply'),
+        );
+        return;
+      }
+      setPromo({ code: d.promoCode ?? null, discount: d.discountAmount ?? 0, amount: d.totalAmount ?? amount });
+      // Once the address has been priced, the totals shown come from `tax`.
+      if (tax) setTax({ ht: d.htAmount, tax: d.taxAmount, total: d.totalAmount, ratePct: d.taxRatePercent ?? tax.ratePct });
+      // Wallet sheets (Apple Pay, Google Pay) show the intent's amount.
+      await elements?.fetchUpdates().catch(() => {});
+    } finally {
+      setPromoBusy(false);
+    }
   }
 
   const isPromoApplied = !!promoCode && promoCode === promoInput.trim().toUpperCase();
@@ -456,6 +476,7 @@ function InnerCheckout({
           <input
             value={promoInput}
             onChange={(e) => setPromoInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleApplyPromo(); } }}
             placeholder={t('promoPlaceholder')}
             style={{
               flex: 1, padding: '10px 12px', borderRadius: 10,
@@ -466,8 +487,8 @@ function InnerCheckout({
           />
           <button
             type="button"
-            onClick={handleApplyPromo}
-            disabled={isLoading}
+            onClick={() => { void handleApplyPromo(); }}
+            disabled={isLoading || promoBusy}
             style={{
               padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
               background: isPromoApplied ? '#0ea36b' : '#fff',

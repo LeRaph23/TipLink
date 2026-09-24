@@ -7,40 +7,12 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 import { provisionalPackTax } from '@/lib/stripe/tax';
 import { adContextMetadata } from '@/lib/marketing/ad-context';
+import { resolvePromoCode, type PromoResolved } from '@/lib/billing/promo';
 
 export const runtime = 'nodejs';
 
 function isValidPack(p: unknown): p is PackId {
   return p === 'solo' || p === 'duo';
-}
-
-type PromoResolved = {
-  code: string;
-  promo_code_id: string;
-  percentage_off: number;
-  stripe_promo_code_id: string;
-};
-
-async function resolvePromoCode(
-  supabase: ReturnType<typeof createServiceClient>,
-  rawCode: string
-): Promise<PromoResolved | null> {
-  const code = rawCode.trim().toUpperCase();
-  if (!code) return null;
-  const { data } = await supabase
-    .from('promo_codes')
-    .select('id, code, percentage_off, max_redemptions, times_redeemed, expires_at, is_active, stripe_promo_code_id')
-    .eq('code', code)
-    .maybeSingle();
-  if (!data || !data.is_active) return null;
-  if (data.expires_at && new Date(data.expires_at).getTime() < Date.now()) return null;
-  if (data.max_redemptions != null && data.times_redeemed >= data.max_redemptions) return null;
-  return {
-    code: data.code,
-    promo_code_id: data.id,
-    percentage_off: data.percentage_off,
-    stripe_promo_code_id: data.stripe_promo_code_id,
-  };
 }
 
 export async function POST(request: NextRequest) {
