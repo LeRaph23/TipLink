@@ -229,7 +229,15 @@
       "s1": "Payment received",
       "s2": "SmartTag programming",
       "s3": "Shipped within 3 business days"
-    }
+    },
+    "discount": "Discount",
+    "totalHt": "Total excl. VAT",
+    "vat": "VAT",
+    "totalTtc": "Total paid incl. VAT",
+    "orderRef": "Order #{ref}",
+    "ctaSetup": "Set up my space now →",
+    "ctaDashboard": "Go to my space →",
+    "preparing": "Your space is being prepared. Reload this page in a few seconds to set it up, or use the link in your email."
   },
   "landing": {
     "promoBanner": "LAUNCH OFFER: free shipping across Europe",
@@ -540,7 +548,7 @@
     "resendCodeIn": "Send again in {seconds}s",
     "changeEmail": "Use another address",
     "errorInvalidCode": "That code is wrong or has expired. Ask for a new one.",
-    "errorNoAccount": "No account for this address. Check the spelling, or create your account."
+    "errorNoAccount": "No account for this address. Check the spelling. Just ordered a pack? Your space opens with the “Set up my space” link in your confirmation email."
   },
   "order": {
     "exit": "Exit",

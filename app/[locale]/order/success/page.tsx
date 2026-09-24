@@ -1,6 +1,9 @@
+import { timingSafeEqual } from 'crypto';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { stripe } from '@/lib/stripe/client';
+import { createServiceClient } from '@/lib/supabase/service';
+import { signOnboardingToken } from '@/lib/auth/onboarding-token';
 import { PixelPurchase } from '@/components/marketing/PixelPurchase';
 
 type PackInfo = {
@@ -12,9 +15,44 @@ type PackInfo = {
   pack: 'solo' | 'duo';
   htCents: number;
   currency: string;
+  fmtHt: string;
+  fmtTax: string;
+  fmtDiscount: string | null;
+  promoCode: string | null;
+  /** Only when the visitor proved they made this payment (client secret). */
+  next: { kind: 'setup'; href: string; orderRef: string } | { kind: 'dashboard'; orderRef: string | null } | { kind: 'preparing' } | null;
 };
 
-async function resolvePack(paymentIntentId: string | undefined, locale: string): Promise<PackInfo | null> {
+function holdsSecret(intentSecret: string | null, cs: string | undefined): boolean {
+  if (!intentSecret || !cs || intentSecret.length !== cs.length) return false;
+  return timingSafeEqual(Buffer.from(intentSecret), Buffer.from(cs));
+}
+
+// What the buyer does next. An express buyer has no account yet: the webhook
+// created their space and emailed a signed setup link; the same link is
+// offered here, to whoever holds the payment's client secret (Stripe appends
+// it to this return URL), so nobody waits for an email to get started.
+async function nextStep(intent: import('stripe').Stripe.PaymentIntent, cs: string | undefined): Promise<PackInfo['next']> {
+  if (!holdsSecret(intent.client_secret, cs)) return null;
+  const service = createServiceClient();
+  const { data: order } = await service
+    .from('smarttag_orders')
+    .select('id, group_id')
+    .eq('stripe_payment_intent_id', intent.id)
+    .maybeSingle();
+  const orderRef = order ? order.id.slice(0, 8).toUpperCase() : null;
+  if (intent.metadata?.source !== 'pack-express') return { kind: 'dashboard', orderRef };
+  const email = intent.metadata?.customer_email?.trim() || intent.receipt_email || null;
+  if (!order?.group_id || !email || !orderRef) return { kind: 'preparing' };
+  const token = signOnboardingToken(order.group_id, email);
+  return {
+    kind: 'setup',
+    href: `/onboarding?group=${order.group_id}&token=${token}&email=${encodeURIComponent(email)}`,
+    orderRef,
+  };
+}
+
+async function resolvePack(paymentIntentId: string | undefined, cs: string | undefined, locale: string): Promise<PackInfo | null> {
   if (!paymentIntentId || !paymentIntentId.startsWith('pi_')) return null;
   try {
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -29,13 +67,21 @@ async function resolvePack(paymentIntentId: string | undefined, locale: string):
       minimumFractionDigits: 2,
     });
     const ht = Number(intent.metadata?.ht_amount ?? NaN);
+    const tax = Number(intent.metadata?.tax_amount ?? NaN);
+    const discount = Number(intent.metadata?.discount_amount ?? 0);
+    const htCents = Number.isFinite(ht) ? ht : intent.amount;
     return {
+      fmtHt: fmt.format(htCents / 100),
+      fmtTax: fmt.format((Number.isFinite(tax) ? tax : intent.amount - htCents) / 100),
+      fmtDiscount: discount > 0 ? fmt.format(discount / 100) : null,
+      promoCode: intent.metadata?.promo_code ?? null,
+      next: await nextStep(intent, cs),
       label: pack === 'solo' ? 'Pack Solo' : 'Pack Duo',
       quantity,
       amount: fmt.format(intent.amount / 100),
       paymentIntentId: intent.id,
       pack,
-      htCents: Number.isFinite(ht) ? ht : intent.amount,
+      htCents,
       currency: intent.currency,
     };
   } catch {
@@ -48,15 +94,15 @@ export default async function OrderSuccessPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ payment_intent?: string; redirect_status?: string }>;
+  searchParams: Promise<{ payment_intent?: string; payment_intent_client_secret?: string; redirect_status?: string }>;
 }) {
   const { locale } = await params;
-  const { payment_intent } = await searchParams;
+  const { payment_intent, payment_intent_client_secret } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('orderSuccess');
 
   const steps = [t('steps.s1'), t('steps.s2'), t('steps.s3')];
-  const packInfo = await resolvePack(payment_intent, locale);
+  const packInfo = await resolvePack(payment_intent, payment_intent_client_secret, locale);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
@@ -109,6 +155,21 @@ export default async function OrderSuccessPage({
             </div>
           </div>
         )}
+        {packInfo && (
+          <div style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'left', margin: '-14px 0 24px', padding: '0 18px', lineHeight: 1.8 }}>
+            {packInfo.fmtDiscount && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>{t('discount')}{packInfo.promoCode ? ` (${packInfo.promoCode})` : ''}</span><span>−{packInfo.fmtDiscount}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('totalHt')}</span><span>{packInfo.fmtHt}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('vat')}</span><span>{packInfo.fmtTax}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text)' }}><span>{t('totalTtc')}</span><span>{packInfo.amount}</span></div>
+            {packInfo.next && 'orderRef' in packInfo.next && packInfo.next.orderRef && (
+              <div style={{ marginTop: 6, color: 'var(--text-3)' }}>{t('orderRef', { ref: packInfo.next.orderRef })}</div>
+            )}
+          </div>
+        )}
 
         {/* Steps */}
         <div style={{
@@ -138,13 +199,26 @@ export default async function OrderSuccessPage({
         </div>
 
         {/* CTA */}
-        <div style={{
-          padding: '16px 20px', borderRadius: 12,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 20,
-        }}>
-          {t('nextStep')}
-        </div>
+        {packInfo?.next?.kind === 'setup' || packInfo?.next?.kind === 'dashboard' ? (
+          <Link
+            href={packInfo.next.kind === 'setup' ? packInfo.next.href : '/dashboard'}
+            style={{
+              display: 'block', padding: '14px', borderRadius: 12, marginBottom: 12,
+              background: 'linear-gradient(135deg, #E57A97, #EC97B0)', color: '#fff',
+              fontSize: 15, fontWeight: 700, textDecoration: 'none', textAlign: 'center',
+            }}
+          >
+            {packInfo.next.kind === 'setup' ? t('ctaSetup') : t('ctaDashboard')}
+          </Link>
+        ) : (
+          <div style={{
+            padding: '16px 20px', borderRadius: 12,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 20,
+          }}>
+            {packInfo?.next?.kind === 'preparing' ? t('preparing') : t('nextStep')}
+          </div>
+        )}
         <Link href="/" style={{
           display: 'block', padding: '12px',
           borderRadius: 12, border: '1px solid var(--border)',

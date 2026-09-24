@@ -229,7 +229,15 @@
       "s1": "Paiement reçu",
       "s2": "Programmation des SmartTags",
       "s3": "Expédition sous 3 jours ouvrés"
-    }
+    },
+    "discount": "Remise",
+    "totalHt": "Total HT",
+    "vat": "TVA",
+    "totalTtc": "Total payé TTC",
+    "orderRef": "Commande n° {ref}",
+    "ctaSetup": "Configurer mon espace maintenant →",
+    "ctaDashboard": "Accéder à mon espace →",
+    "preparing": "Votre espace est en cours de préparation. Rechargez cette page dans quelques secondes pour le configurer, ou utilisez le lien reçu par e-mail."
   },
   "landing": {
     "promoBanner": "OFFRE DE LANCEMENT : Livraison offerte en Europe",
@@ -540,7 +548,7 @@
     "resendCodeIn": "Renvoyer dans {seconds} s",
     "changeEmail": "Changer d'adresse",
     "errorInvalidCode": "Ce code est incorrect ou expiré. Demandez-en un nouveau.",
-    "errorNoAccount": "Aucun compte avec cette adresse. Vérifiez l'orthographe ou créez votre compte."
+    "errorNoAccount": "Aucun compte avec cette adresse. Vérifiez l'orthographe. Vous venez de commander un pack ? Votre espace s'active avec le lien « Configurer mon espace » de l'e-mail de confirmation."
   },
   "order": {
     "exit": "Quitter",
