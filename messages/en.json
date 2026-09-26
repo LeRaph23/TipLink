@@ -206,9 +206,9 @@
     "s4Title": "4. Payment",
     "s4Body": "Payment is made in full online at the time of order via Stripe (debit/credit card, Apple Pay, Google Pay). Payment data is collected and processed exclusively by Stripe: YUZU LABS SAS servers never see or store any banking data. In the event of payment failure, the order is automatically cancelled. For business buyers, any amount unpaid when due automatically bears late-payment interest at three times the French statutory interest rate and a fixed recovery fee of €40 (article L441-10 of the French Commercial Code). No discount is granted for early payment.",
     "s5Title": "5. Delivery",
-    "s5Body": "SmartTags are dispatched from France within 3 to 5 business days following payment confirmation. Delivery is free across Europe. A tracking email is sent upon shipment. YUZU LABS SAS cannot be held liable for delays attributable to the carrier, force majeure, or incorrect delivery information provided by the buyer.",
+    "s5Body": "SmartTags ship from France within 3 business days of payment confirmation. Shipping is free to the EU countries offered at checkout and to Switzerland. For Switzerland the sale is an export invoiced without French VAT; Swiss import VAT and any customs duties are paid by the buyer. A tracking email is sent on dispatch. YUZU LABS SAS is not liable for delays caused by the carrier, force majeure, or incorrect delivery details provided by the buyer.",
     "s6Title": "6. Right of withdrawal",
-    "s6Body": "In accordance with Article L221-18 of the French Consumer Code, any consumer (non-professional buyer) has 14 calendar days from receipt of the parcel to exercise their right of withdrawal, without reason or penalty. Products must be returned unused, in their original packaging, at the buyer's expense. Refund will be made within 14 days of receipt and verification of the return. This right does not apply to orders placed for professional purposes (B2B), or to products that have been used or damaged after delivery.",
+    "s6Body": "In accordance with Article L221-18 of the French Consumer Code, any consumer (non-professional buyer) has 14 calendar days from receipt of the parcel to exercise their right of withdrawal, without reason or penalty. Products must be returned unused, in their original packaging, at the buyer's expense. Refund will be made within 14 days of receipt and verification of the return. This right does not apply to orders placed for professional purposes (B2B), or to products that have been used or damaged after delivery. Commercial \"Satisfied or refunded\" guarantee: in addition to the right of withdrawal, and including orders placed for business purposes, any buyer can get their SmartTag order refunded within 14 calendar days of receiving the parcel, with no reason required, by writing to contact@digitip.app and returning the SmartTags complete and in good condition. The price paid is refunded within 14 days of receiving the return. Return shipping is paid by the buyer. This guarantee does not cover the Digitip Pro subscription.",
     "s7Title": "7. Legal warranties",
     "s7Body": "SmartTags benefit from the statutory warranty of conformity (Articles L217-3 et seq. of the French Consumer Code, 2 years from delivery for non-professional buyers) and the warranty against hidden defects (Articles 1641 et seq. of the French Civil Code). In addition, YUZU LABS SAS offers a lifetime commercial warranty: any SmartTag showing a manufacturing defect or failure under normal use will be replaced free of charge upon sending a photo to contact@digitip.app.",
     "s8Title": "8. After-sales service",
@@ -303,10 +303,10 @@
     "shipping": {
       "kicker": "Shipping",
       "title": "Fast delivery across Europe",
-      "processing": "1–2 business days processing",
-      "freeEU": "Free shipping across Europe",
-      "timezoneFR": "France: 3–5 business days",
-      "timezoneEU": "Europe: 4–7 business days",
+      "processing": "Ships within 3 business days",
+      "freeEU": "Free shipping across Europe and Switzerland",
+      "timezoneFR": "France: 3–5 business days after shipping",
+      "timezoneEU": "Europe and Switzerland: 4–7 business days after shipping",
       "tracking": "Tracking number provided"
     },
     "guarantee": {

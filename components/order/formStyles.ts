@@ -29,4 +29,14 @@ export const errorStyle: CSSProperties = {
   fontWeight: 500,
 };
 
-export const EU_COUNTRIES = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR'];
+/** Countries we ship to: the EU countries served, plus Switzerland (export). */
+export const EU_COUNTRIES = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR', 'CH'];
+
+/** A country's name in the page language ("France", "Suisse"), not its code. */
+export function countryName(code: string, locale: string): string {
+  try {
+    return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}

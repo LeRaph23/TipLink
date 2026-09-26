@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { Address } from '@/lib/order-validation';
-import { inputStyle, labelStyle, EU_COUNTRIES } from './formStyles';
+import { inputStyle, labelStyle, EU_COUNTRIES, countryName } from './formStyles';
 
 export function StepShipping({
   value,
@@ -13,6 +13,7 @@ export function StepShipping({
   onChange: (next: Address) => void;
 }) {
   const t = useTranslations('order.shipping');
+  const locale = useLocale();
   const tb = useTranslations('auth.business');
   const [focus, setFocus] = useState<string | null>(null);
   const f = (k: string) => focus === k;
@@ -67,7 +68,7 @@ export function StepShipping({
           style={{ ...inputStyle(f('country')), cursor: 'pointer' }}
           onFocus={() => setFocus('country')} onBlur={() => setFocus(null)}
         >
-          {EU_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {EU_COUNTRIES.map((c) => <option key={c} value={c}>{countryName(c, locale)}</option>)}
         </select>
         <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>
           {t('subtitle').split('.')[0]}.

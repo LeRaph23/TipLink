@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { OrderState, Address } from '@/lib/order-validation';
-import { inputStyle, labelStyle, EU_COUNTRIES } from './formStyles';
+import { inputStyle, labelStyle, EU_COUNTRIES, countryName } from './formStyles';
 
 type Business = OrderState['business'];
 
@@ -15,6 +15,7 @@ export function StepBilling({
   onChange: (next: Business) => void;
 }) {
   const t = useTranslations('order.billing');
+  const locale = useLocale();
   const tb = useTranslations('auth.business');
   const [focus, setFocus] = useState<string | null>(null);
   const f = (k: string) => focus === k;
@@ -111,7 +112,7 @@ export function StepBilling({
             style={{ ...inputStyle(f('bcountry')), cursor: 'pointer' }}
             onFocus={() => setFocus('bcountry')} onBlur={() => setFocus(null)}
           >
-            {EU_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {EU_COUNTRIES.map((c) => <option key={c} value={c}>{countryName(c, locale)}</option>)}
           </select>
         </div>
       )}
