@@ -206,9 +206,9 @@
     "s4Title": "4. Paiement",
     "s4Body": "Le paiement s'effectue intégralement en ligne au moment de la commande via Stripe (carte bancaire, Apple Pay, Google Pay). Les données de paiement sont collectées et traitées exclusivement par Stripe : les serveurs de YUZU LABS SAS ne voient ni ne stockent aucune donnée bancaire. En cas d'échec du paiement, la commande est automatiquement annulée. Pour les acheteurs professionnels, toute somme non réglée à son échéance entraîne de plein droit des pénalités de retard au taux de trois fois le taux d'intérêt légal et une indemnité forfaitaire pour frais de recouvrement de 40 € (article L441-10 du Code de commerce). Aucun escompte n'est accordé pour paiement anticipé.",
     "s5Title": "5. Livraison",
-    "s5Body": "Les SmartTags sont expédiés depuis la France dans un délai de 3 à 5 jours ouvrés après confirmation du paiement. La livraison est offerte dans toute l'Europe. Un email de suivi est transmis dès l'expédition. YUZU LABS SAS ne saurait être tenue responsable des retards imputables au transporteur, à un cas de force majeure, ou à des informations de livraison erronées fournies par l'acheteur.",
+    "s5Body": "Les SmartTags sont expédiés depuis la France dans un délai de 3 jours ouvrés après confirmation du paiement. La livraison est offerte dans les pays de l'Union européenne proposés à la commande et en Suisse. Pour une livraison en Suisse, la vente est une exportation facturée sans TVA française ; la TVA suisse à l'importation et les éventuels droits de douane sont à la charge de l'acheteur. Un email de suivi est transmis dès l'expédition. YUZU LABS SAS ne saurait être tenue responsable des retards imputables au transporteur, à un cas de force majeure, ou à des informations de livraison erronées fournies par l'acheteur.",
     "s6Title": "6. Droit de rétractation",
-    "s6Body": "Conformément à l'article L221-18 du Code de la consommation, tout consommateur (acheteur non professionnel) dispose d'un délai de 14 jours calendaires à compter de la réception du colis pour exercer son droit de rétractation, sans motif ni pénalité. Les produits doivent être retournés en état neuf, non utilisés, dans leur emballage d'origine, aux frais de l'acheteur. Le remboursement interviendra dans les 14 jours suivant réception et vérification du retour. Ce droit ne s'applique pas aux commandes passées à des fins professionnelles (B2B), ni aux produits ayant été utilisés ou endommagés après réception.",
+    "s6Body": "Conformément à l'article L221-18 du Code de la consommation, tout consommateur (acheteur non professionnel) dispose d'un délai de 14 jours calendaires à compter de la réception du colis pour exercer son droit de rétractation, sans motif ni pénalité. Les produits doivent être retournés en état neuf, non utilisés, dans leur emballage d'origine, aux frais de l'acheteur. Le remboursement interviendra dans les 14 jours suivant réception et vérification du retour. Ce droit ne s'applique pas aux commandes passées à des fins professionnelles (B2B), ni aux produits ayant été utilisés ou endommagés après réception. Garantie commerciale « Satisfait ou remboursé » : en plus du droit de rétractation, et y compris pour les commandes passées à des fins professionnelles, tout acheteur peut obtenir le remboursement de sa commande de SmartTags dans les 14 jours calendaires suivant la réception du colis, sans avoir à se justifier, en écrivant à contact@digitip.app puis en retournant les SmartTags complets et en bon état. Le remboursement du prix payé intervient dans les 14 jours suivant la réception du retour. Les frais de retour restent à la charge de l'acheteur. Cette garantie ne couvre pas l'abonnement Digitip Pro.",
     "s7Title": "7. Garanties légales",
     "s7Body": "Les SmartTags bénéficient de la garantie légale de conformité (articles L217-3 et suivants du Code de la consommation, 2 ans à compter de la livraison pour les acheteurs non professionnels) et de la garantie légale contre les vices cachés (articles 1641 et suivants du Code civil). En complément, YUZU LABS SAS offre une garantie commerciale à vie sur le matériel : tout SmartTag présentant un défaut de fabrication ou une défaillance dans le cadre d'une utilisation normale est remplacé gratuitement sur simple envoi d'une photo à contact@digitip.app.",
     "s8Title": "8. Service après-vente",
@@ -303,10 +303,10 @@
     "shipping": {
       "kicker": "Livraison",
       "title": "Expédition rapide en Europe",
-      "processing": "1–2 jours ouvrés de traitement",
-      "freeEU": "Livraison offerte partout en Europe",
-      "timezoneFR": "France : 3–5 jours ouvrés",
-      "timezoneEU": "Europe : 4–7 jours ouvrés",
+      "processing": "Expédition sous 3 jours ouvrés",
+      "freeEU": "Livraison offerte en Europe et en Suisse",
+      "timezoneFR": "France : 3–5 jours ouvrés après expédition",
+      "timezoneEU": "Europe et Suisse : 4–7 jours ouvrés après expédition",
       "tracking": "Numéro de suivi fourni"
     },
     "guarantee": {
@@ -576,7 +576,7 @@
     },
     "shipping": {
       "title": "Où livrer vos SmartTags ?",
-      "subtitle": "Livraison gratuite sous 3 à 5 jours ouvrés en Europe. Vos SmartTags arrivent pré-programmés et prêts à poser.",
+      "subtitle": "Expédition offerte sous 3 jours ouvrés, en Europe et en Suisse. Vos SmartTags arrivent pré-programmés et prêts à poser.",
       "recipient": "Destinataire",
       "recipientPlaceholder": "Nom complet ou établissement"
     },
@@ -753,7 +753,7 @@
       "commissionPaid30d": "Frais collectés 30 jours",
       "commissionPaidHint": "Montant réglé par les clients en plus des pourboires, sur la période.",
       "orderMoreTitle": "Besoin de SmartTags supplémentaires ?",
-      "orderMoreBody": "Passez commande, nous les programmons à la main et expédions sous 3 jours.",
+      "orderMoreBody": "Passez commande, nous les programmons à la main et expédions sous 3 jours ouvrés.",
       "orderMoreCta": "Commander",
       "invoicesPortal": "Factures & paiements",
       "orders": "Commandes SmartTags",

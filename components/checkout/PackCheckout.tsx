@@ -19,9 +19,11 @@ interface Props {
   locale: string;
 }
 
+// Switzerland ships too: an export, invoiced without French VAT (Swiss import
+// VAT and any duties are the buyer's, see CGV section 5).
 const ALLOWED_SHIPPING_COUNTRIES: Array<
-  'FR' | 'BE' | 'IE' | 'ES' | 'DE' | 'IT' | 'NL' | 'LU' | 'PT' | 'AT' | 'FI' | 'GR'
-> = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR'];
+  'FR' | 'BE' | 'IE' | 'ES' | 'DE' | 'IT' | 'NL' | 'LU' | 'PT' | 'AT' | 'FI' | 'GR' | 'CH'
+> = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR', 'CH'];
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
