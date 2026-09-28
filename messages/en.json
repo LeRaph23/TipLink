@@ -36,6 +36,7 @@
     "rowTotal": "Total incl. VAT",
     "vatCalculating": "Calculating…",
     "vatPerAddress": "Based on address",
+    "exportNoteCH": "Shipping to Switzerland: export sale, no French VAT. Swiss VAT and any customs fees may be collected on delivery.",
     "btnProcessing": "Processing…",
     "btnCalculatingVat": "Calculating VAT…",
     "btnPay": "Pay {amount}",

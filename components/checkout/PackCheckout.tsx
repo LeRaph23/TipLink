@@ -45,7 +45,7 @@ type IntentData = {
 type CachedIntent = { key: string; data: IntentData } | { key: string; error: string };
 
 // VAT breakdown returned by /api/billing/pack-tax (all cents).
-type Tax = { ht: number; tax: number; total: number; ratePct: number | null };
+type Tax = { ht: number; tax: number; total: number; ratePct: number | null; country: string };
 
 export function PackCheckout({ pack, locale }: Props) {
   const t = useTranslations('checkout');
@@ -222,7 +222,7 @@ function InnerCheckout({
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error ?? 'pack tax lookup failed');
-      return { ht: d.htAmount, tax: d.taxAmount, total: d.totalAmount, ratePct: d.taxRatePercent };
+      return { ht: d.htAmount, tax: d.taxAmount, total: d.totalAmount, ratePct: d.taxRatePercent, country: country.toUpperCase() };
     },
     [clientSecret]
   );
@@ -374,7 +374,7 @@ function InnerCheckout({
       }
       setPromo({ code: d.promoCode ?? null, discount: d.discountAmount ?? 0, amount: d.totalAmount ?? amount });
       // Once the address has been priced, the totals shown come from `tax`.
-      if (tax) setTax({ ht: d.htAmount, tax: d.taxAmount, total: d.totalAmount, ratePct: d.taxRatePercent ?? tax.ratePct });
+      if (tax) setTax({ ht: d.htAmount, tax: d.taxAmount, total: d.totalAmount, ratePct: d.taxRatePercent ?? tax.ratePct, country: tax.country });
       // Wallet sheets (Apple Pay, Google Pay) show the intent's amount.
       await elements?.fetchUpdates().catch(() => {});
     } finally {
@@ -454,6 +454,11 @@ function InnerCheckout({
           options={{
             mode: 'shipping',
             allowedCountries: ALLOWED_SHIPPING_COUNTRIES,
+            // Without a default, Stripe picks the country from the visitor's
+            // IP. Near the border (Mulhouse, Basel) that is Switzerland: a
+            // French buyer typed a French address under "Suisse" and was
+            // shown, and charged, an export price with no VAT.
+            defaultValues: { address: { country: 'FR' } },
             fields: { phone: 'always' },
             validation: { phone: { required: 'auto' } },
           }}
@@ -529,6 +534,11 @@ function InnerCheckout({
         <Row label={t('rowShipping')} value={t('shippingFree')} muted />
         <div style={{ height: 1, background: '#FBDAE3', margin: '4px 0' }} />
         <Row label={t('rowTotal')} value={tax ? fmt.format(tax.total / 100) : '—'} bold />
+        {tax?.country === 'CH' && (
+          <p style={{ fontSize: 11.5, color: '#6b6d85', lineHeight: 1.45, margin: '4px 0 0' }}>
+            {t('exportNoteCH')}
+          </p>
+        )}
       </div>
 
       {/* Pay button */}
