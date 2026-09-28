@@ -36,6 +36,7 @@
     "rowTotal": "Total TTC",
     "vatCalculating": "Calcul…",
     "vatPerAddress": "Selon l’adresse",
+    "exportNoteCH": "Livraison en Suisse : vente à l’export, sans TVA française. La TVA suisse et d’éventuels frais de dédouanement peuvent vous être demandés à la livraison.",
     "btnProcessing": "Traitement…",
     "btnCalculatingVat": "Calcul de la TVA…",
     "btnPay": "Payer {amount}",
