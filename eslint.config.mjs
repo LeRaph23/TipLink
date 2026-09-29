@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local e2e stack output (Playwright reports, traces): scripts/e2e.
     ".e2e/**",
+    // Standalone ad videos rendered from HTML, not part of the app.
+    "marketing/**",
   ]),
 ]);
 
