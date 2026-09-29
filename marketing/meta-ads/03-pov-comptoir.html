@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Pub 3 · POV comptoir</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .blur-bg { position: absolute; inset: -60px; background: url(assets/solo-table.jpg) center / cover; filter: blur(40px) brightness(.55); }
+  .photo { position: absolute; left: 0; top: 470px; width: 1080px; height: 1080px; overflow: hidden; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; animation: kb 3s linear 0s both; transform-origin: 30% 65%; }
+  @keyframes kb { from { transform: scale(1.05) } to { transform: scale(1.35) } }
+  .tt { font-size: 70px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; text-shadow: 0 4px 24px rgba(0,0,0,.55); }
+
+  .out { animation-name: inUp, out; animation-duration: .5s, .3s; animation-fill-mode: both, forwards; }
+  @keyframes out { to { opacity: 0; transform: translateY(-40px) } }
+
+  .dash { background: #0d0c12 !important; color: #f2f2f5 !important; padding: 96px 30px 0; }
+  .dash small { display: block; font-size: 22px; color: #8d8699; }
+  .dash h3 { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px; }
+  .kpi { margin-top: 26px; padding: 26px 28px; border-radius: 28px; background: #17161f; border: 2px solid #26242f; }
+  .kpi small { text-transform: uppercase; letter-spacing: .12em; font-size: 19px; font-weight: 700; }
+  .kpi b { display: block; font-size: 66px; font-weight: 800; letter-spacing: -0.03em; margin-top: 6px; }
+  .feed-title { margin: 30px 4px 14px; font-size: 19px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8d8699; }
+  .feed { position: relative; height: 520px; }
+  .row { position: absolute; left: 0; right: 0; height: 84px; padding: 0 20px; border-radius: 22px; background: #17161f; border: 2px solid #26242f;
+    display: flex; align-items: center; gap: 16px; opacity: 0; }
+  .row.fresh { border-color: rgba(229,122,151,.6); background: #231a27; }
+  .av { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; font-weight: 800; color: #fff; flex: none;
+    background: linear-gradient(135deg, #ee8fb0, #9d5cf2); }
+  .row .who { flex: 1; white-space: nowrap; font-size: 25px; font-weight: 700; line-height: 1.15; }
+  .row .who span { display: block; font-size: 19px; font-weight: 500; color: #8d8699; }
+  .row .amt { white-space: nowrap; font-size: 27px; font-weight: 800; color: #4ade80; }
+  .illu { position: absolute; top: 100px; right: 34px; font-size: 18px; color: #5f5a6b; }
+
+  .pick { position: absolute; left: 190px; right: 190px; height: 118px; border-radius: 30px; background: #fff; border: 2px solid #eadcf0;
+    display: flex; align-items: center; gap: 24px; padding: 0 30px; font-size: 42px; font-weight: 700; color: var(--ink);
+    box-shadow: 0 10px 30px rgba(120,60,160,.08); }
+  .pick .av { width: 70px; height: 70px; font-size: 32px; }
+  .pick::after { content: '→'; margin-left: auto; color: #c4b5d4; }
+  .pick.sel { animation: pickSel .3s ease-out 9.55s forwards; }
+  @keyframes pickSel { to { border-color: var(--pink); box-shadow: 0 0 0 8px rgba(229,122,151,.18); transform: scale(1.03) } }
+</style>
+</head>
+<body data-duration="12.4">
+
+<!-- A · POV hook on a real-looking counter -->
+<section class="scene" style="--at:0s; --len:2.65s; background:#000">
+  <div class="blur-bg"></div>
+  <div class="photo"><img src="assets/solo-table.jpg" style="object-position: 30% 60%"></div>
+  <div class="center tt in-up" style="top:280px; animation-delay:.05s">POV : t'as posé une plaque<br><span class="gtext">Digitip</span> sur ton comptoir</div>
+</section>
+
+<!-- B · The dashboard fills up -->
+<section class="scene" style="--at:2.65s; --len:5.6s; background:#000">
+  <div class="blur-bg"></div>
+  <div class="center tt out" style="top:280px; animation-delay:2.7s, 5.25s">Tes clients voulaient donner.</div>
+  <div class="center tt in-up" style="top:280px; animation-delay:5.55s">Ils n'avaient juste<br>pas de liquide.</div>
+  <div class="in-up" style="position:absolute; left:352px; top:450px; animation-delay:2.75s">
+    <div class="phone" style="position:relative; transform:scale(.8); transform-origin: top left">
+      <div class="island"></div>
+      <div class="screen dash">
+        <small>Salon Julie · Paris 11e</small>
+        <h3>Bonjour, Julie</h3>
+        <div class="kpi"><small>Pourboires aujourd'hui</small><b id="total">0,00 €</b></div>
+        <div class="feed-title">Derniers pourboires</div>
+        <div class="feed" id="feed"></div>
+        <div class="illu">Illustration</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- C · The client picks who gets it -->
+<section class="scene light" style="--at:8.25s; --len:1.95s">
+  <div class="center h-m in-up" style="top:290px; animation-delay:8.3s">Et c'est ton client qui choisit<br><span class="gtext-d">à qui va le pourboire.</span></div>
+  <div class="pick sel in-left" style="top:560px; animation-delay:8.6s"><span class="av">L</span>Léa</div>
+  <div class="pick in-left" style="top:700px; animation-delay:8.7s"><span class="av">M</span>Marc</div>
+  <div class="pick in-left" style="top:840px; animation-delay:8.8s"><span class="av">S</span>Sophie</div>
+  <div class="pick in-left" style="top:980px; animation-delay:8.9s"><span class="av" style="background:#f3e3ee; color:var(--pink)">♥</span>Toute l'équipe</div>
+  <div class="tap-dot" style="left:700px; top:574px; animation: tap .5s ease-out 9.35s both"></div>
+</section>
+
+<!-- D · End card -->
+<section class="scene brand" style="--at:10.2s; --len:30s">
+  <div class="in-pop" style="position:absolute; left:350px; top:290px; width:380px; height:380px; border-radius:48px; background:#fff; overflow:hidden;
+      transform:rotate(-6deg); box-shadow:0 30px 60px rgba(60,10,90,.3); animation-delay:10.25s">
+    <img src="assets/solo-3d.jpg" style="width:100%; height:100%; object-fit:cover">
+  </div>
+  <div class="center end-logo in-up" style="top:730px; animation-delay:10.45s">Digitip</div>
+  <div class="center h-m in-up" style="top:905px; font-size:58px; animation-delay:10.65s">Dès 69 € HT, payée une fois</div>
+  <div class="center t-s in-up" style="top:990px; opacity:.9; animation-delay:10.8s">Livraison offerte · Garantie à vie</div>
+  <div class="center in-up" style="top:1080px; animation-delay:10.95s"><div class="pulse" style="display:inline-block"><span class="end-cta">digitip.app →</span></div></div>
+</section>
+
+<script src="base.js"></script>
+<script>
+  // Newest tip lands on top and pushes the others down, like the real feed.
+  const TIPS = [
+    ['L', 'Léa', 10], ['M', 'Marc', 5], ['♥', "Toute l'équipe", 20], ['S', 'Sophie', 7.5], ['L', 'Léa', 15],
+  ];
+  const START = 3.3, STEP = 0.62, ROW = 94;
+  const feed = document.getElementById('feed');
+  const rows = TIPS.map(([a, name, v]) => {
+    const r = document.createElement('div');
+    r.className = 'row';
+    r.innerHTML = `<span class="av">${a}</span><div class="who">${name}<span></span></div><div class="amt">+${fx.eur(v)}</div>`;
+    feed.appendChild(r);
+    return r;
+  });
+  onTick((t) => {
+    let total = 0;
+    rows.forEach((r, i) => {
+      const ti = START + i * STEP;
+      const shown = fx.ease((t - ti) / 0.35);
+      let slot = 0;
+      for (let j = i + 1; j < rows.length; j++) slot += fx.ease((t - (START + j * STEP)) / 0.35);
+      r.style.opacity = shown;
+      r.style.transform = `translateY(${slot * ROW - (1 - shown) * 40}px) scale(${0.94 + 0.06 * shown})`;
+      r.classList.toggle('fresh', t >= ti && t < ti + STEP);
+      r.querySelector('.who span').textContent = slot < 0.5 ? "à l'instant" : `il y a ${Math.round(slot)} min`;
+      total += TIPS[i][2] * shown;
+    });
+    document.getElementById('total').textContent = fx.eur(total);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Pub 1 · Pas de liquide</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .bubble { position: absolute; left: 110px; right: 110px; top: 470px; padding: 56px 60px; border-radius: 56px; background: #fff;
+    color: var(--ink); font-size: 76px; font-weight: 800; line-height: 1.08; letter-spacing: -0.03em; text-align: left; }
+  .bubble::after { content: ''; position: absolute; left: 90px; bottom: -34px; border: 20px solid transparent;
+    border-top: 28px solid #fff; border-left: 28px solid #fff; }
+  .coin { position: absolute; left: 50%; top: 860px; width: 190px; height: 190px; margin-left: -95px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffe89a, #f5b82e 55%, #c98a10); border: 8px solid #e7a91c;
+    display: grid; place-items: center; font-size: 62px; font-weight: 800; color: #7a4d00;
+    animation: inPop .45s cubic-bezier(.3,1.5,.5,1) 0.85s both, poof .45s ease-in 1.35s forwards; }
+  @keyframes poof { to { opacity: 0; transform: scale(.2) rotate(40deg); filter: grayscale(1) blur(6px) } }
+
+  .plaque { position: absolute; left: 50%; border-radius: 40px; filter: drop-shadow(0 30px 50px rgba(90,40,130,.25)); }
+  .float { animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-18px) rotate(1deg) } }
+
+  .phone-fly { position: absolute; left: 610px; top: 560px; transform-origin: top left;
+    animation: fly .6s cubic-bezier(.2,.9,.3,1.05) 6.35s both; }
+  @keyframes fly { from { transform: translate(560px, -760px) rotate(30deg) scale(.55) } to { transform: translate(0,0) rotate(-14deg) scale(.55) } }
+  .splash { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(160deg, #f19bba, #9d5cf2);
+    color: #fff; font-size: 70px; font-weight: 800; letter-spacing: -0.03em; }
+
+  .out { animation-name: inUp, out; animation-duration: .5s, .3s; animation-fill-mode: both, forwards; }
+  @keyframes out { to { opacity: 0; transform: translateY(-40px) } }
+
+  .amt-sel { animation: sel .25s ease-out 8.45s forwards; }
+  @keyframes sel { to { background: linear-gradient(135deg, #ee8fb0, #9d5cf2); color: #fff; border-color: transparent; transform: scale(1.06) } }
+  .press { animation: press .3s ease-in-out 8.95s both; }
+  @keyframes press { 50% { transform: scale(.94) } }
+  .done { position: absolute; inset: 0; background: #fbf8fd; display: flex; flex-direction: column; justify-content: center; text-align: center;
+    animation: inFade .3s ease-out 9.2s both; }
+</style>
+</head>
+<body data-duration="15.2">
+
+<!-- A · Hook: the sentence every pro knows -->
+<section class="scene dark" style="--at:0s; --len:3.35s">
+  <div class="center" style="top:300px"><span class="pill on-dark in-fade" style="animation-delay:.05s">Coiffeurs · barbiers · serveurs</span></div>
+  <div class="bubble in-pop" style="animation-delay:.1s">« Ah désolé…<br>j'ai pas de liquide.&nbsp;»</div>
+  <div class="coin">5 €</div>
+  <div class="center h-l gtext in-up" style="top:860px; animation-delay:1.55s">Et ton pourboire<br>part avec lui.</div>
+</section>
+
+<!-- B · The product -->
+<section class="scene light" style="--at:3.35s; --len:2.95s">
+  <div class="center h-m in-up" style="top:300px; animation-delay:3.4s">La solution ?<br><span class="gtext-d">Une plaque de 10 cm.</span></div>
+  <div class="in-pop" style="position:absolute; inset:0; animation-delay:3.6s">
+    <img class="plaque float" src="assets/solo-3d.jpg" style="top:560px; width:620px; margin-left:-310px">
+  </div>
+  <div class="center in-up" style="top:1200px; animation-delay:4.1s"><span class="pill on-light">NFC + QR code · sans pile</span></div>
+</section>
+
+<!-- C1 · The tap -->
+<section class="scene light" style="--at:6.3s; --len:1.55s">
+  <div class="center h-m in-up" style="top:300px; animation-delay:6.3s">Ton client approche<br>son téléphone…</div>
+  <img class="plaque" src="assets/solo-3d.jpg" style="top:520px; width:600px; margin-left:-360px">
+  <div class="ring" style="left:520px; top:640px; width:340px; height:340px; animation: ring .8s ease-out 6.9s both"></div>
+  <div class="ring" style="left:520px; top:640px; width:340px; height:340px; animation: ring .8s ease-out 7.15s both"></div>
+  <div class="phone-fly"><div class="phone" style="position:relative"><div class="island"></div><div class="screen"><div class="splash">Digitip</div></div></div></div>
+</section>
+
+<!-- C2 · Pick an amount, pay, done -->
+<section class="scene light" style="--at:7.85s; --len:2.8s">
+  <div class="center h-m out" style="top:290px; animation-delay:7.9s, 9.25s">…choisit un montant.</div>
+  <div class="center h-m in-up" style="top:290px; animation-delay:9.55s"><span class="gtext-d">3 secondes.</span> Zéro appli.</div>
+  <div class="in-up" style="position:absolute; left:352px; top:420px; transform-origin: top center; animation-delay:7.85s">
+    <div class="phone" style="position:relative; transform:scale(.8); transform-origin: top left">
+      <div class="island"></div>
+      <div class="screen">
+        <div class="tp-head"><b>Un pourboire pour Léa</b><span>Salon Julie · Paris 11e</span></div>
+        <div class="tp-av">L</div>
+        <div class="tp-amts"><div class="tp-amt">5 €</div><div class="tp-amt amt-sel">10 €</div><div class="tp-amt">20 €</div></div>
+        <div class="tp-pay press" style="margin-top:60px">Payer · Apple Pay</div>
+        <div class="tap-dot" style="left:170px; top:370px; animation: tap .5s ease-out 8.25s both"></div>
+        <div class="tap-dot" style="left:170px; top:545px; animation: tap .5s ease-out 8.8s both"></div>
+        <div class="done">
+          <div class="check in-pop" style="animation-delay:9.3s"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+          <div class="in-up" style="font-size:64px; font-weight:800; margin-top:40px; animation-delay:9.45s">Merci !</div>
+          <div class="in-up" style="font-size:30px; color:#7b7288; margin-top:10px; animation-delay:9.55s">10 € envoyés à Léa</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- D · The three promises -->
+<section class="scene dark" style="--at:10.65s; --len:2.2s">
+  <div class="center h-xl in-slam" style="top:400px; animation-delay:10.7s">Sans liquide.</div>
+  <div class="center h-xl in-slam" style="top:560px; animation-delay:11.1s">Sans appli.</div>
+  <div class="center h-xl gtext in-slam" style="top:720px; animation-delay:11.5s">0 % prélevé</div>
+  <div class="center t-m in-up" style="top:860px; animation-delay:11.65s">sur tes pourboires</div>
+  <div class="center t-s in-fade" style="top:1060px; color:#cbbfdb; animation-delay:11.9s">Les frais de service sont réglés par le client</div>
+</section>
+
+<!-- E · End card -->
+<section class="scene brand" style="--at:12.85s; --len:30s">
+  <div class="in-pop" style="position:absolute; left:350px; top:290px; width:380px; height:380px; border-radius:48px; background:#fff; overflow:hidden;
+      transform:rotate(-6deg); box-shadow:0 30px 60px rgba(60,10,90,.3); animation-delay:12.9s">
+    <img src="assets/solo-3d.jpg" style="width:100%; height:100%; object-fit:cover">
+  </div>
+  <div class="center end-logo in-up" style="top:730px; animation-delay:13.1s">Digitip</div>
+  <div class="center h-m in-up" style="top:905px; font-size:58px; animation-delay:13.3s">Dès 69 € HT, payée une fois</div>
+  <div class="center t-s in-up" style="top:990px; opacity:.9; animation-delay:13.45s">Livraison offerte · Garantie à vie</div>
+  <div class="center in-up" style="top:1080px; animation-delay:13.6s"><div class="pulse" style="display:inline-block"><span class="end-cta">digitip.app →</span></div></div>
+</section>
+
+<script src="base.js"></script>
+</body>
+</html>
