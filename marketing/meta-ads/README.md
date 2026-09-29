@@ -22,7 +22,11 @@ Rendu MP4 (dans `out/`) :
 FFMPEG=/chemin/vers/ffmpeg node marketing/meta-ads/render.mjs          # toutes
 node marketing/meta-ads/render.mjs 02                                   # une seule
 node marketing/meta-ads/render.mjs 01 --stills 1,5,9                    # images fixes
+node marketing/meta-ads/render.mjs --organic                            # versions organiques
 ```
+
+Version organique (`out/organique/`) : écran de fin court, sans prix ni argument de
+vente. Ordre de publication et légendes : voir `ORGANIQUE.md`.
 
 Les textes importants restent entre y≈280 et y≈1250 px, hors des zones
 couvertes par l'interface Reels et dans le recadrage 4:5 du fil d'actualité.

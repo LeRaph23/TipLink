@@ -2,6 +2,7 @@
 //   node marketing/meta-ads/render.mjs                 → every ad
 //   node marketing/meta-ads/render.mjs 01-pas-de-liquide → one ad
 //   node marketing/meta-ads/render.mjs 01 --stills 1.2,5  → PNG stills only
+//   add --organic for the organic-post cut (short end card, no price) in out/organique/
 // Needs Playwright (Chromium) and ffmpeg; set FFMPEG=/path/to/ffmpeg if it
 // is not on PATH.
 import { chromium } from 'playwright';
@@ -11,7 +12,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const out = join(here, 'out');
+const organic = process.argv.includes('--organic');
+const out = join(here, 'out', organic ? 'organique' : '');
 const FPS = 30;
 const ffmpeg = process.env.FFMPEG || 'ffmpeg';
 
@@ -27,9 +29,9 @@ const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
 
 for (const file of ads) {
   const name = file.replace(/\.html$/, '');
-  await page.goto('file://' + join(here, file) + '?capture');
+  await page.goto('file://' + join(here, file) + '?capture' + (organic ? '&organic' : ''));
   await page.evaluate(() => document.fonts.ready);
-  const duration = Number(await page.evaluate(() => document.body.dataset.duration));
+  const duration = await page.evaluate(() => window.videoDuration());
 
   if (stillsArg) {
     for (const s of stillsArg.split(',').map(Number)) {

@@ -14,9 +14,16 @@
   const eur = (v) => v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
   window.fx = { ease, eur, lerp: (a, b, x) => a + (b - a) * ease(x) };
 
+  // ?organic: the version for organic posts (short end card, no price or
+  // sales line). The page may set data-organic-duration for it.
+  const params = new URLSearchParams(location.search);
+  if (params.has('organic')) document.documentElement.classList.add('organic');
+  window.videoDuration = () => Number(
+    (params.has('organic') && document.body.dataset.organicDuration) || document.body.dataset.duration);
+
   window.addEventListener('load', () => {
-    if (new URLSearchParams(location.search).has('capture')) { window.seek(0); return; }
-    const dur = Number(document.body.dataset.duration) * 1000;
+    if (params.has('capture')) { window.seek(0); return; }
+    const dur = window.videoDuration() * 1000;
     const t0 = performance.now();
     const loop = () => { window.seek((performance.now() - t0) % dur); requestAnimationFrame(loop); };
     loop();

@@ -42,3 +42,7 @@ svg.stage { position: absolute; inset: 0; width: 1080px; height: 1920px; }
 .end .cta { display: inline-block; margin-top: 60px; padding: 26px 60px 32px; border-radius: 999px; background: #E57A97; color: #fff;
   border: 6px solid #1d1a24; box-shadow: 8px 8px 0 #1d1a24; font-size: 70px; }
 .end .small { font-family: 'PJS'; font-weight: 600; font-size: 34px; margin-top: 40px; color: #6b5f73; }
+
+/* Organic version (?organic): sales lines out, organic-only lines in */
+.organic .ad-only { display: none !important; }
+html:not(.organic) .organic-only { display: none !important; }
