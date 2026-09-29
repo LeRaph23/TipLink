@@ -26,25 +26,25 @@
   <div class="center" style="top:300px"><span class="pill on-dark in-fade" style="animation-delay:.05s">Coiffeurs · barbiers · tatoueurs</span></div>
   <div class="center h-m in-up" style="top:450px; animation-delay:.1s">Ta plaque Digitip est</div>
   <div class="center h-m in-up" style="top:530px; animation-delay:.3s">rentabilisée en</div>
-  <div class="center h-xl in-slam" style="top:680px; font-size:130px; white-space:nowrap; padding:0; animation-delay:.7s">moins de</div>
+  <div class="center h-xl in-slam" style="top:680px; font-size:130px; white-space:nowrap; padding:0; animation-delay:.7s">seulement</div>
   <div class="center h-xl gtext in-slam" style="top:830px; font-size:130px; white-space:nowrap; padding:0; animation-delay:1s">10 pourboires.</div>
 </section>
 
 <!-- B · The maths, chip by chip -->
 <section class="scene dark" style="--at:2.6s; --len:4.8s">
-  <div class="center h-m in-up" style="top:290px; animation-delay:2.65s">Une plaque : 69 € HT</div>
-  <div class="center t-s in-up" style="top:375px; color:#a89cb8; animation-delay:2.8s">soit 82,80 € TTC</div>
+  <div class="center h-m in-up" style="top:290px; animation-delay:2.65s">Une plaque : 79 € HT</div>
+  <div class="center t-s in-up" style="top:375px; color:#a89cb8; animation-delay:2.8s">soit 94,80 € TTC</div>
   <div class="bar in-fade" id="bar" style="animation-delay:2.9s"><i id="fill"></i></div>
-  <div class="mark in-fade" style="left:calc(110px + (1080px - 220px) * 0.92); animation-delay:3s"><span>82,80 €</span></div>
+  <div class="mark in-fade" style="left:calc(110px + (1080px - 220px) * 0.948); animation-delay:3s"><span>94,80 €</span></div>
   <div class="center h-xl" id="sum" style="top:680px; font-size:130px">0 €</div>
   <div class="chips" id="chips"></div>
-  <div class="center h-l ok-line in-pop" style="top:1080px; animation-delay:6.45s">Rentabilisée.</div>
+  <div class="center h-l ok-line in-pop" style="top:1080px; animation-delay:6.7s">Rentabilisée.</div>
   <div class="center t-s in-fade" style="top:1200px; color:#8f84a0; animation-delay:3s">Exemple avec des pourboires de 10 €</div>
 </section>
 
 <!-- C · After that, everything is yours -->
 <section class="scene dark" style="--at:7.4s; --len:3s">
-  <div class="center h-l in-up" style="top:320px; animation-delay:7.45s">Et le 10<sup style="font-size:.5em">e</sup> ?</div>
+  <div class="center h-l in-up" style="top:320px; animation-delay:7.45s">Et le 11<sup style="font-size:.5em">e</sup> ?</div>
   <div class="center h-l gtext in-up" style="top:430px; animation-delay:7.8s">Il est pour toi.</div>
   <div class="center h-m in-up" style="top:550px; color:#d9cfe6; animation-delay:8.1s">Comme tous les suivants.</div>
   <div class="center t-m li in-left" style="top:760px; animation-delay:8.55s"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#22c55e"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Aucun abonnement</div>
@@ -59,14 +59,14 @@
     <img src="assets/solo-3d.jpg" style="width:100%; height:100%; object-fit:cover">
   </div>
   <div class="center end-logo in-up" style="top:730px; animation-delay:10.65s">Digitip</div>
-  <div class="center h-m in-up" style="top:905px; font-size:58px; animation-delay:10.85s">Dès 69 € HT, payée une fois</div>
+  <div class="center h-m in-up" style="top:905px; font-size:58px; animation-delay:10.85s">Dès 79 € HT, payée une fois</div>
   <div class="center t-s in-up" style="top:990px; opacity:.9; animation-delay:11s">Livraison offerte · Garantie à vie</div>
   <div class="center in-up" style="top:1080px; animation-delay:11.15s"><div class="pulse" style="display:inline-block"><span class="end-cta">digitip.app →</span></div></div>
 </section>
 
 <script src="base.js"></script>
 <script>
-  const CHIPS = 9, START = 3.2, STEP = 0.38, GOAL = 82.8, MAX = 90;
+  const CHIPS = 10, START = 3.2, STEP = 0.34, GOAL = 94.8, MAX = 100;
   const chipsEl = document.getElementById('chips');
   for (let i = 0; i < CHIPS; i++) {
     const c = document.createElement('div');

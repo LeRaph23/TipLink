@@ -5,7 +5,7 @@ Trois pubs verticales 1080×1920, écrites en HTML/CSS et rendues image par imag
 | Fichier | Angle | Durée |
 |---|---|---|
 | `01-pas-de-liquide.html` | Douleur : « j'ai pas de liquide » → la plaque → démo → promesses | 15,2 s |
-| `02-le-calcul.html` | Rentabilité : plaque remboursée en moins de 10 pourboires de 10 € | 12,8 s |
+| `02-le-calcul.html` | Rentabilité : plaque remboursée en 10 pourboires de 10 € | 12,8 s |
 | `03-pov-comptoir.html` | Format natif « POV » : le tableau de bord se remplit | 12,4 s |
 | `04-la-fouille.html` | Sketch dessiné : le client fouille ses poches, sort de tout, puis 1 centime | 18,5 s |
 | `05-je-repasse-demain.html` | Sketch dessiné : « je repasse demain », Léa attend trois ans | 17,3 s |
