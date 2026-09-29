@@ -1,0 +1,44 @@
+/* Shared look for the hand-drawn sketches (04+): paper, ink outlines,
+   hand-lettered captions and speech bubbles. */
+@font-face { font-family: 'PJS'; src: url(assets/pjs.woff2) format('woff2'); font-weight: 200 800; }
+@font-face { font-family: 'Hand'; src: url(assets/gochi.woff2) format('woff2'); }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #fbf3e4; }
+body { font-family: 'Hand', 'PJS', sans-serif; color: #1d1a24; }
+
+svg.stage { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+.ink { stroke: #1d1a24; stroke-width: 8; stroke-linejoin: round; stroke-linecap: round; }
+.ink-t { stroke: #1d1a24; stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; fill: none; }
+
+/* Caption on a strip of tape, top of the frame (inside the Reels safe zone) */
+.cap { position: absolute; left: 60px; right: 60px; top: 290px; text-align: center; }
+.cap span { display: inline-block; padding: 18px 34px 22px; background: #fff; border: 6px solid #1d1a24; border-radius: 18px;
+  font-size: 60px; line-height: 1.05; box-shadow: 8px 8px 0 #1d1a24; transform: rotate(-1.5deg); }
+.cap.pink span { background: #ffd6e3; }
+
+/* Speech bubbles: positioned by their tail tip (left/top), pointing down */
+.bub { position: absolute; transform-origin: 30% 100%; }
+.bub > div { position: relative; padding: 22px 34px 26px; background: #fff; border: 6px solid #1d1a24; border-radius: 40px;
+  font-size: 58px; line-height: 1.02; white-space: nowrap; }
+.bub > div::after { content: ''; position: absolute; left: 60px; bottom: -40px; width: 44px; height: 44px; background: #fff;
+  border-right: 6px solid #1d1a24; border-bottom: 6px solid #1d1a24; transform: skewX(35deg) rotate(45deg) scale(.8, 1.2); }
+.bub.right { transform-origin: 70% 100%; }
+.bub.right > div::after { left: auto; right: 60px; transform: skewX(-35deg) rotate(45deg) scale(1.2, .8); }
+.bub.shout > div { font-size: 88px; background: #fff3a6; }
+.bub.shout > div::after { background: #fff3a6; }
+
+.big-fx { position: absolute; font-size: 120px; color: #16a34a; -webkit-text-stroke: 5px #1d1a24; paint-order: stroke fill; }
+
+/* Paper wipe between "before" and "after" */
+.wipe { position: absolute; left: -40px; right: -40px; top: -40px; bottom: -40px; background: #E57A97; display: grid; place-items: center;
+  border: 10px solid #1d1a24; }
+.wipe b { font-family: 'Hand'; font-weight: 400; font-size: 150px; color: #fff; -webkit-text-stroke: 6px #1d1a24; paint-order: stroke fill; transform: rotate(-4deg); }
+
+/* End card */
+.end { position: absolute; inset: 0; background: #fbf3e4; text-align: center; }
+.end .logo { font-family: 'PJS'; font-weight: 800; font-size: 160px; letter-spacing: -0.045em; line-height: 1; }
+.end .tag { font-size: 76px; margin-top: 10px; }
+.end .cta { display: inline-block; margin-top: 60px; padding: 26px 60px 32px; border-radius: 999px; background: #E57A97; color: #fff;
+  border: 6px solid #1d1a24; box-shadow: 8px 8px 0 #1d1a24; font-size: 70px; }
+.end .small { font-family: 'PJS'; font-weight: 600; font-size: 34px; margin-top: 40px; color: #6b5f73; }

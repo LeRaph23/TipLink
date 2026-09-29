@@ -5,7 +5,7 @@
 // Needs Playwright (Chromium) and ffmpeg; set FFMPEG=/path/to/ffmpeg if it
 // is not on PATH.
 import { chromium } from 'playwright';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { readdirSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,12 +40,21 @@ for (const file of ads) {
     continue;
   }
 
+  // Sound effects: a page may list cues in <script type="application/json" id="sfx">.
+  const cues = await page.evaluate(() => document.getElementById('sfx')?.textContent || null);
+  let audio = ['-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo'];
+  if (cues) {
+    const wav = join(out, `${name}.wav`);
+    execFileSync('python3', [join(here, 'sfx.py'), wav, String(duration), JSON.stringify(JSON.parse(cues))]);
+    audio = ['-i', wav];
+  }
+
   const enc = spawn(ffmpeg, [
     '-y', '-loglevel', 'error',
     '-f', 'image2pipe', '-framerate', String(FPS), '-i', '-',
-    '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo',
+    ...audio,
     '-shortest', '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p',
-    '-c:a', 'aac', '-movflags', '+faststart', join(out, `${name}.mp4`),
+    '-c:a', 'aac', '-b:a', '160k', '-ac', '2', '-movflags', '+faststart', join(out, `${name}.mp4`),
   ], { stdio: ['pipe', 'inherit', 'inherit'] });
   const done = new Promise((res, rej) => enc.on('close', (c) => (c ? rej(new Error(`ffmpeg ${c}`)) : res())));
 

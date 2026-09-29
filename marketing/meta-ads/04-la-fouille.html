@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Sketch 1 · La fouille</title>
+<link rel="stylesheet" href="cartoon.css">
+</head>
+<body data-duration="18.5">
+
+<svg class="stage" viewBox="0 0 1080 1920">
+  <defs>
+    <filter id="boil" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence id="boil-noise" type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="1"/>
+      <feDisplacementMap in="SourceGraphic" scale="7"/>
+    </filter>
+    <linearGradient id="plaque" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f29bb4"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+    <path id="heart" d="M0,12 C-30,-8 -22,-34 0,-20 C22,-34 30,-8 0,12 Z"/>
+  </defs>
+
+  <g id="cam">
+  <g filter="url(#boil)">
+    <!-- Room -->
+    <rect x="0" y="0" width="1080" height="1310" fill="#fbf3e4"/>
+    <rect x="0" y="1310" width="1080" height="610" fill="#ecd9bb"/>
+    <path class="ink-t" d="M0,1310 H1080"/>
+    <path d="M60,1420 H300 M520,1480 H900 M140,1600 H420 M640,1680 H1000" stroke="#d8c19c" stroke-width="6" stroke-linecap="round"/>
+    <!-- barber pole -->
+    <rect class="ink" x="40" y="560" width="70" height="330" rx="30" fill="#fff"/>
+    <path d="M45,600 L105,570 M45,660 L105,630 M45,720 L105,690 M45,780 L105,750 M45,840 L105,810" stroke="#e5484d" stroke-width="18"/>
+    <rect class="ink" x="40" y="560" width="70" height="330" rx="30" fill="none"/>
+    <!-- wall clock -->
+    <circle class="ink" cx="930" cy="520" r="70" fill="#fff"/>
+    <path class="ink-t" d="M930,462 v10 M930,568 v10 M872,520 h10 M978,520 h10"/>
+    <line id="hand-h" class="ink" x1="930" y1="520" x2="930" y2="486" stroke-width="10"/>
+    <line id="hand-m" class="ink" x1="930" y1="520" x2="930" y2="470"/>
+    <circle cx="930" cy="520" r="8" fill="#1d1a24"/>
+
+    <!-- LÉA, the hairdresser (behind the counter) -->
+    <g id="lea">
+      <circle cx="790" cy="770" r="114" fill="#4a2c20" class="ink"/>
+      <circle cx="790" cy="652" r="46" fill="#4a2c20" class="ink"/>
+      <path class="ink" d="M670,1200 Q680,915 790,898 Q900,915 910,1200 Z" fill="#fff"/>
+      <path class="ink" d="M722,1200 L727,955 Q790,938 853,955 L858,1200 Z" fill="#E57A97"/>
+      <rect x="772" y="872" width="36" height="36" fill="#f6d0b1"/>
+      <circle cx="690" cy="800" r="18" fill="#f6d0b1" class="ink"/>
+      <circle cx="890" cy="800" r="18" fill="#f6d0b1" class="ink"/>
+      <circle cx="790" cy="790" r="100" fill="#f6d0b1" class="ink"/>
+      <path class="ink" d="M690,790 Q690,680 790,680 Q890,680 890,790 Q872,722 800,728 Q738,718 702,778 Z" fill="#4a2c20"/>
+      <circle cx="735" cy="832" r="17" fill="#f29bb4" opacity=".55"/>
+      <circle cx="845" cy="832" r="17" fill="#f29bb4" opacity=".55"/>
+      <!-- eyes -->
+      <g data-on="0-8.3,10.6-99">
+        <ellipse id="lea-eye-l" cx="755" cy="795" rx="11" ry="15" fill="#1d1a24"/>
+        <ellipse cx="825" cy="795" rx="11" ry="15" fill="#1d1a24"/>
+        <path class="ink-t" d="M736,762 Q755,750 774,760 M806,760 Q825,750 844,762"/>
+      </g>
+      <g data-on="8.3-10.6">
+        <path class="ink-t" d="M738,786 H774 M806,786 H842" stroke-width="7"/>
+        <circle cx="758" cy="798" r="8" fill="#1d1a24"/><circle cx="826" cy="798" r="8" fill="#1d1a24"/>
+        <path class="ink-t" d="M738,768 H774 M806,768 H842"/>
+      </g>
+      <!-- mouths -->
+      <path data-on="0-3.6,10.6-11.7" class="ink-t" d="M755,840 Q790,868 825,840"/>
+      <g data-on="3.6-8.3">
+        <rect class="ink" x="748" y="828" width="84" height="32" rx="12" fill="#fff" stroke-width="6"/>
+        <path class="ink-t" d="M769,830 V858 M790,830 V858 M811,830 V858" stroke-width="4"/>
+      </g>
+      <path data-on="8.3-10.6" class="ink-t" d="M768,852 H812"/>
+      <path data-on="11.7-99" class="ink" d="M748,832 Q790,900 832,832 Z" fill="#b3364f" stroke-width="6"/>
+      <path data-on="4.2-8.3" d="M890,700 Q908,735 890,748 Q872,735 890,700 Z" fill="#8fd3ff" class="ink" stroke-width="5"/>
+      <!-- arms: resting, then up for joy -->
+      <g data-on="0-11.7">
+        <path d="M700,950 L706,1058 M880,950 L874,1058" stroke="#1d1a24" stroke-width="52" stroke-linecap="round"/>
+        <path d="M700,950 L706,1058 M880,950 L874,1058" stroke="#fff" stroke-width="38" stroke-linecap="round"/>
+      </g>
+      <g data-on="11.7-99">
+        <path d="M700,950 L640,820 M880,950 L940,820" stroke="#1d1a24" stroke-width="52" stroke-linecap="round"/>
+        <path d="M700,950 L640,820 M880,950 L940,820" stroke="#fff" stroke-width="38" stroke-linecap="round"/>
+        <circle class="ink" cx="636" cy="808" r="27" fill="#f6d0b1"/><circle class="ink" cx="944" cy="808" r="27" fill="#f6d0b1"/>
+      </g>
+    </g>
+
+    <!-- Counter -->
+    <rect class="ink" x="470" y="1085" width="570" height="235" fill="#c98b52"/>
+    <path class="ink-t" d="M520,1150 H990 M520,1215 H990" stroke="#9d6534" stroke-width="5"/>
+    <rect class="ink" x="455" y="1055" width="600" height="38" rx="8" fill="#b3743e"/>
+    <g id="lea-hands" data-on="0-11.7">
+      <circle class="ink" cx="706" cy="1062" r="27" fill="#f6d0b1"/><circle class="ink" cx="874" cy="1062" r="27" fill="#f6d0b1"/>
+    </g>
+
+    <!-- After: the Digitip plaque on the counter -->
+    <g data-on="10.6-99">
+      <path class="ink" d="M630,1058 L650,1030 L690,1030 L710,1058 Z" fill="#ddd"/>
+      <rect class="ink" x="600" y="925" width="140" height="120" rx="18" fill="url(#plaque)"/>
+      <use href="#heart" transform="translate(670 970) scale(1.2)" fill="none" stroke="#fff" stroke-width="5"/>
+      <rect x="614" y="1005" width="112" height="28" rx="6" fill="#fff"/>
+      <path d="M626,1019 q6,-8 0,-14 M634,1022 q10,-11 0,-20" stroke="#1d1a24" stroke-width="3" fill="none"/>
+      <rect x="700" y="1009" width="20" height="20" fill="#1d1a24"/>
+      <g id="rings" fill="none" stroke="#E57A97" stroke-width="7">
+        <circle id="ring1" cx="670" cy="985" r="0"/><circle id="ring2" cx="670" cy="985" r="0"/>
+      </g>
+    </g>
+
+    <!-- GÉRARD, the client -->
+    <g id="gerard">
+      <rect class="ink" x="200" y="1225" width="80" height="220" fill="#3d5a99"/>
+      <rect class="ink" x="300" y="1225" width="80" height="220" fill="#3d5a99"/>
+      <ellipse class="ink" cx="232" cy="1450" rx="62" ry="26" fill="#2b2b2b"/>
+      <ellipse class="ink" cx="352" cy="1450" rx="62" ry="26" fill="#2b2b2b"/>
+      <path class="ink" d="M180,885 Q290,835 400,885 L430,1245 Q290,1275 150,1245 Z" fill="#6bab8a"/>
+      <path class="ink-t" d="M290,860 V1240"/>
+      <circle cx="275" cy="990" r="7" fill="#1d1a24"/><circle cx="275" cy="1080" r="7" fill="#1d1a24"/>
+      <path class="ink" d="M355,1125 H420 L424,1185 H359 Z" fill="#5a987a"/>
+      <!-- left arm -->
+      <path d="M195,900 L165,1150" stroke="#1d1a24" stroke-width="56" stroke-linecap="round"/>
+      <path d="M195,900 L165,1150" stroke="#6bab8a" stroke-width="42" stroke-linecap="round"/>
+      <circle class="ink" cx="163" cy="1170" r="28" fill="#f0c19a"/>
+      <!-- head -->
+      <circle cx="176" cy="725" r="22" fill="#f0c19a" class="ink"/>
+      <circle cx="404" cy="725" r="22" fill="#f0c19a" class="ink"/>
+      <circle cx="290" cy="720" r="118" fill="#f0c19a" class="ink"/>
+      <path d="M178,690 q-10,40 12,70 M402,690 q10,40 -12,70" stroke="#8a6d5a" stroke-width="22" stroke-linecap="round" fill="none"/>
+      <path d="M232,632 q20,-18 48,-16" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".8"/>
+      <path class="ink-t" d="M226,670 Q252,652 280,666 M304,666 Q332,652 358,670" stroke-width="12"/>
+      <g data-on="0-2.2,7.2-99">
+        <path class="ink-t" d="M236,712 Q254,692 272,712 M312,712 Q330,692 348,712" stroke-width="8"/>
+      </g>
+      <g data-on="2.2-7.2">
+        <circle cx="256" cy="714" r="10" fill="#1d1a24"/><circle cx="326" cy="714" r="10" fill="#1d1a24"/>
+        <ellipse cx="338" cy="810" rx="14" ry="11" fill="#ff7a8a" class="ink" stroke-width="4"/>
+      </g>
+      <circle cx="298" cy="748" r="28" fill="#e59a78" class="ink" stroke-width="6"/>
+      <path class="ink" d="M234,786 Q266,760 298,778 Q330,760 362,786 Q330,804 298,792 Q266,804 234,786 Z" fill="#6b4028" stroke-width="6"/>
+      <path data-on="0-2.2,7.2-99" class="ink-t" d="M275,808 Q298,826 321,808"/>
+      <!-- right arm: pocket / trophy / phone -->
+      <g id="arm-pocket" data-on="0-7.2,8.3-10.9">
+        <path d="M385,900 L398,1120" stroke="#1d1a24" stroke-width="56" stroke-linecap="round"/>
+        <path d="M385,900 L398,1120" stroke="#6bab8a" stroke-width="42" stroke-linecap="round"/>
+        <circle class="ink" cx="398" cy="1140" r="28" fill="#f0c19a"/>
+      </g>
+      <g data-on="7.2-8.3">
+        <path d="M385,900 L468,712" stroke="#1d1a24" stroke-width="56" stroke-linecap="round"/>
+        <path d="M385,900 L468,712" stroke="#6bab8a" stroke-width="42" stroke-linecap="round"/>
+        <circle class="ink" cx="474" cy="694" r="28" fill="#f0c19a"/>
+        <circle class="ink" cx="478" cy="650" r="24" fill="#d98a4a" stroke-width="6"/>
+        <path d="M430,610 l-14,-14 M478,590 v-22 M526,610 l14,-14" stroke="#f5b82e" stroke-width="8" stroke-linecap="round"/>
+        <text x="515" y="712" font-family="Hand" font-size="46">← 1 centime</text>
+      </g>
+      <g data-on="10.9-99">
+        <path d="M385,900 L548,1000" stroke="#1d1a24" stroke-width="56" stroke-linecap="round"/>
+        <path d="M385,900 L548,1000" stroke="#6bab8a" stroke-width="42" stroke-linecap="round"/>
+        <rect class="ink" x="545" y="945" width="56" height="100" rx="12" fill="#1d1a24" stroke-width="6"/>
+        <rect x="553" y="957" width="40" height="76" rx="6" fill="#b9a4f5"/>
+        <circle class="ink" cx="552" cy="1004" r="28" fill="#f0c19a"/>
+      </g>
+    </g>
+
+    <!-- Junk from the pocket -->
+    <g id="junk" data-on="0-10.6">
+      <g class="item"><circle class="ink" cx="-25" cy="0" r="22" fill="#d6d9df" stroke-width="6"/><rect class="ink" x="-4" y="-7" width="58" height="14" fill="#d6d9df" stroke-width="6"/><path class="ink-t" d="M38,7 v14 M50,7 v10"/></g>
+      <g class="item"><rect class="ink" x="-52" y="-30" width="104" height="60" rx="6" fill="#fff7c9" stroke-width="6"/><rect x="-46" y="-24" width="14" height="48" fill="#8b5cf6"/><text x="12" y="10" text-anchor="middle" font-family="PJS" font-weight="800" font-size="20">TICKET</text></g>
+      <g class="item"><path class="ink" d="M-58,-12 Q0,48 58,-16 Q64,-28 52,-28 Q0,18 -50,-24 Z" fill="#ffd84a" stroke-width="6"/><circle cx="58" cy="-24" r="6" fill="#4a3b1a"/></g>
+      <g class="item"><path class="ink" d="M-28,-55 h44 v55 q0,20 26,20 h10 q20,0 20,22 q0,22 -22,22 h-56 q-24,0 -24,-28 Z" fill="#ff6b6b" stroke-width="6"/><path d="M-26,-40 h40 M-26,-25 h40" stroke="#fff" stroke-width="8"/></g>
+      <g class="item"><ellipse class="ink" cx="8" cy="14" rx="46" ry="30" fill="#ffd84a" stroke-width="6"/><circle class="ink" cx="-22" cy="-24" r="23" fill="#ffd84a" stroke-width="6"/><path class="ink" d="M-44,-24 l-24,6 l24,8 z" fill="#ff9a3c" stroke-width="5"/><circle cx="-26" cy="-30" r="5" fill="#1d1a24"/></g>
+      <g class="item"><rect class="ink" x="-22" y="-56" width="44" height="112" rx="12" fill="#3a3a44" stroke-width="6"/><circle cx="0" cy="-34" r="8" fill="#e5484d"/><circle cx="-8" cy="-8" r="5" fill="#ddd"/><circle cx="8" cy="-8" r="5" fill="#ddd"/><circle cx="-8" cy="10" r="5" fill="#ddd"/><circle cx="8" cy="10" r="5" fill="#ddd"/></g>
+      <g class="item"><rect class="ink" x="-46" y="-58" width="92" height="116" rx="4" fill="#fff" stroke-width="6"/><rect x="-36" y="-48" width="72" height="72" fill="#cfe8ff"/><circle cx="0" cy="-6" r="17" fill="#f0c19a" stroke="#1d1a24" stroke-width="3"/><circle cx="0" cy="-28" r="11" fill="#c8c8c8" stroke="#1d1a24" stroke-width="3"/><text x="0" y="48" text-anchor="middle" font-family="Hand" font-size="24">Mamie</text></g>
+      <g class="item"><path class="ink" d="M-34,-6 q-6,-24 18,-26 q10,-18 30,-4 q26,-2 20,24 q10,22 -16,28 q-18,14 -34,0 q-24,4 -18,-22 Z" fill="#ff9ec4" stroke-width="6"/></g>
+    </g>
+    <!-- The one-cent coin, with its label -->
+    <g data-on="8.3-10.6">
+      <circle class="ink" cx="560" cy="1070" r="20" fill="#d98a4a" stroke-width="5"/>
+    </g>
+
+    <!-- Hearts around Léa -->
+    <g id="hearts" data-on="11.8-99" fill="#E57A97" stroke="#1d1a24" stroke-width="3">
+      <use href="#heart" class="heart" data-x="600" data-y="690"/>
+      <use href="#heart" class="heart" data-x="985" data-y="700"/>
+      <use href="#heart" class="heart" data-x="660" data-y="585"/>
+      <use href="#heart" class="heart" data-x="925" data-y="590"/>
+    </g>
+  </g>
+  </g>
+</svg>
+
+<!-- Captions and speech -->
+<div class="cap" data-on="0-8.3"><span>Quand un client veut<br>te laisser un pourboire…</span></div>
+<div class="cap pink" data-on="10.7-13.2"><span>Avec une plaque Digitip :</span></div>
+<div class="cap" data-on="13.2-15.3"><span>3 secondes. Zéro monnaie.</span></div>
+
+<div class="bub" style="left:300px; top:470px" data-on="0.6-2.3"><div data-pop="0.6">Attends, j'ai de la monnaie !</div></div>
+<div class="bub" style="left:340px; top:470px" data-on="4.3-6.2"><div data-pop="4.3">Bouge pas… bouge pas…</div></div>
+<div class="bub shout" style="left:480px; top:490px" data-on="7.25-8.3"><div data-pop="7.25">TADAAA !</div></div>
+<div class="bub right" style="left:140px; top:360px" data-on="8.9-10.6"><div data-pop="8.9" style="font-size:80px">…merci.</div></div>
+<div class="bub" style="left:230px; top:470px" data-on="12.2-15.3"><div data-pop="12.2">Et voilà.</div></div>
+<div class="bub right shout" style="left:560px; top:430px" data-on="12.6-15.3"><div data-pop="12.6">MERCI !!!</div></div>
+<div class="big-fx" id="plus" style="left:420px; top:830px">+10 €</div>
+
+<div class="wipe" id="wipe"><b>Et avec Digitip ?</b></div>
+
+<div class="end" data-on="15.3-99">
+  <div style="margin-top:360px" data-pop="15.35">
+    <svg width="200" height="180" viewBox="-60 -50 120 100"><use href="#heart" transform="scale(2.2)" fill="#E57A97" stroke="#1d1a24" stroke-width="3"/></svg>
+  </div>
+  <div class="logo" data-pop="15.5">Digitip</div>
+  <div class="tag" data-pop="15.7">Le pourboire, en un geste.</div>
+  <div data-pop="15.9"><span class="cta">digitip.app →</span></div>
+  <div class="small" data-pop="16.1">Plaque NFC dès 69 € HT · Livraison offerte</div>
+</div>
+
+<script type="application/json" id="sfx">
+[[0.6,"pop"],[2.3,"pop"],[2.9,"pop"],[3.4,"pop"],[3.9,"pop"],[4.3,"pop"],[4.35,"pop"],[4.75,"pop"],[5.1,"pop"],[5.45,"pop"],
+ [6.3,"drumroll",0.9],[7.25,"tada"],[8.3,"tink"],[8.45,"whoosh"],[8.7,"trombone"],
+ [10.3,"whoosh"],[11.4,"cash"],[11.7,"boing"],[11.8,"pop"],[12.2,"pop"],[12.6,"pop"],[15.25,"whoosh"],[15.5,"ding"]]
+</script>
+<script src="base.js"></script>
+<script src="cartoon.js"></script>
+<script>
+  const { arc, jump, shake, clamp } = cartoon;
+  const items = [...document.querySelectorAll('#junk .item')];
+  const LAUNCH = [2.3, 2.9, 3.4, 3.9, 4.35, 4.75, 5.1, 5.45];
+  const LAND = [[520, 1028], [610, 1024], [565, 985], [665, 1015], [600, 945], [520, 950], [660, 940], [590, 890]];
+  const cam = document.getElementById('cam');
+  const lea = document.getElementById('lea');
+  const leaHands = document.getElementById('lea-hands');
+  const eyeL = document.getElementById('lea-eye-l');
+  const armPocket = document.getElementById('arm-pocket');
+
+  onTick((t) => {
+    items.forEach((el, i) => arc(el, t, LAUNCH[i], 0.55, [400, 1130], LAND[i], 260, i % 2 ? 540 : -420));
+
+    // Rummaging arm
+    armPocket.setAttribute('transform', `translate(${shake(t, 2.2, 7.1, 7, 9)} ${shake(t, 2.2, 7.1, 9, 7)})`);
+
+    // Clock: time flies while he looks for change
+    const spin = clamp((t - 2.2) / 5) * 360 * 6;
+    document.getElementById('hand-m').setAttribute('transform', `rotate(${spin} 930 520)`);
+    document.getElementById('hand-h').setAttribute('transform', `rotate(${60 + spin / 12} 930 520)`);
+
+    // Léa's left eye twitches while she keeps smiling
+    const tw = t > 5.6 && t < 8.3 && (t * 2.6) % 1 < 0.18;
+    eyeL.setAttribute('ry', tw ? 3 : 15);
+
+    // Deadpan zoom on Léa, snapped back under the wipe
+    const p = t < 8.45 || t > 10.55 ? 0 : clamp((t - 8.45) / 0.22);
+    const s = 1 + 0.9 * p;
+    cam.setAttribute('transform', `translate(${790 - 250 * p} ${790 + 40 * p}) scale(${s}) translate(-790 -790)`);
+
+    // Léa jumps for joy
+    const dy = jump(t, 11.7, 70, 0.4) + jump(t, 12.15, 45, 0.35);
+    lea.setAttribute('transform', `translate(0 ${dy})`);
+
+    // NFC rings + floating "+10 €"
+    ['ring1', 'ring2'].forEach((id, k) => {
+      const r = clamp((t - 11.4 - k * 0.22) / 0.7);
+      const c = document.getElementById(id);
+      c.setAttribute('r', r > 0 && r < 1 ? 40 + 140 * r : 0);
+      c.setAttribute('opacity', 1 - r);
+    });
+    const f = clamp((t - 11.5) / 1.3);
+    const plus = document.getElementById('plus');
+    plus.style.opacity = f > 0 && f < 1 ? Math.min(1, (1 - f) * 4) : 0;
+    plus.style.transform = `translateY(${-160 * Math.sqrt(f)}px) scale(${0.6 + 0.6 * Math.min(1, f * 5)})`;
+
+    // Hearts pop around her
+    document.querySelectorAll('#hearts .heart').forEach((h, k) => {
+      const s2 = clamp((t - 11.8 - k * 0.12) / 0.3);
+      const wob = Math.sin((t - 11.8) * 6 + k) * 8;
+      h.setAttribute('transform', `translate(${h.dataset.x} ${Number(h.dataset.y) + wob}) scale(${1.3 * s2})`);
+    });
+
+    // Paper wipe into the "after"
+    const w = (t - 10.3) / 0.6;
+    const x = w < 0 ? 120 : w < 0.35 ? 120 * (1 - w / 0.35) : w < 0.65 ? 0 : w < 1 ? -120 * ((w - 0.65) / 0.35) : -120;
+    document.getElementById('wipe').style.transform = `translateX(${x}%)`;
+  });
+</script>
+</body>
+</html>
