@@ -1392,7 +1392,19 @@
       "send": "Send me a code",
       "confirmed": "Address confirmed. You are signed in."
     },
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "activate": {
+      "title": "Your plaque is ready to activate",
+      "body": "To protect your tips, the setup link is sent to the address used for the order: {email}.",
+      "cta": "Email me my activation link",
+      "sending": "Sending…",
+      "sentTitle": "Link sent!",
+      "sentBody": "Open the email sent to {email} and tap “Activate my plaque”. Check your spam folder too.",
+      "why": "Not the manager? This plaque is not in service yet, come back soon.",
+      "error": "Sending failed. Try again in a moment or write to contact@digitip.app.",
+      "limited": "Too many requests. Try again in an hour or write to contact@digitip.app.",
+      "noEmail": "This plaque is not activated yet. Write to contact@digitip.app with a photo of the plaque and we will activate it with you."
+    }
   },
   "consent": {
     "text": "We use a Meta advertising cookie to measure how well our ads work. It is only set if you accept it.",
