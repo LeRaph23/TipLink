@@ -1587,6 +1587,26 @@ export async function sendGroupOnboardingNudge(opts: {
     }));
 }
 
+/**
+ * Sent on request from the scan of a plaque that is not activated yet: the
+ * link opens the setup wizard from the first step. Transactional (the owner
+ * asked for it), so no unsubscribe link.
+ */
+export async function sendPlaqueActivationLink(opts: {
+  to: string; firstName: string; setupUrl: string;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, setupUrl } = opts;
+  return lifecycleSend(to, `${firstName}, activez votre plaque Digitip`,
+    lifecycleBody({
+      badge: 'Activation', tone: 'pink',
+      title: `${firstName}, votre plaque est prête à être activée`,
+      intro: `Vous venez de scanner votre plaque Digitip. Cliquez ci-dessous pour configurer votre établissement : <strong class="text-strong" style="color:#0f0f12">2 minutes</strong>, et vos clients peuvent laisser leurs pourboires.`,
+      bullets: ['① Nommez votre établissement', '② Ajoutez votre équipe', '③ Renseignez le compte qui reçoit les pourboires'],
+      ctaLabel: 'Activer ma plaque →', ctaUrl: setupUrl,
+      note: 'Ce lien est valable 7 jours. Vous n\'avez rien demandé ? Ignorez simplement cet email.',
+    }));
+}
+
 /** Group admin, hardware delivered, no tip yet: place the tag. */
 export async function sendTagDeliveredPlaceNudge(opts: {
   to: string; firstName: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;

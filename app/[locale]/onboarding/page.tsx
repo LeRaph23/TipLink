@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { verifyOnboardingToken } from '@/lib/auth/onboarding-token';
+import { ActivatePlaque } from '@/components/onboarding/ActivatePlaque';
+import { findPendingActivation } from '@/lib/onboarding/activation';
+import { maskEmail } from '@/lib/nfc/scan-destination';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +29,22 @@ export default async function OnboardingPage({
   // lib/supabase/client.ts, where the guard for those old links lives.
   const scanned = tag ?? code;
   if (scanned) {
+    // A plaque bought online is attached to its establishment before it ships.
+    // Until its owner has set up his account, the scan lands here (see
+    // lib/nfc/scan-destination) and the setup link goes to the buyer's email.
+    const normalized = scanned.trim().toLowerCase();
+    const pending = /^[a-z0-9_-]{4,}$/.test(normalized)
+      ? await findPendingActivation(createServiceClient(), normalized)
+      : null;
+    if (pending) {
+      return (
+        <ActivatePlaque
+          tag={normalized}
+          maskedEmail={pending.recipient ? maskEmail(pending.recipient.email) : null}
+        />
+      );
+    }
+
     return (
       <OnboardingWizard
         mode="scan"

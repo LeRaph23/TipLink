@@ -8,6 +8,7 @@ import {
   attributionFromUrl,
   serializeAttribution,
 } from './lib/marketing/attribution';
+import { scanDestination, type StickerRow } from './lib/nfc/scan-destination';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -38,8 +39,8 @@ export async function proxy(request: NextRequest) {
 
     // Resolve via an RPC backed by a functional lower(short_id) index, so the
     // lookup is an index scan rather than a sequential scan. The RPC returns the
-    // same shape as before: [] when unknown, [{ establishment_id }] otherwise
-    // (establishment_id null = unassigned stock tag).
+    // same shape as before: [] when unknown, one row otherwise (establishment_id
+    // null = unassigned stock tag), plus since 00086 whether its group is set up.
     let res: Response;
     try {
       res = await fetch(`${supabaseUrl}/rest/v1/rpc/resolve_sticker_establishment`, {
@@ -61,14 +62,16 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
     }
 
-    const rows: Array<{ establishment_id: string | null }> = await res.json();
+    const rows: StickerRow[] = await res.json();
+    const dest = scanDestination(rows);
 
-    if (!rows.length) {
+    if (dest.kind === 'not_found') {
       return NextResponse.redirect(new URL(`/${preferredLocale}/not-found`, request.url));
     }
 
-    if (!rows[0].establishment_id) {
-      // Tag exists but is not yet assigned to a salon — launch onboarding wizard.
+    if (dest.kind === 'onboarding') {
+      // Stock tag, or a plaque bought online whose owner has not set up his
+      // account yet — both go to the onboarding wizard (see scanDestination).
       // `tag`, not `code`: supabase-js claims any `?code=` as a PKCE
       // authorization code once a verifier is in storage, which the wizard
       // creates when it signs the manager up. See lib/supabase/client.ts.
@@ -82,7 +85,7 @@ export async function proxy(request: NextRequest) {
     // right after a scan. A rewrite serves the (streamed) group page on this
     // same request, so the branded hero paints immediately. The visible URL
     // stays /s/[code], and the rewrite does not re-run this middleware.
-    const destination = `/${preferredLocale}/pay/group/${rows[0].establishment_id}`;
+    const destination = `/${preferredLocale}/pay/group/${dest.establishmentId}`;
     return NextResponse.rewrite(new URL(destination, request.url));
   }
 

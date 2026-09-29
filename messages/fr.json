@@ -1392,7 +1392,19 @@
       "send": "Recevoir mon code",
       "confirmed": "Adresse confirmée. Vous êtes connecté."
     },
-    "signOut": "Déconnexion"
+    "signOut": "Déconnexion",
+    "activate": {
+      "title": "Votre plaque est prête à être activée",
+      "body": "Pour protéger vos pourboires, le lien de configuration est envoyé à l’adresse utilisée lors de la commande : {email}.",
+      "cta": "Recevoir mon lien d’activation",
+      "sending": "Envoi…",
+      "sentTitle": "Lien envoyé !",
+      "sentBody": "Ouvrez l’email envoyé à {email} et cliquez sur « Activer ma plaque ». Pensez à regarder dans vos spams.",
+      "why": "Vous n’êtes pas le gérant ? Cette plaque n’est pas encore en service, revenez bientôt.",
+      "error": "L’envoi a échoué. Réessayez dans un instant ou écrivez à contact@digitip.app.",
+      "limited": "Trop de demandes. Réessayez dans une heure ou écrivez à contact@digitip.app.",
+      "noEmail": "Cette plaque n’est pas encore activée. Écrivez-nous à contact@digitip.app avec la photo de la plaque et nous l’activons avec vous."
+    }
   },
   "consent": {
     "text": "Nous utilisons un cookie publicitaire Meta pour mesurer l'efficacité de nos publicités. Il n'est déposé que si vous l'acceptez.",
