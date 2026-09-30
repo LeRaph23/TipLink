@@ -1,7 +1,8 @@
 # « Juste les Pointes » : fiche de la série
 
-Série de sketchs dessinés sur le quotidien d'un salon de coiffure, pour TikTok et
-Reels. Nom de compte suggéré : **@justelespointes** (à vérifier sur chaque plateforme).
+Série de sketchs illustrés sur le quotidien d'un salon de coiffure, pour TikTok et
+Reels. Style semi-réaliste, cadré comme le miroir du salon : la cliente assise face à
+nous, la coiffeuse derrière elle. Nom de compte suggéré : **@justelespointes** (à vérifier sur chaque plateforme).
 
 ## Le salon
 

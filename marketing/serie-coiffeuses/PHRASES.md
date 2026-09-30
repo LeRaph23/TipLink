@@ -6,7 +6,7 @@ autres sont à faire valider par des coiffeuses avant d'en faire un épisode.
 
 | Statut | Phrase | Piste de sketch (escalade → retournement) |
 |---|---|---|
-| ✅ ép. 1 | « Juste les pointes. » | 1 cm à la règle → « encore » ×3 → coupe courte → « la prochaine fois, JUSTE les pointes » |
+| ✅ ép. 1 | « Juste les pointes. » | La cliente menace (« 4 ans à les faire pousser ») → Chloé coupe 1 mm, zoom ×400 → « Vous pouvez recoller ? » → Nadia tend un tube de colle |
 | ✓ | « C'est pas trop court ? » | Chloé propose de « rajouter un peu » → colle une mèche au scotch |
 | ✓ | « Pas trop chaude, l'eau ? » « Parfait. » | La cliente fume, rougit, le miroir s'embue → elle demande de la monter encore |
 | ✓ | « La même coupe que [star]. » | Photo d'une star aux cheveux opposés → Chloé : « Trop facile » → retournement : la photo, c'est un chien |

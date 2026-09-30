@@ -6,53 +6,51 @@
 <link rel="stylesheet" href="../meta-ads/cartoon.css">
 <link rel="stylesheet" href="kit/series.css">
 </head>
-<body data-duration="17.5">
+<body data-duration="14.5">
 <!--
   Phrase : « Juste les pointes. »
-  Mécanique : Chloé prend la phrase au pied de la lettre (1 cm à la règle), la cliente
-  en redemande jusqu'à la coupe courte, puis lui reproche d'avoir trop coupé.
+  Escalade : la cliente répète, puis menace ; Chloé, terrorisée, coupe 1 mm.
+  Retournement : la cliente est effondrée (« Vous pouvez recoller ? »),
+  et Nadia tend un tube de colle sans un mot.
 -->
 <svg class="stage" id="stage" viewBox="0 0 1080 1920"></svg>
 
-<div class="cap" data-on="0-99"><span><small>Les phrases du salon, n°1</small>« Juste les pointes. »</span></div>
+<div class="cap" data-on="0-5.4,8-99"><span><small>Les phrases du salon, n°1</small>« Juste les pointes. »</span></div>
+<div class="cap" data-on="5.4-8"><span>Zoom ×400</span></div>
 
-<div class="bub client" style="left:380px; top:540px" data-on="0.3-2.4"><div data-pop="0.3">Juste les pointes, hein.<br>1 cm, pas plus.</div></div>
-<div class="bub right" style="left:470px; top:490px" data-on="3.9-5"><div data-pop="3.9">1 cm pile !</div></div>
-<div class="bub client" style="left:380px; top:540px" data-on="5-6.9"><div data-pop="5">On voit pas la différence.<br>Coupez un peu plus.</div></div>
-<div class="bub client" style="left:380px; top:580px" data-on="7.8-8.6"><div data-pop="7.8">Encore.</div></div>
-<div class="bub client shout" style="left:380px; top:560px" data-on="9.4-10.1"><div data-pop="9.4">ENCORE !</div></div>
-<div class="bub right" style="left:560px; top:490px" data-on="11-12"><div data-pop="11">…Alors ?</div></div>
-<div class="bub client" style="left:380px; top:580px" data-on="12-12.9"><div data-pop="12">Parfait !</div></div>
-<div class="bub client" style="left:360px; top:540px" data-on="12.9-15.3"><div data-pop="12.9">Mais la prochaine fois,<br>JUSTE les pointes, hein.</div></div>
-<div class="bub" style="left:30px; top:530px" data-on="15.3-99"><div data-pop="15.3">Bienvenue dans le métier.</div></div>
+<div class="bub right client" style="left:45px; top:700px" data-on="0.3-1.5"><div data-pop="0.3">Juste les pointes.</div></div>
+<div class="bub right" style="left:250px; top:560px" data-on="1.4-2.6"><div data-pop="1.4">Pas de souci !</div></div>
+<div class="bub right client" style="left:45px; top:700px" data-on="2.5-3.8"><div data-pop="2.5">JUSTE. Les pointes.</div></div>
+<div class="bub right client" style="left:40px; top:650px" data-on="3.9-5.4"><div data-pop="3.9">J'ai mis 4 ans<br>à les faire pousser.</div></div>
+<div class="bub right" style="left:130px; top:560px" data-on="8.1-9.3"><div data-pop="8.1">Voilà ! 1 millimètre.</div></div>
+<div class="bub right client" style="left:150px; top:650px" data-on="10.4-99"><div data-pop="10.4">… Vous pouvez<br>recoller ?</div></div>
 
-<div class="tagline" data-on="16.2-99"><span data-pop="16.2">Juste les Pointes · épisode 1</span></div>
+<div class="tagline" data-on="12.9-99"><span data-pop="12.9">Juste les Pointes · épisode 1</span></div>
 
 <script type="application/json" id="sfx">
-[[0.3,"pop"],[2.4,"tick"],[2.7,"tick"],[3.0,"tick"],[3.4,"snip"],[3.9,"pop"],[5,"pop"],
- [6.9,"snip"],[7.2,"snip"],[7.5,"snip"],[7.8,"pop"],[8.65,"snip"],[8.95,"snip"],
- [9.4,"pop"],[10.1,"snip"],[10.35,"snip"],[10.6,"snip"],[11,"pop"],[12,"pop"],[12.3,"boing"],
- [12.9,"pop"],[13.3,"trombone"],[15.1,"tink"],[15.3,"pop"],[16.2,"pop"]]
+[[0.3,"pop"],[1.4,"pop"],[2.5,"pop"],[3.9,"pop"],[4.0,"hiss",1.2],
+ [5.4,"whoosh"],[5.6,"drumroll",1.2],[6.9,"snip"],[7.2,"tink"],
+ [8.0,"whoosh"],[8.1,"tada"],[9.4,"cricket",1.0],[10.4,"pop"],
+ [11.6,"whoosh"],[12.0,"tink"],[12.9,"pop"]]
 </script>
 <script src="../meta-ads/base.js"></script>
 <script src="../meta-ads/cartoon.js"></script>
-<script src="kit/salon-kit.js"></script>
+<script src="kit/mirror-kit.js"></script>
 <script>
-  Salon.build({
-    nadia: { brow: '8.6-12.9', sip: [15.0] },
+  Mirror.build({
+    mirrorOn: '0-5.4,8-99',
     client: {
-      hair: { '0-7.6': 'long', '7.6-9.2': 'shoulder', '9.2-10.7': 'bob', '10.7-99': 'pixie' },
-      face: { '0-5': 'smile', '5-7.8': 'neutral', '7.8-12': 'annoyed', '12-12.9': 'smile', '12.9-99': 'annoyed' },
+      face: { '0-2.5': 'neutral', '2.5-3.9': 'stern', '3.9-5.4': 'menace', '5.4-9.3': 'stern', '9.3-10.4': 'shock', '10.4-99': 'sad' },
+      lean: '3.9-5.4',
     },
     chloe: {
-      tool: { '0-2.3': 'scissors', '2.3-3.2': 'ruler', '3.2-11': 'scissors', '11-99': 'mirror' },
-      eyes: { '0-2.3': 'happy', '2.3-3.8': 'focus', '3.8-8.6': 'happy', '8.6-11': 'focus', '11-12': 'panic', '12-12.9': 'happy', '12.9-99': 'panic' },
-      mouth: { '0-2.3': 'grin', '2.3-3.8': 'tongue', '3.8-8.6': 'grin', '8.6-11': 'tongue', '11-12': 'wobbly', '12-12.9': 'grin', '12.9-99': 'o' },
-      sweat: '8.6-12,12.9-99',
-      snips: '3.3-3.6,6.8-7.7,8.6-9.2,10-10.8',
-      cheer: '12.2-12.9', jumps: [12.3],
+      face: { '0-2.6': 'grin', '2.6-8': 'worried', '8-9.3': 'proud', '9.3-11.7': 'worried', '11.7-99': 'panic' },
+      tool: { '0-8': 'scissors', '8-99': 'tweezers' },
+      tremble: '3.9-5.4,10.4-11.7',
+      jumps: [8.1],
     },
-    tufts: [3.5, 6.95, 7.2, 7.45, 8.7, 8.95, 10.15, 10.4, 10.6],
+    nadia: { on: '11.6-99' },
+    insert: { on: '5.4-8', snip: 6.9 },
   });
 </script>
 </body>
