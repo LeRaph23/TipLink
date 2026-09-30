@@ -3,23 +3,26 @@
 //   node marketing/meta-ads/render.mjs 01-pas-de-liquide → one ad
 //   node marketing/meta-ads/render.mjs 01 --stills 1.2,5  → PNG stills only
 //   add --organic for the organic-post cut (short end card, no price) in out/organique/
+//   add --dir ../serie-coiffeuses to render the pages of another folder (into its out/)
 // Needs Playwright (Chromium) and ffmpeg; set FFMPEG=/path/to/ffmpeg if it
 // is not on PATH.
 import { chromium } from 'playwright';
 import { spawn, execFileSync } from 'node:child_process';
 import { readdirSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const here = dirname(fileURLToPath(import.meta.url));
 const organic = process.argv.includes('--organic');
+const dirArg = process.argv.includes('--dir') ? process.argv[process.argv.indexOf('--dir') + 1] : null;
+const tool = dirname(fileURLToPath(import.meta.url));
+const here = dirArg ? resolve(dirArg) : tool;
 const out = join(here, 'out', organic ? 'organique' : '');
 const FPS = 30;
 const ffmpeg = process.env.FFMPEG || 'ffmpeg';
 
 const args = process.argv.slice(2);
 const stillsArg = args.includes('--stills') ? args[args.indexOf('--stills') + 1] : null;
-const filters = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--stills');
+const filters = args.filter((a, i) => !a.startsWith('--') && !['--stills', '--dir'].includes(args[i - 1]));
 const ads = readdirSync(here).filter((f) => /^\d\d-.*\.html$/.test(f))
   .filter((f) => !filters.length || filters.some((p) => f.startsWith(p)));
 
@@ -47,7 +50,7 @@ for (const file of ads) {
   let audio = ['-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo'];
   if (cues) {
     const wav = join(out, `${name}.wav`);
-    execFileSync('python3', [join(here, 'sfx.py'), wav, String(duration), JSON.stringify(JSON.parse(cues))]);
+    execFileSync('python3', [join(tool, 'sfx.py'), wav, String(duration), JSON.stringify(JSON.parse(cues))]);
     audio = ['-i', wav];
   }
 

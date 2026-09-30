@@ -139,7 +139,21 @@ def cricket(dur=1.5):
     return out
 
 
-SOUNDS = {f.__name__: f for f in [pop, tink, ding, cash, whoosh, boing, flip, tick, drumroll, tada, trombone, bell, cricket]}
+def snip(_=None):
+    # Scissors: two quick metallic clicks.
+    click = lambda: mix(noise(0.03, 0.5, 4), tone(lambda t: 5200, 0.04, amp=0.12, release=6))
+    return click() + [0.0] * int(0.06 * SR) + click()
+
+
+def hiss(dur=1.5):
+    n, out, y = int(dur * SR), [], 0.0
+    for i in range(n):
+        y = 0.4 * y + 0.6 * random.uniform(-1, 1)
+        out.append(0.16 * y * min(1, i / (0.2 * SR)) * min(1, (n - i) / (0.4 * SR)))
+    return out
+
+
+SOUNDS = {f.__name__: f for f in [pop, tink, ding, cash, whoosh, boing, flip, tick, drumroll, tada, trombone, bell, cricket, snip, hiss]}
 
 
 def main():
