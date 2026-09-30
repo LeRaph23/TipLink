@@ -1,0 +1,5 @@
+/* Series look on top of ../meta-ads/cartoon.css */
+.cap small { display: block; font-size: 40px; color: #d6337a; margin-bottom: 2px; }
+.bub.client > div { font-size: 52px; }
+.tagline { position: absolute; left: 0; right: 0; top: 1520px; text-align: center; }
+.tagline span { display: inline-block; padding: 14px 34px 18px; border-radius: 999px; background: #1d1a24; color: #fff; font-size: 48px; }

@@ -16,10 +16,11 @@ coiffeuses entendent et que personne ne pense vraiment.
 - **Look** : carré noir plongeant avec frange au carré et une **mèche fuchsia**, grandes
   créoles dorées, tunique noire, bras toujours croisés, **mug « NON »** à la main.
 - **Visage** : paupières mi-closes, un sourcil levé, petit rictus.
-- **Rôle** : elle traduit ce que la cliente veut vraiment dire (bulle sombre
-  « Traduction : »). Elle parle peu, et chacune de ses phrases est une chute.
-- **Tics** : boit une gorgée de café après chaque verdict. Répliques : « Traduction : … »,
-  « Je connais. », « Oublie. »
+- **Rôle** : elle joue dans la scène, elle ne la commente pas. Elle réagit en silence
+  (sourcil qui se lève, gorgée de café) et a droit à une seule réplique, la dernière :
+  la chute. Jamais d'explication de la blague.
+- **Tics** : boit une gorgée de café avant sa réplique. Répliques types :
+  « Bienvenue dans le métier. », « Je connais. », « Oublie. »
 - **Ce qu'elle n'est pas** : méchante. Elle adore son métier et protège Chloé. Elle est
   lucide, pas aigrie.
 
@@ -32,23 +33,33 @@ coiffeuses entendent et que personne ne pense vraiment.
   fonce (« Trop facile ! »). Sa queue de cheval rebondit en permanence.
 - **Tics** : saute de joie au moindre compliment. Répliques : « Trop facile ! »,
   « Elle a adoré !! », « Alors ?? »
-- **Évolution** : elle apprend petit à petit. Dans quelques épisodes, c'est elle qui
-  traduit à la place de Nadia : moment fort pour les abonnés.
+- **Évolution** : elle apprend petit à petit. Un jour, c'est elle qui a la dernière
+  réplique et Nadia qui recrache son café : moment fort pour les abonnés.
 
 ### Les clientes (personnages tournants)
 Une nouvelle cliente par épisode, reconnaissable par un seul trait : la blonde « juste
 les pointes », la mère pressée, l'influenceuse, le monsieur qui veut « comme d'hab »…
 Les meilleures pourront revenir.
 
-## Le format de base
+## Le format : les phrases du salon
 
-1. **Accroche en haut** (bandeau blanc) : l'idée en une phrase, lisible dès la 1re seconde.
-2. **La cliente dit** une phrase culte → **Chloé fonce** → **Nadia traduit**.
-3. Deux ou trois répétitions de ce rythme, de plus en plus absurdes.
-4. **Chute hors du salon** (voiture, maison, parking) qui montre la vérité.
-5. Petit bandeau final « Juste les Pointes · épisode N ».
+Chaque épisode part d'**une phrase que les coiffeuses entendent tout le temps**
+(banque dans `PHRASES.md`) et la **joue** en sketch.
 
-Durée : 15 à 20 s. Aucune vidéo ne doit avoir besoin du son pour être comprise.
+1. **La phrase, dès la 1re seconde** : dans le bandeau du haut (« Les phrases du salon,
+   n°X ») et dans la bouche de la cliente.
+2. **Chloé la prend au pied de la lettre** (ou fonce tête baissée).
+3. **Escalade** en 2 ou 3 temps, chaque fois plus gros et plus vite. Quelque chose
+   change à l'image à chaque temps (longueur des cheveux, outil, couleur…).
+4. **Retournement** : la fin n'est pas celle qu'on attend. Le plus efficace : la
+   cliente retourne la situation contre la coiffeuse.
+5. **La réplique de Nadia** (5 mots max), puis le bandeau « Juste les Pointes · épisode N ».
+
+Règle d'or : **on montre, on n'explique jamais**. Pas de narratrice, pas de sous-titre
+qui dit ce qu'il faut comprendre. Si une coiffeuse ne dit pas « c'est tellement vrai »,
+on réécrit.
+
+Durée : 12 à 18 s. Aucune vidéo ne doit avoir besoin du son pour être comprise.
 
 ## La plaque Digitip
 
@@ -61,18 +72,9 @@ Durée : 15 à 20 s. Aucune vidéo ne doit avoir besoin du son pour être compri
   doit être identifiable comme telle (LCEN, art. 20). Si le lien avec la marque est caché
   et que ça se découvre, la confiance est perdue d'un coup.
 
-## Épisodes suivants (idées)
+## Épisodes suivants
 
-| # | Titre | Phrase de la cliente → traduction de Nadia |
-|---|---|---|
-| 2 | Fais comme tu le sens | « Fais comme tu le sens ! » → « J'ai une photo précise en tête et tu ne la verras jamais. » |
-| 3 | Beyoncé | Photo de Beyoncé, trois cheveux sur la tête → Chloé : « Trop facile ! » Nadia : « Oublie. » |
-| 4 | Le petit reflet | « J'ai juste fait un petit reflet maison. » → elle a les cheveux verts |
-| 5 | Je repasse demain | « Je repasse demain te laisser un petit truc. » → le calendrier défile, Nadia devient grise (premier épisode avec la plaque) |
-| 6 | Le mari en visio | La cliente valide sa coupe avec son mari en FaceTime |
-| 7 | Les cheveux épais | « Tu as les cheveux très épais » → Nadia sort le désépaississeur |
-| 8 | Cheveux secs | « Vos cheveux sont très secs. » → « Soin à 15 €. » (cette fois, c'est le salon qui traduit) |
-| 9 | Chloé traduit | Pour la première fois, Chloé traduit avant Nadia. Nadia recrache son café. |
+Voir `PHRASES.md` : chaque phrase y a déjà une piste d'escalade et de retournement.
 
 ## Sources d'inspiration
 

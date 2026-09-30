@@ -4,320 +4,55 @@
 <meta charset="utf-8">
 <title>Juste les Pointes · épisode 1</title>
 <link rel="stylesheet" href="../meta-ads/cartoon.css">
-<style>
-  /* Nadia's asides: the translation of what the client really means */
-  .bub.aside > div { background: #2a2733; color: #fff; }
-  .bub.aside > div::after { background: #2a2733; }
-  .bub.aside small { display: block; font-size: 42px; color: #ff9ec4; margin-bottom: 4px; }
-  .bub.client > div { font-size: 52px; }
-  .tagline { position: absolute; left: 0; right: 0; top: 1150px; text-align: center; }
-  .tagline span { display: inline-block; padding: 14px 34px 18px; border-radius: 999px; background: #1d1a24; color: #fff; font-size: 48px; }
-</style>
+<link rel="stylesheet" href="kit/series.css">
 </head>
-<body data-duration="19">
+<body data-duration="17.5">
+<!--
+  Phrase : « Juste les pointes. »
+  Mécanique : Chloé prend la phrase au pied de la lettre (1 cm à la règle), la cliente
+  en redemande jusqu'à la coupe courte, puis lui reproche d'avoir trop coupé.
+-->
+<svg class="stage" id="stage" viewBox="0 0 1080 1920"></svg>
 
-<svg class="stage" viewBox="0 0 1080 1920">
-  <defs>
-    <filter id="boil" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence id="boil-noise" type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="1"/>
-      <feDisplacementMap in="SourceGraphic" scale="6"/>
-    </filter>
-    <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <pattern id="tiles" width="120" height="120" patternUnits="userSpaceOnUse">
-      <rect width="120" height="120" fill="#fbf7f2"/><rect width="60" height="60" fill="#2a2733"/><rect x="60" y="60" width="60" height="60" fill="#2a2733"/>
-    </pattern>
-    <pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse">
-      <rect width="40" height="40" fill="#9fd6e9"/><circle cx="12" cy="12" r="5" fill="#fff" opacity=".7"/><circle cx="32" cy="30" r="5" fill="#fff" opacity=".7"/>
-    </pattern>
-    <linearGradient id="plaque" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f29bb4"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
-    <path id="heart" d="M0,12 C-30,-8 -22,-34 0,-20 C22,-34 30,-8 0,12 Z"/>
-    <path id="tuft" d="M-18,0 q10,-14 20,0 q10,14 20,0" fill="none" stroke="#e0b44a" stroke-width="9" stroke-linecap="round"/>
-  </defs>
+<div class="cap" data-on="0-99"><span><small>Les phrases du salon, n°1</small>« Juste les pointes. »</span></div>
 
-  <g filter="url(#boil)">
-  <!-- ================= THE SALON ================= -->
-  <g data-on="0-15.2">
-    <rect x="0" y="0" width="1080" height="1310" fill="#fde8e4"/>
-    <path d="M0,1180 H1080" stroke="#f5cfc8" stroke-width="10"/>
-    <rect x="0" y="1310" width="1080" height="610" fill="url(#tiles)" opacity=".22"/>
-    <path class="ink-t" d="M0,1310 H1080"/>
-    <!-- neon sign -->
-    <g transform="rotate(-3 520 660)" filter="url(#glow)">
-      <text x="520" y="675" text-anchor="middle" font-family="Hand" font-size="64" fill="#ff5fa2">Juste les Pointes</text>
-    </g>
-    <!-- shelf, bottles and (quietly) the Digitip plaque -->
-    <rect class="ink" x="950" y="880" width="140" height="18" fill="#c98b52" stroke-width="5"/>
-    <rect class="ink" x="962" y="820" width="30" height="60" rx="8" fill="#ffb3cf" stroke-width="5"/>
-    <rect class="ink" x="1000" y="800" width="26" height="80" rx="8" fill="#b9a4f5" stroke-width="5"/>
-    <g transform="translate(1034 826)">
-      <rect class="ink" x="0" y="0" width="52" height="52" rx="8" fill="url(#plaque)" stroke-width="4"/>
-      <use href="#heart" transform="translate(26 22) scale(.45)" fill="none" stroke="#fff" stroke-width="5"/>
-    </g>
+<div class="bub client" style="left:380px; top:540px" data-on="0.3-2.4"><div data-pop="0.3">Juste les pointes, hein.<br>1 cm, pas plus.</div></div>
+<div class="bub right" style="left:470px; top:490px" data-on="3.9-5"><div data-pop="3.9">1 cm pile !</div></div>
+<div class="bub client" style="left:380px; top:540px" data-on="5-6.9"><div data-pop="5">On voit pas la différence.<br>Coupez un peu plus.</div></div>
+<div class="bub client" style="left:380px; top:580px" data-on="7.8-8.6"><div data-pop="7.8">Encore.</div></div>
+<div class="bub client shout" style="left:380px; top:560px" data-on="9.4-10.1"><div data-pop="9.4">ENCORE !</div></div>
+<div class="bub right" style="left:560px; top:490px" data-on="11-12"><div data-pop="11">…Alors ?</div></div>
+<div class="bub client" style="left:380px; top:580px" data-on="12-12.9"><div data-pop="12">Parfait !</div></div>
+<div class="bub client" style="left:360px; top:540px" data-on="12.9-15.3"><div data-pop="12.9">Mais la prochaine fois,<br>JUSTE les pointes, hein.</div></div>
+<div class="bub" style="left:30px; top:530px" data-on="15.3-99"><div data-pop="15.3">Bienvenue dans le métier.</div></div>
 
-    <!-- NADIA: 18 years in the job, has seen it all -->
-    <g id="nadia">
-      <rect class="ink" x="128" y="1150" width="44" height="290" fill="#2a2733" stroke-width="6"/>
-      <rect class="ink" x="186" y="1150" width="44" height="290" fill="#2a2733" stroke-width="6"/>
-      <ellipse class="ink" cx="148" cy="1446" rx="46" ry="18" fill="#1d1a24" stroke-width="6"/>
-      <ellipse class="ink" cx="210" cy="1446" rx="46" ry="18" fill="#1d1a24" stroke-width="6"/>
-      <path class="ink" d="M96,915 Q178,878 260,915 L270,1165 Q178,1185 86,1165 Z" fill="#3a3644"/>
-      <rect x="166" y="872" width="26" height="40" fill="#c68a5e"/>
-      <rect class="ink" x="72" y="690" width="212" height="198" rx="80" fill="#16131c"/>
-      <circle class="ink" cx="178" cy="800" r="90" fill="#c68a5e"/>
-      <path class="ink" d="M90,768 Q92,700 178,700 Q264,700 266,768 Z" fill="#16131c"/>
-      <path d="M124,706 L114,766 L136,766 L146,704 Z" fill="#d6337a"/>
-      <circle cx="88" cy="846" r="20" fill="none" stroke="#e5b33a" stroke-width="7"/>
-      <circle cx="268" cy="846" r="20" fill="none" stroke="#e5b33a" stroke-width="7"/>
-      <path class="ink-t" d="M130,786 H162 M192,778 Q210,764 228,780" stroke-width="7"/>
-      <circle cx="148" cy="816" r="9" fill="#1d1a24"/><circle cx="210" cy="816" r="9" fill="#1d1a24"/>
-      <path d="M132,808 H164 M194,808 H226" stroke="#c68a5e" stroke-width="10"/>
-      <path class="ink-t" d="M132,806 H164 M194,806 H226" stroke-width="6"/>
-      <path d="M160,852 Q182,860 198,846" stroke="#7a2848" stroke-width="7" fill="none" stroke-linecap="round"/>
-      <!-- crossed arms and the mug -->
-      <g id="nadia-mug">
-        <rect class="ink" x="196" y="948" width="56" height="64" rx="8" fill="#fff" stroke-width="6"/>
-        <path class="ink-t" d="M252,962 q22,0 22,18 q0,18 -22,18" stroke-width="6"/>
-        <text x="224" y="988" text-anchor="middle" font-family="PJS" font-weight="800" font-size="18">NON</text>
-      </g>
-      <path d="M100,1020 L240,1010" stroke="#1d1a24" stroke-width="52" stroke-linecap="round"/>
-      <path d="M100,1020 L240,1010" stroke="#3a3644" stroke-width="38" stroke-linecap="round"/>
-      <circle class="ink" cx="236" cy="1004" r="24" fill="#c68a5e" stroke-width="6"/>
-    </g>
-
-    <!-- The chair -->
-    <ellipse class="ink" cx="520" cy="1420" rx="112" ry="22" fill="#55505f"/>
-    <rect class="ink" x="505" y="1300" width="30" height="120" fill="#8a8494"/>
-    <rect class="ink" x="420" y="930" width="200" height="280" rx="34" fill="#7a4a8a"/>
-    <rect class="ink" x="395" y="1235" width="250" height="66" rx="24" fill="#7a4a8a"/>
-
-    <!-- THE CLIENT -->
-    <g id="client">
-      <rect class="ink" x="450" y="1290" width="42" height="110" fill="#5a7fc7" stroke-width="6"/>
-      <rect class="ink" x="548" y="1290" width="42" height="110" fill="#5a7fc7" stroke-width="6"/>
-      <ellipse class="ink" cx="462" cy="1404" rx="40" ry="16" fill="#e5484d" stroke-width="6"/>
-      <ellipse class="ink" cx="578" cy="1404" rx="40" ry="16" fill="#e5484d" stroke-width="6"/>
-      <path class="ink" d="M520,912 L352,1292 Q520,1316 688,1292 Z" fill="url(#dots)"/>
-      <g data-on="0-10">
-        <path class="ink" d="M434,830 Q434,745 520,745 Q606,745 606,830 L616,1000 Q604,1016 590,1002 Q584,1018 570,1004 L566,905 H474 L470,1004 Q456,1018 450,1002 Q436,1016 424,1000 Z" fill="#f2cf6b"/>
-      </g>
-      <g data-on="10-99">
-        <path class="ink" d="M430,830 Q430,745 520,745 Q610,745 610,830 L614,900 Q520,922 426,900 Z" fill="#f2cf6b"/>
-      </g>
-      <rect x="506" y="902" width="28" height="22" fill="#f3cfb3"/>
-      <circle class="ink" cx="520" cy="850" r="84" fill="#f3cfb3"/>
-      <circle id="client-red" cx="520" cy="850" r="80" fill="#ff5a5a" opacity="0"/>
-      <g data-on="0-10"><path class="ink" d="M438,832 Q440,755 520,755 Q600,755 602,832 Q578,790 520,794 Q462,790 438,832 Z" fill="#f2cf6b"/></g>
-      <g data-on="10-99"><path class="ink" d="M436,826 Q440,752 520,752 Q600,752 604,826 Z" fill="#f2cf6b"/></g>
-      <!-- faces -->
-      <g data-on="0-6.6">
-        <circle cx="494" cy="858" r="9" fill="#1d1a24"/><circle cx="546" cy="858" r="9" fill="#1d1a24"/>
-        <path class="ink-t" d="M494,892 Q520,910 546,892"/>
-      </g>
-      <g data-on="6.6-10">
-        <path class="ink-t" d="M482,850 l16,8 l-16,8 M558,850 l-16,8 l16,8" stroke-width="6"/>
-        <rect class="ink" x="486" y="882" width="68" height="28" rx="10" fill="#fff" stroke-width="5"/>
-        <path class="ink-t" d="M503,884 V908 M520,884 V908 M537,884 V908" stroke-width="3"/>
-        <path d="M604,800 Q618,830 604,842 Q590,830 604,800 Z M436,812 Q448,836 436,846 Q424,836 436,812 Z" fill="#8fd3ff" class="ink" stroke-width="4"/>
-      </g>
-      <g data-on="10-11.2">
-        <circle class="ink" cx="494" cy="856" r="16" fill="#fff" stroke-width="5"/><circle class="ink" cx="546" cy="856" r="16" fill="#fff" stroke-width="5"/>
-        <circle cx="494" cy="858" r="5" fill="#1d1a24"/><circle cx="546" cy="858" r="5" fill="#1d1a24"/>
-        <ellipse class="ink" cx="520" cy="898" rx="12" ry="16" fill="#7a2848" stroke-width="5"/>
-      </g>
-      <g data-on="11.2-99">
-        <ellipse id="client-eye" cx="494" cy="856" rx="16" ry="16" fill="#fff" class="ink" stroke-width="5"/>
-        <circle class="ink" cx="546" cy="856" r="16" fill="#fff" stroke-width="5"/>
-        <circle cx="494" cy="858" r="5" fill="#1d1a24"/><circle cx="546" cy="858" r="5" fill="#1d1a24"/>
-        <rect class="ink" x="474" y="880" width="92" height="30" rx="12" fill="#fff" stroke-width="5"/>
-        <path class="ink-t" d="M497,882 V908 M520,882 V908 M543,882 V908" stroke-width="3"/>
-      </g>
-      <!-- steam -->
-      <g id="steam" data-on="5.6-10" fill="none" stroke="#a9bccf" stroke-width="12" stroke-linecap="round" opacity=".9">
-        <path class="puff" d="M0,0 q-14,-20 0,-40 q14,-20 0,-40"/><path class="puff" d="M0,0 q-14,-20 0,-40 q14,-20 0,-40"/><path class="puff" d="M0,0 q-14,-20 0,-40 q14,-20 0,-40"/>
-      </g>
-    </g>
-
-    <!-- Hair tufts falling -->
-    <g id="tufts" data-on="0-10"><use href="#tuft" class="tf"/><use href="#tuft" class="tf"/><use href="#tuft" class="tf"/><use href="#tuft" class="tf"/></g>
-
-    <!-- CHLOÉ: apprentice, 19, loves everything -->
-    <g id="chloe">
-      <rect class="ink" x="770" y="1180" width="42" height="260" fill="#f59ac0" stroke-width="6"/>
-      <rect class="ink" x="830" y="1180" width="42" height="260" fill="#f59ac0" stroke-width="6"/>
-      <ellipse class="ink" cx="786" cy="1446" rx="44" ry="18" fill="#fff" stroke-width="6"/>
-      <ellipse class="ink" cx="856" cy="1446" rx="44" ry="18" fill="#fff" stroke-width="6"/>
-      <path class="ink" d="M712,935 Q822,895 932,935 L938,1195 H706 Z" fill="#fff"/>
-      <path class="ink" d="M750,990 H894 L900,1195 H744 Z" fill="#f59ac0"/>
-      <path class="ink-t" d="M760,992 L745,935 M884,992 L899,935" stroke-width="6"/>
-      <rect class="ink" x="790" y="1030" width="64" height="50" rx="8" fill="#f07aa9" stroke-width="5"/>
-      <g id="pony">
-        <circle class="ink" cx="822" cy="690" r="56" fill="#d9793a"/>
-        <circle class="ink" cx="775" cy="702" r="40" fill="#d9793a"/>
-        <circle class="ink" cx="869" cy="702" r="40" fill="#d9793a"/>
-        <circle class="ink" cx="822" cy="640" r="44" fill="#d9793a"/>
-        <circle cx="822" cy="690" r="50" fill="#d9793a"/>
-        <circle cx="822" cy="648" r="38" fill="#d9793a"/>
-      </g>
-      <ellipse class="ink" cx="822" cy="742" rx="42" ry="16" fill="#ff5fa2" stroke-width="6"/>
-      <rect x="808" y="892" width="28" height="30" fill="#f7d6bf"/>
-      <circle class="ink" cx="822" cy="822" r="84" fill="#f7d6bf"/>
-      <path class="ink" d="M739,818 Q740,742 822,742 Q904,742 905,818 Q882,774 822,776 Q762,774 739,818 Z" fill="#d9793a"/>
-      <g fill="#c9763f"><circle cx="784" cy="850" r="4"/><circle cx="798" cy="858" r="4"/><circle cx="846" cy="858" r="4"/><circle cx="860" cy="850" r="4"/></g>
-      <ellipse cx="796" cy="822" rx="13" ry="17" fill="#1d1a24"/><ellipse cx="848" cy="822" rx="13" ry="17" fill="#1d1a24"/>
-      <circle cx="800" cy="815" r="5" fill="#fff"/><circle cx="852" cy="815" r="5" fill="#fff"/>
-      <path class="ink-t" d="M778,790 Q796,780 812,788 M832,788 Q848,780 866,790" stroke-width="6"/>
-      <path class="ink" d="M796,864 Q822,900 848,864 Z" fill="#b3364f" stroke-width="5"/>
-      <!-- right arm (screen right) -->
-      <g data-on="0-12,12.6-99">
-        <path d="M915,965 L935,1150" stroke="#1d1a24" stroke-width="48" stroke-linecap="round"/>
-        <path d="M915,965 L935,1150" stroke="#fff" stroke-width="34" stroke-linecap="round"/>
-        <circle class="ink" cx="936" cy="1166" r="24" fill="#f7d6bf" stroke-width="6"/>
-      </g>
-      <g data-on="12-12.6">
-        <path d="M915,965 L975,840" stroke="#1d1a24" stroke-width="48" stroke-linecap="round"/>
-        <path d="M915,965 L975,840" stroke="#fff" stroke-width="34" stroke-linecap="round"/>
-        <circle class="ink" cx="980" cy="826" r="24" fill="#f7d6bf" stroke-width="6"/>
-      </g>
-      <!-- tool arm: scissors / shower head / hand mirror -->
-      <path d="M728,965 L650,880" stroke="#1d1a24" stroke-width="48" stroke-linecap="round"/>
-      <path d="M728,965 L650,880" stroke="#fff" stroke-width="34" stroke-linecap="round"/>
-      <g data-on="0-5.4" transform="translate(632 830)">
-        <circle class="ink" cx="-14" cy="40" r="14" fill="none" stroke-width="6"/><circle class="ink" cx="16" cy="40" r="14" fill="none" stroke-width="6"/>
-        <path id="blade1" class="ink" d="M-6,30 L-20,-50 L-2,24 Z" fill="#cfd3da" stroke-width="5"/>
-        <path id="blade2" class="ink" d="M8,30 L22,-50 L2,24 Z" fill="#cfd3da" stroke-width="5"/>
-      </g>
-      <g data-on="5.4-10">
-        <rect class="ink" x="600" y="830" width="30" height="80" rx="10" fill="#cfd3da" stroke-width="6" transform="rotate(30 615 870)"/>
-        <ellipse class="ink" cx="592" cy="812" rx="32" ry="18" fill="#cfd3da" stroke-width="6"/>
-        <path d="M575,826 L545,780 M592,830 L575,775 M610,828 L605,772" stroke="#6cc3f5" stroke-width="7" stroke-linecap="round"/>
-      </g>
-      <g data-on="10-15.2">
-        <rect class="ink" x="636" y="820" width="22" height="80" rx="8" fill="#b9a4f5" stroke-width="6"/>
-        <circle class="ink" cx="647" cy="775" r="56" fill="#dff1fb" stroke-width="7"/>
-        <path d="M620,760 l22,-22 M630,785 l34,-34" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
-      </g>
-      <circle class="ink" cx="650" cy="880" r="24" fill="#f7d6bf" stroke-width="6"/>
-    </g>
-    <g id="hearts" data-on="12.1-15.2" fill="#E57A97" stroke="#1d1a24" stroke-width="3">
-      <use href="#heart" class="heart" data-x="720" data-y="600"/>
-      <use href="#heart" class="heart" data-x="940" data-y="640"/>
-      <use href="#heart" class="heart" data-x="1000" data-y="760"/>
-    </g>
-  </g>
-
-  <!-- ================= MEANWHILE, IN HER CAR ================= -->
-  <g data-on="15.2-99">
-    <rect x="0" y="0" width="1080" height="1920" fill="#bfe6ff"/>
-    <rect x="0" y="1330" width="1080" height="590" fill="#9a97a3"/>
-    <path d="M0,1330 H1080" stroke="#1d1a24" stroke-width="6"/>
-    <path d="M60,1620 H260 M420,1620 H660 M820,1620 H1020" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
-    <circle cx="880" cy="520" r="60" fill="#ffd84a" opacity=".8"/>
-    <g id="car">
-      <ellipse class="ink" cx="260" cy="1470" rx="70" ry="40" fill="#1d1a24"/><ellipse class="ink" cx="820" cy="1470" rx="70" ry="40" fill="#1d1a24"/>
-      <path class="ink" d="M110,1460 L112,1110 Q130,930 300,880 L780,880 Q950,930 968,1110 L970,1460 Z" fill="#e5484d"/>
-      <path class="ink" d="M225,1080 L305,925 L775,925 L855,1080 Z" fill="#dff1fb"/>
-      <!-- her, crying -->
-      <g id="crier">
-        <path class="ink" d="M455,1010 Q455,940 540,940 Q625,940 625,1010 L628,1060 Q540,1078 452,1060 Z" fill="#f2cf6b"/>
-        <circle class="ink" cx="540" cy="1015" r="72" fill="#f3cfb3"/>
-        <path class="ink" d="M462,1000 Q466,945 540,945 Q614,945 618,1000 Z" fill="#f2cf6b"/>
-        <path class="ink-t" d="M500,1022 q14,-14 28,0 M552,1022 q14,-14 28,0" stroke-width="6"/>
-        <ellipse id="sob" class="ink" cx="540" cy="1058" rx="24" ry="14" fill="#7a2848" stroke-width="5"/>
-      </g>
-      <g id="tears" fill="#6cc3f5" stroke="#1d1a24" stroke-width="3"></g>
-      <rect class="ink" x="215" y="1078" width="650" height="46" rx="12" fill="#b3363c"/>
-      <ellipse class="ink-t" cx="430" cy="1080" rx="92" ry="30" stroke-width="10"/>
-      <rect class="ink" x="400" y="1210" width="280" height="70" rx="20" fill="#cfd3da"/>
-      <path class="ink-t" d="M430,1245 H650" stroke-width="5"/>
-      <circle class="ink" cx="215" cy="1235" r="46" fill="#fff3a6"/><circle class="ink" cx="865" cy="1235" r="46" fill="#fff3a6"/>
-    </g>
-  </g>
-  </g>
-</svg>
-
-<div class="cap" data-on="0-15.2"><span>Ce que la cliente dit…<br>et ce qu'elle veut dire.</span></div>
-<div class="cap pink" data-on="15.2-99"><span>Pendant ce temps, dans sa voiture…</span></div>
-
-<div class="bub client" style="left:380px; top:570px" data-on="0.3-2"><div data-pop="0.3">Juste les pointes, hein !</div></div>
-<div class="bub right" style="left:520px; top:490px" data-on="1.8-3.3"><div data-pop="1.8">Trop facile !</div></div>
-<div class="bub aside" style="left:30px; top:480px" data-on="3.3-5.4"><div data-pop="3.3"><small>Traduction :</small>« Change-moi la vie. »</div></div>
-
-<div class="bub right" style="left:470px; top:490px" data-on="5.5-7"><div data-pop="5.5">L'eau est bonne ?</div></div>
-<div class="bub client" style="left:380px; top:570px" data-on="6.9-8.1"><div data-pop="6.9">Parfaite !</div></div>
-<div class="bub aside" style="left:30px; top:480px" data-on="7.9-10"><div data-pop="7.9"><small>Traduction :</small>« Je suis en train de cuire. »</div></div>
-
-<div class="bub right" style="left:600px; top:490px" data-on="10.1-11.3"><div data-pop="10.1">Alors ??</div></div>
-<div class="bub client" style="left:300px; top:570px" data-on="11.2-12.8"><div data-pop="11.2">C'est PARFAIT, merci !!</div></div>
-<div class="bub aside" style="left:30px; top:480px" data-on="12.8-15.2"><div data-pop="12.8"><small>Traduction :</small>« Je vais pleurer dans ma voiture. »</div></div>
-
-<div class="tagline" data-on="17-99"><span data-pop="17" style="display:inline-block">Juste les Pointes · épisode 1</span></div>
+<div class="tagline" data-on="16.2-99"><span data-pop="16.2">Juste les Pointes · épisode 1</span></div>
 
 <script type="application/json" id="sfx">
-[[0.3,"pop"],[1.8,"pop"],[2.5,"snip"],[2.85,"snip"],[3.2,"snip"],[3.55,"snip"],[3.3,"pop"],
- [5.5,"pop"],[5.6,"hiss",3.8],[6.9,"pop"],[7.9,"pop"],
- [10.0,"whoosh"],[10.1,"pop"],[11.2,"pop"],[12.0,"boing"],[12.1,"pop"],[12.8,"pop"],
- [15.2,"whoosh"],[15.5,"trombone"],[17,"pop"]]
+[[0.3,"pop"],[2.4,"tick"],[2.7,"tick"],[3.0,"tick"],[3.4,"snip"],[3.9,"pop"],[5,"pop"],
+ [6.9,"snip"],[7.2,"snip"],[7.5,"snip"],[7.8,"pop"],[8.65,"snip"],[8.95,"snip"],
+ [9.4,"pop"],[10.1,"snip"],[10.35,"snip"],[10.6,"snip"],[11,"pop"],[12,"pop"],[12.3,"boing"],
+ [12.9,"pop"],[13.3,"trombone"],[15.1,"tink"],[15.3,"pop"],[16.2,"pop"]]
 </script>
 <script src="../meta-ads/base.js"></script>
 <script src="../meta-ads/cartoon.js"></script>
+<script src="kit/salon-kit.js"></script>
 <script>
-  const { arc, jump, clamp } = cartoon;
-  const TUFT_T = [2.5, 2.85, 3.2, 3.55];
-  const TUFT_LAND = [[610, 1330], [690, 1345], [560, 1350], [740, 1330]];
-  const tearsG = document.getElementById('tears');
-  const DROPS = 14;
-  for (let i = 0; i < DROPS; i++) {
-    const d = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    d.setAttribute('r', 11);
-    tearsG.appendChild(d);
-  }
-
-  onTick((t) => {
-    // Scissors snip open/closed during the cut
-    const snipping = t > 2.4 && t < 3.8;
-    const open = snipping ? (Math.sin(t * 36) > 0 ? 14 : 0) : 8;
-    document.getElementById('blade1').setAttribute('transform', `rotate(${-open} -4 28)`);
-    document.getElementById('blade2').setAttribute('transform', `rotate(${open} 4 28)`);
-    document.querySelectorAll('#tufts .tf').forEach((el, i) => arc(el, t, TUFT_T[i], 0.7, [600, 830], TUFT_LAND[i], 60, i % 2 ? 300 : -260));
-
-    // Chloé's ponytail bounces; she jumps when the client "loves" it
-    const bob = Math.sin(t * 5) * 4;
-    document.getElementById('pony').setAttribute('transform', `rotate(${bob} 822 742)`);
-    const dy = jump(t, 12.0, 70, 0.4) + jump(t, 12.4, 40, 0.3);
-    document.getElementById('chloe').setAttribute('transform', `translate(0 ${dy})`);
-    document.querySelectorAll('#hearts .heart').forEach((h, k) => {
-      const s2 = clamp((t - 12.1 - k * 0.12) / 0.3);
-      h.setAttribute('transform', `translate(${h.dataset.x} ${Number(h.dataset.y) + Math.sin(t * 6 + k) * 8}) scale(${1.3 * s2})`);
-    });
-
-    // Hot water: she turns red, steam rises
-    const red = t > 5.6 && t < 10 ? clamp((t - 5.8) / 2.4) * 0.45 : 0;
-    document.getElementById('client-red').setAttribute('opacity', red);
-    document.querySelectorAll('#steam .puff').forEach((p, k) => {
-      const ph = ((t - 5.6) * 0.9 + k / 3) % 1;
-      p.setAttribute('transform', `translate(${490 + k * 30} ${760 - ph * 160})`);
-      p.setAttribute('opacity', Math.sin(ph * Math.PI));
-    });
-
-    // Fake smile: her eye twitches
-    const tw = t > 11.4 && (t * 2.8) % 1 < 0.16;
-    document.getElementById('client-eye').setAttribute('ry', tw ? 3 : 16);
-
-    // Nadia sips her coffee after the verdict
-    const sip = t > 13.8 && t < 14.8 ? Math.sin(((t - 13.8) / 1.0) * Math.PI) : 0;
-    document.getElementById('nadia-mug').setAttribute('transform', `translate(${-48 * sip} ${-150 * sip}) rotate(${-25 * sip} 224 980)`);
-
-    // In the car: sobbing and two fountains of tears
-    const sobbing = Math.sin(t * 22);
-    document.getElementById('crier').setAttribute('transform', `translate(0 ${sobbing * 4})`);
-    document.getElementById('sob').setAttribute('ry', 14 + 8 * Math.abs(sobbing));
-    [...tearsG.children].forEach((d, i) => {
-      const side = i % 2 ? 1 : -1;
-      const ph = ((t * 1.6) + i / DROPS) % 1;
-      d.setAttribute('cx', 540 + side * (40 + 230 * ph));
-      d.setAttribute('cy', 1015 - 150 * ph + 330 * ph * ph);
-      d.setAttribute('opacity', t > 15.4 ? 1 - ph * 0.6 : 0);
-    });
+  Salon.build({
+    nadia: { brow: '8.6-12.9', sip: [15.0] },
+    client: {
+      hair: { '0-7.6': 'long', '7.6-9.2': 'shoulder', '9.2-10.7': 'bob', '10.7-99': 'pixie' },
+      face: { '0-5': 'smile', '5-7.8': 'neutral', '7.8-12': 'annoyed', '12-12.9': 'smile', '12.9-99': 'annoyed' },
+    },
+    chloe: {
+      tool: { '0-2.3': 'scissors', '2.3-3.2': 'ruler', '3.2-11': 'scissors', '11-99': 'mirror' },
+      eyes: { '0-2.3': 'happy', '2.3-3.8': 'focus', '3.8-8.6': 'happy', '8.6-11': 'focus', '11-12': 'panic', '12-12.9': 'happy', '12.9-99': 'panic' },
+      mouth: { '0-2.3': 'grin', '2.3-3.8': 'tongue', '3.8-8.6': 'grin', '8.6-11': 'tongue', '11-12': 'wobbly', '12-12.9': 'grin', '12.9-99': 'o' },
+      sweat: '8.6-12,12.9-99',
+      snips: '3.3-3.6,6.8-7.7,8.6-9.2,10-10.8',
+      cheer: '12.2-12.9', jumps: [12.3],
+    },
+    tufts: [3.5, 6.95, 7.2, 7.45, 8.7, 8.95, 10.15, 10.4, 10.6],
   });
 </script>
 </body>
