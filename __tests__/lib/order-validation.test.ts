@@ -11,6 +11,7 @@ import {
   parseStep,
   stepIndex,
   STEPS,
+  isValidPostalCode,
 } from '@/lib/order-validation';
 
 describe('email', () => {
@@ -119,5 +120,18 @@ describe('step helpers', () => {
   it('stepIndex matches STEPS', () => {
     expect(stepIndex('pack')).toBe(0);
     expect(stepIndex('review')).toBe(STEPS.length - 1);
+  });
+});
+
+describe('isValidPostalCode', () => {
+  it('requires five digits in France', () => {
+    expect(isValidPostalCode('68100', 'FR')).toBe(true);
+    expect(isValidPostalCode('6810', 'FR')).toBe(false);
+    expect(isValidPostalCode('ABCDE', 'FR')).toBe(false);
+  });
+  it('stays loose elsewhere', () => {
+    expect(isValidPostalCode('1000', 'BE')).toBe(true);
+    expect(isValidPostalCode('D02 X285', 'IE')).toBe(true);
+    expect(isValidPostalCode('12', 'DE')).toBe(false);
   });
 });

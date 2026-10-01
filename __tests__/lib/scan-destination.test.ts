@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scanDestination, maskEmail } from '@/lib/nfc/scan-destination';
+import { scanDestination, maskEmail, tipLocaleFromAcceptLanguage } from '@/lib/nfc/scan-destination';
 
 describe('scanDestination', () => {
   it('sends an unknown tag to not-found', () => {
@@ -40,5 +40,16 @@ describe('maskEmail', () => {
   });
   it('never echoes a malformed address', () => {
     expect(maskEmail('nope')).toBe('•••');
+  });
+});
+
+describe('tipLocaleFromAcceptLanguage', () => {
+  it('keeps French for French phones and when the header is missing', () => {
+    expect(tipLocaleFromAcceptLanguage('fr-FR,fr;q=0.9,en;q=0.8')).toBe('fr');
+    expect(tipLocaleFromAcceptLanguage('')).toBe('fr');
+  });
+  it('serves English to every other language', () => {
+    expect(tipLocaleFromAcceptLanguage('en-US,en;q=0.9')).toBe('en');
+    expect(tipLocaleFromAcceptLanguage('de-CH,de;q=0.9,fr;q=0.8')).toBe('en');
   });
 });

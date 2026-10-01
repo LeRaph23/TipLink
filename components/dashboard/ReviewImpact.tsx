@@ -42,10 +42,10 @@ export async function ReviewImpact({ impact }: { impact: Impact }) {
       </div>
       <div style={{ flex: '1 1 220px', minWidth: 0 }}>
         <h3 style={{ ...cardTitleStyle, marginBottom: 2 }}>
-          {impact.clickCount > 0 ? t('title') : t('emptyTitle')}
+          {impact.hasReviewLink === false ? t('noLinkTitle') : impact.clickCount > 0 ? t('title') : t('emptyTitle')}
         </h3>
         <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5 }}>
-          {impact.clickCount > 0 ? t('body') : t('emptyBody')}
+          {impact.hasReviewLink === false ? t('noLinkBody') : impact.clickCount > 0 ? t('body') : t('emptyBody')}
         </div>
       </div>
     </section>

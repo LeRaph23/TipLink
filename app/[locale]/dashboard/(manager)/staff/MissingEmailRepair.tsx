@@ -70,13 +70,13 @@ export function MissingEmailRepair({
     >
       <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>
         {remaining.length === 1
-          ? '1 membre ne peut pas recevoir de pourboires'
-          : `${remaining.length} membres ne peuvent pas recevoir de pourboires`}
+          ? '1 membre n’a pas encore de compte'
+          : `${remaining.length} membres n’ont pas encore de compte`}
       </div>
       <p style={{ fontSize: 13, color: '#92400e', lineHeight: 1.6, marginBottom: 16, opacity: 0.9 }}>
-        Ces profils ont été créés sans adresse email, donc aucune invitation n&apos;a été
-        envoyée et ils n&apos;ont pas de compte. Renseignez leur email pour leur envoyer
-        l&apos;invitation. Sans ça, ils ne pourront jamais encaisser.
+        Leurs pourboires sont bien enregistrés et versés à l&apos;établissement pour la
+        paie, mais ces profils ont été créés sans adresse email : ils ne peuvent pas suivre
+        leurs pourboires eux-mêmes. Renseignez leur email pour leur envoyer l&apos;invitation.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

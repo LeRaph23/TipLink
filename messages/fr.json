@@ -15,7 +15,7 @@
     "altSolo": "Plaque époxy NFC Digitip Solo",
     "altDuo": "Pack Duo, 2 plaques époxy NFC Digitip",
     "trustWarranty": "Garantie matériel à vie",
-    "trustDelivery": "Livraison offerte en Europe (3 jours ouvrés)",
+    "trustDelivery": "Livraison offerte en France, dans l’UE et en Suisse (3 jours ouvrés)",
     "trustStripe": "Paiement chiffré par Stripe",
     "trustRefund": "Satisfait ou remboursé sous 14 jours",
     "orPayByCard": "OU PAYER PAR CARTE",
@@ -24,7 +24,7 @@
     "shippingLabel": "Adresse de livraison",
     "paymentLabel": "Paiement",
     "promoLabel": "Code promo (optionnel)",
-    "promoPlaceholder": "DIGITIP10",
+    "promoPlaceholder": "Votre code",
     "promoApply": "Appliquer",
     "promoApplied": "✓ Appliqué",
     "rowSubtotal": "Sous-total HT",
@@ -241,8 +241,8 @@
     "preparing": "Votre espace est en cours de préparation. Rechargez cette page dans quelques secondes pour le configurer, ou utilisez le lien reçu par e-mail."
   },
   "landing": {
-    "promoBanner": "OFFRE DE LANCEMENT : Livraison offerte en Europe",
-    "promoBannerDated": "OFFRE DE LANCEMENT : Livraison offerte en Europe · jusqu'au {date} ({days, plural, one {# jour restant} other {# jours restants}})",
+    "promoBanner": "OFFRE DE LANCEMENT : livraison offerte",
+    "promoBannerDated": "OFFRE DE LANCEMENT : livraison offerte · jusqu'au {date} ({days, plural, one {# jour restant} other {# jours restants}})",
     "nav": {
       "packs": "Nos packs",
       "clients": "Clients",
@@ -305,7 +305,7 @@
       "kicker": "Livraison",
       "title": "Expédition rapide en Europe",
       "processing": "Expédition sous 3 jours ouvrés",
-      "freeEU": "Livraison offerte en Europe et en Suisse",
+      "freeEU": "Livraison offerte en France, dans l’UE et en Suisse",
       "timezoneFR": "France : 3–5 jours ouvrés après expédition",
       "timezoneEU": "Europe et Suisse : 4–7 jours ouvrés après expédition",
       "tracking": "Numéro de suivi fourni"
@@ -356,19 +356,19 @@
       "kicker": "Nos engagements",
       "title": "Ce sur quoi vous pouvez compter",
       "sub": "Digitip démarre. Plutôt que des chiffres de clientèle, voici des engagements vérifiables : chacun est inscrit dans nos CGV ou dans nos mentions légales.",
-      "freeShippingShort": "Livraison offerte en Europe",
+      "freeShippingShort": "Livraison offerte",
       "warranty": "Garantie matériel à vie",
       "warrantySub": "Plaque cassée ou défectueuse ? On la remplace gratuitement, sans limite de durée.",
       "noSubscription": "Pourboires sans abonnement",
       "noSubscriptionSub": "Vous payez la plaque une fois. Ensuite plus rien : les frais de service sont réglés par le client, pas par vous.",
       "stripe": "Paiements sécurisés par Stripe",
       "stripeSub": "Aucune donnée bancaire ne transite par nos serveurs. Apple Pay et Google Pay acceptés.",
-      "directPayout": "Versé sur le compte du bénéficiaire",
-      "directPayoutSub": "Le pourboire va à la personne choisie par le client, sur son propre compte bancaire.",
+      "directPayout": "Versé à l’établissement",
+      "directPayoutSub": "Le paiement est traité par Stripe et versé sur le compte de l’établissement, qui le reverse à la personne choisie par le client.",
       "frenchCompany": "Entreprise française",
       "frenchCompanySub": "YUZU LABS SAS, SIREN 994 879 013. Plaques programmées et expédiées depuis la France.",
       "euData": "Données hébergées dans l'UE",
-      "euDataSub": "Aucun cookie publicitaire, aucun traqueur tiers. Conforme au RGPD."
+      "euDataSub": "Aucun cookie publicitaire sans votre accord. Conforme au RGPD."
     },
     "finalCta": {
       "title": "Pas encore convaincu ?",
@@ -380,7 +380,7 @@
       "kicker": "FAQ",
       "title": "Questions fréquentes",
       "q1": "Est-ce compatible avec tous les smartphones ?",
-      "a1": "90 % des smartphones récents supportent le NFC. Pour les autres, chaque SmartTag inclut également un QR code scannable avec l'appareil photo. 100 % de compatibilité garantie.",
+      "a1": "La quasi-totalité des smartphones récents lisent le NFC. Pour les autres, chaque SmartTag porte aussi un QR code, lisible avec l’appareil photo.",
       "q2": "Le client peut-il payer avec Apple Pay ou Google Pay ?",
       "a2": "Oui. La page de paiement Digitip accepte Apple Pay, Google Pay et toutes les cartes bancaires, aucune app à télécharger pour le client.",
       "q3": "Combien de temps dure un SmartTag ?",
@@ -400,7 +400,7 @@
       "g2title": "Garantie à vie du matériel",
       "g2body": "Un SmartTag cassé ou défectueux ? On vous en envoie un neuf. Gratuitement. À vie.",
       "g3title": "Livraison offerte",
-      "g3body": "Frais de port offerts sur toute l'Europe, quel que soit le pack commandé.",
+      "g3body": "Frais de port offerts vers les pays desservis (France, UE et Suisse), quel que soit le pack.",
       "g4title": "Aucun frais mensuel sur vos pourboires",
       "g4body": "Vous payez la plaque une fois, puis vous encaissez à vie. Les pourboires ne demandent jamais d'abonnement."
     },
@@ -497,7 +497,7 @@
   "contact": {
     "kicker": "Contact",
     "title": "Comment pouvons-nous vous aider ?",
-    "subtitle": "Multi-établissements, questions sur le service ou besoin d'informations ? Écrivez-nous, réponse sous 24 heures.",
+    "subtitle": "Multi-établissements, questions sur le service ou besoin d'informations ? Écrivez-nous, réponse sous 48 heures ouvrées.",
     "name": "Nom complet",
     "email": "Email professionnel",
     "phone": "Téléphone (optionnel)",
@@ -507,7 +507,7 @@
     "submit": "Envoyer le message",
     "sending": "Envoi…",
     "successTitle": "Message reçu.",
-    "successBody": "Nous revenons vers vous sous 24 heures.",
+    "successBody": "Nous revenons vers vous sous 48 heures ouvrées.",
     "errorGeneric": "Une erreur est survenue. Merci de réessayer."
   },
   "auth": {
@@ -609,7 +609,7 @@
       "securedBy": "Paiement sécurisé par Stripe",
       "edit": "Modifier",
       "promoCodeLabel": "Code promo (optionnel)",
-      "promoCodePlaceholder": "BIENVENUE10",
+      "promoCodePlaceholder": "Votre code",
       "promoCodeHint": "Le code sera appliqué automatiquement lors du paiement."
     },
     "summary": {
@@ -632,7 +632,8 @@
       "email_invalid": "Adresse email invalide.",
       "promo_invalid": "Ce code promo est invalide ou expiré. Corrigez-le ou retirez-le pour continuer.",
       "checkout_failed": "Le paiement n'a pas pu aboutir. Réessayez dans un instant.",
-      "code_required": "Confirmez votre adresse email avec le code reçu avant de continuer."
+      "code_required": "Confirmez votre adresse email avec le code reçu avant de continuer.",
+      "admin_account": "Ce compte est un compte administrateur : il ne peut pas passer de commande. Déconnectez-vous pour commander au nom d’un client."
     }
   },
   "pay": {
@@ -646,7 +647,7 @@
     "notReady": "Ce membre de l'équipe n'est pas encore prêt à recevoir des pourboires.",
     "secured": "Paiement 100 % sécurisé par Stripe.",
     "success": "Merci pour le pourboire !",
-    "successBody": "Votre paiement est passé. Le serveur a été notifié.",
+    "successBody": "Votre paiement est passé. L’équipe a bien reçu votre pourboire, merci !",
     "processing": "En cours de traitement…",
     "processingBody": "Votre paiement est en cours. Cette page se mettra à jour à la fin.",
     "failed": "Paiement échoué",
@@ -666,7 +667,7 @@
       "memberOne": "1 membre",
       "memberOther": "{count} membres",
       "splitEqually": "Réparti équitablement entre {count} membres",
-      "perPerson": "{amount} / pers",
+      "perPerson": "≈ {amount} / pers",
       "pickIndividual": "← Choisir un membre en particulier",
       "selectAmountTitle": "Choisir le montant",
       "customAmountLabel": "Autre montant",
@@ -695,7 +696,7 @@
     "tipSubhead": "Laissez un pourboire en un clin d’œil",
     "feeInfo": "Ces frais couvrent le coût de la transaction bancaire et le service Digitip. La totalité du pourboire que vous avez choisi est reversée : nous ne prélevons rien dessus.",
     "feeBreakdown": "{tip} pourboire + {fee} frais de service",
-    "feeBreakdownPerPerson": "{tip} pourboire ({perPerson} / pers.) + {fee} frais de service",
+    "feeBreakdownPerPerson": "{tip} pourboire (≈ {perPerson} / pers.) + {fee} frais de service",
     "feeTotal": "{total} débités",
     "successBodyNamed": "Votre pourboire est bien parti, {name} en a été informé·e.",
     "sentTo": "Envoyé à",
@@ -808,7 +809,8 @@
       "colReceipt": "Reçu",
       "empty": "Aucune transaction pour l'instant",
       "statusReceived": "Reçu",
-      "statusReversed": "Remboursé"
+      "statusReversed": "Remboursé",
+      "colEmployee": "Employé"
     },
     "staff": {
       "title": "Équipe",
@@ -817,7 +819,7 @@
       "empty": "Aucun membre pour l'instant.",
       "colName": "Nom",
       "colEstablishment": "Établissement",
-      "colPayout": "Virement",
+      "colPayout": "Compte",
       "colStatus": "Statut",
       "active": "Actif",
       "inactive": "Inactif",
@@ -848,12 +850,12 @@
         "save": "Enregistrer",
         "saving": "Enregistrement…",
         "saved": "Enregistré.",
-        "deactivate": "Désactiver",
-        "deactivateConfirm": "Désactiver ce membre ? Il·elle ne recevra plus de pourboires.",
-        "payoutStatus": "Statut virement",
-        "payoutComplete": "Prêt à recevoir des pourboires",
-        "payoutPending": "Onboarding en cours",
-        "payoutNotStarted": "Non commencé",
+        "deactivate": "Retirer de l’équipe",
+        "deactivateConfirm": "Retirer cette personne de l’équipe ? Elle disparaît de la page pourboire ; son historique reste dans vos relevés.",
+        "payoutStatus": "Compte",
+        "payoutComplete": "Compte actif",
+        "payoutPending": "Inscription en cours",
+        "payoutNotStarted": "Compte à finaliser",
         "recentTips": "Derniers pourboires",
         "notFound": "Membre introuvable."
       },
@@ -889,7 +891,7 @@
     "stickers": {
       "title": "SmartTags",
       "subtitle": "Les SmartTags NFC rattachés à vos établissements. Le client choisit le serveur à pourboire au moment du scan.",
-      "infoBanner": "Vos SmartTags sont provisionnés et expédiés par Digitip. Pour en commander ou en remplacer, contactez le support.",
+      "infoBanner": "Vos SmartTags sont préparés et expédiés par Digitip. Pour en commander d’autres, passez par Facturation → Commander ; pour en remplacer un, écrivez à contact@digitip.app.",
       "colShortId": "Identifiant",
       "colEstablishment": "Établissement",
       "colUrl": "URL",
@@ -1272,7 +1274,9 @@
       "title": "clients sont allés laisser un avis",
       "body": "Depuis le 1er du mois. L'invitation s'affiche après chaque pourboire ; ce sont eux qui décident de la suivre.",
       "emptyTitle": "Aucun avis lancé ce mois-ci",
-      "emptyBody": "L'invitation s'affiche bien après chaque pourboire, mais personne ne l'a suivie pour l'instant. Vérifiez que votre lien Google pointe au bon endroit."
+      "emptyBody": "L'invitation s'affiche bien après chaque pourboire, mais personne ne l'a suivie pour l'instant. Vérifiez que votre lien Google pointe au bon endroit.",
+      "noLinkTitle": "Avis Google pas encore activés",
+      "noLinkBody": "Aucune fiche Google n’est reliée : vos clients ne voient pas d’invitation à laisser un avis. Ajoutez votre lien Google dans Paramètres."
     }
   },
   "join": {
@@ -1299,7 +1303,7 @@
       "optional": "(facultatif)",
       "firstNamePlaceholder": "ex : Océane",
       "lastNamePlaceholder": "ex : Dupont",
-      "photoTip": "Les profils avec photo reçoivent en moyenne <b>3× plus de pourboires</b>.",
+      "photoTip": "Une photo aide les clients à reconnaître la bonne personne au moment de remercier.",
       "uploading": "Envoi…",
       "photo": "Photo",
       "photoHint": "JPG, PNG ou WebP · 2 Mo max"

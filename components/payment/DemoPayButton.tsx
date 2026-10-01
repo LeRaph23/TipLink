@@ -21,7 +21,11 @@ export function DemoPayButton({ kind, targetId, amount, currency }: Props) {
   const t = useTranslations('pay');
   const [going, setGoing] = useState(false);
 
-  const fmt = new Intl.NumberFormat(undefined, {
+  // The page locale, not the device's: the server rendered "€2" and the
+  // browser "2 €", a hydration mismatch on every tip page (sixth QA run).
+  const pageLocale = locale;
+  const numberLocale = pageLocale === 'fr' ? 'fr-FR' : 'en-GB';
+  const fmt = new Intl.NumberFormat(numberLocale, {
     style: 'currency', currency, minimumFractionDigits: 2,
   });
 

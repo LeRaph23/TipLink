@@ -6,23 +6,27 @@ interface Transaction {
   currency: string;
   status: string;
   created_at: string;
+  employee?: string;
 }
 
 interface Props {
   transactions: Transaction[];
+  /** The manager's team view: one column per employee name. */
+  withEmployee?: boolean;
 }
 
-export function CsvExportButton({ transactions }: Props) {
+export function CsvExportButton({ transactions, withEmployee = false }: Props) {
   const handleExport = () => {
     // French Excel conventions: semicolons, decimal commas, Paris time, BOM.
     const fmt = new Intl.DateTimeFormat('fr-FR', {
       timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short',
     });
     const rows = [
-      ['Référence', 'Date', 'Montant (€)', 'Statut'],
+      ['Référence', 'Date', ...(withEmployee ? ['Employé'] : []), 'Montant (€)', 'Statut'],
       ...transactions.map(tx => [
         tx.id.slice(0, 8).toUpperCase(),
         fmt.format(new Date(tx.created_at)),
+        ...(withEmployee ? [tx.employee ?? ''] : []),
         (tx.amount / 100).toFixed(2).replace('.', ','),
         tx.status,
       ]),

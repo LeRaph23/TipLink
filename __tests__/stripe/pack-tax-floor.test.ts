@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const calcCreate = vi.fn();
 vi.mock('@/lib/stripe/client', () => ({ stripe: { tax: { calculations: { create: (...a: unknown[]) => calcCreate(...a) } } } }));
+const vies = vi.fn();
+vi.mock('@/lib/tax/vies', () => ({ checkVatNumber: (...a: unknown[]) => vies(...a) }));
 
 import { computePackTax, needsVatFloor } from '@/lib/stripe/tax';
 
@@ -25,7 +27,7 @@ describe('needsVatFloor', () => {
 });
 
 describe('computePackTax', () => {
-  beforeEach(() => calcCreate.mockReset());
+  beforeEach(() => { calcCreate.mockReset(); vies.mockReset(); });
 
   it('applies 20 % when Stripe Tax has no French registration', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -40,9 +42,28 @@ describe('computePackTax', () => {
     expect(tax).toMatchObject({ taxAmount: 1380, totalAmount: 8280, calculationId: 'taxcalc_2' });
   });
 
-  it('keeps reverse charge for a Belgian business', async () => {
+  it('keeps reverse charge for a Belgian business VIES confirms', async () => {
+    vies.mockResolvedValue('valid');
     calcCreate.mockResolvedValue({ id: 'taxcalc_3', tax_amount_exclusive: 0, amount_total: 6900 });
     const tax = await computePackTax({ htAmount: 6900, currency: 'eur', country: 'BE', vatNumber: 'BE0123456749' });
-    expect(tax).toMatchObject({ taxAmount: 0, totalAmount: 6900 });
+    expect(tax).toMatchObject({ taxAmount: 0, totalAmount: 6900, vatIdStatus: 'valid' });
+    expect(calcCreate.mock.calls[0][0].customer_details.tax_ids).toHaveLength(1);
+  });
+
+  it('charges VAT on a made-up VAT number VIES rejects', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vies.mockResolvedValue('invalid');
+    calcCreate.mockResolvedValue({ id: 'taxcalc_4', tax_amount_exclusive: 0, amount_total: 6900 });
+    const tax = await computePackTax({ htAmount: 6900, currency: 'eur', country: 'BE', vatNumber: 'BE0123456789' });
+    expect(calcCreate.mock.calls[0][0].customer_details.tax_ids).toBeUndefined();
+    expect(tax).toMatchObject({ taxAmount: 1380, totalAmount: 8280, vatIdStatus: 'invalid' });
+  });
+
+  it('charges VAT while VIES cannot answer', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vies.mockResolvedValue('unavailable');
+    calcCreate.mockResolvedValue({ id: 'taxcalc_5', tax_amount_exclusive: 0, amount_total: 6900 });
+    const tax = await computePackTax({ htAmount: 6900, currency: 'eur', country: 'BE', vatNumber: 'BE0123456749' });
+    expect(tax).toMatchObject({ taxAmount: 1380, vatIdStatus: 'unavailable' });
   });
 });

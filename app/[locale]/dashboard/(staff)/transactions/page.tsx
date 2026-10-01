@@ -52,7 +52,7 @@ export default async function StaffTransactionsPage({
   // this page disagree with every other figure in the dashboard.
   // Without a staff profile there are no tips — and filtering on an empty
   // staff_id would send '' to a UUID column (Postgres syntax error).
-  const ALLOC_COLUMNS = 'amount, status, allocated_at, created_at, transaction_id, transactions!inner(currency, establishment_id)';
+  const ALLOC_COLUMNS = 'amount, status, allocated_at, created_at, transaction_id, transactions!inner(currency, establishment_id), staff_profiles(full_name)';
   const { data: allocations } = staffProfile
     ? await supabase.from('tip_allocations').select(ALLOC_COLUMNS)
         .eq('staff_id', staffProfile.id)
@@ -74,7 +74,12 @@ export default async function StaffTransactionsPage({
     currency: (a.transactions as { currency?: string } | null)?.currency ?? 'EUR',
     status: a.status === 'reversed' ? ('reversed' as const) : ('allocated' as const),
     created_at: a.allocated_at ?? a.created_at,
+    employee: (a.staff_profiles as { full_name?: string | null } | null)?.full_name ?? '',
   }));
+  // The manager's view lists the whole team: without the employee's name a
+  // team tip showed as four identical lines and the export could not be used
+  // for payroll (sixth QA run).
+  const showEmployee = !staffProfile;
 
   const currency = rows[0]?.currency ?? 'EUR';
   const fmt = new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 });
@@ -90,7 +95,7 @@ export default async function StaffTransactionsPage({
             {t('totalReceived')}: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{fmt.format(total / 100)}</span>
           </>
         }
-        action={<CsvExportButton transactions={rows.map((r) => ({ ...r, status: statusLabel[r.status] }))} />}
+        action={<CsvExportButton withEmployee={showEmployee} transactions={rows.map((r) => ({ ...r, status: statusLabel[r.status] }))} />}
       />
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
@@ -98,14 +103,14 @@ export default async function StaffTransactionsPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('colReference'), t('colDate'), t('colAmount'), t('colStatus'), t('colReceipt')].map(h => (
+                {[t('colReference'), t('colDate'), ...(showEmployee ? [t('colEmployee')] : []), t('colAmount'), t('colStatus'), t('colReceipt')].map(h => (
                   <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {!rows.length ? (
-                <tr><td colSpan={5} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>{t('empty')}</td></tr>
+                <tr><td colSpan={showEmployee ? 6 : 5} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-3)' }}>{t('empty')}</td></tr>
               ) : rows.map(tx => (
                 <tr key={tx.key} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '11px 16px' }}>
@@ -116,6 +121,9 @@ export default async function StaffTransactionsPage({
                   <td style={{ padding: '11px 16px', color: 'var(--text-3)', fontSize: 12.5, whiteSpace: 'nowrap' }}>
                     {new Date(tx.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </td>
+                  {showEmployee && (
+                    <td style={{ padding: '11px 16px', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{tx.employee || '—'}</td>
+                  )}
                   <td style={{ padding: '11px 16px', fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
                     {fmt.format(tx.amount / 100)}
                   </td>

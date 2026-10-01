@@ -45,9 +45,17 @@ export function isValidAddress(a: Address | undefined | null): a is Address {
   return (
     a.line1.trim().length > 2 &&
     a.city.trim().length > 1 &&
-    a.postal_code.trim().length >= 3 &&
-    a.country.trim().length === 2
+    a.country.trim().length === 2 &&
+    isValidPostalCode(a.postal_code, a.country)
   );
+}
+
+// France is checked strictly (five digits): a mistyped code there is the
+// commonest reason a plaque comes back to sender. Elsewhere, a loose check.
+export function isValidPostalCode(code: string, country: string): boolean {
+  const c = code.trim();
+  if (country.trim().toUpperCase() === 'FR') return /^\d{5}$/.test(c);
+  return c.length >= 3;
 }
 
 export function validatePack(pack: unknown): pack is PackId {

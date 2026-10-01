@@ -64,7 +64,7 @@ export async function GET(
   return page(
     'C\'est noté — vous ne recevrez plus nos emails de conseils et de relance. ' +
       'Les emails essentiels (reçus, alertes de paiement) restent envoyés. ' +
-      'Une erreur ? Écrivez-nous à support@digitip.app.',
+      'Une erreur ? Écrivez-nous à contact@digitip.app.',
     'ok'
   );
 }
