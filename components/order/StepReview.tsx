@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { PACKS, type PackId } from '@/lib/env';
 import type { OrderState, Step } from '@/lib/order-validation';
 import { formatPrice } from './OrderSummary';
+import { countryName } from './formStyles';
 import { htSuffix } from '@/lib/format-price';
 import type { PackPricing } from '@/lib/stripe/pricing';
 
@@ -16,7 +17,8 @@ function Row({
   label: string;
   children: React.ReactNode;
   step: Step;
-  onEdit: (s: Step) => void;
+  /** Null for a row that cannot be edited here (the signed-in account). */
+  onEdit: ((s: Step) => void) | null;
 }) {
   const t = useTranslations('order.review');
   return (
@@ -37,7 +39,7 @@ function Row({
           {children}
         </div>
       </div>
-      <button
+      {onEdit && <button
         type="button" onClick={() => onEdit(step)}
         style={{
           fontSize: 12.5, color: 'var(--accent)', fontWeight: 500,
@@ -46,7 +48,7 @@ function Row({
         }}
       >
         {t('edit')}
-      </button>
+      </button>}
     </div>
   );
 }
@@ -58,7 +60,10 @@ export function StepReview({
   onEdit,
   promoCode,
   onPromoChange,
+  signedIn,
 }: {
+  /** The session's account, when the buyer is signed in (no account step). */
+  signedIn?: { email: string; fullName: string } | null;
   state: OrderState;
   locale: string;
   pricing: Record<PackId, PackPricing>;
@@ -73,7 +78,7 @@ export function StepReview({
     state.shipping.line1,
     state.shipping.line2,
     `${state.shipping.postal_code} ${state.shipping.city}`,
-    state.shipping.country,
+    countryName(state.shipping.country, locale),
   ].filter(Boolean);
 
   const billingLines = state.business.billing_same
@@ -83,7 +88,7 @@ export function StepReview({
         state.business.billing.line1,
         state.business.billing.line2,
         `${state.business.billing.postal_code} ${state.business.billing.city}`,
-        state.business.billing.country,
+        countryName(state.business.billing.country, locale),
       ].filter(Boolean)
     : shippingLines;
 
@@ -142,9 +147,11 @@ export function StepReview({
         {billingLines.map((l, i) => <div key={i}>{l}</div>)}
       </Row>
 
-      <Row label={t('account')} step="account" onEdit={onEdit}>
-        <div style={{ fontWeight: 600, marginBottom: 2 }}>{state.account.full_name}</div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{state.account.email}</div>
+      {/* Signed in, the account step is skipped and state.account stays empty:
+          the block showed blank (sixth QA run). Show the session's account. */}
+      <Row label={t('account')} step="account" onEdit={signedIn ? null : onEdit}>
+        <div style={{ fontWeight: 600, marginBottom: 2 }}>{signedIn ? signedIn.fullName : state.account.full_name}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{signedIn ? signedIn.email : state.account.email}</div>
       </Row>
 
       {/* Promo code input */}

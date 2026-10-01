@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { OrderFulfillment } from './OrderFulfillment';
+import { createServiceClient } from '@/lib/supabase/service';
+import { resolveGroupAdmin } from '@/lib/email/lifecycle';
+import { stripe } from '@/lib/stripe/client';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -19,7 +22,7 @@ export default async function AdminOrderDetailPage({
 
   const { data: order } = await supabase
     .from('smarttag_orders')
-    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, shipping_address, shipped_at, delivered_at, fulfilled_at, created_at, group_id, promo_code, discount_amount, stripe_checkout_session_id, stripe_invoice_id, internal_notes, groups(id, name)')
+    .select('id, pack, quantity, status, tags_encoded_count, tracking_number, shipping_address, shipped_at, delivered_at, fulfilled_at, created_at, group_id, promo_code, discount_amount, stripe_checkout_session_id, stripe_invoice_id, stripe_payment_intent_id, internal_notes, groups(id, name)')
     .eq('id', id)
     .maybeSingle();
 
@@ -46,6 +49,19 @@ export default async function AdminOrderDetailPage({
   ]);
 
   const group = order.groups as { id: string; name: string } | null;
+
+  // Who to contact and what was paid: support could do neither from this page
+  // (sixth QA run). Both lookups are best-effort.
+  const [buyer, paid] = await Promise.all([
+    resolveGroupAdmin(createServiceClient(), order.group_id).catch(() => null),
+    order.stripe_payment_intent_id
+      ? stripe.paymentIntents.retrieve(order.stripe_payment_intent_id)
+          .then((pi) => ({ total: pi.amount_received || pi.amount, tax: Number(pi.metadata?.tax_amount ?? NaN), currency: pi.currency }))
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const money = (cents: number, cur: string) =>
+    new Intl.NumberFormat(locale, { style: 'currency', currency: cur.toUpperCase() }).format(cents / 100);
   type LinkRow = {
     sticker_id: string;
     encoded_at: string;
@@ -82,6 +98,13 @@ export default async function AdminOrderDetailPage({
         <InfoCell label={t('fieldStatus')} value={t(`status.${order.status}`)} />
         <InfoCell label={t('fieldProgress')} value={`${order.tags_encoded_count} / ${order.quantity}`} />
         <InfoCell label={t('fieldTracking')} value={order.tracking_number ?? '—'} />
+        <InfoCell label="Acheteur" value={buyer?.email ?? '—'} />
+        {paid && (
+          <InfoCell
+            label="Payé TTC"
+            value={`${money(paid.total, paid.currency)}${Number.isFinite(paid.tax) ? ` (dont TVA ${money(paid.tax, paid.currency)})` : ''}`}
+          />
+        )}
         {order.promo_code && (
           <InfoCell label="Code promo" value={order.promo_code} accent />
         )}

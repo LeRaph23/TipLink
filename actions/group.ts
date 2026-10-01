@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { TIP_MAX_CENTS } from '@/lib/tips/limits';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
@@ -51,9 +52,11 @@ export async function updateGroup(
     const currentSettings = (current?.settings as Record<string, unknown> | null) ?? {};
     // Three or four amounts (new groups default to three), each shown once on
     // the tip page: a repeated amount would be a duplicate button.
-    const valid = input.tipThresholds.filter((v) => typeof v === 'number' && v >= 2 && v < 10000);
+    // At most the tip page's own ceiling: a 9 999 € button was accepted, then
+    // did nothing on the tip page (sixth QA run).
+    const valid = input.tipThresholds.filter((v) => typeof v === 'number' && v >= 2 && v * 100 <= TIP_MAX_CENTS);
     if (valid.length !== input.tipThresholds.length || valid.length < 3 || valid.length > 4) {
-      return { error: 'Indiquez 3 ou 4 montants, chacun d’au moins 2 €.' };
+      return { error: `Indiquez 3 ou 4 montants, chacun entre 2 € et ${TIP_MAX_CENTS / 100} €.` };
     }
     if (new Set(valid).size !== valid.length) return { error: 'Chaque montant ne peut apparaître qu’une fois.' };
     const cleaned = valid;

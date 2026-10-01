@@ -76,24 +76,54 @@ export async function refundTransactionFull(
     await stripe.refunds.create(
       {
         payment_intent: txn.stripe_payment_intent_id,
-        refund_application_fee: true,
-        reverse_transfer: true,
         metadata: reason ? { reason } : undefined,
-      } as Stripe.RefundCreateParams,
+      } satisfies Stripe.RefundCreateParams,
       // One full refund per transaction — guards against a concurrent EFW
       // auto-refund and a manual admin refund both passing the status check
-      // above and issuing two refunds.
-      { idempotencyKey: `refund:${transactionId}` },
+      // above and issuing two refunds. `v2`: Stripe stores the response of a
+      // failed request under its key too, and every earlier attempt failed
+      // (see below), so the old key would replay that failure forever.
+      { idempotencyKey: `refund:v2:${transactionId}` },
     );
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Refund failed';
-    return { ok: false, error: msg };
+    console.error('[refund] stripe refund failed', { transactionId, err });
+    return { ok: false, error: refundErrorMessage(err) };
   }
 
-  // `reverse_transfer: true` only covers destination charges; tips are
-  // separate charges, so the transfer to the establishment is reversed
-  // explicitly here — as are the employees' attributions.
-  await reverseTransactionTransfers(transactionId, supabase);
+  // Tips are separate charges: the charge is the platform's and the money
+  // reaches the establishment through a transfer of its own. The refund
+  // therefore takes no `reverse_transfer` / `refund_application_fee` — Stripe
+  // rejects both on a charge that is not a destination charge, which is why
+  // every refund from the admin failed (sixth QA run) — and the transfer is
+  // reversed explicitly here, with the employees' attributions.
+  try {
+    await reverseTransactionTransfers(transactionId, supabase);
+  } catch (err) {
+    // The customer has their money back; only recovering it from the
+    // establishment failed (typically an empty Connect balance). Say so
+    // rather than report the whole refund as failed.
+    console.error('[refund] transfer reversal failed', { transactionId, err });
+    return {
+      ok: false,
+      error: 'Client remboursé, mais le virement à l’établissement n’a pas pu être annulé (solde insuffisant ?). À régulariser dans Stripe.',
+    };
+  }
 
   return { ok: true };
+}
+
+/** A French message for the admin instead of Stripe's English one. */
+export function refundErrorMessage(err: unknown): string {
+  const e = err as { code?: string; type?: string; message?: string } | null;
+  switch (e?.code) {
+    case 'charge_already_refunded':
+      return 'Ce paiement a déjà été remboursé.';
+    case 'charge_disputed':
+      return 'Ce paiement fait l’objet d’un litige : remboursement impossible, répondez au litige dans Stripe.';
+    case 'insufficient_funds':
+    case 'balance_insufficient':
+      return 'Solde Digitip insuffisant pour rembourser maintenant. Réessayez après le prochain encaissement.';
+    default:
+      return 'Le remboursement a échoué. Réessayez, ou remboursez depuis le tableau de bord Stripe.';
+  }
 }

@@ -15,7 +15,7 @@
     "altSolo": "Digitip Solo NFC epoxy plate",
     "altDuo": "Duo pack, 2 Digitip NFC epoxy plates",
     "trustWarranty": "Lifetime hardware warranty",
-    "trustDelivery": "Free delivery across Europe (3 working days)",
+    "trustDelivery": "Free delivery to France, the EU and Switzerland (3 working days)",
     "trustStripe": "Payment encrypted by Stripe",
     "trustRefund": "14-day money-back guarantee",
     "orPayByCard": "OR PAY BY CARD",
@@ -24,7 +24,7 @@
     "shippingLabel": "Shipping address",
     "paymentLabel": "Payment",
     "promoLabel": "Promo code (optional)",
-    "promoPlaceholder": "DIGITIP10",
+    "promoPlaceholder": "Your code",
     "promoApply": "Apply",
     "promoApplied": "✓ Applied",
     "rowSubtotal": "Subtotal excl. VAT",
@@ -241,8 +241,8 @@
     "preparing": "Your space is being prepared. Reload this page in a few seconds to set it up, or use the link in your email."
   },
   "landing": {
-    "promoBanner": "LAUNCH OFFER: free shipping across Europe",
-    "promoBannerDated": "LAUNCH OFFER: free shipping across Europe · until {date} ({days, plural, one {# day left} other {# days left}})",
+    "promoBanner": "LAUNCH OFFER: free shipping",
+    "promoBannerDated": "LAUNCH OFFER: free shipping · until {date} ({days, plural, one {# day left} other {# days left}})",
     "nav": {
       "packs": "Our packs",
       "clients": "Clients",
@@ -305,7 +305,7 @@
       "kicker": "Shipping",
       "title": "Fast delivery across Europe",
       "processing": "Ships within 3 business days",
-      "freeEU": "Free shipping across Europe and Switzerland",
+      "freeEU": "Free shipping to France, the EU and Switzerland",
       "timezoneFR": "France: 3–5 business days after shipping",
       "timezoneEU": "Europe and Switzerland: 4–7 business days after shipping",
       "tracking": "Tracking number provided"
@@ -356,19 +356,19 @@
       "kicker": "Our commitments",
       "title": "What you can count on",
       "sub": "Digitip is just starting out. Instead of customer numbers, here are verifiable commitments: each one is written into our terms of sale or our legal notice.",
-      "freeShippingShort": "Free shipping across Europe",
+      "freeShippingShort": "Free shipping",
       "warranty": "Lifetime hardware guarantee",
       "warrantySub": "Broken or faulty plaque? We replace it free of charge, with no time limit.",
       "noSubscription": "Tipping with no subscription",
       "noSubscriptionSub": "You pay for the plaque once. After that, nothing: the service fee is paid by the customer, not by you.",
       "stripe": "Payments secured by Stripe",
       "stripeSub": "No card data ever touches our servers. Apple Pay and Google Pay accepted.",
-      "directPayout": "Paid to the recipient's own account",
-      "directPayoutSub": "The tip goes to the person the customer picked, straight to their own bank account.",
+      "directPayout": "Paid to the venue",
+      "directPayoutSub": "The payment is processed by Stripe and paid into the venue's account, which passes it on to the person the customer picked.",
       "frenchCompany": "French company",
       "frenchCompanySub": "YUZU LABS SAS, SIREN 994 879 013. Plaques programmed and shipped from France.",
       "euData": "Data hosted in the EU",
-      "euDataSub": "No advertising cookies, no third-party trackers. GDPR compliant."
+      "euDataSub": "No advertising cookies without your consent. GDPR compliant."
     },
     "finalCta": {
       "title": "Not convinced yet?",
@@ -380,7 +380,7 @@
       "kicker": "FAQ",
       "title": "Frequently asked questions",
       "q1": "Is it compatible with all smartphones?",
-      "a1": "90% of recent smartphones support NFC. For the rest, every SmartTag also includes a QR code scannable with the phone camera. 100% compatibility guaranteed.",
+      "a1": "Almost every recent smartphone reads NFC. For the rest, every SmartTag also carries a QR code the phone camera can read.",
       "q2": "Can customers pay with Apple Pay or Google Pay?",
       "a2": "Yes. The Digitip payment page accepts Apple Pay, Google Pay and all debit/credit cards, no app needed for the customer.",
       "q3": "How long does a SmartTag last?",
@@ -400,7 +400,7 @@
       "g2title": "Lifetime hardware guarantee",
       "g2body": "SmartTag broken or defective? We send a new one. Free. For life.",
       "g3title": "Free shipping",
-      "g3body": "Free delivery across Europe, whatever pack you order.",
+      "g3body": "Free delivery to the countries we ship to (France, the EU and Switzerland), whatever the pack.",
       "g4title": "Zero monthly fees on your tips",
       "g4body": "Pay for the plate once, then earn for life. Tips never require a subscription."
     },
@@ -497,7 +497,7 @@
   "contact": {
     "kicker": "Contact",
     "title": "How can we help?",
-    "subtitle": "Multi-venue setup, questions about the service, or anything else? Drop us a line, we'll get back to you within 24 hours.",
+    "subtitle": "Multi-venue setup, questions about the service, or anything else? Drop us a line, we'll get back to you within 2 working days.",
     "name": "Full name",
     "email": "Work email",
     "phone": "Phone (optional)",
@@ -507,7 +507,7 @@
     "submit": "Send message",
     "sending": "Sending…",
     "successTitle": "Message received.",
-    "successBody": "We'll get back to you within 24 hours.",
+    "successBody": "We'll get back to you within 2 working days.",
     "errorGeneric": "Something went wrong. Please try again."
   },
   "auth": {
@@ -609,7 +609,7 @@
       "securedBy": "Secured by Stripe",
       "edit": "Edit",
       "promoCodeLabel": "Promo code (optional)",
-      "promoCodePlaceholder": "SUMMER20",
+      "promoCodePlaceholder": "Your code",
       "promoCodeHint": "The code will be applied automatically at checkout."
     },
     "summary": {
@@ -632,7 +632,8 @@
       "email_invalid": "Invalid email address.",
       "promo_invalid": "This promo code is invalid or expired. Fix or remove it to continue.",
       "checkout_failed": "The payment couldn't be completed. Please try again in a moment.",
-      "code_required": "Confirm your email address with the code we sent before continuing."
+      "code_required": "Confirm your email address with the code we sent before continuing.",
+      "admin_account": "This is an administrator account and cannot place orders. Sign out to order on behalf of a client."
     }
   },
   "pay": {
@@ -646,7 +647,7 @@
     "notReady": "This staff member isn't ready to receive tips yet.",
     "secured": "Payment secured by Stripe.",
     "success": "Thanks for the tip!",
-    "successBody": "Your payment went through. The staff member has been notified.",
+    "successBody": "Your payment went through. The team has received your tip, thank you!",
     "processing": "Processing…",
     "processingBody": "Your payment is being processed. This page will update when it completes.",
     "failed": "Payment failed",
@@ -666,7 +667,7 @@
       "memberOne": "1 member",
       "memberOther": "{count} members",
       "splitEqually": "Split equally between {count} members",
-      "perPerson": "{amount} / person",
+      "perPerson": "≈ {amount} / person",
       "pickIndividual": "← Pick an individual member",
       "selectAmountTitle": "Choose the amount",
       "customAmountLabel": "Other amount",
@@ -695,7 +696,7 @@
     "tipSubhead": "Leave a tip in a tap",
     "feeInfo": "This fee covers the bank transaction cost and the Digitip service. The whole tip you chose is passed on: we take nothing out of it.",
     "feeBreakdown": "{tip} tip + {fee} service fee",
-    "feeBreakdownPerPerson": "{tip} tip ({perPerson} / person) + {fee} service fee",
+    "feeBreakdownPerPerson": "{tip} tip (≈ {perPerson} / person) + {fee} service fee",
     "feeTotal": "{total} charged",
     "successBodyNamed": "Your tip is on its way, {name} has been notified.",
     "sentTo": "Sent to",
@@ -808,7 +809,8 @@
       "colReceipt": "Receipt",
       "empty": "No transactions yet",
       "statusReceived": "Received",
-      "statusReversed": "Refunded"
+      "statusReversed": "Refunded",
+      "colEmployee": "Employee"
     },
     "staff": {
       "title": "Staff",
@@ -817,7 +819,7 @@
       "empty": "No staff members yet.",
       "colName": "Name",
       "colEstablishment": "Establishment",
-      "colPayout": "Payout",
+      "colPayout": "Account",
       "colStatus": "Status",
       "active": "Active",
       "inactive": "Inactive",
@@ -848,12 +850,12 @@
         "save": "Save changes",
         "saving": "Saving…",
         "saved": "Saved.",
-        "deactivate": "Deactivate",
-        "deactivateConfirm": "Deactivate this staff member? They will stop receiving tips.",
-        "payoutStatus": "Payout status",
-        "payoutComplete": "Ready to receive tips",
-        "payoutPending": "Onboarding pending",
-        "payoutNotStarted": "Not started",
+        "deactivate": "Remove from team",
+        "deactivateConfirm": "Remove this person from the team? They disappear from the tip page; their history stays in your statements.",
+        "payoutStatus": "Account",
+        "payoutComplete": "Account active",
+        "payoutPending": "Signing up",
+        "payoutNotStarted": "Account to finish",
         "recentTips": "Recent tips",
         "notFound": "Staff not found."
       },
@@ -889,7 +891,7 @@
     "stickers": {
       "title": "SmartTags",
       "subtitle": "NFC SmartTags linked to your establishments. Customers pick the staff member they want to tip when they scan.",
-      "infoBanner": "Your SmartTags are provisioned and shipped by Digitip. Contact support to order more or request replacements.",
+      "infoBanner": "Your SmartTags are prepared and shipped by Digitip. To order more, go to Billing → Order; to replace one, write to contact@digitip.app.",
       "colShortId": "Short ID",
       "colEstablishment": "Establishment",
       "colUrl": "URL",
@@ -1272,7 +1274,9 @@
       "title": "customers went to leave a review",
       "body": "Since the 1st. The invitation shows after every tip; following it is their call.",
       "emptyTitle": "No review started this month",
-      "emptyBody": "The invitation does show after every tip, but nobody has followed it yet. Check that your Google link points where you expect."
+      "emptyBody": "The invitation does show after every tip, but nobody has followed it yet. Check that your Google link points where you expect.",
+      "noLinkTitle": "Google reviews not switched on yet",
+      "noLinkBody": "No Google listing is linked, so customers see no invitation to leave a review. Add your Google link in Settings."
     }
   },
   "join": {
@@ -1299,7 +1303,7 @@
       "optional": "(optional)",
       "firstNamePlaceholder": "e.g. Océane",
       "lastNamePlaceholder": "e.g. Dupont",
-      "photoTip": "Profiles with a photo receive on average <b>3× more tips</b>.",
+      "photoTip": "A photo helps customers recognise the right person when they say thanks.",
       "uploading": "Uploading…",
       "photo": "Photo",
       "photoHint": "JPG, PNG or WebP · 2 MB max"

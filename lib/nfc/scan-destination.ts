@@ -38,3 +38,15 @@ export function maskEmail(email: string): string {
   if (!local || !domain) return '•••';
   return `${local[0]}•••@${domain}`;
 }
+
+/**
+ * Language of the tip page for a scan with no saved preference. French when
+ * the phone asks for French (or says nothing), English for any other language:
+ * a German, Dutch or English-speaking customer reads English far better than
+ * French. It used to fall back to French for everyone (sixth QA run).
+ */
+export function tipLocaleFromAcceptLanguage(header: string): 'fr' | 'en' {
+  const first = header.split(',')[0]?.trim().toLowerCase() ?? '';
+  if (!first || first === '*' || first.startsWith('fr')) return 'fr';
+  return 'en';
+}

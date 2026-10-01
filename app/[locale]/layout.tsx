@@ -198,7 +198,7 @@ function buildJsonLd(locale: string) {
       {
         '@type': 'ContactPoint',
         contactType: 'customer support',
-        email: 'support@digitip.app',
+        email: 'contact@digitip.app',
         availableLanguage: ['French', 'English'],
       },
     ],

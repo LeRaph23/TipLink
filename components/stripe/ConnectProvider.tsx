@@ -190,7 +190,7 @@ export function ConnectProvider({
         <div style={{ fontWeight: 700, marginBottom: 6 }}>Le formulaire de vérification n’a pas pu s’ouvrir.</div>
         <div style={{ color: 'var(--text-2)', marginBottom: 14 }}>
           Stripe, notre partenaire de paiement, n’a pas répondu. Réessayez dans un instant ; si cela persiste,
-          écrivez-nous à support@digitip.app et nous finaliserons l’activation avec vous.
+          écrivez-nous à contact@digitip.app et nous finaliserons l’activation avec vous.
         </div>
         <button
           type="button"

@@ -45,7 +45,13 @@ export default async function OrderPage({
 
   return (
     <Suspense>
-      <OrderWizard pack={pack} locale={locale} isAuthenticated={!!user} pricing={pricing} />
+      <OrderWizard
+        pack={pack}
+        locale={locale}
+        isAuthenticated={!!user}
+        pricing={pricing}
+        signedIn={user ? { email: user.email ?? '', fullName: (user.user_metadata?.full_name as string | undefined) ?? '' } : null}
+      />
     </Suspense>
   );
 }

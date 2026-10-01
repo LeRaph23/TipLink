@@ -47,7 +47,11 @@ export default async function DashboardLayout({
       .select('onboarding_completed_at')
       .eq('id', adminGroupId)
       .maybeSingle();
-    if (grp && !grp.onboarding_completed_at) {
+    // Never for a super admin: a test order once gave the admin account a
+    // group of its own, and from then on every admin page bounced to the
+    // buyer's onboarding (sixth QA run).
+    const isSuperAdmin = roles?.some((r) => r.role === 'super_admin');
+    if (grp && !grp.onboarding_completed_at && !isSuperAdmin) {
       redirect(`/${locale}/onboarding`);
     }
     payability = await getEstablishmentPayability(service, adminGroupId);

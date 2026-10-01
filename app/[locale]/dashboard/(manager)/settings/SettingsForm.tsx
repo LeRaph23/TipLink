@@ -152,6 +152,7 @@ export function SettingsForm({
               key={i}
               type="number"
               min="2"
+              max="500"
               step="0.5"
               value={v}
               onChange={(e) => {

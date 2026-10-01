@@ -22,6 +22,8 @@ export type OrderPaymentProps = {
   taxRatePercent: number | null;
   discountAmount?: number;
   promoCode?: string | null;
+  /** VIES answer for the VAT number given at billing; null when none. */
+  vatIdStatus?: 'valid' | 'invalid' | 'unavailable' | null;
 };
 
 // In-page payment for the /order wizard. Shipping/billing were already
@@ -50,6 +52,7 @@ export function OrderPayment(props: OrderPaymentProps) {
         taxRatePercent={props.taxRatePercent}
         discountAmount={props.discountAmount}
         promoCode={props.promoCode}
+        vatIdStatus={props.vatIdStatus}
       />
     </Elements>
   );
@@ -63,6 +66,7 @@ function PayForm({
   taxRatePercent,
   discountAmount = 0,
   promoCode = null,
+  vatIdStatus = null,
 }: Omit<OrderPaymentProps, 'clientSecret'>) {
   const stripe = useStripe();
   const elements = useElements();
@@ -123,6 +127,17 @@ function PayForm({
         />
         <div style={{ height: 1, background: 'var(--border-subtle)', margin: '2px 0' }} />
         <Row label={isFr ? 'Total TTC' : 'Total incl. VAT'} value={fmt.format(totalAmount / 100)} bold />
+        {(vatIdStatus === 'invalid' || vatIdStatus === 'unavailable') && (
+          <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '4px 0 0', lineHeight: 1.45 }}>
+            {vatIdStatus === 'invalid'
+              ? (isFr
+                ? 'Ce numéro de TVA n’est pas reconnu par le registre européen (VIES) : la TVA française s’applique.'
+                : 'This VAT number is not recognised by the EU register (VIES), so French VAT applies.')
+              : (isFr
+                ? 'Le registre européen de TVA (VIES) ne répond pas : la TVA française s’applique. Écrivez-nous pour une facture rectifiée une fois votre numéro vérifié.'
+                : 'The EU VAT register (VIES) is not responding, so French VAT applies. Write to us for a corrected invoice once your number is verified.')}
+          </p>
+        )}
       </div>
 
       <button

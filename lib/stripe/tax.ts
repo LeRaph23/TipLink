@@ -1,4 +1,5 @@
 import { stripe } from './client';
+import { checkVatNumber, type ViesStatus } from '@/lib/tax/vies';
 
 export type PackTax = {
   htAmount: number;       // pre-VAT, in cents (after any promo discount)
@@ -7,6 +8,8 @@ export type PackTax = {
   taxRatePercent: number | null;
   country: string;
   calculationId: string | null;
+  /** VIES answer for the buyer's VAT number; null when none was given. */
+  vatIdStatus?: ViesStatus | null;
 };
 
 // Loose EU VAT shape (e.g. FR12345678901, DE123456789). Stripe Tax does the
@@ -32,6 +35,9 @@ export async function computePackTax(opts: {
   }
 
   const vat = (vatNumber ?? '').toUpperCase().replace(/\s/g, '');
+  // Reverse charge only for a number VIES confirms (see lib/tax/vies.ts).
+  const vatIdStatus: ViesStatus | null = EU_VAT_RE.test(vat) ? await checkVatNumber(vat) : null;
+  const hasVerifiedVatId = vatIdStatus === 'valid';
 
   const calc = await stripe.tax.calculations.create({
     currency: currency.toLowerCase(),
@@ -39,7 +45,7 @@ export async function computePackTax(opts: {
     customer_details: {
       address: { country: cc, ...(postalCode ? { postal_code: postalCode } : {}) },
       address_source: 'shipping',
-      ...(EU_VAT_RE.test(vat)
+      ...(hasVerifiedVatId
         ? { tax_ids: [{ type: 'eu_vat' as const, value: vat }] }
         : {}),
     },
@@ -52,14 +58,14 @@ export async function computePackTax(opts: {
   // is what happened while France was not registered: packs went out at the
   // bare HT price and Digitip owed the VAT out of its margin. A sale that
   // must carry French VAT never goes through at 0 %.
-  if (needsVatFloor(cc, taxAmount, htAmount, EU_VAT_RE.test(vat))) {
+  if (needsVatFloor(cc, taxAmount, htAmount, hasVerifiedVatId)) {
     console.error('[pack-tax] Stripe Tax returned no VAT for a taxable sale; applying 20 % — check Stripe Tax registrations', { country: cc });
-    return { ...provisionalPackTax(htAmount), taxRatePercent: DEFAULT_TAX_BPS / 100, country: cc, calculationId: null };
+    return { ...provisionalPackTax(htAmount), taxRatePercent: DEFAULT_TAX_BPS / 100, country: cc, calculationId: null, vatIdStatus };
   }
 
   const taxRatePercent = Math.round((taxAmount / htAmount) * 10000) / 100;
 
-  return { htAmount, taxAmount, totalAmount, taxRatePercent, country: cc, calculationId: calc.id ?? null };
+  return { htAmount, taxAmount, totalAmount, taxRatePercent, country: cc, calculationId: calc.id ?? null, vatIdStatus };
 }
 
 const EU_COUNTRIES = new Set([

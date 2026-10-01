@@ -73,23 +73,39 @@ export async function ensureEstablishmentAccount(
   const placeId = resolveGooglePlaceId(estab.google_place_id, estab.google_review_url);
   const contact = placeId ? await getPlaceContactDetails(placeId) : null;
 
+  const create = () => createEstablishmentAccount({
+    establishmentId: estab.id,
+    name: estab.name,
+    country: estab.country ?? 'FR',
+    businessType: estab.business_type,
+    legalForm,
+    address: parseFrenchAddress(estab.address),
+    websiteUrl: contact?.websiteUri ?? null,
+    phone: contact?.phoneNumber ?? null,
+    email,
+    fullName,
+  });
+
   let accountId: string;
   try {
-    accountId = await createEstablishmentAccount({
-      establishmentId: estab.id,
-      name: estab.name,
-      country: estab.country ?? 'FR',
-      businessType: estab.business_type,
-      legalForm,
-      address: parseFrenchAddress(estab.address),
-      websiteUrl: contact?.websiteUri ?? null,
-      phone: contact?.phoneNumber ?? null,
-      email,
-      fullName,
-    });
+    accountId = await create();
   } catch (err) {
-    console.error('[connect] establishment account creation failed', { establishmentId, err });
-    return { error: 'stripe_failed' };
+    // The embedded form asks for a session twice at mount. Both requests
+    // create the account under the same idempotency key, and Stripe answers
+    // the second with "request in progress" (409) while the first runs: the
+    // manager saw "the form could not open" on the very first click (sixth QA
+    // run). Once the first request is done, the same key returns its account.
+    if (!isIdempotencyInProgress(err)) {
+      console.error('[connect] establishment account creation failed', { establishmentId, err });
+      return { error: 'stripe_failed' };
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      accountId = await create();
+    } catch (retryErr) {
+      console.error('[connect] establishment account creation failed after retry', { establishmentId, retryErr });
+      return { error: 'stripe_failed' };
+    }
   }
 
   // Only claim the account if the row is still unclaimed. Two concurrent
@@ -290,4 +306,10 @@ export async function getEstablishmentPayability(
     currentlyDue,
     heldCents,
   };
+}
+
+/** Stripe's answer to a request whose idempotency key is still being processed. */
+function isIdempotencyInProgress(err: unknown): boolean {
+  const e = err as { type?: string; statusCode?: number; code?: string } | null;
+  return e?.type === 'StripeIdempotencyError' || e?.statusCode === 409 || e?.code === 'idempotency_key_in_use';
 }

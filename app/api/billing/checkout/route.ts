@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { PACKS, type PackId } from '@/lib/env';
 import { getPackPricing } from '@/lib/stripe/pricing';
 import { computePackTax } from '@/lib/stripe/tax';
+import { checkVatNumber } from '@/lib/tax/vies';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { adContextMetadata } from '@/lib/marketing/ad-context';
 
@@ -79,6 +80,21 @@ export async function POST(request: NextRequest) {
   const biz = body.business;
 
   if (!groupId) {
+    // A super admin has no group: ordering from that account used to create
+    // one and make the admin its owner, which then locked every admin page
+    // behind the new business's onboarding (sixth QA run). Orders for a
+    // client are placed signed out, or by the client.
+    const { data: adminRole } = await service
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'super_admin')
+      .limit(1)
+      .maybeSingle();
+    if (adminRole) {
+      return NextResponse.json({ error: 'admin_account' }, { status: 403 });
+    }
+
     if (!biz || !biz.legal_name || !biz.shipping) {
       return NextResponse.json(
         { error: 'Business details required for first order' },
@@ -152,7 +168,9 @@ export async function POST(request: NextRequest) {
       metadata: { group_id: group.id },
       // Stripe's own emails (invoices, receipts, credit notes) default to English.
       preferred_locales: [body.locale === 'en' ? 'en' : 'fr'],
-      ...(group.vat_number
+      // Only a number VIES confirms goes on the customer: Stripe's invoices
+      // apply reverse charge to any tax id they carry.
+      ...(group.vat_number && (await checkVatNumber(group.vat_number)) === 'valid'
         ? {
             tax_id_data: [{ type: 'eu_vat', value: group.vat_number }],
           }
@@ -271,5 +289,6 @@ export async function POST(request: NextRequest) {
     taxRatePercent: tax.taxRatePercent,
     discountAmount,
     promoCode: promoCodeStr,
+    vatIdStatus: tax.vatIdStatus ?? null,
   });
 }

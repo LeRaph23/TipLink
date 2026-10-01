@@ -99,7 +99,7 @@ function maxReachable(
   return 'review';
 }
 
-export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: { pack: PackId; locale: string; isAuthenticated?: boolean; pricing: Record<PackId, PackPricing> }) {
+export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, signedIn = null }: { pack: PackId; locale: string; isAuthenticated?: boolean; pricing: Record<PackId, PackPricing>; signedIn?: { email: string; fullName: string } | null }) {
   const t = useTranslations('order');
   const tErrors = useTranslations('order.errors');
   const router = useRouter();
@@ -127,6 +127,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
     taxRatePercent: number | null;
     discountAmount: number;
     promoCode: string | null;
+    vatIdStatus: 'valid' | 'invalid' | 'unavailable' | null;
   } | null>(null);
 
 
@@ -271,7 +272,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         console.error('[order] checkout failed', res.status, data.error);
-        setError(data.error === 'promo_invalid' ? 'promo_invalid' : 'checkout_failed');
+        setError(data.error === 'promo_invalid' || data.error === 'admin_account' ? data.error : 'checkout_failed');
         setSubmitting(false);
         return;
       }
@@ -284,6 +285,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         taxRatePercent?: number | null;
         discountAmount?: number;
         promoCode?: string | null;
+        vatIdStatus?: 'valid' | 'invalid' | 'unavailable' | null;
       };
       if (!data.clientSecret) {
         setError('checkout_failed::missing_secret');
@@ -300,6 +302,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
         taxRatePercent: data.taxRatePercent ?? null,
         discountAmount: data.discountAmount ?? 0,
         promoCode: data.promoCode ?? null,
+        vatIdStatus: data.vatIdStatus ?? null,
       });
       setSubmitting(false);
     } catch (e) {
@@ -354,7 +357,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
           />
         );
       case 'review':
-        return <StepReview state={state} locale={locale} pricing={pricing} onEdit={goToStep} promoCode={promoCode} onPromoChange={setPromoCode} />;
+        return <StepReview state={state} locale={locale} pricing={pricing} onEdit={goToStep} promoCode={promoCode} onPromoChange={setPromoCode} signedIn={signedIn} />;
     }
   };
 
@@ -431,6 +434,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing }: 
           taxRatePercent={payment.taxRatePercent}
           discountAmount={payment.discountAmount}
           promoCode={payment.promoCode}
+          vatIdStatus={payment.vatIdStatus}
         />
       </OrderLayout>
     );

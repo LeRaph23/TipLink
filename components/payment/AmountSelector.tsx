@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { TIP_MAX_CENTS, TIP_MIN_CENTS } from '@/lib/tips/limits';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { TipCheckout } from './TipCheckout';
 import { DemoPayButton } from './DemoPayButton';
 import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
@@ -48,10 +48,14 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
   const totalAmount = computeTipTotal(tipAmount ?? 0, feeConfig);
 
   const currencySymbol = cur === 'EUR' ? '€' : cur === 'GBP' ? '£' : cur === 'USD' ? '$' : '';
-  const fmt = new Intl.NumberFormat(undefined, {
+  // The page locale, not the device's: the server rendered "€2" and the
+  // browser "2 €", a hydration mismatch on every tip page (sixth QA run).
+  const pageLocale = useLocale();
+  const numberLocale = pageLocale === 'fr' ? 'fr-FR' : 'en-GB';
+  const fmt = new Intl.NumberFormat(numberLocale, {
     style: 'currency', currency: cur, minimumFractionDigits: 0,
   });
-  const fmtCents = new Intl.NumberFormat(undefined, {
+  const fmtCents = new Intl.NumberFormat(numberLocale, {
     style: 'currency', currency: cur, minimumFractionDigits: 2,
   });
 
@@ -103,7 +107,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             onClick={() => { setShowCustom(true); setSelectedAmount(null); }}
             style={{
               display: 'block', margin: '12px auto 0', background: 'none', border: 'none',
-              color: 'var(--text-3)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'var(--font)',
+              color: 'var(--text-2)', fontSize: 13.5, fontWeight: 600, padding: '10px 14px', cursor: 'pointer', fontFamily: 'var(--font)',
               textDecoration: 'underline', textUnderlineOffset: 3,
             }}
           >
@@ -121,7 +125,8 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
               // reader with an unnamed number box on the payment screen.
               aria-label={t('customAmount')}
               aria-describedby={customInvalid ? 'custom-amount-error' : undefined}
-              onChange={e => { setCustom(e.target.value); setSelectedAmount(null); }}
+              // At most two decimals: 12,345 € was accepted, then shown as 12,35 €.
+              onChange={e => { if (/^\d*([.,]\d{0,2})?$/.test(e.target.value)) { setCustom(e.target.value); setSelectedAmount(null); } }}
               onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
               style={{
                 width: '100%', background: 'var(--surface-2)',

@@ -8,7 +8,7 @@ import {
   attributionFromUrl,
   serializeAttribution,
 } from './lib/marketing/attribution';
-import { scanDestination, type StickerRow } from './lib/nfc/scan-destination';
+import { scanDestination, tipLocaleFromAcceptLanguage, type StickerRow } from './lib/nfc/scan-destination';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
     const acceptLang = request.headers.get('accept-language') ?? '';
     const preferredLocale =
       (cookieLocale && (routing.locales as readonly string[]).includes(cookieLocale) && cookieLocale) ||
-      (acceptLang.toLowerCase().startsWith('fr') ? 'fr' : routing.defaultLocale);
+      tipLocaleFromAcceptLanguage(acceptLang);
 
     // Reject short, empty, or non-alphanumeric shortIds before hitting PostgREST.
     // Without this, ILIKE wildcards (e.g. "%%%%") would match any NFC sticker.

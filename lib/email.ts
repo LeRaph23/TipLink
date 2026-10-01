@@ -183,8 +183,8 @@ export async function sendOrderConfirmation(opts: {
   const refLabel = isFr ? 'Référence' : 'Reference';
   const invoiceRow = isFr ? 'Facture' : 'Invoice';
   const footer = isFr
-    ? 'Questions ? Répondez à cet email ou écrivez à support@digitip.app.'
-    : 'Questions? Reply to this email or write to support@digitip.app.';
+    ? 'Questions ? Répondez à cet email ou écrivez à contact@digitip.app.'
+    : 'Questions? Reply to this email or write to contact@digitip.app.';
 
   const invoiceSection = invoicePdfUrl
     ? `<tr><td style="padding:0 32px 24px">
@@ -287,8 +287,8 @@ export async function sendOrderShipped(opts: {
   const refLabel = isFr ? 'Référence' : 'Reference';
   const orderLabel = isFr ? 'Pack' : 'Pack';
   const footer = isFr
-    ? 'Questions ? Répondez à cet email ou écrivez à support@digitip.app.'
-    : 'Questions? Reply to this email or write to support@digitip.app.';
+    ? 'Questions ? Répondez à cet email ou écrivez à contact@digitip.app.'
+    : 'Questions? Reply to this email or write to contact@digitip.app.';
 
   const trackingSection = trackingUrl
     ? `<tr><td style="padding:0 32px 24px">
@@ -393,7 +393,7 @@ export async function sendPaymentFailed(opts: {
     </td></tr>
     <tr><td style="padding:0 32px 32px">
       <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">No charge was made to your card. If you'd like to try again, simply scan the NFC tag or visit the tip page again.</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to contact@digitip.app.</p>
     </td></tr>`),
   });
 }
@@ -432,7 +432,7 @@ export async function sendTipRefunded(opts: {
     </td></tr>
     <tr><td style="padding:0 32px 32px">
       <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">The refunded amount will appear on your original payment method within 5–10 business days, depending on your bank.</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to support@digitip.app.</p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to contact@digitip.app.</p>
     </td></tr>`),
   });
 }
@@ -711,7 +711,7 @@ export async function sendAmbassadorBankingConfirmation(opts: {
     </td></tr>
     <tr><td style="padding:0 32px 32px">
       <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">Les virements sont déclenchés manuellement par notre équipe après validation. Tu seras notifié par email à chaque paiement.</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions ? Réponds à cet email ou écris à support@digitip.app.</p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions ? Réponds à cet email ou écris à contact@digitip.app.</p>
     </td></tr>`),
   });
 }
@@ -839,8 +839,8 @@ export async function sendOrderDelivered(opts: {
     : 'Track your tips in real time from your dashboard.';
   const nextTitle = isFr ? 'Prêt à démarrer' : 'Ready to go';
   const footer = isFr
-    ? 'Questions ? Répondez à cet email ou écrivez à support@digitip.app.'
-    : 'Questions? Reply to this email or write to support@digitip.app.';
+    ? 'Questions ? Répondez à cet email ou écrivez à contact@digitip.app.'
+    : 'Questions? Reply to this email or write to contact@digitip.app.';
 
   const ctaSection = dashboardUrl
     ? `<tr><td style="padding:0 32px 24px">
@@ -963,8 +963,8 @@ export async function sendOrderCustomNote(opts: {
   const shortRef = orderId.slice(0, 8).toUpperCase();
   const refLabel = isFr ? 'Référence commande' : 'Order reference';
   const signature = isFr
-    ? 'L’équipe Digitip · support@digitip.app'
-    : 'The Digitip team · support@digitip.app';
+    ? 'L’équipe Digitip · contact@digitip.app'
+    : 'The Digitip team · contact@digitip.app';
 
   const safeBody = escapeHtml(bodyText).replace(/\n/g, '<br>');
 
@@ -1482,7 +1482,7 @@ function lifecycleFooter(unsubscribeUrl: string | null | undefined): string {
   if (!unsubscribeUrl) return '';
   return `<tr><td class="divider-strong text-muted" style="padding:20px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
     Vous recevez ces conseils pour tirer le meilleur de Digitip. Vous pouvez
-    <a href="${unsubscribeUrl}" style="color:#E57A97">ne plus recevoir ces emails</a>. · Digitip · support@digitip.app
+    <a href="${unsubscribeUrl}" style="color:#E57A97">ne plus recevoir ces emails</a>. · Digitip · contact@digitip.app
   </td></tr>`;
 }
 

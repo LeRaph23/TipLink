@@ -20,6 +20,7 @@ export default async function EstablishmentsPage({
     .select(`
       id, name, business_type, slug, country, currency, address,
       deleted_at, google_review_url, is_demo,
+      stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled,
       groups (name, onboarding_completed_at)
     `)
     .is('deleted_at', null)
@@ -89,6 +90,13 @@ export default async function EstablishmentsPage({
                 // conclusion that nobody had completed onboarding when in fact
                 // everybody had. The real marker is groups.onboarding_completed_at.
                 const isComplete = !!group?.onboarding_completed_at;
+                // The Stripe column used to show the onboarding marker above,
+                // so an establishment never verified read "complete" (sixth QA
+                // run). It now shows whether it can actually be paid.
+                const canTakeTips = !!(e.stripe_charges_enabled && e.stripe_payouts_enabled);
+                const stripeLabel = canTakeTips
+                  ? 'Encaisse'
+                  : e.stripe_account_id ? 'Vérification en cours' : 'Pas de compte';
                 return (
                   <tr key={e.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>
@@ -104,18 +112,21 @@ export default async function EstablishmentsPage({
                       )}
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)' }}>{group?.name ?? '—'}</td>
-                    <td style={{ padding: '12px 16px', color: 'var(--text-2)', textTransform: 'capitalize' }}>{e.business_type}</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-2)', textTransform: 'capitalize' }}>
+                      {/* A webhook-created establishment carries a placeholder trade until its manager picks one. */}
+                      {isComplete ? e.business_type : '—'}
+                    </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)', fontFamily: 'ui-monospace, monospace', textTransform: 'uppercase' }}>{e.currency}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: 5,
                         padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 600,
-                        background: isComplete ? 'var(--success-bg)' : 'var(--neutral-bg)',
-                        color: isComplete ? 'var(--success)' : 'var(--text-3)',
+                        background: canTakeTips ? 'var(--success-bg)' : 'var(--neutral-bg)',
+                        color: canTakeTips ? 'var(--success)' : 'var(--text-3)',
                         whiteSpace: 'nowrap',
                       }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
-                        {isComplete ? 'complete' : 'en cours'}
+                        {stripeLabel}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>

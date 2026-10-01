@@ -64,7 +64,9 @@ export function OrderFulfillment({
   const t = useTranslations('dashboard.admin.orders');
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [estId, setEstId] = useState('');
+  // An order belongs to one group, which almost always has one establishment:
+  // preselect it, or "Assigner" stayed disabled with no hint why (sixth QA run).
+  const [estId, setEstId] = useState(establishments.length === 1 ? establishments[0].id : '');
   const [countToAssign, setCountToAssign] = useState(Math.max(1, quantity - encodedCount));
   const [tracking, setTracking] = useState(trackingNumber ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -143,9 +145,14 @@ export function OrderFulfillment({
               <select value={estId} onChange={(e) => setEstId(e.target.value)} style={input}>
                 <option value="">—</option>
                 {establishments.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
+                  <option key={e.id} value={e.id}>{e.name} · {e.id.slice(0, 6)}</option>
                 ))}
               </select>
+              {!estId && (
+                <div style={{ fontSize: 11.5, color: 'var(--warning)', marginTop: 4 }}>
+                  Choisissez l’établissement qui recevra les plaques.
+                </div>
+              )}
             </label>
             <label>
               <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>

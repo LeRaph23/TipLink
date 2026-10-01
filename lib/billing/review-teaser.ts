@@ -65,6 +65,12 @@ export type ReviewImpact = {
   clickCount: number;
   /** Rounded percentage, or null when there is nothing to divide by. */
   percent: number | null;
+  /**
+   * Whether any establishment has a Google review link. Without one the
+   * thank-you page shows no invitation at all, and the card used to claim it
+   * did (sixth QA run).
+   */
+  hasReviewLink?: boolean;
 };
 
 /**
@@ -103,12 +109,13 @@ export async function getReviewImpact(
 ): Promise<ReviewImpact | null> {
   const { data: ests } = await service
     .from('establishments')
-    .select('id')
+    .select('id, google_review_url')
     .eq('group_id', groupId)
     .is('deleted_at', null);
 
   if (!ests?.length) return null;
   const estIds = ests.map((e) => e.id);
+  const hasReviewLink = ests.some((e) => !!(e as { google_review_url?: string | null }).google_review_url);
 
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
@@ -129,5 +136,5 @@ export async function getReviewImpact(
   ]);
 
   if (!tipCount || tipCount < 1) return null;
-  return deriveReviewImpact(tipCount, clickCount ?? 0);
+  return { ...deriveReviewImpact(tipCount, clickCount ?? 0), hasReviewLink };
 }

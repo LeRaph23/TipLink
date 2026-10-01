@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { tipElementsAppearance } from '@/lib/stripe/tip-appearance';
 import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe, type Stripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import {
@@ -38,14 +39,7 @@ export function TipCheckout({ staffId, amount, tipAmount, currency, expectedEsta
       amount,
       currency: currency.toLowerCase(),
       paymentMethodCreation: 'manual',
-      appearance: {
-        theme: 'night',
-        variables: {
-          colorPrimary: '#E57A97',
-          borderRadius: '12px',
-          fontFamily: 'inherit',
-        },
-      },
+      appearance: tipElementsAppearance(),
     }),
     [amount, currency]
   );
@@ -64,6 +58,16 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
   const locale = useLocale();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Back from the thank-you page, the browser restores this page from its
+  // cache as it was when it left: the button frozen on "Processing…" and the
+  // one-time nonce already spent on the previous tip (sixth QA run). A fresh
+  // load gives the next customer a clean form.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) window.location.reload(); };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
   const [showCard, setShowCard] = useState(false);
   const [nonce] = useState(() =>
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -72,7 +76,11 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
   );
   const [customerEmail, setCustomerEmail] = useState('');
 
-  const fmt = new Intl.NumberFormat(undefined, {
+  // The page locale, not the device's: the server rendered "€2" and the
+  // browser "2 €", a hydration mismatch on every tip page (sixth QA run).
+  const pageLocale = locale;
+  const numberLocale = pageLocale === 'fr' ? 'fr-FR' : 'en-GB';
+  const fmt = new Intl.NumberFormat(numberLocale, {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -166,7 +174,7 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             margin: '2px auto', padding: 6, background: 'none', border: 'none',
-            color: 'var(--text-3)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
+            color: 'var(--text-2)', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer', fontFamily: 'var(--font)',
             textDecoration: 'underline', textUnderlineOffset: 3,
           }}
         >
@@ -174,7 +182,7 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
         </button>
       ) : (
         <>
-          <PaymentElement options={{ layout: 'tabs' }} />
+          <PaymentElement options={{ layout: 'tabs' }} onChange={() => setError(null)} />
           <button
             className="btn-accent"
             type="button"
