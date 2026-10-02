@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { trackEvent } from '@/lib/analytics';
+import { PayIcon, btnProps } from './ui';
 
 /**
  * The post-tip Google review invitation.
@@ -46,37 +47,34 @@ export function ReviewInvite({
     }
   }
 
+  // The card is not the link: only the button is, so the target matches what
+  // looks pressable and a stray tap on the text opens nothing.
+  const b = btnProps('primary', 'L', { full: true });
   return (
-    <a
-      href={reviewUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={report}
-      style={{
-        display: 'block', textDecoration: 'none',
-        background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 20,
-        boxShadow: 'var(--shadow)',
-      }}
-    >
-      <div style={{ fontSize: 22, letterSpacing: 2, color: '#f5a623', marginBottom: 8 }}>
-        ★★★★★
+    <div style={{
+      marginTop: 16, padding: 20, borderRadius: 'var(--radius-lg)',
+      background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+    }}>
+      <div aria-hidden="true" style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
+        {[0, 1, 2, 3, 4].map(i => <PayIcon key={i} name="star" size={20} color="#F2A93B" />)}
       </div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+      <h2 style={{ font: '600 20px/28px var(--font-display)', letterSpacing: 0, color: 'var(--text)' }}>
         {staffName ? t('reviewTitleNamed', { name: staffName }) : t('reviewTitle')}
-      </div>
-      <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 14 }}>
+      </h2>
+      <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)', margin: '4px 0 16px' }}>
         {t('reviewBody')}
-      </div>
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        width: '100%', boxSizing: 'border-box',
-        padding: '12px 20px', borderRadius: 'var(--radius)',
-        background: 'var(--accent)', color: 'var(--accent-fg, #fff)',
-        fontSize: 14, fontWeight: 700,
-      }}>
+      </p>
+      <a
+        href={reviewUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={report}
+        className={b.className}
+        style={b.style}
+      >
         {t('reviewButton')}
-      </span>
-    </a>
+        <PayIcon name="external" size={18} />
+      </a>
+    </div>
   );
 }

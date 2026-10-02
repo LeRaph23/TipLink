@@ -64,6 +64,10 @@ export default async function CheckoutPage({
   const pricing = await getPackPricing(pack);
   const visual = PACK_VISUAL[pack];
   const formattedPrice = formatPrice(pricing.unitAmount, pricing.currency, locale);
+  // The French price incl. VAT, shown from the start: 69 € HT turning into
+  // "Pay 82,80 €" on the last button read like a hidden charge (UX-12). The
+  // exact VAT still follows the delivery country below.
+  const formattedTtcFr = formatPrice(Math.round(pricing.unitAmount * 1.2), pricing.currency, locale);
   const formattedList = pricing.listAmount != null
     ? formatPrice(pricing.listAmount, pricing.currency, locale)
     : null;
@@ -123,7 +127,7 @@ export default async function CheckoutPage({
         }} className="checkout-grid">
           <style>{`
             @media (max-width: 900px) {
-              .checkout-grid { grid-template-columns: 1fr !important; }
+              .checkout-grid { grid-template-columns: minmax(0, 1fr) !important; }
               .checkout-aside { position: static !important; top: auto !important; }
             }
           `}</style>
@@ -166,6 +170,9 @@ export default async function CheckoutPage({
                 <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em' }}>
                   {formattedPrice}
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#a0a0b8', marginLeft: 4 }}>HT</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b6d85', marginTop: 2 }}>
+                  {t('ttcFrance', { price: formattedTtcFr })}
                 </div>
                 {formattedList && (
                   <div style={{ fontSize: 12, color: '#a0a0b8', textDecoration: 'line-through' }}>

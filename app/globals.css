@@ -1,20 +1,57 @@
 @import "tailwindcss";
 
-/* ── Design tokens ──────────────────────────────────────────────────────── */
+/* ── Design tokens (v2) ─────────────────────────────────────────────────────
+   Same names as before, new values. #E57A97 is rose 400: it measures 2.78:1 on
+   white, so in light mode it carries no text. Rose 600 takes over for pink
+   text and for buttons with white labels; in dark mode 400 is the accent again,
+   with ink-coloured labels. Every text/background pair below passes AA. */
 :root {
   --font: var(--font-jakarta, 'Plus Jakarta Sans', -apple-system, sans-serif);
   --font-display: var(--font-display, 'Space Grotesk', var(--font));
-  --radius-xs: 4px;
-  --radius-sm: 6px;
+  --font-logo: var(--font-poppins, 'Poppins'), sans-serif;
+
+  /* Rose tonal scale. 400 is the brand colour. */
+  --rose-50:  #fff4f6;
+  --rose-100: #fee6eb;
+  --rose-200: #ffcbd6;
+  --rose-300: #fda2b9;
+  --rose-400: #e57a97;
+  --rose-500: #c85e7d;
+  --rose-600: #af4a69;
+  --rose-700: #913753;
+  --rose-800: #72263e;
+  --rose-900: #52192b;
+  /* Logo and heart only: never text on a light background. */
+  --brand: #e57a97;
+
+  /* Type scale, size / line-height. Eight steps, nothing in between. */
+  --fs-12: 12px; --lh-12: 16px;
+  --fs-14: 14px; --lh-14: 20px;
+  --fs-16: 16px; --lh-16: 24px;
+  --fs-20: 20px; --lh-20: 28px;
+  --fs-24: 24px; --lh-24: 30px;
+  --fs-32: 32px; --lh-32: 38px;
+  --fs-40: 40px; --lh-40: 44px;
+  --fs-56: 56px; --lh-56: 60px;
+
+  /* Spacing, base 4. */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px;
+
+  /* Three radii: controls, cards (the corner of the epoxy plaque), pills.
+     The old names stay as aliases so nothing breaks during the migration. */
+  --radius-xs: 10px;
+  --radius-sm: 10px;
   --radius:    10px;
-  --radius-lg: 14px;
+  --radius-lg: 20px;
   --radius-xl: 20px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.15);
-  --shadow:    0 2px 8px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.32), 0 4px 12px rgba(0,0,0,0.18);
+  --radius-full: 999px;
+
   --sidebar-w: 232px;
-  --ease-spring: cubic-bezier(.22, 1, .36, 1);
-  --ease-out:    cubic-bezier(.4, 0, .2, 1);
+  --tap: 44px;
+  --ease-out:    cubic-bezier(.2, .7, .2, 1);   /* entrances */
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);  /* panels */
+  --ease-spring: cubic-bezier(.22, 1, .36, 1);  /* the tick */
   /* Four durations, and only four. The codebase had thirteen ad-hoc values
      across sixty-four inline transitions, which is why two controls sitting
      side by side never felt like the same interface. */
@@ -24,56 +61,81 @@
   --dur-4: 400ms;  /* something crossing the screen */
 }
 
-/* ── Dark theme (default) ───────────────────────────────────────────────── */
-[data-theme="dark"] {
-  --bg:            #0a0a0d;
-  --bg-subtle:     #101014;
-  --surface:       #17171d;
-  --surface-2:     #1f1f27;
-  --surface-3:     #27272f;
-  --border:        #2e2e38;
-  --border-subtle: #232329;
-  --text:          #f2f2f5;
-  --text-2:        #9898a8;
-  --text-3:        #5a5a6a;
-  --accent:        #E57A97;
+/* ── Light theme ────────────────────────────────────────────────────────────
+   Neutrals are tinted with the rose hue (chroma ≤ 0.01): warmer than the
+   blue-grey they replace. Error red leans orange so it never reads as accent. */
+[data-theme="light"],
+:root:not([data-theme]) {
+  --bg:            #fdf9fa;
+  --bg-subtle:     #f8f4f5;
+  --surface:       #ffffff;
+  --surface-2:     #f8f4f5;
+  --surface-3:     #f1ebec;
+  --border:        #e4dedf;
+  --border-subtle: #efe9eb;
+  --text:          #171213;
+  --text-2:        #5a5355;
+  --text-3:        #6e6768;
+  --accent:        var(--rose-600);
+  --accent-hover:  var(--rose-700);
   --accent-fg:     #ffffff;
-  --accent-muted:  color-mix(in oklch, #E57A97 15%, transparent);
-  --accent-border: color-mix(in oklch, #E57A97 35%, transparent);
-  --success:       #22c55e;
-  --success-bg:    color-mix(in oklch, #22c55e 12%, transparent);
-  --warning:       #f59e0b;
-  --warning-bg:    color-mix(in oklch, #f59e0b 12%, transparent);
-  --error:         #f87171;
-  --error-bg:      color-mix(in oklch, #ef4444 12%, transparent);
-  --neutral:       #6b6b7b;
-  --neutral-bg:    color-mix(in oklch, #6b6b7b 14%, transparent);
+  /* Kept for components outside the tip pages that name it: the design v2
+     accent is already AA under its foreground colour. */
+  --accent-strong: var(--accent);
+  --accent-muted:  var(--rose-50);
+  --accent-border: var(--rose-200);
+  --accent-text:   var(--rose-700);
+  --brand-field:   var(--rose-100);
+  --focus:         var(--rose-600);
+  --success:       #027835;
+  --success-bg:    #eafaec;
+  --warning:       #895603;
+  --warning-bg:    #fef3e8;
+  --error:         #a43c2f;
+  --error-bg:      #fef2f0;
+  --error-fg:      #ffffff;
+  --neutral:       #5a5355;
+  --neutral-bg:    #f1ebec;
+  --shadow-sm: 0 1px 2px rgb(23 18 19 / .06);
+  --shadow:    0 1px 2px rgb(23 18 19 / .04), 0 8px 24px rgb(23 18 19 / .07);
+  --shadow-lg: 0 4px 12px rgb(23 18 19 / .06), 0 24px 64px rgb(23 18 19 / .16);
+  --scrim:     rgb(23 18 19 / .48);
 }
 
-/* ── Light theme ────────────────────────────────────────────────────────── */
-[data-theme="light"] {
-  --bg:            #f6f6f8;
-  --bg-subtle:     #ededf1;
-  --surface:       #ffffff;
-  --surface-2:     #f4f4f7;
-  --surface-3:     #ebebef;
-  --border:        #e2e2ea;
-  --border-subtle: #ececf2;
-  --text:          #0f0f14;
-  --text-2:        #5a5a6a;
-  --text-3:        #9898a8;
-  --accent:        #E57A97;
-  --accent-fg:     #ffffff;
-  --accent-muted:  color-mix(in oklch, #E57A97 10%, transparent);
-  --accent-border: color-mix(in oklch, #E57A97 30%, transparent);
-  --success:       #16a34a;
-  --success-bg:    #f0fdf4;
-  --warning:       #d97706;
-  --warning-bg:    #fffbeb;
-  --error:         #dc2626;
-  --error-bg:      #fef2f2;
-  --neutral:       #6b6b7b;
-  --neutral-bg:    #f4f4f7;
+/* ── Dark theme ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:            #110d0e;
+  --bg-subtle:     #161112;
+  --surface:       #1b1617;
+  --surface-2:     #241d1f;
+  --surface-3:     #2c2627;
+  --border:        #383132;
+  --border-subtle: #282223;
+  --text:          #f6f2f3;
+  --text-2:        #c3bcbd;
+  --text-3:        #a49c9e;
+  --accent:        var(--rose-400);
+  --accent-hover:  var(--rose-300);
+  --accent-fg:     #110d0e;
+  --accent-strong: var(--accent);
+  --accent-muted:  #3d1e26;
+  --accent-border: var(--rose-800);
+  --accent-text:   var(--rose-300);
+  --brand-field:   #2a1519;
+  --focus:         var(--rose-300);
+  --success:       #6fd087;
+  --success-bg:    #122a18;
+  --warning:       #f0a646;
+  --warning-bg:    #322009;
+  --error:         #ff9786;
+  --error-bg:      #371b17;
+  --error-fg:      #110d0e;
+  --neutral:       #c3bcbd;
+  --neutral-bg:    #2c2627;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / .4);
+  --shadow:    0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .35);
+  --shadow-lg: 0 4px 12px rgb(0 0 0 / .35), 0 24px 64px rgb(0 0 0 / .55);
+  --scrim:     rgb(0 0 0 / .64);
 }
 
 @theme inline {
@@ -143,11 +205,23 @@ input, select, textarea, button { font-family: var(--font); }
   from { stroke-dashoffset: 30; }
   to   { stroke-dashoffset: 0; }
 }
+@keyframes alertIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* A changed total slides in from below: the eye lands on the amount the
+   moment it changes, without a word added (UI/UX audit, signature idea 1). */
+@keyframes amountTick {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 @keyframes checkIn {
   from { opacity: 0; transform: scale(.6); }
   to   { opacity: 1; transform: scale(1); }
 }
 .fade-up  { animation: fadeUp  var(--dur-3) var(--ease-out) both; }
+.alert-in { animation: alertIn 220ms var(--ease-out) both; }
+.amount-tick { display: inline-block; animation: amountTick 180ms var(--ease-out) both; }
 .fade-in  { animation: fadeIn  var(--dur-2) var(--ease-out) both; }
 .scale-in { animation: scaleIn 180ms cubic-bezier(.34,1.3,.64,1) both; }
 .check-in { animation: checkIn var(--dur-4) cubic-bezier(.34,1.3,.64,1) both; }
@@ -188,6 +262,53 @@ input, select, textarea, button { font-family: var(--font); }
 /* Dashboard table rows — gentle hover highlight */
 .dash-row { transition: background var(--dur-1) var(--ease-out); }
 .dash-row:hover { background: var(--surface-2); }
+
+/* ── Interaction primitives (v2) ───────────────────────────────────────────
+   Inline styles cannot express :hover, :active or :focus, so these carry the
+   states and nothing else; colours and sizes stay in the inline style. The
+   !important on hover is what lets a class beat an inline background. */
+.dg-press {
+  transition: transform var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+.dg-press:active:not(:disabled) { transform: scale(.98); }
+.dg-btn-primary:hover:not(:disabled)   { background: var(--accent-hover) !important; }
+.dg-btn-secondary:hover:not(:disabled) { background: var(--surface-3) !important; }
+.dg-btn-ghost:hover:not(:disabled)     { background: var(--surface-2) !important; color: var(--text) !important; }
+.dg-btn-danger:hover:not(:disabled)    { filter: brightness(.92); }
+.dg-tile:hover:not([aria-pressed="true"]):not(:disabled) { border-color: var(--text-3) !important; }
+.dg-row { transition: background-color var(--dur-1) var(--ease-out); }
+.dg-row:hover { background: var(--surface-2) !important; }
+.dg-link {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.dg-link:hover { color: var(--text); }
+/* Text field: the 2 px focus border is drawn with a 1 px inset ring on top of
+   the 1 px border, so the text does not shift by a pixel when focused. */
+.dg-field {
+  transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
+}
+.dg-field:hover:not(:disabled):not(:focus):not([aria-invalid="true"]) { border-color: var(--text-3) !important; }
+.dg-field:focus { border-color: var(--accent) !important; box-shadow: inset 0 0 0 1px var(--accent); }
+.dg-field[aria-invalid="true"] { border-color: var(--error) !important; box-shadow: inset 0 0 0 1px var(--error); }
+.dg-field:focus-visible { outline: none; }
+.dg-field::placeholder { color: var(--text-3); opacity: 1; }
+/* The custom amount is a number field: no browser spin arrows on a tip. */
+.dg-field[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.dg-field[type="number"]::-webkit-inner-spin-button,
+.dg-field[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+@keyframes dg-spin    { to { transform: rotate(360deg); } }
+@keyframes dg-shimmer { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+@keyframes dg-draw    { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+@keyframes dg-reveal  { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.dg-shimmer { background: var(--surface-3); animation: dg-shimmer 1.6s ease infinite; }
+.dg-spinner { animation: dg-spin 700ms linear infinite; }
+/* The tick on the receipt, the one animation of the payment flow. */
+.dg-draw    { stroke-dasharray: 30; animation: dg-draw 460ms var(--ease-out) 120ms both; }
+.dg-reveal  { animation: dg-reveal var(--dur-2) var(--ease-out) both; }
 
 /* ── Reduced motion — neutralise all animation/transition (overrides inline) ── */
 @media (prefers-reduced-motion: reduce) {
@@ -242,6 +363,9 @@ input, select, textarea, button { font-family: var(--font); }
 @media (max-width: 767px) {
   /* ── Landing: items with inline-style conflicts need !important ── */
   .land-hero-inner   { flex-direction: column !important; }
+  /* Flex children default to min-width: auto and refused to shrink below
+     their content: the page scrolled sideways at 308 px (UI/UX audit, UX-12). */
+  .land-hero-inner > * { min-width: 0; max-width: 100%; }
   /* Hero visual stays visible on mobile — scaled down so it fits narrow screens */
   .land-hero-visual  { transform: scale(.8); transform-origin: top center; margin: 4px auto -64px !important; }
   .land-hero-btns    { flex-direction: column !important; }
@@ -389,9 +513,8 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
-  border-radius: var(--radius-xs);
 }
 
 /* ── Long-form article prose ─────────────────────────────────────────────────
