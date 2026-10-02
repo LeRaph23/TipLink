@@ -1,5 +1,6 @@
 import 'server-only';
 import type { createServiceClient } from '@/lib/supabase/service';
+import { neutralizeFormula } from './csv-safe';
 
 type Service = ReturnType<typeof createServiceClient>;
 
@@ -200,7 +201,7 @@ export function parisDateTime(iso: string): { date: string; time: string } {
 // accountants: semicolon separator, decimal comma, UTF-8 BOM, CRLF.
 
 export function csvCell(v: string | number): string {
-  const s = String(v);
+  const s = typeof v === 'string' ? neutralizeFormula(v) : String(v);
   return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

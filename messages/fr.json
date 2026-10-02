@@ -92,7 +92,8 @@
     "hint": "PNG, JPG ou WebP · 2 Mo max",
     "notAuthenticated": "Non authentifié",
     "uploadFailed": "Échec du téléversement",
-    "photoFailed": "Échec de l'envoi de la photo. Réessayez ou continuez sans photo."
+    "photoFailed": "Échec de l'envoi de la photo. Réessayez ou continuez sans photo.",
+    "unsupportedType": "Format non pris en charge : utilisez une image PNG, JPG ou WebP."
   },
   "notFound": {
     "title": "Page introuvable",
@@ -914,7 +915,7 @@
       "subtitle": "Nom d'équipe, identité visuelle et montants de pourboire par défaut.",
       "sectionBranding": "Identité visuelle",
       "logo": "Logo",
-      "logoHelp": "PNG ou SVG, format carré, 2 Mo max.",
+      "logoHelp": "PNG, JPG ou WebP, format carré, 2 Mo max.",
       "teamName": "Nom de l'équipe",
       "sectionTips": "Montants de pourboire par défaut",
       "tipsHelp": "Affichés sur la page de pourboire, du plus petit au plus grand. Trois ou quatre montants : laissez la dernière case vide pour n'en proposer que trois.",

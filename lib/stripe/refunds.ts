@@ -71,6 +71,11 @@ export async function refundTransactionFull(
   if (!txn) return { ok: false, error: 'Transaction introuvable' };
   if (!txn.stripe_payment_intent_id) return { ok: false, error: 'PaymentIntent absent' };
   if (txn.status === 'refunded' || txn.status === 'reversed') return { ok: true };
+  // Seeded demo rows carry made-up intents Stripe has never seen: say so
+  // instead of a generic failure (seventh QA run).
+  if (txn.stripe_payment_intent_id.startsWith('pi_demo_')) {
+    return { ok: false, error: 'Transaction de démonstration : aucun paiement Stripe à rembourser.' };
+  }
 
   try {
     await stripe.refunds.create(
@@ -86,7 +91,10 @@ export async function refundTransactionFull(
       { idempotencyKey: `refund:v2:${transactionId}` },
     );
   } catch (err) {
-    console.error('[refund] stripe refund failed', { transactionId, err });
+    const e = err as { code?: string; type?: string; message?: string } | null;
+    console.error('[refund] stripe refund failed', {
+      transactionId, code: e?.code, type: e?.type, message: e?.message,
+    });
     return { ok: false, error: refundErrorMessage(err) };
   }
 

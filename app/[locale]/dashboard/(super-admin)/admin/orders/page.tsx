@@ -186,7 +186,7 @@ export default async function AdminOrdersPage({
                             border: '1px solid var(--success)',
                           }}>
                             {o.promo_code}
-                            {(o.discount_amount ?? 0) > 0 && ` -${((o.discount_amount ?? 0) / 100).toFixed(0)}€`}
+                            {(o.discount_amount ?? 0) > 0 && ` −${((o.discount_amount ?? 0) / 100).toFixed(2).replace('.', ',')} €`}
                           </span>
                         )}
                       </div>

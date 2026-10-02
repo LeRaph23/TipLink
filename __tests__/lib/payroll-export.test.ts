@@ -22,6 +22,14 @@ describe('csvCell', () => {
     expect(csvCell(12)).toBe('12');
   });
 
+  it('neutralises cells a spreadsheet would run as a formula', () => {
+    expect(csvCell('=HYPERLINK("http://x")')).toBe('"\'=HYPERLINK(""http://x"")"');
+    expect(csvCell('+33 6')).toBe("'+33 6");
+    expect(csvCell('@SUM(A1)')).toBe("'@SUM(A1)");
+    expect(csvCell('-12,50')).toBe('-12,50');
+    expect(csvCell(-1250)).toBe('-1250');
+  });
+
   it('quotes and escapes anything that would break the column layout', () => {
     expect(csvCell('Dupont; Marie')).toBe('"Dupont; Marie"');
     expect(csvCell('Dupont, Marie')).toBe('Dupont, Marie');

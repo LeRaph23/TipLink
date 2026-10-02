@@ -7,6 +7,7 @@ import { TipCheckout } from './TipCheckout';
 import { DemoPayButton } from './DemoPayButton';
 import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
 import { computeTipFee, computeTipTotal, type TipFeeConfig } from '@/lib/pricing/tip-fees';
+import { moneyFormatter } from '@/lib/money';
 
 interface Props {
   staffId: string;
@@ -51,13 +52,8 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
   // The page locale, not the device's: the server rendered "€2" and the
   // browser "2 €", a hydration mismatch on every tip page (sixth QA run).
   const pageLocale = useLocale();
-  const numberLocale = pageLocale === 'fr' ? 'fr-FR' : 'en-GB';
-  const fmt = new Intl.NumberFormat(numberLocale, {
-    style: 'currency', currency: cur, minimumFractionDigits: 0,
-  });
-  const fmtCents = new Intl.NumberFormat(numberLocale, {
-    style: 'currency', currency: cur, minimumFractionDigits: 2,
-  });
+  const fmt = moneyFormatter(pageLocale, cur, 0);
+  const fmtCents = moneyFormatter(pageLocale, cur, 2);
 
   return (
     <>

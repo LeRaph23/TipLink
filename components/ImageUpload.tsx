@@ -14,8 +14,6 @@ interface Props {
 }
 
 async function compressImage(file: File, maxDim: number): Promise<Blob> {
-  if (file.type === 'image/svg+xml') return file;
-
   const bitmap = await createImageBitmap(file);
   const ratio = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
   const w = Math.round(bitmap.width * ratio);
@@ -57,19 +55,20 @@ export function ImageUpload({
     setError(null);
     setBusy(true);
     try {
-      const blob = file.size > maxSizeBytes || /^image\/(png|jpe?g|webp)$/.test(file.type)
-        ? await compressImage(file, maxDim)
-        : file;
+      // Always re-encoded to JPEG: SVG is refused (it can carry scripts and
+      // the bucket is public), and anything else is decoded and redrawn.
+      if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) throw new Error(t('unsupportedType'));
+      const blob = await compressImage(file, maxDim);
+      if (blob.size > maxSizeBytes) throw new Error(t('uploadFailed'));
 
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error(t('notAuthenticated'));
 
-      const ext = blob.type === 'image/svg+xml' ? 'svg' : 'jpg';
-      const path = `${folder}/${user.id}/${crypto.randomUUID()}.${ext}`;
+      const path = `${folder}/${user.id}/${crypto.randomUUID()}.jpg`;
       const { error: upErr } = await supabase.storage
         .from('public-media')
-        .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+        .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
       if (upErr) throw upErr;
 
       const { data: pub } = supabase.storage.from('public-media').getPublicUrl(path);
@@ -139,7 +138,7 @@ export function ImageUpload({
         <input
           ref={fileRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          accept="image/png,image/jpeg,image/webp"
           style={{ display: 'none' }}
           onChange={onFile}
         />
