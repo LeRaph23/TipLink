@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { establishmentTipTag } from '@/lib/cache/pay-tags';
+import { AVATAR_INK, avatarTint, initials } from '@/lib/avatar';
 
 // Reached via an internal rewrite from `/s/[shortId]` right after an NFC scan,
 // so this is the hottest tip path. The colleague list is cached in the Data
@@ -59,6 +60,7 @@ async function fetchGroupStaff(establishmentId: string): Promise<PublicGroupStaf
    Shared by the streamed content and the skeleton so the markup (and therefore
    the layout) is identical: the only difference is the salon name, which shows
    a shimmer placeholder until the data streams in. */
+
 function HeroCard({ t, salonName }: { t: T; salonName: string | null }) {
   return (
     <div style={{ borderRadius: 24, overflow: 'hidden', marginBottom: 18, boxShadow: '0 18px 50px rgba(124,58,237,0.28)' }}>
@@ -176,10 +178,34 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Whole-team split — when 2+ members, or when nobody has joined yet
+              (then it is the only card). First, not last: a customer who does
+              not know the waiter's name looks for "everyone" (UX-16). */}
+          {showTeamCard && (
+            <Link
+              href={`/pay/group/${establishmentId}/team`}
+              className="btn-ghost"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '16px 18px', borderRadius: 16,
+                background: 'var(--accent-muted)', border: '1px solid var(--accent-border)',
+                textDecoration: 'none', color: 'var(--text)', minHeight: 76,
+              }}
+            >
+              <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} aria-hidden>
+                <svg width="23" height="23" viewBox="0 0 24 24" fill="#E57A97" stroke="none"><path d="M12 21s-7.5-4.6-10-9.2C.6 9 1.7 5.5 4.8 4.7 6.7 4.2 8.6 5 9.6 6.4L12 9l2.4-2.6c1-1.4 2.9-2.2 4.8-1.7 3.1.8 4.2 4.3 2.8 7.1C19.5 16.4 12 21 12 21z" /></svg>
+              </div>
+              <span style={{ flex: 1, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em' }}>
+                {t('group.wholeTeam')}
+              </span>
+              <span aria-hidden style={{ fontSize: 18, color: 'var(--text-3)', opacity: 0.6, flexShrink: 0 }}>→</span>
+            </Link>
+          )}
           {payableStaff.map((s) => (
             <Link
               key={s.staff_id!}
               href={`/pay/${s.staff_id}`}
+              className="btn-ghost"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -191,7 +217,6 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
                 textDecoration: 'none',
                 color: 'var(--text)',
                 minHeight: 72,
-                transition: 'transform 120ms, border-color 120ms',
               }}
             >
               {s.avatar_url ? (
@@ -206,17 +231,18 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
                   style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                 />
               ) : (
+                // Initials on a soft tint picked from the name: a grey
+                // silhouette read as an empty profile (UX-16).
                 <div
                   style={{
                     width: 48, height: 48, borderRadius: '50%',
-                    background: 'var(--surface-2)', color: 'var(--text-3)',
-                    border: '1px solid var(--border)',
+                    background: avatarTint(s.full_name ?? ''), color: AVATAR_INK,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
+                    flexShrink: 0, fontSize: 16, fontWeight: 800, letterSpacing: '0.02em',
                   }}
                   aria-hidden
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6" /></svg>
+                  {initials(s.full_name ?? '')}
                 </div>
               )}
               <span style={{ flex: 1, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -228,27 +254,6 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
             </Link>
           ))}
 
-          {/* Whole-team split — when 2+ members, or when nobody has joined yet
-              (then it is the only card); shown last, neutral, heart icon. */}
-          {showTeamCard && (
-            <Link
-              href={`/pay/group/${establishmentId}/team`}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                padding: '16px 18px', borderRadius: 16,
-                background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-                textDecoration: 'none', color: 'var(--text)', minHeight: 76,
-              }}
-            >
-              <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} aria-hidden>
-                <svg width="23" height="23" viewBox="0 0 24 24" fill="#E57A97" stroke="none"><path d="M12 21s-7.5-4.6-10-9.2C.6 9 1.7 5.5 4.8 4.7 6.7 4.2 8.6 5 9.6 6.4L12 9l2.4-2.6c1-1.4 2.9-2.2 4.8-1.7 3.1.8 4.2 4.3 2.8 7.1C19.5 16.4 12 21 12 21z" /></svg>
-              </div>
-              <span style={{ flex: 1, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em' }}>
-                {t('group.wholeTeam')}
-              </span>
-              <span aria-hidden style={{ fontSize: 18, color: 'var(--text-3)', opacity: 0.6, flexShrink: 0 }}>→</span>
-            </Link>
-          )}
         </div>
       )}
 

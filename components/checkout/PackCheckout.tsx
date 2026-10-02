@@ -432,6 +432,7 @@ function InnerCheckout({
         <input
           id="checkout-email"
           type="email"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={t('emailPlaceholder')}
@@ -548,13 +549,14 @@ function InnerCheckout({
         disabled={!stripe || !elements || isLoading || !canPay}
         style={{
           width: '100%', padding: '16px', borderRadius: 14, border: 'none',
-          background: !stripe || !elements || isLoading || !canPay ? '#E9C6D0' : '#E57A97',
-          color: '#fff',
+          // Processing keeps the full colour; only a button that cannot be
+          // pressed yet greys out, and readably (UI/UX audit, UX-03, UX-20).
+          background: isLoading ? '#C2456A' : !stripe || !elements || !canPay ? '#ECECF1' : '#C2456A',
+          color: !isLoading && (!stripe || !elements || !canPay) ? '#8A8A99' : '#fff',
           fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em',
-          opacity: !stripe || !elements || isLoading || !canPay ? 0.7 : 1,
-          cursor: !stripe || !elements || isLoading || !canPay ? 'not-allowed' : 'pointer',
-          boxShadow: !stripe || !elements || isLoading || !canPay ? 'none' : '0 6px 24px rgba(229,122,151,0.35)',
-          transition: 'all 130ms',
+          cursor: isLoading ? 'progress' : !stripe || !elements || !canPay ? 'not-allowed' : 'pointer',
+          boxShadow: !stripe || !elements || isLoading || !canPay ? 'none' : '0 6px 24px rgba(194,69,106,0.3)',
+          transition: 'background 130ms, color 130ms, box-shadow 130ms',
         }}
       >
         {isLoading

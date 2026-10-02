@@ -6,6 +6,7 @@ import { AmountSelector } from '@/components/payment/AmountSelector';
 import { Icon } from '@/components/ambassadeur/icons';
 import { staffTipTag } from '@/lib/cache/pay-tags';
 import { resolveTipFeeConfig } from '@/lib/pricing/tip-fees';
+import { AVATAR_INK, avatarTint, initials } from '@/lib/avatar';
 
 // Edge-safe: uses raw PostgREST fetch against a SECURITY DEFINER RPC
 // that only exposes whitelisted columns. No Supabase SDK import here.
@@ -227,18 +228,18 @@ export default async function StaffTipPage({
             pink→purple gradient with a white heart and a clear "leave a tip"
             message, so the customer instantly understands what this is for. */}
         <div style={{ borderRadius: 24, overflow: 'hidden', marginBottom: 14, boxShadow: '0 18px 50px rgba(124,58,237,0.28)' }}>
+          {/* Compact here: the customer already chose who to thank, and the
+              210 px banner pushed the amounts and the pay button down (UX-17). */}
           <div style={{
             background: 'linear-gradient(135deg, #F2A8B7 0%, #C96CC1 52%, #7C3AED 100%)',
-            padding: '30px 24px 28px', textAlign: 'center', color: '#fff',
+            padding: '16px 20px', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           }}>
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 12px', display: 'block' }} aria-hidden>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-hidden>
               <path d="M12 20.4l-1.45-1.32C5.4 14.36 2.5 11.72 2.5 8.5 2.5 5.9 4.54 3.9 7.1 3.9c1.45 0 2.84.67 3.74 1.74L12 6.9l1.16-1.26A4.97 4.97 0 0 1 16.9 3.9c2.56 0 4.6 2 4.6 4.6 0 3.22-2.9 5.86-8.05 10.6L12 20.4z" />
             </svg>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 23, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, textWrap: 'balance' }}>
               {t('tipHeadline')}
-            </div>
-            <div style={{ fontSize: 14, opacity: 0.95, marginTop: 5 }}>
-              {t('tipSubhead')}
             </div>
           </div>
           {/* Who you're tipping, on white */}
@@ -246,8 +247,8 @@ export default async function StaffTipPage({
             {staff.avatar_url ? (
               <img src={staff.avatar_url} alt={staff.full_name} width={52} height={52} decoding="async" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
             ) : (
-              <div style={{ width: 52, height: 52, borderRadius: '50%', flexShrink: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6" /></svg>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', flexShrink: 0, background: avatarTint(staff.full_name), color: AVATAR_INK, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800 }} aria-hidden>
+                {initials(staff.full_name)}
               </div>
             )}
             <div style={{ minWidth: 0 }}>
@@ -284,14 +285,10 @@ export default async function StaffTipPage({
         </Suspense>
 
         <div style={{ textAlign: 'center', marginTop: 14 }}>
-          <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6, margin: '0 0 8px' }}>{t('secured')}</p>
-          {staff.group_logo_url ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 24 }}>
-              <img src={staff.group_logo_url} alt="" height={24} style={{ height: 24, maxWidth: 110, objectFit: 'contain', opacity: 0.75 }} />
-            </span>
-          ) : (
-            <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
-          )}
+          <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6, margin: '0 0 8px' }}>{t('secured')}</p>
+          {/* The establishment's logo sat here, unlabelled, under the Stripe
+              line, where it read as a broken image (UX-19). */}
+          <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '-0.03em', color: '#E57A97' }}>DigiTip</span>
         </div>
       </div>
     </main>

@@ -362,19 +362,22 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
             <Link href={`/pay/${staffId}`} style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               padding: '10px 20px', borderRadius: 'var(--radius)',
-              background: 'var(--accent)', color: 'var(--accent-fg)',
+              background: 'var(--accent-strong)', color: 'var(--accent-fg)',
               fontSize: 13.5, fontWeight: 600, textDecoration: 'none',
             }}>
               {t('failedRetry')} →
             </Link>
           )}
+          {/* The customer is not a Digitip prospect: a big "Back to Digitip"
+              button sent them to a marketing site. A quiet line for the
+              restaurateur who is curious is enough (UX-19). */}
           <Link href="/" style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '10px 20px', borderRadius: 'var(--radius)',
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
-            color: 'var(--text-2)', fontSize: 13, fontWeight: 500, textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            minHeight: 44, marginTop: 8, padding: '0 8px',
+            color: 'var(--text-2)', fontSize: 12.5, fontWeight: 500,
+            textDecoration: 'underline', textUnderlineOffset: 3,
           }}>
-            ← {t('successBack')}
+            {t('successBack')}
           </Link>
         </div>
       </div>

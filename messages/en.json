@@ -51,7 +51,8 @@
     "errEmailRequired": "Please enter an email: it is required to send your invoice and setup link.",
     "errAddressRequired": "Enter your shipping address so we can calculate VAT.",
     "errPaymentFailed": "The payment failed.",
-    "errPromoApply": "Could not apply the code right now. Please try again."
+    "errPromoApply": "Could not apply the code right now. Please try again.",
+    "ttcFrance": "{price} incl. VAT in France"
   },
   "metadata": {
     "title": "Digitip: cashless tips via NFC | digitip.app",
@@ -680,16 +681,17 @@
       "initFailed": "Payment init failed",
       "paymentUnavailable": "The payment service is temporarily unavailable. Please try again in a moment.",
       "validationFailed": "Validation failed",
-      "genericFailed": "Payment failed"
+      "genericFailed": "Payment failed",
+      "declined": "Payment declined by your bank. Nothing was charged. Try another card."
     },
     "payButton": "Pay by card",
-    "processingButton": "Processing…",
+    "processingButton": "Processing payment…",
     "successStatus": "Status",
     "successReference": "Reference",
     "successAmount": "Amount",
-    "successBack": "Back to Digitip",
+    "successBack": "Run a restaurant? Discover Digitip",
     "failedRetry": "Try payment again",
-    "yourEmail": "Your email (optional)",
+    "yourEmail": "Your email for the receipt",
     "emailPlaceholder": "email@example.com",
     "receiptNote": "A receipt will be sent to this address",
     "receiptByEmail": "Get a receipt by email",
@@ -699,7 +701,7 @@
     "feeBreakdown": "{tip} tip + {fee} service fee",
     "feeBreakdownPerPerson": "{tip} tip (≈ {perPerson} / person) + {fee} service fee",
     "feeTotal": "{total} charged",
-    "successBodyNamed": "Your tip is on its way, {name} has been notified.",
+    "successBodyNamed": "Your tip is on its way to {name}.",
     "sentTo": "Sent to",
     "reviewTitle": "Did you have a great time?",
     "reviewTitleNamed": "Did you enjoy {name}?",
@@ -714,7 +716,15 @@
     "successTip": "Tip",
     "successFee": "Service fee",
     "successTotal": "Total charged",
-    "successReceipt": "View my receipt (PDF / print)"
+    "successReceipt": "View my receipt (PDF / print)",
+    "orByCard": "or by card",
+    "receiptToggle": "Get a receipt by email",
+    "dontClose": "Please keep this page open.",
+    "summaryTip": "Tip",
+    "summaryFee": "Service fee",
+    "summaryTotal": "Total charged",
+    "feeInfoLabel": "Why this fee?",
+    "otherAmount": "Other amount"
   },
   "dashboard": {
     "welcome": "Welcome back,",
@@ -732,7 +742,7 @@
       "overview": "Overview",
       "transactions": "Transactions",
       "staff": "Staff",
-      "stickers": "SmartTags",
+      "stickers": "Plates",
       "billing": "Billing",
       "settings": "Settings",
       "establishments": "Establishments",
@@ -792,7 +802,7 @@
       "proSection": "Subscription"
     },
     "home": {
-      "dashboard": "Dashboard",
+      "dashboard": "Home",
       "last7days": "Last 7 days",
       "trendVsPrev": "vs prev. week",
       "adminReceiveTipsTitle": "Receive tips too",
@@ -820,7 +830,7 @@
       "empty": "No staff members yet.",
       "colName": "Name",
       "colEstablishment": "Establishment",
-      "colPayout": "Account",
+      "colPayout": "Staff space",
       "colStatus": "Status",
       "active": "Active",
       "inactive": "Inactive",
@@ -853,10 +863,10 @@
         "saved": "Saved.",
         "deactivate": "Remove from team",
         "deactivateConfirm": "Remove this person from the team? They disappear from the tip page; their history stays in your statements.",
-        "payoutStatus": "Account",
-        "payoutComplete": "Account active",
+        "payoutStatus": "Staff space",
+        "payoutComplete": "Active",
         "payoutPending": "Signing up",
-        "payoutNotStarted": "Account to finish",
+        "payoutNotStarted": "To finish",
         "recentTips": "Recent tips",
         "notFound": "Staff not found."
       },
@@ -1271,7 +1281,7 @@
     },
     "reviewImpact": {
       "label": "Google reviews this month",
-      "ratio": "{clicks}/{tips}",
+      "ratio": "{clicks} of {tips}",
       "title": "customers went to leave a review",
       "body": "Since the 1st. The invitation shows after every tip; following it is their call.",
       "emptyTitle": "No review started this month",

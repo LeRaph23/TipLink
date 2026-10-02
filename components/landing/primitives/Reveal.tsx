@@ -10,11 +10,15 @@ export function Reveal({ children, delay = 0, style: s = {} }: { children: React
   const [vis, setVis] = useState(false);
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.07 });
+    // Fires a little before the block enters the screen, so a fast scroll
+    // does not land on empty space (UI/UX audit, UX-11).
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0, rootMargin: '0px 0px 10% 0px' });
     obs.observe(el); return () => obs.disconnect();
   }, []);
   return (
-    <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? 'none' : 'translateY(22px)', transition: `opacity 600ms ${delay}ms cubic-bezier(.22,1,.36,1), transform 600ms ${delay}ms cubic-bezier(.22,1,.36,1)`, ...s }}>
+    // 320 ms and 12 px, delay capped at 120 ms: the 600 ms reveals with up to
+    // 280 ms of delay left whole screens blank while scrolling.
+    <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? 'none' : 'translateY(12px)', transition: `opacity 320ms ${Math.min(delay, 120)}ms cubic-bezier(.22,1,.36,1), transform 320ms ${Math.min(delay, 120)}ms cubic-bezier(.22,1,.36,1)`, ...s }}>
       {children}
     </div>
   );

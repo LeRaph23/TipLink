@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TIP_MAX_CENTS, TIP_MIN_CENTS } from '@/lib/tips/limits';
 import { useTranslations, useLocale } from 'next-intl';
 import { GroupTipCheckout } from './GroupTipCheckout';
@@ -8,6 +8,7 @@ import { DemoPayButton } from './DemoPayButton';
 import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
 import { computeTipFee, computeTipTotal, type TipFeeConfig } from '@/lib/pricing/tip-fees';
 import { moneyFormatter } from '@/lib/money';
+import { TipSummary } from './TipSummary';
 
 interface Props {
   establishmentId: string;
@@ -31,10 +32,15 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
   const [custom, setCustom] = useState('');
   const [customFocus, setCustomFocus] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
-  const [showFeeInfo, setShowFeeInfo] = useState(false);
+  // Focus the custom field without scrolling the page: autoFocus jumped the
+  // view back to the top on a phone (UX-05).
+  const customRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (showCustom) customRef.current?.focus({ preventScroll: true });
+  }, [showCustom]);
 
   const tipAmount = custom
-    ? Math.round((parseFloat(custom) || 0) * 100)
+    ? Math.round((parseFloat(custom.replace(',', '.')) || 0) * 100)
     : selectedAmount;
 
   const tooHigh = tipAmount !== null && tipAmount > TIP_MAX_CENTS;
@@ -85,9 +91,9 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
                 onClick={() => { setSelectedAmount(cents); setCustom(''); setShowCustom(false); }}
                 style={{
                   padding: '16px 6px', borderRadius: 12,
-                  border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                  border: `2px solid ${active ? 'var(--accent-strong)' : 'var(--border)'}`,
                   background: active ? 'var(--accent-muted)' : 'var(--surface-2)',
-                  color: active ? 'var(--accent)' : 'var(--text)',
+                  color: 'var(--text)',
                   fontFamily: 'var(--font)', fontSize: 20, fontWeight: 800, cursor: 'pointer',
                   letterSpacing: '-0.03em',
                   boxShadow: active ? '0 0 0 3px var(--accent-muted)' : 'none',
@@ -105,7 +111,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
         {!showCustom ? (
           <button
             type="button"
-            onClick={() => { setShowCustom(true); setSelectedAmount(null); }}
+            onClick={() => setShowCustom(true)}
             style={{
               display: 'block', margin: '12px auto 0', background: 'none', border: 'none',
               color: 'var(--text-2)', fontSize: 13.5, fontWeight: 600, padding: '10px 14px', cursor: 'pointer', fontFamily: 'var(--font)',
@@ -120,14 +126,14 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
               {currencySymbol}
             </span>
             <input
-              type="number" inputMode="decimal" placeholder={t('group.customAmountLabel')} value={custom} autoFocus
+              type="text" inputMode="decimal" autoComplete="off" placeholder={t('otherAmount')} value={custom} ref={customRef}
               // No label, only a placeholder, which vanishes as soon as a digit
               // is typed. Same fix as the single-recipient selector.
               aria-label={t('group.customAmountLabel')}
               aria-invalid={customInvalid}
               aria-describedby={customInvalid ? 'group-custom-amount-error' : undefined}
               // At most two decimals: 12,345 € was accepted, then shown as 12,35 €.
-              onChange={e => { if (/^\d*([.,]\d{0,2})?$/.test(e.target.value)) { setCustom(e.target.value); setSelectedAmount(null); } }}
+              onChange={e => { if (/^\d*([.,]\d{0,2})?$/.test(e.target.value)) { setCustom(e.target.value); } }}
               onFocus={() => setCustomFocus(true)} onBlur={() => setCustomFocus(false)}
               style={{
                 width: '100%', background: 'var(--surface-2)',
@@ -153,58 +159,13 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
         )}
       </div>
 
-      {/* Service fee — single line + a clickable "i" that explains it. */}
       {hasAmount && tipAmount && (
-        <div style={{ textAlign: 'center', margin: '-4px 0 0' }}>
-          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, margin: 0 }}>
-            {perPerson
-              ? t('feeBreakdownPerPerson', {
-                  tip: fmt.format(tipAmount / 100),
-                  perPerson,
-                  fee: fmtCents.format(serviceFee / 100),
-                })
-              : t('feeBreakdown', {
-                  tip: fmt.format(tipAmount / 100),
-                  fee: fmtCents.format(serviceFee / 100),
-                })}{' '}
-            <button
-              type="button"
-              onClick={() => setShowFeeInfo((v) => !v)}
-              aria-expanded={showFeeInfo}
-              aria-label={t('feeInfo')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 16, height: 16, borderRadius: '50%', verticalAlign: 'middle',
-                border: '1px solid var(--border)', background: showFeeInfo ? 'var(--accent-muted)' : 'var(--surface-2)',
-                color: showFeeInfo ? 'var(--accent)' : 'var(--text-3)', fontSize: 11, fontWeight: 700,
-                fontStyle: 'italic', fontFamily: 'Georgia, serif', cursor: 'pointer', lineHeight: 1, padding: 0,
-              }}
-            >
-              i
-            </button>
-            {' = '}
-            <strong style={{ color: 'var(--text-2)', fontWeight: 700 }}>
-              {t('feeTotal', { total: fmtCents.format(totalAmount / 100) })}
-            </strong>
-          </p>
-          {showFeeInfo && (
-            <p
-              className="fade-up"
-              style={{
-                display: 'flex', alignItems: 'flex-start', gap: 7,
-                fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.55,
-                margin: '8px auto 0', maxWidth: 320, textAlign: 'left',
-                background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-                padding: '9px 12px', borderRadius: 10,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="#E57A97" stroke="none" style={{ flexShrink: 0, marginTop: 1 }} aria-hidden>
-                <path d="M12 21s-7.5-4.6-10-9.2C.6 9 1.7 5.5 4.8 4.7 6.7 4.2 8.6 5 9.6 6.4L12 9l2.4-2.6c1-1.4 2.9-2.2 4.8-1.7 3.1.8 4.2 4.3 2.8 7.1C19.5 16.4 12 21 12 21z" />
-              </svg>
-              <span>{t('feeInfo')}</span>
-            </p>
-          )}
-        </div>
+        <TipSummary
+          tip={fmtCents.format(tipAmount / 100)}
+          fee={fmtCents.format(serviceFee / 100)}
+          total={fmtCents.format(totalAmount / 100)}
+          perPerson={perPerson}
+        />
       )}
 
       {/* Checkout — only shown once a valid amount is chosen. We deliberately
