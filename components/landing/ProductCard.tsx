@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
@@ -83,7 +83,18 @@ type Props = {
   pricing: Record<Pack, PackPricing> | null;
 };
 
-const PACK_GALLERIES: Record<Pack, { src: string; alt: string }[]> = {
+// `video` items play muted in a loop in the main frame; `src` is their poster
+// (also the thumbnail).
+type GalleryItem = { src: string; alt: string; video?: { webm: string; mp4: string } };
+
+// The explainer is filmed on the French UI, so it only shows on /fr.
+const WORKFLOW_VIDEO: GalleryItem = {
+  src: '/products/workflow-poster.jpg',
+  video: { webm: '/products/workflow.webm', mp4: '/products/workflow.mp4' },
+  alt: 'Vidéo : comment un client laisse un pourboire avec Digitip, du scan au tableau de bord',
+};
+
+const PACK_GALLERIES: Record<Pack, GalleryItem[]> = {
   solo: [
     { src: '/products/solo-3d.jpg', alt: 'Plaque époxy NFC Digitip, rendu 3D' },
     { src: '/products/solo-table.jpg', alt: 'Plaque Digitip posée sur le comptoir' },
@@ -101,7 +112,12 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
   const [activeImg, setActiveImg] = useState(0);
   const [selectedPack, setSelectedPack] = useState<Pack>('duo');
 
-  const gallery = PACK_GALLERIES[selectedPack];
+  // `locale` is pinned to fr for price formatting; the page language decides.
+  const pageLocale = useLocale();
+  const gallery = pageLocale === 'fr'
+    ? [PACK_GALLERIES[selectedPack][0], WORKFLOW_VIDEO, ...PACK_GALLERIES[selectedPack].slice(1)]
+    : PACK_GALLERIES[selectedPack];
+  const active = gallery[activeImg] ?? gallery[0];
   const selPricing = pricing?.[selectedPack];
   const offer = selPricing ? formatPriceCents(selPricing.unitAmount, selPricing.currency, locale) : '…';
   const fullStrike = selPricing?.listAmount != null
@@ -148,18 +164,38 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
           marginBottom: 12, overflow: 'hidden',
           position: 'relative',
         }}>
-          <Image
-            src={gallery[activeImg].src}
-            alt={gallery[activeImg].alt}
-            fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            style={{ objectFit: 'cover' }}
-            priority={activeImg === 0}
-          />
+          {active.video ? (
+            <video
+              key={active.video.mp4}
+              // React sets `muted` as a property only, which autoplay policies
+              // ignore: mute and start explicitly once mounted.
+              ref={(el) => { if (el) { el.muted = true; void el.play().catch(() => {}); } }}
+              poster={active.src}
+              aria-label={active.alt}
+              autoPlay muted loop playsInline preload="metadata"
+              // Low-power mode can block autoplay and leave the poster's play
+              // button on screen: a tap starts it.
+              onClick={(e) => { void e.currentTarget.play().catch(() => {}); }}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            >
+              {/* MP4 first (lighter); WebM for browsers without H.264. */}
+              <source src={active.video.mp4} type="video/mp4" />
+              <source src={active.video.webm} type="video/webm" />
+            </video>
+          ) : (
+            <Image
+              src={active.src}
+              alt={active.alt}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              style={{ objectFit: 'cover' }}
+              priority={activeImg === 0}
+            />
+          )}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {gallery.map((img, i) => (
-            <button key={i} onClick={() => setActiveImg(i)} style={{
+            <button key={i} onClick={() => setActiveImg(i)} aria-label={img.alt} style={{
               width: 64, height: 64, borderRadius: 10,
               border: activeImg === i ? '2px solid #E57A97' : '1px solid #e6e6f0',
               background: '#FEF1F4', cursor: 'pointer', padding: 0, flexShrink: 0,
@@ -172,6 +208,17 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
                 sizes="64px"
                 style={{ objectFit: 'cover' }}
               />
+              {img.video && (
+                <span aria-hidden="true" style={{
+                  position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
+                  background: 'rgba(23,18,19,.18)',
+                }}>
+                  <svg width="26" height="26" viewBox="0 0 26 26">
+                    <circle cx="13" cy="13" r="13" fill="#af4a69" />
+                    <path d="M10.5 8.5v9l7-4.5z" fill="#fff" />
+                  </svg>
+                </span>
+              )}
             </button>
           ))}
         </div>
