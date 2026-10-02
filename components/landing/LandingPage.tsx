@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
+import { TutorialVideo } from '@/components/landing/TutorialVideo';
 import dynamic from 'next/dynamic';
 
 /**
@@ -217,7 +218,7 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
               {t('hero.cta')} →
             </button>
             <a href="#comment-ca-marche" className="land-hero-btn btn-ghost" style={{ padding: '15px 24px', borderRadius: 11, textDecoration: 'none', border: '1.5px solid #e4e4ec', color: '#3a3b4f', fontSize: 15, fontWeight: 600, background: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-              {t('howItWorks.title')}
+              {t('howItWorks.heroCta')}
             </a>
           </div>
           <div className="fade-up" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', animationDelay: '280ms' }}>
@@ -398,34 +399,50 @@ function ProductSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo' | 
 }
 
 // ─── How it works ─────────────────────────────────────────────────────────────
+// On /fr each step is a short tutorial filmed on the real screens (the videos
+// show the French UI); other locales keep the text steps.
+const TUTORIALS = ['/tutos/activer-plaque', '/tutos/activer-paiements', '/tutos/ajouter-equipe'];
+
 function HowItWorksSection() {
   const t = useTranslations('landing');
+  const withVideos = useLocale() === 'fr';
   const steps: { n: string; title: string; body: string; icon: React.ReactNode }[] = [
     { n: '01', title: t('howItWorks.step1t'), body: t('howItWorks.step1b'), icon: <BoxIcon size={22} color="#E57A97" /> },
     { n: '02', title: t('howItWorks.step2t'), body: t('howItWorks.step2b'), icon: <BoltIcon size={22} color="#E57A97" /> },
-    { n: '03', title: t('howItWorks.step3t'), body: t('howItWorks.step3b'), icon: <CoinIcon size={22} color="#E57A97" /> },
+    { n: '03', title: t('howItWorks.step3t'), body: t('howItWorks.step3b'), icon: <UsersIcon size={22} color="#E57A97" /> },
   ];
   return (
     <section id="comment-ca-marche" style={{ background: '#f9f9f7', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div style={{ textAlign: 'center', marginBottom: withVideos ? 44 : 56 }}>
             <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('howItWorks.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('howItWorks.title')}</h2>
-            <p style={{ fontSize: 15, color: '#74748a', marginTop: 12, maxWidth: 460, margin: '12px auto 0' }}>{t('howItWorks.sub')}</p>
+            <p style={{ fontSize: 15, color: '#74748a', marginTop: 12, maxWidth: 520, margin: '12px auto 0' }}>{t('howItWorks.sub')}</p>
           </div>
         </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: withVideos ? 24 : 20 }}>
           {steps.map((s, i) => (
             <Reveal key={i} delay={i * 80}>
-              <div style={{ padding: '32px 28px', position: 'relative' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Étape {s.n}</div>
+              {withVideos ? (
+                <div>
+                  <div style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid #e4e4ec', boxShadow: '0 18px 40px -24px rgba(114,38,62,0.35)', marginBottom: 18 }}>
+                    <TutorialVideo src={TUTORIALS[i]} label={t('howItWorks.videoLabel', { title: s.title })} />
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Étape {s.n}</div>
+                  <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 8 }}>{s.title}</h3>
+                  <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.7 }}>{s.body}</p>
                 </div>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
-                <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.75 }}>{s.body}</p>
-              </div>
+              ) : (
+                <div style={{ padding: '32px 28px', position: 'relative' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.icon}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Step {s.n}</div>
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
+                  <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.75 }}>{s.body}</p>
+                </div>
+              )}
             </Reveal>
           ))}
         </div>

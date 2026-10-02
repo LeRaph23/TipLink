@@ -290,18 +290,20 @@
       "specs": "Détails produit"
     },
     "howItWorks": {
-      "kicker": "Configuration",
-      "title": "Configurez en 20 secondes",
-      "sub": "Pas d'outil, pas d'app côté client, pas de configuration technique.",
+      "kicker": "Mise en route",
+      "title": "Prêt à encaisser en quelques minutes",
+      "sub": "Trois tutos vidéo, filmés sur les vrais écrans. Pas d'outil, pas de technicien, aucune appli pour vos clients.",
+      "heroCta": "Voir la mise en route en vidéo",
       "step1n": "01",
-      "step1t": "Scannez à réception",
-      "step1b": "Scannez le QR code sur votre SmartTag dès réception pour l'associer à votre profil Digitip.",
+      "step1t": "Activez votre plaque",
+      "step1b": "Scannez-la à réception, reliez votre fiche Google et confirmez votre email : votre espace est créé.",
       "step2n": "02",
-      "step2t": "Activez votre profil",
-      "step2b": "Renseignez vos informations de paiement via Stripe Connect. C'est sécurisé, ça prend 2 minutes.",
+      "step2t": "Activez les paiements",
+      "step2b": "Une vérification Stripe, une seule fois, environ 2 minutes. Vos coordonnées bancaires ne transitent jamais par Digitip.",
       "step3n": "03",
-      "step3t": "Prêt à encaisser",
-      "step3b": "Posez votre SmartTag sur le comptoir ou la table. Le premier pourboire peut arriver dès la prochaine heure."
+      "step3t": "Ajoutez votre équipe",
+      "step3b": "Envoyez un lien par SMS : chacun crée son profil avec son prénom et sa photo, en 2 minutes.",
+      "videoLabel": "Tuto vidéo : {title}"
     },
     "shipping": {
       "kicker": "Livraison",

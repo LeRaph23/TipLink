@@ -291,17 +291,19 @@
     },
     "howItWorks": {
       "kicker": "Setup",
-      "title": "Set up in 20 seconds",
-      "sub": "No tools, no customer app, no technical setup.",
+      "title": "Ready to take tips in minutes",
+      "sub": "No tools, no technician, no app for your customers.",
+      "heroCta": "See how setup works",
       "step1n": "01",
-      "step1t": "Scan on receipt",
-      "step1b": "Scan the QR code on your SmartTag when it arrives to link it to your Digitip profile.",
+      "step1t": "Activate your plaque",
+      "step1b": "Scan it when it arrives, link your Google listing and confirm your email: your space is created.",
       "step2n": "02",
-      "step2t": "Activate your profile",
-      "step2b": "Enter your payout details via Stripe Connect. Secure, takes 2 minutes.",
+      "step2t": "Turn on payments",
+      "step2b": "A one-time Stripe verification, about 2 minutes. Your bank details never go through Digitip.",
       "step3n": "03",
-      "step3t": "Ready to earn",
-      "step3b": "Place your SmartTag on the counter or table. The first tip could arrive within the hour."
+      "step3t": "Add your team",
+      "step3b": "Send a link by text: everyone creates their profile with their first name and photo, in 2 minutes.",
+      "videoLabel": "Video tutorial: {title}"
     },
     "shipping": {
       "kicker": "Shipping",
