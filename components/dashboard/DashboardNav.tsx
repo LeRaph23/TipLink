@@ -61,6 +61,12 @@ function TagIcon() {
 function InvoiceIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5" /><path d="M5 5h6M5 8h6M5 11h4" /></svg>;
 }
+function ChartIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 14h12" /><path d="M4 11V8M8 11V4M12 11V6" /></svg>;
+}
+function GearIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="2.2" /><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" /></svg>;
+}
 function MailIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="3" width="13" height="10" rx="1.5" /><path d="M2 4l6 5 6-5" /></svg>;
 }
@@ -85,9 +91,12 @@ function NavLink({ href, icon, label, active, pending, onNavigate }: { href: str
       }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
+      aria-current={active ? 'page' : undefined}
       style={{
         display: 'flex', alignItems: 'center', gap: 9,
-        padding: '7px 10px', borderRadius: 8, textDecoration: 'none',
+        // 44 px rows: the 34 px ones were under the touch-target minimum on
+        // the phone drawer (UI/UX audit, UX-15).
+        minHeight: 44, padding: '7px 10px', borderRadius: 8, textDecoration: 'none',
         background: active ? 'var(--accent-muted)' : hov ? 'var(--surface-2)' : 'transparent',
         color: active ? 'var(--accent)' : hov ? 'var(--text)' : 'var(--text-2)',
         fontSize: 13.5, fontWeight: active ? 600 : 500,
@@ -160,11 +169,11 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
     { href: '/dashboard/paiements',     label: tn('payments'),     icon: <PayoutIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/billing',       label: tn('billing'),      icon: <InvoiceIcon />, roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/staff',         label: tn('staff'),        icon: <StaffIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
-    { href: '/dashboard/statements',    label: tn('statements'),   icon: <InvoiceIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/statements',    label: tn('statements'),   icon: <ListIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/establishments', label: tn('establishments'), icon: <EstIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/stickers',      label: tn('stickers'),     icon: <NfcIcon />,    roles: ['manager', 'group_admin'] as UserRole['role'][] },
-    { href: '/dashboard/analytics',     label: td('analytics.nav'),icon: <TxIcon />,     roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
-    { href: '/dashboard/settings',      label: tn('settings'),     icon: <StaffIcon />,  roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/analytics',     label: td('analytics.nav'),icon: <ChartIcon />,     roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/settings',      label: tn('settings'),     icon: <GearIcon />,  roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
   ];
 
   const adminLinks = [

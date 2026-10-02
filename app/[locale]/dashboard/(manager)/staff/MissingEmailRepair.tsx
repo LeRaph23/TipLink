@@ -30,10 +30,13 @@ export function MissingEmailRepair({
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sent, setSent] = useState<Record<string, boolean>>({});
+  // What happened to the last submission, said in words: the row used to
+  // vanish silently, sometimes after flashing an error (UI/UX audit, UX-10).
+  const [notice, setNotice] = useState<{ tone: 'success' | 'warning'; text: string } | null>(null);
 
-  if (staff.length === 0) return null;
+  if (staff.length === 0 && !notice) return null;
   const remaining = staff.filter((s) => !sent[s.id]);
-  if (remaining.length === 0) return null;
+  if (remaining.length === 0 && !notice) return null;
 
   function submit(id: string) {
     const email = (emails[id] ?? '').trim();
@@ -45,20 +48,42 @@ export function MissingEmailRepair({
         setErrors((e) => ({ ...e, [id]: res.error }));
         return;
       }
-      // The action reports whether the invitation email actually left (it
-      // fails when the address already has an account, or when email is not
-      // configured). Hiding the row regardless looked like a success.
-      if (!res.invited) {
-        setErrors((e) => ({ ...e, [id]: "L'invitation n'a pas pu être envoyée. Cette adresse a peut-être déjà un compte : partagez plutôt le lien d'équipe ci-dessous." }));
+      // The action reports whether the email is now on the profile, and
+      // whether the invitation email actually left. Three outcomes, three
+      // messages: hiding the row regardless looked like a success.
+      if (!res.linked) {
+        setErrors((e) => ({ ...e, [id]: "Cette adresse n'a pas pu être enregistrée : elle a peut-être déjà un compte. Partagez plutôt le lien d'équipe ci-dessous." }));
         return;
       }
+      const name = staff.find((s) => s.id === id)?.fullName ?? '';
+      setNotice(res.invited
+        ? { tone: 'success', text: `Invitation envoyée à ${email}.` }
+        : { tone: 'warning', text: `E-mail de ${name} enregistré, mais l'invitation n'est pas partie. Envoyez-lui le lien d'équipe ci-dessous.` });
       trackEvent('staff_invite_repaired');
       setSent((s) => ({ ...s, [id]: true }));
       router.refresh();
     });
   }
 
+  const noticeBox = notice && (
+    <div
+      role="status"
+      className="alert-in"
+      style={{
+        marginBottom: 16, padding: '10px 14px', borderRadius: 10, fontSize: 13.5, lineHeight: 1.5,
+        background: notice.tone === 'success' ? 'var(--success-bg)' : 'var(--warning-bg)',
+        borderLeft: `3px solid ${notice.tone === 'success' ? 'var(--success)' : 'var(--warning)'}`,
+        color: 'var(--text)',
+      }}
+    >
+      {notice.text}
+    </div>
+  );
+  if (remaining.length === 0) return noticeBox;
+
   return (
+    <>
+    {noticeBox}
     <div
       style={{
         background: '#fffbeb',
@@ -70,13 +95,13 @@ export function MissingEmailRepair({
     >
       <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>
         {remaining.length === 1
-          ? '1 membre n’a pas encore de compte'
-          : `${remaining.length} membres n’ont pas encore de compte`}
+          ? '1 membre ne peut pas encore se connecter'
+          : `${remaining.length} membres ne peuvent pas encore se connecter`}
       </div>
       <p style={{ fontSize: 13, color: '#92400e', lineHeight: 1.6, marginBottom: 16, opacity: 0.9 }}>
         Leurs pourboires sont bien enregistrés et versés à l&apos;établissement pour la
-        paie, mais ces profils ont été créés sans adresse email : ils ne peuvent pas suivre
-        leurs pourboires eux-mêmes. Renseignez leur email pour leur envoyer l&apos;invitation.
+        paie. Il manque seulement leur e-mail pour qu&apos;ils puissent suivre leurs
+        pourboires eux-mêmes : renseignez-le pour leur envoyer l&apos;invitation.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -114,7 +139,7 @@ export function MissingEmailRepair({
                 disabled={pending || !(emails[s.id] ?? '').trim()}
                 style={{
                   padding: '9px 16px', borderRadius: 10, border: 'none',
-                  background: '#92400e', color: '#fff',
+                  background: 'var(--text)', color: 'var(--bg)',
                   fontSize: 13, fontWeight: 650, fontFamily: 'var(--font)',
                   cursor: pending ? 'not-allowed' : 'pointer',
                   opacity: pending || !(emails[s.id] ?? '').trim() ? 0.5 : 1,
@@ -131,5 +156,6 @@ export function MissingEmailRepair({
         ))}
       </div>
     </div>
+    </>
   );
 }

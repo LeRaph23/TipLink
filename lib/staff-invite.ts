@@ -17,7 +17,8 @@ type ServiceClient = ReturnType<typeof createServiceClient>;
 // `/join/[establishmentId]` with the email pre-filled. The interstitial keeps
 // email security scanners (which pre-fetch links with a GET) from consuming the
 // one-time token before the invitee clicks. Best-effort: returns
-// { invited: false } on any failure — the staff profile still exists and the
+// `linked`: the email is now attached to the profile (an account exists),
+// whether or not the invitation email left. { invited: false } on any failure — the staff profile still exists and the
 // admin can resend later.
 export async function sendStaffInviteLink(
   service: ServiceClient,
@@ -30,7 +31,7 @@ export async function sendStaffInviteLink(
     role: 'staff' | 'manager';
     locale: 'fr' | 'en';
   },
-): Promise<{ invited: boolean }> {
+): Promise<{ invited: boolean; linked: boolean }> {
   const { staffProfileId, fullName, email, establishmentId, establishmentName, role, locale } = params;
   const base = getBaseUrl();
   const nextPath = `/join/${establishmentId}`;
@@ -68,7 +69,7 @@ export async function sendStaffInviteLink(
 
     const userId = linkData?.user?.id ?? null;
     const hashedToken = linkData?.properties?.hashed_token ?? null;
-    if (linkErr || !userId) return { invited: false };
+    if (linkErr || !userId) return { invited: false, linked: false };
 
     // Link the auth user to the profile and pre-create their role so
     // onboarding works the moment they accept the invite.
@@ -79,7 +80,7 @@ export async function sendStaffInviteLink(
       establishment_id: role === 'manager' ? establishmentId : null,
     });
 
-    if (!hashedToken) return { invited: false };
+    if (!hashedToken) return { invited: false, linked: true };
     // Point at the interstitial page (not /auth/callback directly): email
     // security scanners pre-fetch links with a GET, which would consume this
     // one-time token before the invitee clicks. The interstitial only verifies
@@ -92,8 +93,8 @@ export async function sendStaffInviteLink(
       inviteUrl: `${base}/${locale}/auth/accept?${qs.toString()}`,
       locale,
     });
-    return { invited: ok };
+    return { invited: ok, linked: true };
   } catch {
-    return { invited: false };
+    return { invited: false, linked: false };
   }
 }

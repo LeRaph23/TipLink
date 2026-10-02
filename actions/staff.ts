@@ -121,7 +121,7 @@ export async function inviteExistingStaffMember(
   staffId: string,
   email: string,
   locale?: string
-): Promise<{ invited: boolean } | { error: string }> {
+): Promise<{ invited: boolean; linked: boolean } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return actionError('forbidden');
@@ -150,7 +150,7 @@ export async function inviteExistingStaffMember(
     .eq('id', staff.establishment_id)
     .maybeSingle();
 
-  const { invited } = await sendStaffInviteLink(service, {
+  const { invited, linked } = await sendStaffInviteLink(service, {
     staffProfileId: staff.id,
     fullName: staff.full_name,
     email: normalizedEmail,
@@ -162,7 +162,7 @@ export async function inviteExistingStaffMember(
 
   revalidatePath('/dashboard/staff');
   updateTag(establishmentTipTag(staff.establishment_id));
-  return { invited };
+  return { invited, linked };
 }
 
 export async function updateStaffMember(

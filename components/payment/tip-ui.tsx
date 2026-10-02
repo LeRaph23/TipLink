@@ -121,37 +121,72 @@ export function PayField({
   );
 }
 
-// ── Fee line ───────────────────────────────────────────────────────────────
-export function FeeLine({
-  breakdown, total, info, infoLabel, marginTop,
-}: { breakdown: string; total: string; info: string; infoLabel: string; marginTop: number }) {
+// ── Tip summary ────────────────────────────────────────────────────────────
+// What the customer is about to be charged, as a short receipt: tip, service
+// fee, total charged. It was one 12 px grey sentence, the smallest text on the
+// screen for the one figure that reassures (UI/UX audit, UX-04).
+export function TipSummary({
+  labels, tip, fee, total, perPerson, info, infoLabel, marginTop,
+}: {
+  /** Row labels, already translated. */
+  labels: { tip: string; fee: string; total: string };
+  tip: string;
+  fee: string;
+  total: string;
+  /** Team tip shared between several people, already formatted ("≈ 2,50 € / pers"). */
+  perPerson?: string | null;
+  info: string;
+  infoLabel: string;
+  marginTop: number;
+}) {
   const [open, setOpen] = useState(false);
+  const row = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+    font: '400 14px/20px var(--font)', color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums',
+  } as const;
   return (
-    <div style={{ marginTop, textAlign: 'center' }}>
-      <p style={{ font: '400 12px/16px var(--font)', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 2, margin: 0 }}>
-        <span>{breakdown}</span>
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-label={infoLabel}
-          onClick={() => setOpen(v => !v)}
-          style={{
-            width: 32, height: 32, margin: '-8px -4px', display: 'grid', placeItems: 'center',
-            background: 'none', border: 'none', cursor: 'pointer', color: open ? 'var(--accent)' : 'var(--text-3)',
-          }}
-        >
-          <PayIcon name="info" size={16} />
-        </button>
-        <span>= <b style={{ fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{total}</b></span>
-      </p>
+    <div style={{ marginTop, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={row}>
+        <span>
+          {labels.tip}
+          {perPerson && <span style={{ color: 'var(--text-3)' }}> · {perPerson}</span>}
+        </span>
+        <span>{tip}</span>
+      </div>
+      <div style={row}>
+        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+          {labels.fee}
+          {/* 44 × 44 px touch target around a 16 px glyph. */}
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label={infoLabel}
+            onClick={() => setOpen(v => !v)}
+            style={{
+              width: 44, height: 44, margin: '-12px -10px -12px -6px', display: 'grid', placeItems: 'center',
+              background: 'none', border: 'none', cursor: 'pointer', color: open ? 'var(--accent)' : 'var(--text-3)',
+            }}
+          >
+            <PayIcon name="info" size={16} />
+          </button>
+        </span>
+        <span>{fee}</span>
+      </div>
       {open && (
         <p className="dg-reveal" style={{
-          textAlign: 'left', font: '400 14px/20px var(--font)', color: 'var(--text-2)', background: 'var(--surface-2)',
-          borderRadius: 'var(--radius-sm)', padding: '12px 14px', margin: '8px 0 0',
+          font: '400 14px/20px var(--font)', color: 'var(--text-2)', background: 'var(--surface-2)',
+          borderRadius: 'var(--radius-sm)', padding: '12px 14px', margin: '4px 0',
         }}>
           {info}
         </p>
       )}
+      <div style={{
+        ...row, marginTop: 4, paddingTop: 8, borderTop: '1px solid var(--border)',
+        font: '600 16px/22px var(--font)', color: 'var(--text)',
+      }}>
+        <span>{labels.total}</span>
+        <span key={total} className="amount-tick">{total}</span>
+      </div>
     </div>
   );
 }

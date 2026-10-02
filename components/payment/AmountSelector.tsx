@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TIP_MAX_CENTS, TIP_MIN_CENTS } from '@/lib/tips/limits';
 import { useTranslations, useLocale } from 'next-intl';
 import { TipCheckout } from './TipCheckout';
@@ -9,7 +9,7 @@ import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
 import { computeTipFee, computeTipTotal, type TipFeeConfig } from '@/lib/pricing/tip-fees';
 import { moneyFormatter } from '@/lib/money';
 import { PayError } from '@/components/pay/ui';
-import { AmountTiles, FeeLine, PayField, SelectPrompt, TextAction } from './tip-ui';
+import { AmountTiles, PayField, SelectPrompt, TextAction, TipSummary } from './tip-ui';
 
 interface Props {
   staffId: string;
@@ -32,9 +32,14 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
   });
   const [custom, setCustom] = useState('');
   const [showCustom, setShowCustom] = useState(false);
+  // Focus the custom field without scrolling the page: autoFocus jumped the
+  // view back to the top on a phone (UI/UX audit, UX-05).
+  useEffect(() => {
+    if (showCustom) document.getElementById('custom-amount')?.focus({ preventScroll: true });
+  }, [showCustom]);
 
   const tipAmount = custom
-    ? Math.round((parseFloat(custom) || 0) * 100)
+    ? Math.round((parseFloat(custom.replace(',', '.')) || 0) * 100)
     : selectedAmount;
 
   const tooHigh = tipAmount !== null && tipAmount > TIP_MAX_CENTS;
@@ -68,20 +73,20 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
       {/* Custom amount — a small link that reveals the input on click. */}
       {!showCustom ? (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
-          <TextAction onClick={() => { setShowCustom(true); setSelectedAmount(null); }}>{t('customAmount')}</TextAction>
+          <TextAction onClick={() => setShowCustom(true)}>{t('customAmount')}</TextAction>
         </div>
       ) : (
         <div className="dg-reveal" style={{ marginTop: 12 }}>
           <PayField
             id="custom-amount"
-            type="number" inputMode="decimal" placeholder={t('customAmount')} value={custom} autoFocus
+            type="text" inputMode="decimal" autoComplete="off" placeholder={t('otherAmount')} value={custom}
             // The field had no label at all, only a placeholder — which
             // disappears the moment anything is typed, leaving a screen
             // reader with an unnamed number box on the payment screen.
             ariaLabel={t('customAmount')}
             prefix={currencySymbol || undefined}
             // At most two decimals: 12,345 € was accepted, then shown as 12,35 €.
-            onChange={e => { if (/^\d*([.,]\d{0,2})?$/.test(e.target.value)) { setCustom(e.target.value); setSelectedAmount(null); } }}
+            onChange={e => { if (/^\d*([.,]\d{0,2})?$/.test(e.target.value)) { setCustom(e.target.value); } }}
             error={customInvalid
               ? (tooHigh
                 ? t('maxAmount', { max: fmtCents.format(TIP_MAX_CENTS / 100) })
@@ -91,17 +96,17 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
         </div>
       )}
 
-      {/* Service fee — single line + an info button that explains it. */}
+      {/* What will be charged: tip, service fee, total (UX-04). */}
       {hasAmount && tipAmount && (
-        <FeeLine
-          marginTop={showCustom ? 12 : 4}
-          breakdown={t('feeBreakdown', {
-            tip: fmt.format(tipAmount / 100),
-            fee: fmtCents.format(serviceFee / 100),
-          })}
-          total={t('feeTotal', { total: fmtCents.format(totalAmount / 100) })}
+        <TipSummary
+          marginTop={showCustom ? 16 : 8}
+          labels={{ tip: t('summaryTip'), fee: t('summaryFee'), total: t('summaryTotal') }}
+          tip={fmtCents.format(tipAmount / 100)}
+          fee={fmtCents.format(serviceFee / 100)}
+          total={fmtCents.format(totalAmount / 100)}
+          perPerson={null}
           info={t('feeInfo')}
-          infoLabel={t('feeInfo')}
+          infoLabel={t('feeInfoLabel')}
         />
       )}
 

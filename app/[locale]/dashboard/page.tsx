@@ -14,15 +14,6 @@ import { readGettingStarted } from '@/lib/dashboard/getting-started';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { PageHeader } from '@/components/dashboard/ui';
 
-// Line-style card icon for the banking prompts, matching the dashboard set.
-function CardIcon({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="4" width="14" height="9" rx="1.5" /><path d="M1 7h14" /><path d="M3.5 10.5h2.5" />
-    </svg>
-  );
-}
-
 function StatusBadge({ status, label }: { status: string; label: string }) {
   const map: Record<string, [string, string]> = {
     succeeded: ['var(--success-bg)', 'var(--success)'],
@@ -64,7 +55,6 @@ export default async function DashboardPage({
       .eq('user_id', user!.id),
   ]);
 
-  const isGroupAdmin = roles?.some((r) => r.role === 'group_admin' || r.role === 'super_admin') ?? false;
 
   // The Pro teaser is a group-admin concern: nobody else can act on it, and
   // showing an employee an upsell for their manager's subscription is noise.
@@ -207,6 +197,24 @@ export default async function DashboardPage({
   const currency = recentTransactions[0]?.currency ?? 'EUR';
   const fmt = new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 });
   const totalEarnings = allTimeRows?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
+  const hasEarnings = totalEarnings > 0;
+
+  const statsGrid = (
+    <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
+      <StatCard
+        label={t('thisWeek')}
+        value={thisWeekTotal / 100}
+        format="currency"
+        currency={currency}
+        locale={locale}
+        sub={t('home.last7days')}
+        trend={trend}
+        trendLabel={t('home.trendVsPrev')}
+      />
+      <StatCard label={t('totalEarned')} value={totalEarnings / 100} format="currency" currency={currency} locale={locale} sub={teamScope ? `${t('allTime')} · ${t('home.wholeTeam')}` : t('allTime')} />
+      <StatCard label={t('transactions')} value={thisWeekTxs.length} format="count" locale={locale} sub={t('home.last7days')} />
+    </div>
+  );
 
   return (
     <div className="stagger">
@@ -214,6 +222,11 @@ export default async function DashboardPage({
         title={t('home.dashboard')}
         subtitle={`${t('welcome')} ${staffProfile?.full_name ?? (user!.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? ''}`}
       />
+
+      {/* The figure the manager opens the app for, first: it sat ~900 px down
+          on a phone, under the checklist and the review card (UX-08). A brand
+          new account with nothing earned yet still starts on the checklist. */}
+      {hasEarnings && statsGrid}
 
       {/* Before anything else on the page: on a new account every card below
           this one shows a zero, and a screen full of zeroes with no next step
@@ -245,49 +258,8 @@ export default async function DashboardPage({
         />
       )}
 
-      {/* Group admin without any staff profile yet → invite them to join as staff */}
-      {isGroupAdmin && !staffProfile && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 14,
-          background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.05))',
-          border: '1px solid rgba(229,122,151,0.25)',
-          borderRadius: 'var(--radius)', padding: '16px 18px', marginBottom: 20,
-        }}>
-          <div style={{ display: 'flex', flexShrink: 0, color: 'var(--accent)' }}><CardIcon size={24} /></div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
-              {t('home.adminReceiveTipsTitle')}
-            </div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5 }}>
-              {t('home.adminReceiveTipsBody')}
-            </div>
-          </div>
-          <Link href="/dashboard/paiements" style={{
-            padding: '9px 16px', borderRadius: 10, border: 'none',
-            background: 'var(--accent)', color: '#fff',
-            fontSize: 13, fontWeight: 600, textDecoration: 'none',
-            whiteSpace: 'nowrap', flexShrink: 0,
-          }}>
-            {t('home.adminReceiveTipsCta')}
-          </Link>
-        </div>
-      )}
 
-
-      <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
-        <StatCard label={t('totalEarned')} value={totalEarnings / 100} format="currency" currency={currency} locale={locale} sub={teamScope ? `${t('allTime')} · ${t('home.wholeTeam')}` : t('allTime')} />
-        <StatCard
-          label={t('thisWeek')}
-          value={thisWeekTotal / 100}
-          format="currency"
-          currency={currency}
-          locale={locale}
-          sub={t('home.last7days')}
-          trend={trend}
-          trendLabel={t('home.trendVsPrev')}
-        />
-        <StatCard label={t('transactions')} value={thisWeekTxs.length} format="count" locale={locale} sub={t('home.last7days')} />
-      </div>
+      {!hasEarnings && statsGrid}
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius)' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -155,23 +155,11 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
           </div>
         ) : (
           <div style={LIST}>
-            {payableStaff.map((s, i) => (
-              <Link
-                key={s.staff_id!}
-                href={`/pay/${s.staff_id}`}
-                className="dg-row"
-                style={{ ...ROW, ...divider(!showTeamCard && i === payableStaff.length - 1) }}
-              >
-                <Avatar src={s.avatar_url} alt="" size={48} ring={0} />
-                <span style={ROW_NAME}>{s.full_name}</span>
-                <span style={{ color: 'var(--text-3)' }}><PayIcon name="chevron" size={20} /></span>
-              </Link>
-            ))}
-
             {/* Whole-team split — when 2+ members, or when nobody has joined yet
-                (then it is the only row); shown last, heart icon. */}
+                (then it is the only row). First, not last: a customer who does
+                not know the waiter's name looks for "everyone" (UX-16). */}
             {showTeamCard && (
-              <Link href={`/pay/group/${establishmentId}/team`} className="dg-row" style={ROW}>
+              <Link href={`/pay/group/${establishmentId}/team`} className="dg-row" style={{ ...ROW, ...divider(payableStaff.length === 0) }}>
                 <span aria-hidden style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent-muted)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <PayIcon name="heart" size={22} color="var(--brand)" />
                 </span>
@@ -179,6 +167,20 @@ async function GroupTipContent({ establishmentId, t }: { establishmentId: string
                 <span style={{ color: 'var(--text-3)' }}><PayIcon name="chevron" size={20} /></span>
               </Link>
             )}
+
+            {payableStaff.map((s, i) => (
+              <Link
+                key={s.staff_id!}
+                href={`/pay/${s.staff_id}`}
+                className="dg-row"
+                style={{ ...ROW, ...divider(i === payableStaff.length - 1) }}
+              >
+                <Avatar src={s.avatar_url} name={s.full_name} alt="" size={48} ring={0} />
+                <span style={ROW_NAME}>{s.full_name}</span>
+                <span style={{ color: 'var(--text-3)' }}><PayIcon name="chevron" size={20} /></span>
+              </Link>
+            ))}
+
           </div>
         )}
 

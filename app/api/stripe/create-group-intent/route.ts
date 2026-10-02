@@ -159,7 +159,9 @@ export async function POST(request: NextRequest) {
       {
         amount,
         currency: currency.toLowerCase(),
-        automatic_payment_methods: { enabled: true },
+        // Card only (Apple Pay and Google Pay are cards): must match the
+        // `paymentMethodTypes` of components/payment/TipPaymentForm.tsx.
+        payment_method_types: ['card'],
         transfer_group: transferGroup,
         ...(customerEmail ? { receipt_email: customerEmail } : {}),
         payment_method_options: {

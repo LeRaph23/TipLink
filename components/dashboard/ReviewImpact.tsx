@@ -34,12 +34,16 @@ export async function ReviewImpact({ impact }: { impact: Impact }) {
         flexWrap: 'wrap',
       }}
     >
-      <div style={{
-        fontSize: 26, fontWeight: 700, color: 'var(--text)',
-        letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-      }}>
-        {t('ratio', { clicks: impact.clickCount, tips: impact.tipCount })}
-      </div>
+      {/* No ratio without a review link: "0/5" read as a rating out of five
+          (UI/UX audit, UX-08). */}
+      {impact.hasReviewLink !== false && (
+        <div style={{
+          fontSize: 26, fontWeight: 700, color: 'var(--text)',
+          letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+        }}>
+          {t('ratio', { clicks: impact.clickCount, tips: impact.tipCount })}
+        </div>
+      )}
       <div style={{ flex: '1 1 220px', minWidth: 0 }}>
         <h3 style={{ ...cardTitleStyle, marginBottom: 2 }}>
           {impact.hasReviewLink === false ? t('noLinkTitle') : impact.clickCount > 0 ? t('title') : t('emptyTitle')}

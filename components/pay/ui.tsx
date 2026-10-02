@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { AVATAR_INK, avatarTint, initials } from '@/lib/avatar';
 
 /**
  * Building blocks of the tip pages (design v2, "Digitip Fondations").
@@ -167,11 +168,23 @@ export function BandBody({ children }: { children: ReactNode }) {
   return <p style={{ font: '400 16px/24px var(--font)', color: 'var(--text-2)', marginTop: 8, textWrap: 'pretty' }}>{children}</p>;
 }
 
-export function Avatar({ src, alt = '', size = 80, ring = 4 }: { src?: string | null; alt?: string; size?: number; ring?: number }) {
+export function Avatar({ src, alt = '', name, size = 80, ring = 4 }: { src?: string | null; alt?: string; name?: string | null; size?: number; ring?: number }) {
   const box: CSSProperties = {
     width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'block',
     border: ring ? `${ring}px solid var(--bg)` : undefined, background: 'var(--surface-3)',
   };
+  // Initials on a soft tint when the name is known: a grey silhouette read
+  // as an empty profile (UI/UX audit, UX-16).
+  if (!src && name) {
+    return (
+      <span aria-hidden="true" style={{
+        ...box, display: 'grid', placeItems: 'center', background: avatarTint(name), color: AVATAR_INK,
+        font: `700 ${Math.round(size * 0.34)}px/1 var(--font)`, letterSpacing: '0.02em',
+      }}>
+        {initials(name)}
+      </span>
+    );
+  }
   if (!src) {
     return (
       <span aria-hidden="true" style={{ ...box, display: 'grid', placeItems: 'center', color: 'var(--text-3)' }}>

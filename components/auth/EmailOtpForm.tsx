@@ -139,7 +139,7 @@ export function EmailOtpForm({
             type="button"
             onClick={() => void send()}
             disabled={!emailValid || busy}
-            style={{ ...buttonStyle, opacity: !emailValid || busy ? 0.5 : 1 }}
+            style={{ ...buttonStyle, ...(!emailValid || busy ? disabledButton : {}) }}
           >
             {busy ? t('sendingCode') : (submitLabel ?? t('sendCode'))}
           </button>
@@ -191,7 +191,7 @@ export function EmailOtpForm({
             type="button"
             onClick={() => void verify(code)}
             disabled={code.length !== CODE_LENGTH || busy}
-            style={{ ...buttonStyle, opacity: code.length !== CODE_LENGTH || busy ? 0.5 : 1 }}
+            style={{ ...buttonStyle, ...(code.length !== CODE_LENGTH || busy ? disabledButton : {}) }}
           >
             {busy ? t('verifyingCode') : t('verifyCode')}
           </button>
@@ -243,11 +243,15 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
+// A button that cannot be pressed yet: grey and readable, not a washed-out
+// pink with white text (UI/UX audit, UX-20).
+const disabledButton: React.CSSProperties = { background: 'var(--surface-3)', color: 'var(--text-2)', cursor: 'not-allowed' };
+
 const buttonStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px 16px',
   borderRadius: 'var(--radius)',
-  background: 'var(--accent)',
+  background: 'var(--accent-strong)',
   color: 'var(--accent-fg)',
   fontSize: 14,
   fontWeight: 600,

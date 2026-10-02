@@ -157,7 +157,7 @@ export default async function StaffTipPage({
       <PayColumn>
         {/* Who you're thanking is the strongest thing on the screen. */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: -56, position: 'relative' }}>
-          <Avatar src={staff.avatar_url} alt={staff.full_name} size={80} />
+          <Avatar src={staff.avatar_url} name={staff.full_name} alt={staff.full_name} size={80} />
           <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)', marginTop: 12 }}>{t('tipFor')}</p>
           <PayTitle>{staff.full_name}</PayTitle>
           {staff.establishment_name && (
