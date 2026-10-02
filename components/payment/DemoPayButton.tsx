@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { moneyFormatter } from '@/lib/money';
+import { PayButton } from './tip-ui';
 
 interface Props {
   // Single-staff tip vs. whole-team (group) tip.
@@ -40,30 +41,18 @@ export function DemoPayButton({ kind, targetId, amount, currency }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        padding: '8px 12px', borderRadius: 10,
+        padding: '8px 12px', borderRadius: 'var(--radius-sm)',
         background: 'var(--surface-2)', border: '1px dashed var(--border)',
-        color: 'var(--text-3)', fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
+        color: 'var(--text-2)', font: '500 12px/16px var(--font)',
       }}>
         🧪 {t('demo.banner')}
       </div>
-      <button
-        className="btn-accent"
-        type="button"
-        onClick={pay}
-        disabled={going}
-        style={{
-          width: '100%', height: 58, borderRadius: 14, border: 'none',
-          background: going ? 'var(--accent-muted)' : 'var(--accent)',
-          color: going ? 'var(--accent)' : '#fff',
-          cursor: going ? 'not-allowed' : 'pointer',
-          fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em', transition: 'transform var(--dur-1) var(--ease-spring), border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out)',
-        }}
-      >
+      <PayButton onClick={pay} loading={going}>
         {going ? t('processingButton') : t('demo.payButton', { amount: fmt.format(amount / 100) })}
-      </button>
+      </PayButton>
     </div>
   );
 }

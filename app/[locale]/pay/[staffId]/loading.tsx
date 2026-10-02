@@ -1,33 +1,33 @@
-export default function Loading() {
+import { getTranslations } from 'next-intl/server';
+import { Band, Headline, LogoShimmer, PayColumn, PayMain, Shimmer } from '@/components/pay/ui';
+
+/**
+ * Same geometry as the finished page, so nothing jumps when it streams in. The
+ * headline is static text, so it shows straight away instead of a shimmer.
+ */
+export default async function Loading() {
+  const t = await getTranslations('pay');
   return (
-    <main style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)', padding: '24px',
-    }}>
-      <div style={{ width: '100%', maxWidth: 380 }}>
-        {/* Wordmark skeleton */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <div className="shimmer" style={{ width: 80, height: 16, borderRadius: 8 }} />
-        </div>
-        {/* Staff card skeleton */}
-        <div style={{ padding: 26, borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border-subtle)', marginBottom: 12, textAlign: 'center' }}>
-          <div className="shimmer" style={{ width: 68, height: 68, borderRadius: '50%', margin: '0 auto 12px' }} />
-          <div className="shimmer" style={{ width: 140, height: 18, borderRadius: 6, margin: '0 auto 8px' }} />
-          <div className="shimmer" style={{ width: 100, height: 13, borderRadius: 5, margin: '0 auto' }} />
-        </div>
-        {/* Amount grid skeleton */}
-        <div style={{ padding: 20, borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border-subtle)', marginBottom: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-            {[1, 2, 3, 4].map(i => <div key={i} className="shimmer" style={{ height: 64, borderRadius: 12 }} />)}
+    <PayMain>
+      <div aria-busy="true">
+        <Band logo={<LogoShimmer />}>
+          <Headline>{t('tipHeadline')}</Headline>
+          <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)', marginTop: 4 }}>{t('tipSubhead')}</p>
+        </Band>
+        <PayColumn>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -56, position: 'relative' }}>
+            <span className="dg-shimmer" style={{ width: 80, height: 80, borderRadius: '50%', border: '4px solid var(--bg)' }} />
+            <Shimmer w={150} h={14} style={{ marginTop: 15 }} />
+            <Shimmer w={170} h={24} style={{ marginTop: 10 }} />
+            <Shimmer w={130} h={14} style={{ marginTop: 8 }} />
           </div>
-        </div>
-        {/* Payment buttons skeleton */}
-        <div style={{ padding: 20, borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border-subtle)' }}>
-          <div className="shimmer" style={{ height: 52, borderRadius: 12, marginBottom: 10 }} />
-          <div className="shimmer" style={{ height: 52, borderRadius: 12 }} />
-        </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 20 }}>
+            {[0, 1, 2].map(i => <Shimmer key={i} h={64} r={10} />)}
+          </div>
+          <Shimmer w={150} h={14} style={{ margin: '19px auto 0' }} />
+          <Shimmer h={56} r={10} style={{ marginTop: 31 }} />
+        </PayColumn>
       </div>
-    </main>
+    </PayMain>
   );
 }

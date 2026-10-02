@@ -4,6 +4,9 @@ import type Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { ReviewInvite } from '@/components/pay/ReviewInvite';
+import {
+  Band, BandBody, DemoBadge, Logo, PayColumn, PayMain, PayTitle, StatusDot, btnProps,
+} from '@/components/pay/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,52 +28,20 @@ interface Props {
   }>;
 }
 
-function StatusIcon({ status }: { status: RedirectStatus }) {
-  if (status === 'succeeded') {
-    return (
-      <div className="check-in" style={{
-        width: 80, height: 80, borderRadius: '50%', margin: '0 auto 24px',
-        background: 'var(--success-bg)',
-        border: '1.5px solid color-mix(in oklch, var(--success) 40%, transparent)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          {/* Drawn, not stamped. Someone has just handed over money on a
-              stranger's phone; the one thing this screen owes them is a moment
-              that reads as deliberate. Deliberately nothing more than that:
-              no bounce, no counter, no celebration. A receipt states the
-              amount, it does not perform it. */}
-          <path className="draw-check" d="M7 17l7 7 13-13" />
-        </svg>
-      </div>
-    );
-  }
-  if (status === 'processing') {
-    return (
-      <div style={{
-        width: 80, height: 80, borderRadius: '50%', margin: '0 auto 24px',
-        background: 'var(--warning-bg)',
-        border: '1.5px solid color-mix(in oklch, var(--warning) 40%, transparent)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="var(--warning)" strokeWidth="2.5" strokeLinecap="round">
-          <circle cx="17" cy="17" r="12" />
-          <path d="M17 10v7l4 4" />
-        </svg>
-      </div>
-    );
-  }
-  // failed / requires_payment_method
+/* One receipt line. The total is the only figure set large. */
+function ReceiptRow({ k, v, strong, last }: { k: string; v: string; strong?: boolean; last?: boolean }) {
   return (
     <div style={{
-      width: 80, height: 80, borderRadius: '50%', margin: '0 auto 24px',
-      background: 'var(--error-bg)',
-      border: '1.5px solid color-mix(in oklch, var(--error) 40%, transparent)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, padding: '12px 0',
+      borderBottom: last ? 'none' : '1px solid var(--border-subtle)',
     }}>
-      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="var(--error)" strokeWidth="2.5" strokeLinecap="round">
-        <path d="M10 10l14 14M24 10L10 24" />
-      </svg>
+      <span style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)' }}>{k}</span>
+      <span style={{
+        font: strong ? '600 20px/28px var(--font-display)' : '500 14px/20px var(--font)',
+        color: 'var(--text)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', minWidth: 0, overflowWrap: 'anywhere',
+      }}>
+        {v}
+      </span>
     </div>
   );
 }
@@ -167,33 +138,17 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
 
   if ((!isDemo && !sp.payment_intent) || foreignIntent) {
     return (
-      <main style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--bg)', padding: 24,
-      }}>
-        <div style={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
-          <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800,
-            letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 10,
-          }}>
-            {t('nothingToShow')}
-          </h1>
-          <p style={{ fontSize: 14.5, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 24 }}>
-            {t('nothingToShowBody')}
-          </p>
-          <Link
-            href="/"
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              minHeight: 44, padding: '0 20px', borderRadius: 12,
-              border: '1px solid var(--border)', background: 'var(--surface)',
-              color: 'var(--text-2)', fontSize: 14, fontWeight: 600, textDecoration: 'none',
-            }}
-          >
+      <PayMain pb={32}>
+        <Band tone="neutral" pb={48} logo={<Logo />}>
+          <PayTitle>{t('nothingToShow')}</PayTitle>
+          <BandBody>{t('nothingToShowBody')}</BandBody>
+        </Band>
+        <PayColumn style={{ display: 'flex', flexDirection: 'column', marginTop: 24 }}>
+          <Link href="/" {...btnProps('secondary', 'L', { full: true })}>
             {t('nothingToShowCta')}
           </Link>
-        </div>
-      </main>
+        </PayColumn>
+      </PayMain>
     );
   }
 
@@ -266,11 +221,6 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
         ? t('processingBody')
         : t('failedBody');
 
-  const glowColor =
-    status === 'succeeded' ? 'rgba(34,197,94,0.08)' :
-    status === 'processing' ? 'rgba(251,191,36,0.08)' :
-    'rgba(239,68,68,0.08)';
-
   const money = (cents: number) =>
     new Intl.NumberFormat(locale, { style: 'currency', currency: currency ?? 'EUR', minimumFractionDigits: 2 }).format(cents / 100);
   const fmtAmount = amountCents !== null && currency ? money(amountCents) : null;
@@ -279,67 +229,43 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
     ? `/receipt/${receiptTransactionId}?pi=${encodeURIComponent(sp.payment_intent)}&cs=${encodeURIComponent(sp.payment_intent_client_secret)}`
     : null;
 
-  return (
-    <main style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)', padding: '24px', position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 400, borderRadius: '50%', background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+  // Rose only for a payment that went through: there is nothing to celebrate
+  // on a failure, and a pending one is not yet good news.
+  const succeeded = status === 'succeeded';
+  const receiptRows: Array<{ k: string; v: string; strong?: boolean }> = [];
+  if (tipCents !== null) receiptRows.push({ k: t('successTip'), v: money(tipCents) });
+  if (feeCents !== null) receiptRows.push({ k: t('successFee'), v: money(feeCents) });
+  if (fmtAmount) receiptRows.push({ k: tipCents !== null ? t('successTotal') : t('successAmount'), v: fmtAmount, strong: true });
+  if (staffName) receiptRows.push({ k: t('sentTo'), v: staffName });
 
-      {/* stagger, so the tick lands first and the receipt settles under it,
-          rather than the whole screen arriving at once. */}
-      <div className="stagger" style={{ width: '100%', maxWidth: 380, textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        {isDemo && (
+  return (
+    <PayMain pb={32}>
+      <Band tone={succeeded ? 'brand' : 'neutral'} pb={48} logo={<Logo />}>
+        {isDemo && <DemoBadge>🧪 {t('demo.badge')}</DemoBadge>}
+        {succeeded ? (
+          <StatusDot tone="success" icon="check" />
+        ) : status === 'processing' ? (
+          <StatusDot tone="warning" icon="clock" />
+        ) : (
+          <StatusDot tone="error" icon="x" />
+        )}
+        <PayTitle>{heading}</PayTitle>
+        <BandBody>{subheading}</BandBody>
+      </Band>
+
+      <PayColumn>
+        {receiptRows.length > 0 && (
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 14,
-            padding: '4px 12px', borderRadius: 100,
-            background: 'var(--surface-2)', border: '1px dashed var(--border)',
-            color: 'var(--text-3)', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.06em',
+            marginTop: 16, padding: '4px 20px', borderRadius: 'var(--radius-lg)',
+            background: 'var(--surface)', border: '1px solid var(--border-subtle)',
           }}>
-            🧪 {t('demo.badge')}
+            {receiptRows.map((r, i) => (
+              <ReceiptRow key={r.k} k={r.k} v={r.v} strong={r.strong} last={i === receiptRows.length - 1} />
+            ))}
           </div>
         )}
-        <StatusIcon status={status} />
 
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 8 }}>
-          {heading}
-        </h1>
-        <p style={{ fontSize: 14.5, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 28 }}>
-          {subheading}
-        </p>
-
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)', padding: 20, textAlign: 'left', marginBottom: 20,
-          boxShadow: 'var(--shadow)',
-        }}>
-          {tipCents !== null && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successTip')}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{money(tipCents)}</span>
-            </div>
-          )}
-          {feeCents !== null && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('successFee')}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{money(feeCents)}</span>
-            </div>
-          )}
-          {fmtAmount && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: staffName ? '1px solid var(--border-subtle)' : undefined }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{tipCents !== null ? t('successTotal') : t('successAmount')}</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmtAmount}</span>
-            </div>
-          )}
-          {staffName && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('sentTo')}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{staffName}</span>
-            </div>
-          )}
-        </div>
-
-        {status === 'succeeded' && reviewUrl && (
+        {succeeded && reviewUrl && (
           <ReviewInvite
             reviewUrl={reviewUrl}
             staffName={staffName}
@@ -347,37 +273,30 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
           />
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {receiptHref && (
-            <Link href={receiptHref} style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '10px 20px', borderRadius: 'var(--radius)',
-              background: 'var(--surface-2)', border: '1px solid var(--border)',
-              color: 'var(--text)', fontSize: 13, fontWeight: 600, textDecoration: 'none',
-            }}>
-              {t('successReceipt')}
+        {succeeded ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 16 }}>
+            {receiptHref && (
+              <Link href={receiptHref} {...btnProps('secondary', 'L', { full: true })}>
+                {t('successReceipt')}
+              </Link>
+            )}
+            <Link href="/" {...btnProps('ghost', 'M', { full: true })}>
+              {t('successBack')}
             </Link>
-          )}
-          {status !== 'succeeded' && staffId && (
-            <Link href={`/pay/${staffId}`} style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '10px 20px', borderRadius: 'var(--radius)',
-              background: 'var(--accent)', color: 'var(--accent-fg)',
-              fontSize: 13.5, fontWeight: 600, textDecoration: 'none',
-            }}>
-              {t('failedRetry')} →
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
+            {staffId && (
+              <Link href={`/pay/${staffId}`} {...btnProps('primary', 'L', { full: true })}>
+                {t('failedRetry')}
+              </Link>
+            )}
+            <Link href="/" {...btnProps('ghost', 'L', { full: true })}>
+              {t('successBack')}
             </Link>
-          )}
-          <Link href="/" style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '10px 20px', borderRadius: 'var(--radius)',
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
-            color: 'var(--text-2)', fontSize: 13, fontWeight: 500, textDecoration: 'none',
-          }}>
-            ← {t('successBack')}
-          </Link>
-        </div>
-      </div>
-    </main>
+          </div>
+        )}
+      </PayColumn>
+    </PayMain>
   );
 }

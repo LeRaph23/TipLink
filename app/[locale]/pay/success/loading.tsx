@@ -1,3 +1,5 @@
+import { Band, LogoShimmer, PayColumn, PayMain, Shimmer } from '@/components/pay/ui';
+
 /**
  * Shown while the success page confirms the payment.
  *
@@ -7,27 +9,28 @@
  * after their card was charged, which is the single worst moment in the
  * product to show nothing at all.
  *
- * Deliberately neutral: it must not pre-empt the outcome with a green tick,
- * since the status is exactly what is still being established.
+ * Deliberately neutral: it must not pre-empt the outcome with a green tick or
+ * the rose field, since the status is exactly what is still being established.
  */
 export default function Loading() {
   return (
-    <main style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)', padding: 24,
-    }}>
-      <div style={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
-        <div className="shimmer" style={{ width: 72, height: 72, borderRadius: '50%', margin: '0 auto 20px' }} />
-        <div className="shimmer" style={{ width: 200, height: 24, borderRadius: 8, margin: '0 auto 10px' }} />
-        <div className="shimmer" style={{ width: 260, height: 14, borderRadius: 6, margin: '0 auto 28px' }} />
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)', padding: 20,
-        }}>
-          <div className="shimmer" style={{ width: '100%', height: 16, borderRadius: 6, marginBottom: 12 }} />
-          <div className="shimmer" style={{ width: '70%', height: 16, borderRadius: 6 }} />
-        </div>
+    <PayMain pb={32}>
+      <div aria-busy="true">
+        <Band tone="neutral" pb={48} logo={<LogoShimmer />}>
+          <Shimmer w={64} h={64} r={999} style={{ margin: '0 auto 16px' }} />
+          <Shimmer w={200} h={24} style={{ margin: '0 auto' }} />
+          <Shimmer w={260} h={16} style={{ margin: '12px auto 0', maxWidth: '100%' }} />
+        </Band>
+        <PayColumn>
+          <div style={{
+            marginTop: 16, padding: '16px 20px', borderRadius: 'var(--radius-lg)',
+            background: 'var(--surface)', border: '1px solid var(--border-subtle)',
+          }}>
+            <Shimmer w="100%" h={16} style={{ marginBottom: 16 }} />
+            <Shimmer w="70%" h={16} />
+          </div>
+        </PayColumn>
       </div>
-    </main>
+    </PayMain>
   );
 }

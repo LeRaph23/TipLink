@@ -4,6 +4,10 @@ import type { Appearance } from '@stripe/stripe-js';
 // page: `theme: 'night'` on the light tip page drew near-invisible labels, and
 // `fontFamily: 'inherit'` fell back to a serif (sixth QA run). Colours follow
 // the site theme, and the font is a system stack the iframe can resolve.
+//
+// The values mirror the v2 tokens in app/globals.css (the iframe cannot read
+// CSS variables): rose 600 is the light accent because #E57A97 fails contrast
+// on white, rose 400 the dark one; fields take the 10 px control radius.
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 export function tipElementsAppearance(): Appearance {
@@ -12,25 +16,41 @@ export function tipElementsAppearance(): Appearance {
     ? {
         theme: 'night',
         variables: {
-          colorPrimary: '#E57A97',
-          colorText: '#f4f4f6',
-          colorTextSecondary: '#c9c9d4',
-          colorTextPlaceholder: '#8d8d9c',
-          borderRadius: '12px',
+          colorPrimary: '#e57a97',
+          colorBackground: '#1b1617',
+          colorText: '#f6f2f3',
+          colorTextSecondary: '#c3bcbd',
+          colorTextPlaceholder: '#a49c9e',
+          colorDanger: '#ff9786',
+          borderRadius: '10px',
           fontFamily: FONT,
+          fontSizeBase: '16px',
         },
-        rules: { '.Label': { color: '#e6e6ee', fontWeight: '600' } },
+        rules: {
+          '.Label': { color: '#c3bcbd', fontWeight: '500', fontSize: '14px' },
+          '.Input': { border: '1px solid #383132', boxShadow: 'none' },
+          '.Input:focus': { border: '1px solid #e57a97', boxShadow: 'inset 0 0 0 1px #e57a97' },
+          '.Tab': { border: '1px solid #383132', boxShadow: 'none' },
+        },
       }
     : {
         theme: 'stripe',
         variables: {
-          colorPrimary: '#E57A97',
+          colorPrimary: '#af4a69',
           colorBackground: '#ffffff',
-          colorText: '#0f1020',
-          colorTextSecondary: '#4b4d63',
-          borderRadius: '12px',
+          colorText: '#171213',
+          colorTextSecondary: '#5a5355',
+          colorTextPlaceholder: '#6e6768',
+          colorDanger: '#a43c2f',
+          borderRadius: '10px',
           fontFamily: FONT,
+          fontSizeBase: '16px',
         },
-        rules: { '.Label': { color: '#2a2b3d', fontWeight: '600' } },
+        rules: {
+          '.Label': { color: '#5a5355', fontWeight: '500', fontSize: '14px' },
+          '.Input': { border: '1px solid #e4dedf', boxShadow: 'none' },
+          '.Input:focus': { border: '1px solid #af4a69', boxShadow: 'inset 0 0 0 1px #af4a69' },
+          '.Tab': { border: '1px solid #e4dedf', boxShadow: 'none' },
+        },
       };
 }

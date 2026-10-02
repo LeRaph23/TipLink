@@ -11,7 +11,8 @@ import {
   useElements,
   useStripe,
 } from '@stripe/react-stripe-js';
-import { Icon } from '@/components/ambassadeur/icons';
+import { PayError } from '@/components/pay/ui';
+import { PayButton, PayField, TextAction, useSiteTheme } from './tip-ui';
 import { moneyFormatter } from '@/lib/money';
 
 interface Props {
@@ -76,6 +77,8 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
       : `${Date.now()}-${Math.random()}`
   );
   const [customerEmail, setCustomerEmail] = useState('');
+  const walletColor = useSiteTheme() === 'dark' ? 'white' : 'black';
+  const walletTheme = { applePay: walletColor, googlePay: walletColor } as const;
 
   // The page locale, not the device's: the server rendered "€2" and the
   // browser "2 €", a hydration mismatch on every tip page (sixth QA run).
@@ -139,86 +142,47 @@ function InnerCheckout({ staffId, amount, tipAmount, currency, expectedEstablish
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 12,
-      marginTop: 18,
-    }}>
-      {error && (
-        <p style={{ fontSize: 12, color: 'var(--error)', textAlign: 'center', margin: 0 }}>
-          {error}
-        </p>
-      )}
+    <>
+      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {error && <PayError>{error}</PayError>}
 
-      {/* Apple Pay / Google Pay / Link */}
-      <ExpressCheckoutElement
-        onConfirm={handlePay}
-        options={{
-          buttonHeight: 55,
-          buttonType: { applePay: 'tip', googlePay: 'pay' },
-          buttonTheme: { applePay: 'black', googlePay: 'black' },
-          layout: { maxColumns: 1, maxRows: 3 },
-        }}
-      />
-
-      {/* Card — a small text link instead of a big second button. */}
-      {!showCard ? (
-        <button
-          type="button"
-          onClick={() => setShowCard(true)}
-          style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            margin: '2px auto', padding: 6, background: 'none', border: 'none',
-            color: 'var(--text-2)', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer', fontFamily: 'var(--font)',
-            textDecoration: 'underline', textUnderlineOffset: 3,
+        {/* Apple Pay / Google Pay / Link. White in dark mode: a black button
+            on a near-black page has no visible edge. */}
+        <ExpressCheckoutElement
+          onConfirm={handlePay}
+          options={{
+            buttonHeight: 55,
+            buttonType: { applePay: 'tip', googlePay: 'pay' },
+            buttonTheme: walletTheme,
+            layout: { maxColumns: 1, maxRows: 3 },
           }}
-        >
-          <Icon name="card" size={15} /> {t('payButton')}
-        </button>
-      ) : (
-        <>
-          <PaymentElement options={{ layout: 'tabs' }} onChange={() => setError(null)} />
-          <button
-            className="btn-accent"
-            type="button"
-            onClick={handlePay}
-            disabled={!stripe || !elements || isLoading}
-            style={{
-              width: '100%', height: 58, borderRadius: 14, border: 'none',
-              background: isLoading ? 'var(--accent-muted)' : 'var(--accent)',
-              color: isLoading ? 'var(--accent)' : '#fff',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em',
-              transition: 'transform var(--dur-1) var(--ease-spring), border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out)',
-            }}
-          >
-            {isLoading ? t('processingButton') : `${t('pay')} ${fmt.format(amount / 100)}`}
-          </button>
-        </>
-      )}
+        />
+
+        {/* Card — a small text link instead of a big second button. */}
+        {!showCard ? (
+          <TextAction icon="card" onClick={() => setShowCard(true)}>{t('payButton')}</TextAction>
+        ) : (
+          <div className="dg-reveal" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+            <PaymentElement options={{ layout: 'tabs' }} onChange={() => setError(null)} />
+            <PayButton onClick={handlePay} disabled={!stripe || !elements} loading={isLoading}>
+              {isLoading ? t('processingButton') : `${t('pay')} ${fmt.format(amount / 100)}`}
+            </PayButton>
+          </div>
+        )}
+      </div>
 
       {/* Email — always visible, clearly optional */}
-      <div>
-        <label style={{
-          display: 'block', fontSize: 12, color: 'var(--text-3)',
-          marginBottom: 6, letterSpacing: '0.01em',
-        }}>
-          {t('yourEmail')}
-        </label>
-        <input
+      <div style={{ marginTop: 24 }}>
+        <PayField
+          id="tip-email"
           type="email"
+          autoComplete="email"
+          label={t('yourEmail')}
           value={customerEmail}
           onChange={e => setCustomerEmail(e.target.value)}
           placeholder={t('emailPlaceholder')}
-          style={{
-            width: '100%', padding: '12px', borderRadius: 10,
-            border: '1px solid var(--border)', background: 'var(--surface-2)',
-            color: 'var(--text)', fontSize: 16, fontFamily: 'inherit',
-            outline: 'none', boxSizing: 'border-box',
-          }}
         />
       </div>
-    </div>
+    </>
   );
 }
