@@ -12,6 +12,7 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import { Icon } from '@/components/ambassadeur/icons';
+import { moneyFormatter } from '@/lib/money';
 
 interface Props {
   establishmentId: string;
@@ -76,8 +77,7 @@ function InnerGroupCheckout({ establishmentId, amount, tipAmount, currency }: Pr
   // The page locale, not the device's: the server rendered "€2" and the
   // browser "2 €", a hydration mismatch on every tip page (sixth QA run).
   const pageLocale = locale;
-  const numberLocale = pageLocale === 'fr' ? 'fr-FR' : 'en-GB';
-  const fmt = new Intl.NumberFormat(numberLocale, { style: 'currency', currency, minimumFractionDigits: 2 });
+  const fmt = moneyFormatter(pageLocale, currency, 2);
 
   async function createIntent(): Promise<string | null> {
     try {

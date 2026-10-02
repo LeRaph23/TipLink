@@ -799,7 +799,9 @@ function FooterSection() {
               { label: t('footer.comparatifs'), href: '/comparatif' },
               { label: t('footer.about'),       href: '/a-propos' },
             ].map((l) => (
-              <Link key={l.href} href={l.href} className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</Link>
+              // These pages exist in French only: from /en they were 404s
+              // (seventh QA run), so they always point at the French page.
+              <Link key={l.href} href={l.href} locale="fr" className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</Link>
             ))}
           </div>
           <div>

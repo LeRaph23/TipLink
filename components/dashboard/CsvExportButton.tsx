@@ -1,5 +1,7 @@
 'use client';
 
+import { neutralizeFormula } from '@/lib/export/csv-safe';
+
 interface Transaction {
   id: string;
   amount: number;
@@ -26,7 +28,7 @@ export function CsvExportButton({ transactions, withEmployee = false }: Props) {
       ...transactions.map(tx => [
         tx.id.slice(0, 8).toUpperCase(),
         fmt.format(new Date(tx.created_at)),
-        ...(withEmployee ? [tx.employee ?? ''] : []),
+        ...(withEmployee ? [neutralizeFormula(tx.employee ?? '')] : []),
         (tx.amount / 100).toFixed(2).replace('.', ','),
         tx.status,
       ]),

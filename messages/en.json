@@ -92,7 +92,8 @@
     "hint": "PNG, JPG or WebP · max 2 MB",
     "notAuthenticated": "Not authenticated",
     "uploadFailed": "Upload failed",
-    "photoFailed": "Photo upload failed. Try again or continue without a photo."
+    "photoFailed": "Photo upload failed. Try again or continue without a photo.",
+    "unsupportedType": "Unsupported format: use a PNG, JPG or WebP image."
   },
   "notFound": {
     "title": "Page not found",
@@ -914,7 +915,7 @@
       "subtitle": "Team name, branding and default tip amounts.",
       "sectionBranding": "Branding",
       "logo": "Logo",
-      "logoHelp": "PNG or SVG, square format, max 2 MB.",
+      "logoHelp": "PNG, JPG or WebP, square format, max 2 MB.",
       "teamName": "Team name",
       "sectionTips": "Default tip amounts",
       "tipsHelp": "Shown on the tip page, from lowest to highest. Three or four amounts: leave the last box empty to offer only three.",

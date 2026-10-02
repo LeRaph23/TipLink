@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import type Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { ReviewInvite } from '@/components/pay/ReviewInvite';
@@ -147,7 +148,24 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   // so plainly beats both alternatives: claiming success is a lie, and
   // "Votre carte a été refusée" would alarm someone who simply opened a
   // bookmark.
-  if (!isDemo && !sp.payment_intent) {
+  // Whoever holds a PaymentIntent id is not its payer: the id shows up in
+  // logs, receipts and support emails. Stripe appends the intent's client
+  // secret to the return URL, so only the browser that paid carries it.
+  // Without it the page used to show the amount of any intent passed in
+  // (seventh QA run). A Stripe outage leaves `intent` null: the page then
+  // falls back to the query status, with no amount, as before.
+  let intent: Stripe.PaymentIntent | null = null;
+  if (!isDemo && sp.payment_intent) {
+    try {
+      intent = await stripe.paymentIntents.retrieve(sp.payment_intent);
+    } catch {
+      intent = null;
+    }
+  }
+  const foreignIntent =
+    intent !== null && (!sp.payment_intent_client_secret || intent.client_secret !== sp.payment_intent_client_secret);
+
+  if ((!isDemo && !sp.payment_intent) || foreignIntent) {
     return (
       <main style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -191,36 +209,27 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   let feeCents: number | null = null;
   let receiptTransactionId: string | null = null;
 
-  if (!isDemo && sp.payment_intent && sp.redirect_status === 'succeeded') {
-    try {
-      const pi = await stripe.paymentIntents.retrieve(sp.payment_intent);
-      status =
-        pi.status === 'succeeded' ? 'succeeded' :
-        pi.status === 'processing' ? 'processing' :
-        'requires_payment_method';
-      amountCents = pi.amount;
-      currency = pi.currency?.toUpperCase() ?? null;
-      staffId = pi.metadata?.staff_id ?? null;
-      establishmentId = pi.metadata?.establishment_id ?? null;
-      const tip = Number(pi.metadata?.tip_amount);
-      const fee = Number(pi.metadata?.service_fee);
-      tipCents = Number.isFinite(tip) && tip > 0 ? tip : null;
-      feeCents = tipCents !== null && Number.isFinite(fee) && fee > 0 ? fee : null;
-      receiptTransactionId = pi.metadata?.transaction_id ?? null;
-    } catch {
-      // Stripe unreachable — keep query-param as fallback
-    }
-  } else if (sp.payment_intent && sp.redirect_status !== 'succeeded') {
-    // Even on failure, try to get the staffId for the retry link
-    try {
-      const pi = await stripe.paymentIntents.retrieve(sp.payment_intent);
-      staffId = pi.metadata?.staff_id ?? null;
-      establishmentId = pi.metadata?.establishment_id ?? null;
-      amountCents = pi.amount;
-      currency = pi.currency?.toUpperCase() ?? null;
-    } catch {
-      // ignore
-    }
+  if (intent && sp.redirect_status === 'succeeded') {
+    const pi = intent;
+    status =
+      pi.status === 'succeeded' ? 'succeeded' :
+      pi.status === 'processing' ? 'processing' :
+      'requires_payment_method';
+    amountCents = pi.amount;
+    currency = pi.currency?.toUpperCase() ?? null;
+    staffId = pi.metadata?.staff_id ?? null;
+    establishmentId = pi.metadata?.establishment_id ?? null;
+    const tip = Number(pi.metadata?.tip_amount);
+    const fee = Number(pi.metadata?.service_fee);
+    tipCents = Number.isFinite(tip) && tip > 0 ? tip : null;
+    feeCents = tipCents !== null && Number.isFinite(fee) && fee > 0 ? fee : null;
+    receiptTransactionId = pi.metadata?.transaction_id ?? null;
+  } else if (intent && sp.redirect_status !== 'succeeded') {
+    // Even on failure, get the staffId for the retry link
+    staffId = intent.metadata?.staff_id ?? null;
+    establishmentId = intent.metadata?.establishment_id ?? null;
+    amountCents = intent.amount;
+    currency = intent.currency?.toUpperCase() ?? null;
   }
 
   // Only fetch the review link on success — there's nothing to celebrate (or

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { moneyFormatter } from '@/lib/money';
 
 interface Props {
   // Single-staff tip vs. whole-team (group) tip.
@@ -24,10 +25,7 @@ export function DemoPayButton({ kind, targetId, amount, currency }: Props) {
   // The page locale, not the device's: the server rendered "€2" and the
   // browser "2 €", a hydration mismatch on every tip page (sixth QA run).
   const pageLocale = locale;
-  const numberLocale = pageLocale === 'fr' ? 'fr-FR' : 'en-GB';
-  const fmt = new Intl.NumberFormat(numberLocale, {
-    style: 'currency', currency, minimumFractionDigits: 2,
-  });
+  const fmt = moneyFormatter(pageLocale, currency, 2);
 
   function pay() {
     setGoing(true);
