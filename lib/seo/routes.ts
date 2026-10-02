@@ -30,6 +30,7 @@ export const PUBLIC_PATHS: PublicPath[] = [
   { path: '/pricing', priority: 0.9, changeFrequency: 'weekly', locales: routing.locales },
   { path: '/contact', priority: 0.7, changeFrequency: 'monthly', locales: routing.locales },
   // Content hubs — FR-only, like the articles under them.
+  { path: '/aide', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },
   { path: '/guides', priority: 0.7, changeFrequency: 'weekly', locales: ['fr'] },
   { path: '/solutions', priority: 0.7, changeFrequency: 'weekly', locales: ['fr'] },
   { path: '/comparatif', priority: 0.7, changeFrequency: 'monthly', locales: ['fr'] },

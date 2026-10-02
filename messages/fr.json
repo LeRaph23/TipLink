@@ -303,7 +303,8 @@
       "step3n": "03",
       "step3t": "Ajoutez votre équipe",
       "step3b": "Envoyez un lien par SMS : chacun crée son profil avec son prénom et sa photo, en 2 minutes.",
-      "videoLabel": "Tuto vidéo : {title}"
+      "videoLabel": "Tuto vidéo : {title}",
+      "helpLink": "Bloqué à une étape ? Toutes les réponses dans l’aide"
     },
     "shipping": {
       "kicker": "Livraison",
@@ -418,7 +419,8 @@
       "about": "À propos",
       "legal": "Légal",
       "payment": "Paiements acceptés",
-      "copyright": "© 2026 YUZU LABS SAS · Digitip · Tous droits réservés"
+      "copyright": "© 2026 YUZU LABS SAS · Digitip · Tous droits réservés",
+      "help": "Centre d'aide"
     },
     "keyAdv": {
       "kicker": "Ce qui change tout",
@@ -756,7 +758,8 @@
       "roleManager": "Manager",
       "roleSuperAdmin": "Super admin",
       "statements": "Relevés",
-      "payments": "Compte de paiement"
+      "payments": "Compte de paiement",
+      "help": "Aide"
     },
     "billing": {
       "title": "Facturation",

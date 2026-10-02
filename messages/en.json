@@ -303,7 +303,8 @@
       "step3n": "03",
       "step3t": "Add your team",
       "step3b": "Send a link by text: everyone creates their profile with their first name and photo, in 2 minutes.",
-      "videoLabel": "Video tutorial: {title}"
+      "videoLabel": "Video tutorial: {title}",
+      "helpLink": "Stuck at a step? Every answer is in the help centre"
     },
     "shipping": {
       "kicker": "Shipping",
@@ -418,7 +419,8 @@
       "about": "About",
       "legal": "Legal",
       "payment": "Accepted payments",
-      "copyright": "© 2026 YUZU LABS SAS · Digitip · All rights reserved"
+      "copyright": "© 2026 YUZU LABS SAS · Digitip · All rights reserved",
+      "help": "Help centre"
     },
     "keyAdv": {
       "kicker": "What makes us different",
@@ -756,7 +758,8 @@
       "roleManager": "Manager",
       "roleSuperAdmin": "Super admin",
       "statements": "Statements",
-      "payments": "Payment account"
+      "payments": "Payment account",
+      "help": "Help"
     },
     "billing": {
       "title": "Billing",

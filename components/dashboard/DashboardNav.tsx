@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@/types/database';
@@ -130,6 +130,7 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const tn = useTranslations('dashboard.nav');
+  const locale = useLocale();
   const td = useTranslations('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -245,6 +246,17 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
               onNavigate={() => setPendingNav({ href: l.href, from: pathname })}
             />
           ))
+        )}
+        {/* The help centre is French-only (it describes the French screens);
+            it opens in a new tab so the manager keeps their place here. */}
+        {!isSuperAdmin && locale === 'fr' && (
+          <a href="/fr/aide" target="_blank" rel="noopener" style={{
+            display: 'flex', alignItems: 'center', gap: 9, marginTop: 'auto', padding: '8px 10px',
+            borderRadius: 'var(--radius-sm)', color: 'var(--text-2)', fontSize: 13.5, fontWeight: 500, textDecoration: 'none',
+          }}>
+            <span aria-hidden="true" style={{ width: 16, height: 16, borderRadius: '50%', border: '1.6px solid currentColor', display: 'grid', placeItems: 'center', fontSize: 10.5, fontWeight: 800 }}>?</span>
+            {tn('help')}
+          </a>
         )}
       </nav>
 

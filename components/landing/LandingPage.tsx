@@ -446,6 +446,13 @@ function HowItWorksSection() {
             </Reveal>
           ))}
         </div>
+        {withVideos && (
+          <p style={{ textAlign: 'center', marginTop: 36 }}>
+            <Link href="/aide" style={{ display: 'inline-block', padding: '12px 22px', borderRadius: 11, border: '1.5px solid #e4e4ec', background: '#fff', color: '#3a3b4f', fontSize: 14.5, fontWeight: 700, textDecoration: 'none' }}>
+              {t('howItWorks.helpLink')} →
+            </Link>
+          </p>
+        )}
       </div>
     </section>
   );
@@ -811,6 +818,7 @@ function FooterSection() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.resources')}</div>
             {[
+              { label: t('footer.help'),        href: '/aide' },
               { label: t('footer.guides'),      href: '/guides' },
               { label: t('footer.solutions'),   href: '/solutions' },
               { label: t('footer.comparatifs'), href: '/comparatif' },
