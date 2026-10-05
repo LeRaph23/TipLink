@@ -2,15 +2,14 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { ProImpact as Impact } from '@/lib/billing/pro-impact';
 import { cardTitleStyle } from './ui';
-import { longDate } from '@/lib/format/long-date';
 
 /**
  * What Digitip Pro produced, on the dashboard home, for a group that has it
  * (subscribed or on the cardless trial).
  *
- * Three figures in decreasing order of what they mean to a manager: reviews
- * actually gained on the Google listing, customers who opened it, and the
- * notes the team received. Set like the rest of the home page, numbers in a
+ * Three figures: the Google listing as Google reports it now (read live, never
+ * stored, credited to Google Maps as the Places policies require), customers
+ * who opened it after tipping, and the notes the team received. Set like the rest of the home page, numbers in a
  * row divided by a hairline, and a bad month reads as a bad month.
  *
  * A missing Google link turns the first two off, so it takes their place as a
@@ -29,7 +28,6 @@ export async function ProImpact({
   fixLinkHref: string;
 }) {
   const t = await getTranslations('dashboard.proImpact');
-  const fmtDate = (iso: string) => longDate(iso, locale);
 
   const stat: React.CSSProperties = { minWidth: 0, padding: '14px 16px', background: 'var(--surface)' };
   const big: React.CSSProperties = {
@@ -44,16 +42,17 @@ export async function ProImpact({
       <div key="reviews" style={stat}>
         {impact.listing ? (
           <>
-            <div style={big}>+{impact.listing.gained}</div>
+            <div style={big}>
+              {impact.listing.rating !== null ? `${impact.listing.rating.toLocaleString(locale)} ★` : '—'}
+            </div>
             <div style={small}>
-              {t('reviewsGained', { since: fmtDate(impact.listing.since) })}
+              {t('reviewsTotal', { count: impact.listing.reviewCount })}
               <br />
-              {t('reviewsTotal', { count: impact.listing.currentCount })}
-              {impact.listing.rating !== null && `, ${impact.listing.rating.toLocaleString(locale)} ★`}
+              <span style={{ fontSize: 11 }}>{t('source')}</span>
             </div>
           </>
         ) : (
-          <div style={{ ...small, marginTop: 0 }}>{t('reviewsPending')}</div>
+          <div style={{ ...small, marginTop: 0 }}>{t('reviewsUnavailable')}</div>
         )}
       </div>,
       <div key="clicks" style={stat}>

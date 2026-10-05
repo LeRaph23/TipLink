@@ -13,8 +13,8 @@
 --   2. compliments: after the tip, the customer can leave a word for the person
 --      who served them, which nothing but Digitip can do because nothing else
 --      knows who that was
---   3. snapshots of the Google listing, so "it works" is a review count going
---      up rather than a click count
+--   3. the Google rating and review count on the dashboard, read live (not
+--      stored: see section 3)
 -- ============================================================
 
 -- ── 1. Free trial, no card ───────────────────────────────────────────────────
@@ -167,36 +167,8 @@ CREATE POLICY tip_compliments_scoped_select ON public.tip_compliments
     OR (hidden_at IS NULL AND staff_id IS NOT NULL AND staff_id = get_my_staff_profile_id())
   );
 
--- ── 3. Google listing snapshots ──────────────────────────────────────────────
--- The review count on the listing, read from Places while the group has Pro.
--- The first row is the baseline; the newest minus the first is what the
--- invitation is credited with, and the page says "since <date of first row>"
--- rather than claiming every review was ours.
-CREATE TABLE IF NOT EXISTS public.google_listing_snapshots (
-  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  establishment_id UUID NOT NULL REFERENCES public.establishments(id) ON DELETE CASCADE,
-  place_id         TEXT NOT NULL,
-  rating           NUMERIC(2, 1),
-  review_count     INTEGER NOT NULL CHECK (review_count >= 0),
-  captured_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_google_listing_snapshots_est_captured
-  ON public.google_listing_snapshots (establishment_id, captured_at DESC);
-
-COMMENT ON TABLE public.google_listing_snapshots IS
-  'Google rating and review count per establishment, captured by /api/cron/google-listings for Pro groups.';
-
-ALTER TABLE public.google_listing_snapshots ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS google_listing_snapshots_scoped_select ON public.google_listing_snapshots;
-CREATE POLICY google_listing_snapshots_scoped_select ON public.google_listing_snapshots
-  FOR SELECT USING (
-    is_super_admin()
-    OR establishment_id = ANY (get_my_managed_establishment_ids())
-    OR EXISTS (
-      SELECT 1 FROM public.establishments e
-      WHERE e.id = google_listing_snapshots.establishment_id
-        AND e.group_id = ANY (get_my_group_ids())
-    )
-  );
+-- ── 3. Google listing ───────────────────────────────────────────────────────
+-- Deliberately no table. Google's Places API policies allow storing the place
+-- ID only, so the rating and review count are read live at display time
+-- (lib/google-listing.ts) and never written here. The place ID is already on
+-- `establishments` (00070).

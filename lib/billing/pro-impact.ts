@@ -1,7 +1,7 @@
 import 'server-only';
 import type { createServiceClient } from '@/lib/supabase/service';
 import { deriveReviewImpact } from './review-teaser';
-import { getListingProgress, type ListingProgress } from '@/lib/google-listing';
+import { getGroupListing, type ListingStats } from '@/lib/google-listing';
 import { currentMonth, monthPeriod } from '@/lib/export/payroll';
 
 type Service = ReturnType<typeof createServiceClient>;
@@ -13,7 +13,7 @@ type Service = ReturnType<typeof createServiceClient>;
  * card, the end-of-trial email) so they can never quote different figures for
  * the same month. Each number is something the manager could check: tips from
  * their own transactions, clicks and compliments from rows that can only exist
- * against a real tip, and reviews from their own Google listing.
+ * against a real tip, and the Google listing as Google reports it right now.
  */
 export type ProImpact = {
   since: string;
@@ -21,8 +21,8 @@ export type ProImpact = {
   clickCount: number;
   complimentCount: number;
   hasReviewLink: boolean;
-  /** Null until the listing has been read twice. */
-  listing: ListingProgress | null;
+  /** Read live from Google, never stored. Null without a listing or on failure. */
+  listing: (ListingStats & { establishmentName: string }) | null;
 };
 
 export async function getProImpact(
@@ -46,7 +46,7 @@ export async function getProImpact(
       .in('establishment_id', ids).gte('clicked_at', sinceIso),
     service.from('tip_compliments').select('id', { count: 'exact', head: true })
       .in('establishment_id', ids).gte('created_at', sinceIso),
-    getListingProgress(service, groupId).catch(() => null),
+    getGroupListing(service, groupId).catch(() => null),
   ]);
 
   const tipCount = tips.count ?? 0;

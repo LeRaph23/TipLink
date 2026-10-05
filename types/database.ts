@@ -1336,41 +1336,6 @@ export type Database = {
           },
         ]
       }
-      google_listing_snapshots: {
-        Row: {
-          captured_at: string
-          establishment_id: string
-          id: string
-          place_id: string
-          rating: number | null
-          review_count: number
-        }
-        Insert: {
-          captured_at?: string
-          establishment_id: string
-          id?: string
-          place_id: string
-          rating?: number | null
-          review_count: number
-        }
-        Update: {
-          captured_at?: string
-          establishment_id?: string
-          id?: string
-          place_id?: string
-          rating?: number | null
-          review_count?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "google_listing_snapshots_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       groups: {
         Row: {
           accountant_email: string | null

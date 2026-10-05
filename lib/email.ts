@@ -1901,17 +1901,16 @@ export async function sendTrialEndingSoon(opts: {
 export async function sendFreeTrialEndingSoon(opts: {
   to: string; firstName: string; establishmentName: string; daysLeft: number; endDate: string;
   priceLabel: string | null; tipCount: number; clickCount: number; complimentCount: number;
-  reviewsGained: number | null; billingUrl: string; unsubscribeUrl?: string | null;
+  billingUrl: string;
 }): Promise<{ id: string | null }> {
   const {
     to, firstName, establishmentName, daysLeft, endDate, priceLabel, tipCount, clickCount,
-    complimentCount, reviewsGained, billingUrl, unsubscribeUrl,
+    complimentCount, billingUrl,
   } = opts;
   const days = `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
   const s = (n: number) => (n > 1 ? 's' : '');
   const bullets = tipCount > 0
     ? [
-        ...(reviewsGained !== null ? [`${reviewsGained} nouvel${reviewsGained > 1 ? 's' : ''} avis sur votre fiche Google`] : []),
         `${clickCount} client${s(clickCount)} sur ${tipCount} ${clickCount > 1 ? 'ont' : 'a'} ouvert votre fiche Google après leur pourboire`,
         `${complimentCount} petit${s(complimentCount)} mot${s(complimentCount)} pour l'équipe`,
       ]
@@ -1926,7 +1925,6 @@ export async function sendFreeTrialEndingSoon(opts: {
       bullets,
       ctaLabel: 'Continuer avec Pro →', ctaUrl: billingUrl,
       note: `Vous n'avez pas donné de carte, donc si vous ne faites rien, Pro s'arrête simplement le ${escapeHtml(endDate)} et vous ne payez rien.${priceLabel ? ` Pour continuer, c'est ${escapeHtml(priceLabel)} HT par mois, sans engagement.` : ''} Vos pourboires et vos relevés ne changent pas.`,
-      unsubscribeUrl,
     }));
 }
 

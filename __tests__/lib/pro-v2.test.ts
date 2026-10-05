@@ -5,7 +5,6 @@ vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => ({}) }));
 
 import { effectivePlan } from '@/lib/billing/entitlements';
 import { summarizeCompliments } from '@/lib/compliments';
-import { deriveListingProgress } from '@/lib/google-listing';
 
 const now = new Date('2026-10-05T12:00:00Z');
 
@@ -43,30 +42,5 @@ describe('summarizeCompliments', () => {
   it('ignores tags it does not know', () => {
     const [s] = summarizeCompliments([{ staff_id: 'a', tags: ['rude', 'care'], message: null }]);
     expect(s.topTags).toEqual([{ tag: 'care', count: 1 }]);
-  });
-});
-
-describe('deriveListingProgress', () => {
-  const row = (est: string, count: number, day: string, rating: number | null = 4.6) => ({
-    establishment_id: est, review_count: count, rating, captured_at: `2026-${day}T07:00:00Z`,
-  });
-
-  it('is nothing until a listing has been read twice', () => {
-    expect(deriveListingProgress([row('e1', 120, '09-01')])).toBeNull();
-    expect(deriveListingProgress([])).toBeNull();
-  });
-
-  it('credits the difference between the first and latest reading', () => {
-    const p = deriveListingProgress([row('e1', 132, '09-01'), row('e1', 140, '09-08'), row('e1', 148, '09-15', 4.7)]);
-    expect(p).toMatchObject({ baselineCount: 132, currentCount: 148, gained: 16, since: '2026-09-01T07:00:00Z', rating: 4.7 });
-  });
-
-  it('sums establishments and never reports a loss as negative', () => {
-    const p = deriveListingProgress([
-      row('e1', 100, '09-01'), row('e1', 104, '09-08'),
-      row('e2', 50, '09-03'), row('e2', 45, '09-10'),
-    ]);
-    expect(p?.gained).toBe(0);
-    expect(p?.since).toBe('2026-09-01T07:00:00Z');
   });
 });

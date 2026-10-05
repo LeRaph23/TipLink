@@ -471,9 +471,7 @@ async function runFreeTrialEndingWarnings(service: Db, dryRun: boolean): Promise
           tipCount: impact?.tipCount ?? 0,
           clickCount: impact?.clickCount ?? 0,
           complimentCount: impact?.complimentCount ?? 0,
-          reviewsGained: impact?.hasReviewLink ? impact.listing?.gained ?? null : null,
           billingUrl: `${getBaseUrl()}/dashboard/billing#pro`,
-          unsubscribeUrl: lifecycleUnsubUrl('group_admin', group.id),
         }),
       });
       t[r]++;

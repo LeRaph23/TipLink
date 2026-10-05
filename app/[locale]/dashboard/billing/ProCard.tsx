@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import type { TrialState } from '@/lib/billing/trial';
 import { CustomerPreview } from '@/components/billing/CustomerPreview';
 import { startProTrial } from '@/actions/billing/pro-trial';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { longDate } from '@/lib/format/long-date';
 
 /** The figures the card argues with. Serializable: built on the server. */
@@ -13,7 +13,9 @@ export type CardImpact = {
   tipCount: number;
   clickCount: number;
   complimentCount: number;
-  reviewsGained: number | null;
+  /** Live from Google, never stored. */
+  googleRating: number | null;
+  googleReviewCount: number | null;
   hasReviewLink: boolean;
 };
 
@@ -152,8 +154,11 @@ export function ProCard({
   // hairline, no boxes. Only the ones that mean something for this group.
   const stats = impact && impact.tipCount > 0
     ? [
-        ...(impact.hasReviewLink && impact.reviewsGained !== null
-          ? [{ v: `+${impact.reviewsGained}`, l: t('impactReviews') }]
+        ...(impact.hasReviewLink && impact.googleReviewCount !== null
+          ? [{
+              v: impact.googleRating !== null ? `${impact.googleRating.toLocaleString(locale)} ★` : String(impact.googleReviewCount),
+              l: t('impactReviews', { count: impact.googleReviewCount }),
+            }]
           : []),
         ...(impact.hasReviewLink
           ? [{ v: `${impact.clickCount}/${impact.tipCount}`, l: t('impactClicks') }]
@@ -182,6 +187,18 @@ export function ProCard({
   const body: React.CSSProperties = { fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6, margin: 0, maxWidth: '62ch' };
   const note: React.CSSProperties = { fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55, margin: '10px 0 0' };
 
+
+  // Shown under every button that commits to something (starting the trial,
+  // subscribing): the terms have to be one click away before, not after.
+  const termsLine = (
+    <p style={{ ...note, marginTop: 6 }}>
+      {t.rich('terms', {
+        terms: (c) => <Link href="/terms" target="_blank" style={{ color: 'var(--text-2)', textDecoration: 'underline', textUnderlineOffset: 2 }}>{c}</Link>,
+        cgv: (c) => <Link href="/cgv" target="_blank" style={{ color: 'var(--text-2)', textDecoration: 'underline', textUnderlineOffset: 2 }}>{c}</Link>,
+      })}
+    </p>
+  );
+
   // ── The cardless trial ────────────────────────────────────────────────────
   // Pro is on, no card is on file, nothing will be charged. Then the way to
   // keep it, without losing the days left: checkout bills from the end date.
@@ -203,6 +220,7 @@ export function ProCard({
           {price && <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{price}</span>}
         </div>
         <p style={note}>{t('keepNote', { date: fmtDate(trial.endsAt) })}</p>
+        {termsLine}
         {errorLine}
       </div>
     );
@@ -308,6 +326,7 @@ export function ProCard({
           <p style={note}>
             {trialAvailable ? t('reassuranceTrial') : t('reassurance')}
           </p>
+          {termsLine}
           {errorLine}
         </div>
 
