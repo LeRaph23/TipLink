@@ -159,7 +159,6 @@ export default async function StatementsPage({
         display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
       }}>
         <div style={{ flex: '1 1 260px', minWidth: 0, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.55 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 600 }}>{t('autoTitle')}</strong>{' '}
           {accountantEmail
             ? t('autoBodyAccountant', { email: accountantEmail })
             : t('autoBodyNoAccountant')}

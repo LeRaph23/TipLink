@@ -2,19 +2,19 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { ProImpact as Impact } from '@/lib/billing/pro-impact';
 import { cardTitleStyle } from './ui';
+import { longDate } from '@/lib/format/long-date';
 
 /**
  * What Digitip Pro produced, on the dashboard home, for a group that has it
  * (subscribed or on the cardless trial).
  *
- * It replaces a single ratio of clicks. Three numbers now, in decreasing order
- * of how much they matter to a manager: reviews actually gained on the Google
- * listing, customers sent to the review page, and compliments the team
- * received. Each is a fact about their own business, and a bad month reads as
- * a bad month: the card does not hide when the figures are low.
+ * Three figures in decreasing order of what they mean to a manager: reviews
+ * actually gained on the Google listing, customers who opened it, and the
+ * notes the team received. Set like the rest of the home page, numbers in a
+ * row divided by a hairline, and a bad month reads as a bad month.
  *
- * A missing Google link is the one problem that turns all of it off, so it
- * replaces the review tiles with the fix rather than showing two zeros.
+ * A missing Google link turns the first two off, so it takes their place as a
+ * sentence with the fix, rather than two zeros.
  */
 export async function ProImpact({
   impact,
@@ -29,44 +29,71 @@ export async function ProImpact({
   fixLinkHref: string;
 }) {
   const t = await getTranslations('dashboard.proImpact');
-  const fmtDate = (iso: string) =>
-    new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }).format(new Date(iso));
+  const fmtDate = (iso: string) => longDate(iso, locale);
 
-  const tile: React.CSSProperties = {
-    flex: '1 1 160px', minWidth: 0, padding: '12px 14px',
-    background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-    borderRadius: 10,
-  };
+  const stat: React.CSSProperties = { minWidth: 0, padding: '14px 16px', background: 'var(--surface)' };
   const big: React.CSSProperties = {
-    fontSize: 24, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em',
-    fontVariantNumeric: 'tabular-nums', lineHeight: 1.15,
+    fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.04em',
+    fontVariantNumeric: 'tabular-nums', lineHeight: 1.1,
   };
-  const small: React.CSSProperties = { fontSize: 12, color: 'var(--text-3)', lineHeight: 1.45, marginTop: 3 };
+  const small: React.CSSProperties = { fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.45, marginTop: 4 };
+
+  const cells: React.ReactNode[] = [];
+  if (impact.hasReviewLink) {
+    cells.push(
+      <div key="reviews" style={stat}>
+        {impact.listing ? (
+          <>
+            <div style={big}>+{impact.listing.gained}</div>
+            <div style={small}>
+              {t('reviewsGained', { since: fmtDate(impact.listing.since) })}
+              <br />
+              {t('reviewsTotal', { count: impact.listing.currentCount })}
+              {impact.listing.rating !== null && `, ${impact.listing.rating.toLocaleString(locale)} ★`}
+            </div>
+          </>
+        ) : (
+          <div style={{ ...small, marginTop: 0 }}>{t('reviewsPending')}</div>
+        )}
+      </div>,
+      <div key="clicks" style={stat}>
+        <div style={big}>{t('clicksRatio', { clicks: impact.clickCount, tips: impact.tipCount })}</div>
+        <div style={small}>{impact.tipCount > 0 ? t('clicksBody') : t('clicksEmpty')}</div>
+      </div>,
+    );
+  }
+  cells.push(
+    <div key="notes" style={stat}>
+      <div style={big}>{impact.complimentCount}</div>
+      <div style={small}>
+        {t('compliments')}
+        {impact.complimentCount > 0 && (
+          <>
+            {' · '}
+            <Link href="/dashboard/compliments" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>
+              {t('complimentsLink')}
+            </Link>
+          </>
+        )}
+      </div>
+    </div>,
+  );
 
   return (
     <section
       aria-label={t('label')}
       style={{
         background: 'var(--surface)', border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius)', padding: '16px 18px', marginBottom: 20,
+        borderRadius: 'var(--radius)', marginBottom: 20, overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <span style={{
-          padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700,
-          background: 'var(--accent-muted)', color: 'var(--accent)',
-        }}>
-          Pro
-        </span>
-        <h3 style={{ ...cardTitleStyle, margin: 0 }}>
-          {trialDaysLeft !== null ? t('titleTrial') : t('titleMonth')}
-        </h3>
+      <div style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+        padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)',
+      }}>
+        <h3 style={cardTitleStyle}>{trialDaysLeft !== null ? t('titleTrial') : t('titleMonth')}</h3>
         {trialDaysLeft !== null && (
-          <Link href="/dashboard/billing" style={{
-            marginLeft: 'auto', padding: '2px 9px', borderRadius: 100, fontSize: 11.5, fontWeight: 600,
-            background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)',
-            textDecoration: 'none', fontVariantNumeric: 'tabular-nums',
-          }}>
+          <Link href="/dashboard/billing#pro" style={{ fontSize: 12.5, color: 'var(--text-3)', textDecoration: 'none', fontVariantNumeric: 'tabular-nums' }}>
             {t('daysLeft', { days: trialDaysLeft })}
           </Link>
         )}
@@ -74,55 +101,24 @@ export async function ProImpact({
 
       {!impact.hasReviewLink && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-          padding: '12px 14px', marginBottom: 10, borderRadius: 10,
-          background: 'var(--warning-bg)', border: '1px solid var(--border-subtle)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+          padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)',
+          fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5,
         }}>
-          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{t('noLinkTitle')}</div>
-            <div style={small}>{t('noLinkBody')}</div>
-          </div>
-          <Link href={fixLinkHref} className="btn-accent" style={{
-            display: 'inline-flex', alignItems: 'center', minHeight: 36, padding: '0 14px',
-            borderRadius: 9, background: 'var(--accent)', color: 'var(--accent-fg)',
-            fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
-          }}>
-            {t('noLinkCta')}
+          <span style={{ flex: '1 1 260px', minWidth: 0 }}>{t('noLinkBody')}</span>
+          <Link href={fixLinkHref} style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            {t('noLinkCta')} →
           </Link>
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {impact.hasReviewLink && (
-          <div style={tile}>
-            {impact.listing ? (
-              <>
-                <div style={big}>+{impact.listing.gained}</div>
-                <div style={small}>
-                  {t('reviewsGained', { since: fmtDate(impact.listing.since) })}
-                  {' · '}
-                  {t('reviewsTotal', { count: impact.listing.currentCount })}
-                  {impact.listing.rating !== null && ` · ${impact.listing.rating.toLocaleString(locale)} ★`}
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ ...big, color: 'var(--text-3)' }}>…</div>
-                <div style={small}>{t('reviewsPending')}</div>
-              </>
-            )}
-          </div>
-        )}
-        {impact.hasReviewLink && (
-          <div style={tile}>
-            <div style={big}>{t('clicksRatio', { clicks: impact.clickCount, tips: impact.tipCount })}</div>
-            <div style={small}>{impact.tipCount > 0 ? t('clicksBody') : t('clicksEmpty')}</div>
-          </div>
-        )}
-        <Link href="/dashboard/compliments" style={{ ...tile, textDecoration: 'none', display: 'block' }} className="dash-row">
-          <div style={big}>{impact.complimentCount}</div>
-          <div style={small}>{t('compliments')} →</div>
-        </Link>
+      {/* Hairlines between the figures that survive wrapping on a phone: the
+          grid's background shows through a 1 px gap. */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+        gap: 1, background: 'var(--border-subtle)',
+      }}>
+        {cells}
       </div>
     </section>
   );

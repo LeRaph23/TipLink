@@ -40,29 +40,21 @@ export async function StaffCompliments({ staffId, locale }: { staffId: string; l
       <h3 style={{ ...cardTitleStyle, marginBottom: 4 }}>
         {t('staffTitle', { count: summary.count })}
       </h3>
-      <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>{t('staffSub')}</div>
+      <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 10 }}>{t('staffSub')}</div>
       {summary.topTags.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: messages.length ? 12 : 0 }}>
-          {summary.topTags.map(({ tag, count }) => (
-            <span key={tag} style={{
-              padding: '4px 10px', borderRadius: 100, fontSize: 12.5, fontWeight: 500,
-              background: 'var(--accent-muted)', color: 'var(--accent)',
-            }}>
-              {t(`tags.${tag}`)} · {count}
-            </span>
-          ))}
-        </div>
+        <p style={{ fontSize: 13, color: 'var(--text-2)', margin: messages.length ? '0 0 12px' : 0 }}>
+          {summary.topTags.slice(0, 3)
+            .map(({ tag }, i) => { const l = t(`tags.${tag}`); return i ? l.charAt(0).toLowerCase() + l.slice(1) : l; })
+            .join(', ')}
+        </p>
       )}
       {messages.map((m, i) => (
-        <blockquote key={i} style={{
-          margin: i ? '8px 0 0' : 0, padding: '10px 12px', borderRadius: 10,
-          background: 'var(--surface-2)', fontSize: 13.5, color: 'var(--text)', lineHeight: 1.5,
-        }}>
-          “{m.message}”
-          <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>
-            {fmt.format(new Date(m.created_at))}
-          </span>
-        </blockquote>
+        <div key={i} style={{ padding: '10px 0', borderTop: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.5 }}>
+            {locale === 'fr' ? `« ${m.message} »` : `“${m.message}”`}
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>{fmt.format(new Date(m.created_at))}</div>
+        </div>
       ))}
     </section>
   );

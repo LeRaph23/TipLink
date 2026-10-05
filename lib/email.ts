@@ -1786,10 +1786,10 @@ export async function sendFirstTipCelebration(opts: {
   // email saying it ends in three days.
   const trialBullets = proTrial
     ? [
-        '🎁 Digitip Pro est activé pour 30 jours, offert et sans carte : vos clients sont invités à laisser un avis Google et peuvent laisser un compliment à la personne qui les a servis.',
+        '🎁 Au passage, on vous offre Digitip Pro pendant 30 jours, sans carte. Après chaque pourboire, vos clients peuvent maintenant laisser un avis Google et un petit mot au serveur.',
         ...(proTrial.hasReviewLink
           ? []
-          : ['⭐ Ajoutez votre fiche Google dans Établissements pour que l\'invitation à laisser un avis s\'affiche.']),
+          : ['⭐ Pour que le bouton d\'avis s\'affiche, reliez votre fiche Google dans Établissements.']),
       ]
     : [];
   return lifecycleSend(to, `Premier pourboire encaissé chez ${establishmentName} !`,
@@ -1879,7 +1879,7 @@ export async function sendTrialEndingSoon(opts: {
   // A month with no clicks is a reason to keep the plaque visible, not a
   // reason to write a sentence that implies otherwise.
   const evidence = tipCount > 0
-    ? `Pendant votre essai, <strong class="text-strong" style="color:#0f0f12">${clickCount} client${clickCount > 1 ? 's' : ''} sur ${tipCount}</strong> ${clickCount > 1 ? 'sont allés' : 'est allé'} laisser un avis après leur pourboire.`
+    ? `Pendant votre essai, <strong class="text-strong" style="color:#0f0f12">${clickCount} client${clickCount > 1 ? 's' : ''} sur ${tipCount}</strong> ${clickCount > 1 ? 'ont' : 'a'} ouvert votre fiche Google après leur pourboire.`
     : `Votre essai se termine sans qu'aucun pourboire ne soit passé, donc sans qu'on ait pu vous montrer ce que l'invitation d'avis donne chez vous.`;
 
   return lifecycleSend(to, `${firstName}, votre essai Digitip Pro se termine dans ${days}`,
@@ -1913,21 +1913,21 @@ export async function sendFreeTrialEndingSoon(opts: {
   const s = (n: number) => (n > 1 ? 's' : '');
   const bullets = tipCount > 0
     ? [
-        ...(reviewsGained !== null ? [`⭐ <strong>+${reviewsGained}</strong> avis sur votre fiche Google depuis le début de l'essai`] : []),
-        `→ <strong>${clickCount}</strong> client${s(clickCount)} sur ${tipCount} envoyé${s(clickCount)} vers votre page d'avis`,
-        `💬 <strong>${complimentCount}</strong> compliment${s(complimentCount)} laissé${s(complimentCount)} à votre équipe`,
+        ...(reviewsGained !== null ? [`${reviewsGained} nouvel${reviewsGained > 1 ? 's' : ''} avis sur votre fiche Google`] : []),
+        `${clickCount} client${s(clickCount)} sur ${tipCount} ${clickCount > 1 ? 'ont' : 'a'} ouvert votre fiche Google après leur pourboire`,
+        `${complimentCount} petit${s(complimentCount)} mot${s(complimentCount)} pour l'équipe`,
       ]
     : [];
   return lifecycleSend(to, `${firstName}, votre essai Digitip Pro se termine dans ${days}`,
     lifecycleBody({
       badge: 'Fin d\'essai', tone: 'amber',
-      title: `${firstName}, il vous reste ${days} de Digitip Pro`,
+      title: `${firstName}, votre essai Pro se termine le ${escapeHtml(endDate)}`,
       intro: tipCount > 0
-        ? `Voici ce que Pro a fait pour ${escapeHtml(establishmentName)} depuis le début de l'essai :`
-        : `Votre essai se termine sans qu'aucun pourboire ne soit passé, donc sans qu'on ait pu vous montrer ce que Pro donne chez vous.`,
+        ? `Depuis le début de l'essai, chez ${escapeHtml(establishmentName)} :`
+        : `Aucun pourboire n'est passé pendant l'essai, donc on n'a rien à vous montrer pour l'instant.`,
       bullets,
-      ctaLabel: 'Garder Digitip Pro →', ctaUrl: billingUrl,
-      note: `Aucune carte n'est enregistrée : si vous ne faites rien, Pro s'arrête le ${escapeHtml(endDate)} et rien n'est prélevé.${priceLabel ? ` Pour le garder, c'est ${escapeHtml(priceLabel)} HT par mois, sans engagement.` : ''} Vos pourboires et vos relevés, eux, ne changent pas.`,
+      ctaLabel: 'Continuer avec Pro →', ctaUrl: billingUrl,
+      note: `Vous n'avez pas donné de carte, donc si vous ne faites rien, Pro s'arrête simplement le ${escapeHtml(endDate)} et vous ne payez rien.${priceLabel ? ` Pour continuer, c'est ${escapeHtml(priceLabel)} HT par mois, sans engagement.` : ''} Vos pourboires et vos relevés ne changent pas.`,
       unsubscribeUrl,
     }));
 }

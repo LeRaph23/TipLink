@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { TRIAL_DAYS, type TrialState } from '@/lib/billing/trial';
-import { PhonePreview } from '@/components/billing/PhonePreview';
+import type { TrialState } from '@/lib/billing/trial';
+import { CustomerPreview } from '@/components/billing/CustomerPreview';
 import { startProTrial } from '@/actions/billing/pro-trial';
 import { useRouter } from '@/i18n/navigation';
+import { longDate } from '@/lib/format/long-date';
 
 /** The figures the card argues with. Serializable: built on the server. */
 export type CardImpact = {
@@ -125,9 +126,7 @@ export function ProCard({
     );
   }
 
-  const fmtDate = (d: Date | string) =>
-    new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-      .format(new Date(d));
+  const fmtDate = (d: Date | string) => longDate(d, locale);
 
   const primaryBtn: React.CSSProperties = {
     padding: '11px 18px', borderRadius: 10, border: 'none',
@@ -149,9 +148,10 @@ export function ProCard({
   );
 
   // The three figures Pro is judged on, wherever there are any to show.
-  const impactRow = impact && impact.tipCount > 0 && (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '0 0 16px' }}>
-      {[
+  // The figures, set like the stats on the home page: in a row, divided by a
+  // hairline, no boxes. Only the ones that mean something for this group.
+  const stats = impact && impact.tipCount > 0
+    ? [
         ...(impact.hasReviewLink && impact.reviewsGained !== null
           ? [{ v: `+${impact.reviewsGained}`, l: t('impactReviews') }]
           : []),
@@ -159,75 +159,50 @@ export function ProCard({
           ? [{ v: `${impact.clickCount}/${impact.tipCount}`, l: t('impactClicks') }]
           : []),
         { v: String(impact.complimentCount), l: t('impactCompliments') },
-      ].map((x) => (
-        <div key={x.l} style={{
-          flex: '1 1 120px', padding: '10px 12px', borderRadius: 10,
-          background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-        }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{x.v}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.4 }}>{x.l}</div>
+      ]
+    : null;
+  const impactRow = stats && (
+    <div style={{
+      display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 1,
+      background: 'var(--border-subtle)', border: '1px solid var(--border-subtle)',
+      borderRadius: 10, overflow: 'hidden', margin: '0 0 18px',
+    }}>
+      {stats.map((x) => (
+        <div key={x.l} style={{ background: 'var(--surface)', padding: '12px 14px' }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' }}>{x.v}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.4 }}>{x.l}</div>
         </div>
       ))}
     </div>
   );
 
-  const priceBlock = pricing.monthly && (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-        {t('priceMonthly', { price: money(pricing.monthly) })}
-      </div>
-      {pricing.yearly && (
-        <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 3 }}>
-          {t('priceYearly', { price: money(pricing.yearly) })}
-          {pricing.yearlyMonthsFree != null && (
-            <> · {t('monthsFree', { months: pricing.yearlyMonthsFree })}</>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  const price = pricing.monthly ? t('priceMonthly', { price: money(pricing.monthly) }) : null;
+
+  const title: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', margin: 0 };
+  const body: React.CSSProperties = { fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6, margin: 0, maxWidth: '62ch' };
+  const note: React.CSSProperties = { fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55, margin: '10px 0 0' };
 
   // ── The cardless trial ────────────────────────────────────────────────────
-  // Pro is on, no card is on file, nothing will be charged. The card says all
-  // three, then offers to keep Pro, without costing the days left: checkout
-  // starts billing on the date the trial was already going to end.
+  // Pro is on, no card is on file, nothing will be charged. Then the way to
+  // keep it, without losing the days left: checkout bills from the end date.
   if (isPro && trial.state === 'trialing' && trial.cardless && !cancelAt) {
     return (
       <div style={card}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-          <span style={{
-            padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700,
-            background: 'var(--accent-muted)', color: 'var(--accent)',
-          }}>
-            Pro
-          </span>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t('freeTrialTitle')}</div>
-          <span style={{
-            padding: '2px 8px', borderRadius: 100, fontSize: 11.5, fontWeight: 700,
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
-            color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums',
-          }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+          <h3 style={title}>{t('freeTrialTitle')}</h3>
+          <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
             {t('trialDaysLeft', { days: trial.daysLeft })}
           </span>
         </div>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, margin: '0 0 14px' }}>
-          {t('freeTrialBody', { date: fmtDate(trial.endsAt) })}
-        </p>
+        <p style={{ ...body, marginBottom: 16 }}>{t('freeTrialBody', { date: fmtDate(trial.endsAt) })}</p>
         {impactRow}
-        {priceBlock}
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="button" className="btn-accent" onClick={() => go('monthly')} disabled={busy} style={primaryBtn}>
             {busy ? t('opening') : t('ctaKeep')}
           </button>
-          {pricing.yearly && (
-            <button type="button" className="btn-ghost" onClick={() => go('yearly')} disabled={busy} style={ghostBtn}>
-              {t('ctaYearly')}
-            </button>
-          )}
+          {price && <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{price}</span>}
         </div>
-        <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '10px 0 0', lineHeight: 1.5 }}>
-          {t('keepNote', { date: fmtDate(trial.endsAt) })}
-        </p>
+        <p style={note}>{t('keepNote', { date: fmtDate(trial.endsAt) })}</p>
         {errorLine}
       </div>
     );
@@ -240,30 +215,19 @@ export function ProCard({
     const trialing = !endsOn && trial.state === 'trialing' ? trial : null;
     return (
       <div style={card}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-          <span style={{
-            padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700,
-            background: 'var(--success-bg)', color: 'var(--success)',
-          }}>
-            Pro
-          </span>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+          <h3 style={title}>
             {endsOn ? t('canceledTitle') : trialing ? t('trialTitle') : t('activeTitle')}
-          </div>
-          {/* The number of days left, in the one place somebody would look for
-              it. A trial whose end nobody sees coming produces a surprise
-              charge, which costs more trust than the subscription is worth. */}
+          </h3>
+          {/* The number of days left, where somebody would look for it. A
+              trial whose end nobody sees coming produces a surprise charge. */}
           {trialing && (
-            <span style={{
-              padding: '2px 8px', borderRadius: 100, fontSize: 11.5, fontWeight: 700,
-              background: 'var(--surface-2)', border: '1px solid var(--border)',
-              color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums',
-            }}>
+            <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
               {t('trialDaysLeft', { days: trialing.daysLeft })}
             </span>
           )}
         </div>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 14 }}>
+        <p style={{ ...body, marginBottom: 16 }}>
           {endsOn
             ? t('canceledBody', { date: endsOn })
             : trialing
@@ -282,66 +246,80 @@ export function ProCard({
   }
 
   // ── The offer ─────────────────────────────────────────────────────────────
-  // It used to be a title, three feature bullets and a price. Now it leads
-  // with the manager's own number when there is one, shows the customer's
-  // screen instead of describing it, and says in a table what stays free, so
-  // "subscription" never reads as "the tips now cost money".
-  const free = [t('rowTips'), t('rowTeam'), t('rowStats'), t('rowExport')];
-  const pro = [t('rowReviews'), t('rowCompliments'), t('rowListing')];
+  // An ordinary dashboard card: a title with the price opposite, one sentence,
+  // three rows set like the settings page, the button. What the customer sees
+  // is shown as the two real cards, not described.
+  const rows = (['benefitReviews', 'benefitCompliments', 'benefitListing'] as const);
 
   return (
-    <div style={{ ...card, padding: 0, overflow: 'hidden', border: '1px solid var(--accent-border, rgba(229,122,151,0.3))' }}>
-      <div style={{
-        display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center',
-        padding: 22,
-        background: 'linear-gradient(135deg, rgba(229,122,151,0.08), rgba(236,151,176,0.03))',
-      }}>
-        <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-            Digitip Pro
+    <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 340px', minWidth: 0, padding: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+            <h3 style={title}>{t('offerTitle')}</h3>
+            {price && (
+              <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>{price}</span>
+            )}
           </div>
-          <h3 style={{ fontSize: 21, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1.25, margin: '0 0 8px' }}>
-            {t('offerTitle')}
-          </h3>
-          <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6, margin: 0 }}>
+          <p style={body}>
             {monthTipCount && monthTipCount > 0
               ? t('offerLeadCount', { count: monthTipCount })
               : t('offerLead')}
           </p>
-
-          {/* A spent trial is said out loud, with what it produced, and the
-              button below stops offering one. A product that offers a free
-              trial to somebody who has already had it is either lying or
-              about to. */}
           {trial.state === 'ended' && (
-            <p style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5, margin: '12px 0 0' }}>
-              {t('trialEnded', { date: fmtDate(trial.endedAt) })}
-            </p>
+            <p style={{ ...note, marginTop: 6 }}>{t('trialEnded', { date: fmtDate(trial.endedAt) })}</p>
           )}
 
-          <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0 0', display: 'grid', gap: 12 }}>
-            {(['benefitReviews', 'benefitCompliments', 'benefitListing'] as const).map((k, i) => (
-              <li key={k} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <span aria-hidden="true" style={{
-                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'var(--surface)', border: '1px solid var(--border-subtle)', fontSize: 14,
-                }}>
-                  {['⭐', '💬', '📈'][i]}
-                </span>
-                <span>
-                  <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{t(`${k}Title`)}</span>
-                  <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5 }}>{t(`${k}Body`)}</span>
-                </span>
-              </li>
+          <dl style={{ margin: '16px 0 18px', borderTop: '1px solid var(--border-subtle)' }}>
+            {rows.map((k) => (
+              <div key={k} style={{
+                display: 'grid', gridTemplateColumns: 'minmax(96px, 120px) minmax(0, 1fr)', gap: 12,
+                padding: '10px 0', borderBottom: '1px solid var(--border-subtle)',
+              }}>
+                <dt style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{t(`${k}Title`)}</dt>
+                <dd style={{ margin: 0, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>{t(`${k}Body`)}</dd>
+              </div>
             ))}
-          </ul>
+          </dl>
+
+          {trial.state === 'ended' && stats && (
+            <>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-2)', marginBottom: 2 }}>{t('duringTrial')}</div>
+              {impactRow}
+            </>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              className="btn-accent"
+              type="button"
+              onClick={() => (trialAvailable ? startTrial() : go('monthly'))}
+              disabled={busy}
+              style={primaryBtn}
+            >
+              {busy ? t('opening') : trialAvailable ? t('ctaFreeTrial') : t('ctaMonthly')}
+            </button>
+            {pricing.yearly && !trialAvailable && (
+              <button className="btn-ghost" type="button" onClick={() => go('yearly')} disabled={busy} style={ghostBtn}>
+                {t('ctaYearly')}
+              </button>
+            )}
+          </div>
+          <p style={note}>
+            {trialAvailable ? t('reassuranceTrial') : t('reassurance')}
+          </p>
+          {errorLine}
         </div>
-        <div style={{ flex: '0 0 auto', margin: '0 auto' }}>
-          <PhonePreview
+
+        <div style={{
+          flex: '1 1 260px', minWidth: 0, padding: 20,
+          background: 'var(--surface-2)', borderLeft: '1px solid var(--border-subtle)',
+        }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>{t('previewLabel')}</div>
+          <CustomerPreview
             labels={{
-              thanks: t('previewThanks'),
               reviewTitle: t('previewReview', { name: 'Julie' }),
+              reviewBody: t('previewReviewBody'),
               reviewButton: t('previewReviewButton'),
               complimentTitle: t('previewCompliment', { name: 'Julie' }),
               chips: [t('previewChip1'), t('previewChip2'), t('previewChip3')],
@@ -350,66 +328,8 @@ export function ProCard({
         </div>
       </div>
 
-      {trial.state === 'ended' && impactRow && (
-        <div style={{ padding: '16px 22px 0' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>{t('duringTrial')}</div>
-          {impactRow}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', padding: 22, borderTop: '1px solid var(--border-subtle)' }}>
-        <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-          {/* A grid, not a <table>: the dashboard turns every table into a
-              horizontally scrolling block on phones, which hid the Pro column
-              of a comparison that only has to fit three short columns. */}
-          <div role="table" aria-label={t('compareLabel')} style={{ fontSize: 12.5 }}>
-            <div role="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 64px 44px', paddingBottom: 8 }}>
-              <span role="columnheader" />
-              <span role="columnheader" style={{ textAlign: 'center', color: 'var(--text-3)', fontWeight: 600 }}>{t('colFree')}</span>
-              <span role="columnheader" style={{ textAlign: 'center', color: 'var(--accent)', fontWeight: 700 }}>Pro</span>
-            </div>
-            {[...free.map((r) => [r, true] as const), ...pro.map((r) => [r, false] as const)].map(([label, inFree]) => (
-              <div role="row" key={label} style={{
-                display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 64px 44px', alignItems: 'center',
-                borderTop: '1px solid var(--border-subtle)', padding: '7px 0',
-              }}>
-                <span role="cell" style={{ color: 'var(--text-2)', lineHeight: 1.4 }}>{label}</span>
-                <span role="cell" aria-label={inFree ? t('included') : t('notIncluded')} style={{ textAlign: 'center', color: inFree ? 'var(--success)' : 'var(--text-3)' }}>
-                  {inFree ? '✓' : '—'}
-                </span>
-                <span role="cell" aria-label={t('included')} style={{ textAlign: 'center', color: 'var(--accent)', fontWeight: 700 }}>✓</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-          {priceBlock}
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button
-              className="btn-accent"
-              type="button"
-              onClick={() => (trialAvailable ? startTrial() : go('monthly'))}
-              disabled={busy}
-              style={primaryBtn}
-            >
-              {busy
-                ? t('opening')
-                : trialAvailable
-                  ? t('ctaFreeTrial', { days: TRIAL_DAYS })
-                  : t('ctaMonthly')}
-            </button>
-            {pricing.yearly && !trialAvailable && (
-              <button className="btn-ghost" type="button" onClick={() => go('yearly')} disabled={busy} style={ghostBtn}>
-                {t('ctaYearly')}
-              </button>
-            )}
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '10px 0 0', lineHeight: 1.5 }}>
-            {trialAvailable ? t('reassuranceTrial') : t('reassurance')}
-          </p>
-          {errorLine}
-        </div>
+      <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-subtle)', fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.5 }}>
+        {t('alwaysFree')}
       </div>
     </div>
   );

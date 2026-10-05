@@ -30,6 +30,7 @@ import {
 import { deriveTrialState, isTrialWarningDue } from '@/lib/billing/trial';
 import { getReviewImpact } from '@/lib/billing/review-teaser';
 import { getProImpact } from '@/lib/billing/pro-impact';
+import { longDate } from '@/lib/format/long-date';
 import { getProPricing } from '@/lib/billing/pro-pricing';
 
 export const runtime = 'nodejs';
@@ -465,7 +466,7 @@ async function runFreeTrialEndingWarnings(service: Db, dryRun: boolean): Promise
           firstName: firstNameFrom(recipient.name, 'Bonjour'),
           establishmentName: group.name ?? 'votre établissement',
           daysLeft: trial.daysLeft,
-          endDate: new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(trial.endsAt),
+          endDate: longDate(trial.endsAt, 'fr'),
           priceLabel,
           tipCount: impact?.tipCount ?? 0,
           clickCount: impact?.clickCount ?? 0,

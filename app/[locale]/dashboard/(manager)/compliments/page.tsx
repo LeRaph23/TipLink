@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { effectivePlan } from '@/lib/billing/entitlements';
 import { summarizeCompliments, isComplimentTag } from '@/lib/compliments';
 import { ProUpsell } from '@/components/billing/ProUpsell';
-import { PageHeader, SectionTitle, cardTitleStyle } from '@/components/dashboard/ui';
+import { PageHeader, SectionTitle } from '@/components/dashboard/ui';
 import { HideToggle } from './HideToggle';
 
 export const dynamic = 'force-dynamic';
@@ -65,7 +65,7 @@ export default async function ComplimentsPage({
       <div style={{ maxWidth: 760 }}>
         <PageHeader title={t('title')} subtitle={t('subtitle')} />
         <ProUpsell title={t('lockedTitle')} body={t('lockedBody')} cta={t('lockedCta')} />
-        <Preview label={t('exampleBadge')} t={t} />
+        <Preview label={t('exampleBadge')} t={t} locale={locale} />
       </div>
     );
   }
@@ -86,6 +86,15 @@ export default async function ComplimentsPage({
   const summary = summarizeCompliments(rows ?? []);
   const messages = (rows ?? []).filter((r) => r.message?.trim());
   const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const quote = (text: string) => (locale === 'fr' ? `« ${text} »` : `“${text}”`);
+  // "L'accueil, les conseils" reads as a sentence; a row of pills did not.
+  const liked = (labels: string[]) =>
+    labels.map((l, i) => (i === 0 ? l : l.charAt(0).toLowerCase() + l.slice(1))).join(', ');
+  const th: React.CSSProperties = {
+    padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
+    textTransform: 'uppercase', letterSpacing: '0.06em', background: 'var(--surface-2)',
+  };
+  const cell: React.CSSProperties = { padding: '12px 14px' };
 
   return (
     <div style={{ maxWidth: 760 }}>
@@ -100,35 +109,28 @@ export default async function ComplimentsPage({
         </div>
       ) : (
         <>
-          <SectionTitle>{t('byPerson', { days: WINDOW_DAYS })}</SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 28 }}>
-            {summary.map((s) => (
-              <div key={s.staffId ?? 'team'} style={{ ...card, padding: '14px 16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                  <h3 style={{ ...cardTitleStyle, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {nameOf(s.staffId)}
-                  </h3>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
-                    {s.count}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
-                  {s.topTags.slice(0, 3).map(({ tag, count }) => (
-                    <span key={tag} style={{
-                      padding: '3px 9px', borderRadius: 100, fontSize: 12, fontWeight: 500,
-                      background: 'var(--accent-muted)', color: 'var(--accent)',
-                    }}>
-                      {t(`tags.${tag}`)} · {count}
-                    </span>
-                  ))}
-                  {s.messageCount > 0 && (
-                    <span style={{ padding: '3px 9px', borderRadius: 100, fontSize: 12, color: 'var(--text-3)', background: 'var(--surface-2)' }}>
-                      {t('messagesCount', { count: s.messageCount })}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+          <SectionTitle>{t('byPerson')}</SectionTitle>
+          <div style={{ ...card, overflow: 'hidden', marginBottom: 28 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead>
+                <tr>
+                  <th style={th}>{t('colPerson')}</th>
+                  <th style={{ ...th, textAlign: 'right' }}>{t('colCount')}</th>
+                  <th style={th}>{t('colLiked')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.map((s) => (
+                  <tr key={s.staffId ?? 'team'} style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                    <td style={{ ...cell, fontWeight: 600, color: 'var(--text)' }}>{nameOf(s.staffId)}</td>
+                    <td style={{ ...cell, textAlign: 'right', fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{s.count}</td>
+                    <td style={{ ...cell, color: 'var(--text-2)' }}>
+                      {liked(s.topTags.slice(0, 3).map(({ tag }) => t(`tags.${tag}`))) || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {messages.length > 0 && (
@@ -148,11 +150,11 @@ export default async function ComplimentsPage({
                         {m.hidden_at && <> · {t('hiddenBadge')}</>}
                       </div>
                       <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>
-                        “{m.message}”
+                        {quote(m.message ?? '')}
                       </div>
                       {(m.tags ?? []).filter(isComplimentTag).length > 0 && (
                         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
-                          {(m.tags ?? []).filter(isComplimentTag).map((tag) => t(`tags.${tag}`)).join(' · ')}
+                          {liked((m.tags ?? []).filter(isComplimentTag).map((tag) => t(`tags.${tag}`)))}
                         </div>
                       )}
                     </div>
@@ -168,44 +170,29 @@ export default async function ComplimentsPage({
   );
 }
 
-/** The locked page's example: obviously an example, never real data. */
-function Preview({ label, t }: { label: string; t: Awaited<ReturnType<typeof getTranslations<'dashboard.compliments'>>> }) {
-  const sample = [
-    { name: 'Julie', count: 14, tags: ['advice', 'smile'] as const, quote: t('sample1') },
-    { name: 'Karim', count: 9, tags: ['speed', 'welcome'] as const, quote: t('sample2') },
+/** The locked page's example: labelled as one, never real-looking data. */
+function Preview({ label, t, locale }: {
+  label: string;
+  t: Awaited<ReturnType<typeof getTranslations<'dashboard.compliments'>>>;
+  locale: string;
+}) {
+  const quote = (text: string) => (locale === 'fr' ? `« ${text} »` : `“${text}”`);
+  const rows = [
+    { name: 'Julie', count: 14, liked: `${t('tags.advice')}, ${t('tags.smile').toLowerCase()}`, text: t('sample1') },
+    { name: 'Karim', count: 9, liked: `${t('tags.speed')}, ${t('tags.welcome').toLowerCase()}`, text: t('sample2') },
   ];
   return (
-    <div aria-hidden="true" style={{ position: 'relative', marginTop: 4 }}>
-      <span style={{
-        position: 'absolute', top: -10, left: 14, zIndex: 1,
-        padding: '2px 9px', borderRadius: 100, fontSize: 11, fontWeight: 700,
-        background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-3)',
-        textTransform: 'uppercase', letterSpacing: '0.06em',
-      }}>
-        {label}
-      </span>
-      <div style={{
-        ...card, padding: 16, display: 'grid', gap: 12,
-        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-        borderStyle: 'dashed', userSelect: 'none',
-      }}>
-        {sample.map((s) => (
-          <div key={s.name} style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--surface-2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{s.name}</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{s.count}</span>
+    <div aria-hidden="true" style={{ userSelect: 'none' }}>
+      <SectionTitle>{label}</SectionTitle>
+      <div style={{ ...card, borderStyle: 'dashed', overflow: 'hidden' }}>
+        {rows.map((r, i) => (
+          <div key={r.name} style={{ padding: '12px 14px', borderTop: i ? '1px solid var(--border-subtle)' : 'none' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 14 }}>
+              <span style={{ fontWeight: 600, color: 'var(--text)' }}>{r.name}</span>
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>{r.count}</span>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, margin: '8px 0' }}>
-              {s.tags.map((tag) => (
-                <span key={tag} style={{
-                  padding: '3px 9px', borderRadius: 100, fontSize: 12,
-                  background: 'var(--accent-muted)', color: 'var(--accent)',
-                }}>
-                  {t(`tags.${tag}`)}
-                </span>
-              ))}
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>“{s.quote}”</div>
+            <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 2 }}>{r.liked}</div>
+            <div style={{ fontSize: 13.5, color: 'var(--text-2)', marginTop: 6 }}>{quote(r.text)}</div>
           </div>
         ))}
       </div>

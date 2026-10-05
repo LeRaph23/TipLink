@@ -59,7 +59,7 @@ export function ReviewInvite({
         {[0, 1, 2, 3, 4].map(i => <PayIcon key={i} name="star" size={20} color="#F2A93B" />)}
       </div>
       <h2 style={{ font: '600 20px/28px var(--font-display)', letterSpacing: 0, color: 'var(--text)' }}>
-        {staffName ? t('reviewTitleNamed', { name: staffName }) : t('reviewTitle')}
+        {staffName ? t('reviewTitleNamed', { name: staffName.trim().split(/\s+/)[0] || staffName }) : t('reviewTitle')}
       </h2>
       <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)', margin: '4px 0 16px' }}>
         {t('reviewBody')}

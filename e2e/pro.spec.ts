@@ -15,11 +15,11 @@ test('the Pro offer starts a trial without a card, and the tip page then asks fo
     await page.goto('/fr/dashboard/billing#pro');
 
     // What stays free is said before anything is sold.
-    await expect(page.getByText('Relevés de paie, export et envoi au comptable')).toBeVisible();
+    await expect(page.getByText(/restent gratuits, avec ou sans Pro/)).toBeVisible();
     await page.getByRole('button', { name: 'Essayer 30 jours gratuitement' }).click();
 
     await expect(page.getByText('Essai gratuit en cours')).toBeVisible();
-    await expect(page.getByText(/Aucune carte n'est enregistrée/)).toBeVisible();
+    await expect(page.getByText(/Vous n'avez pas donné de carte/)).toBeVisible();
     const [g] = await admin<{ pro_trial_ends_at: string | null }[]>(
       `/rest/v1/groups?id=eq.${group_id}&select=pro_trial_ends_at`,
     );
@@ -30,13 +30,13 @@ test('the Pro offer starts a trial without a card, and the tip page then asks fo
       `/rest/v1/staff_profiles?select=id,full_name&deleted_at=is.null&limit=1`,
     );
     await page.goto(`/fr/pay/success?demo=1&staff=${staff.id}&amt=500&cur=eur`);
-    await page.getByRole('button', { name: 'Bons conseils' }).click();
+    await page.getByRole('button', { name: 'Les conseils' }).click();
     await page.getByRole('button', { name: 'Envoyer' }).click();
-    await expect(page.getByRole('status')).toContainText('recevra votre mot');
+    await expect(page.getByRole('status')).toContainText('transmis');
 
     // And the page that reads them opens on the manager's side.
     await page.goto('/fr/dashboard/compliments');
-    await expect(page.getByRole('heading', { name: 'Compliments' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mots des clients' })).toBeVisible();
   } finally {
     await reset(group_id);
   }
@@ -47,6 +47,6 @@ test('a free group sees an example, never real-looking data, on the compliments 
   await reset(group_id);
   await login(page);
   await page.goto('/fr/dashboard/compliments');
-  await expect(page.getByText('Les compliments font partie de Digitip Pro')).toBeVisible();
+  await expect(page.getByText('Les petits mots font partie de Digitip Pro')).toBeVisible();
   await expect(page.getByText('Exemple')).toBeVisible();
 });

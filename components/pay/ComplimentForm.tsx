@@ -17,6 +17,11 @@ import { PayIcon, Spinner, btnProps } from './ui';
  * In demo mode it behaves the same and stores nothing, so a manager trying
  * the flow on a demo establishment sees exactly what a customer will.
  */
+/** "Un petit mot pour Clara ?", not "pour Clara Dubois ?": nobody talks like that. */
+function firstName(full: string): string {
+  return full.trim().split(/\s+/)[0] || full;
+}
+
 export function ComplimentForm({
   transactionId,
   staffName,
@@ -74,7 +79,7 @@ export function ComplimentForm({
           <PayIcon name="heart" size={18} color="var(--accent)" />
         </span>
         <p style={{ font: '500 15px/22px var(--font)', color: 'var(--text)', margin: 0 }}>
-          {staffName ? t('sentNamed', { name: staffName }) : t('sent')}
+          {staffName ? t('sentNamed', { name: firstName(staffName) }) : t('sent')}
         </p>
       </div>
     );
@@ -84,12 +89,9 @@ export function ComplimentForm({
 
   return (
     <div style={card}>
-      <h2 style={{ font: '600 18px/26px var(--font-display)', color: 'var(--text)', margin: 0 }}>
-        {staffName ? t('titleNamed', { name: staffName }) : t('title')}
+      <h2 style={{ font: '600 18px/26px var(--font-display)', color: 'var(--text)', margin: '0 0 12px' }}>
+        {staffName ? t('titleNamed', { name: firstName(staffName) }) : t('title')}
       </h2>
-      <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)', margin: '4px 0 14px' }}>
-        {t('body')}
-      </p>
 
       <div role="group" aria-label={t('chipsLabel')} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {COMPLIMENT_TAGS.map((tag) => {
@@ -151,7 +153,7 @@ export function ComplimentForm({
         </p>
       )}
       <p style={{ font: '400 12px/16px var(--font)', color: 'var(--text-3)', margin: '10px 0 0' }}>
-        {t('privacy')}
+        {staffName ? t('privacyNamed', { name: firstName(staffName) }) : t('privacy')}
       </p>
     </div>
   );
