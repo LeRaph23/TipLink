@@ -41,7 +41,7 @@ export const HELP: HelpCategory[] = [
           'Approchez le haut de votre téléphone de la plaque, ou scannez son QR code avec l’appareil photo.',
           'Cherchez votre établissement sur Google (ou passez cette étape).',
           'Vérifiez le nom, l’adresse et votre activité.',
-          'Indiquez votre nom, puis confirmez votre email avec le code reçu.',
+          'Indiquez votre nom, puis confirmez votre e-mail avec le code reçu.',
         ],
       },
       {
@@ -58,9 +58,9 @@ export const HELP: HelpCategory[] = [
       },
       {
         id: 'prete-a-activer',
-        question: 'Le scan affiche « Votre plaque est prête à être activée » et me demande un email',
+        question: 'Le scan affiche « Votre plaque n’attend plus que vous » et me demande un e-mail',
         answer:
-          "C'est une plaque achetée en ligne. Pour protéger vos pourboires, le lien de configuration est envoyé uniquement à l'adresse utilisée lors de la commande. Touchez « Recevoir mon lien d’activation », puis ouvrez l'email et cliquez sur « Activer ma plaque ».",
+          "C'est une plaque achetée en ligne. Pour protéger vos pourboires, le lien de configuration est envoyé uniquement à l'adresse utilisée lors de la commande. Touchez « Recevoir le lien », puis ouvrez l'e-mail et cliquez sur « Activer ma plaque ».",
         steps: [
           'Regardez aussi dans les spams et l’onglet Promotions.',
           'Vous n’avez plus accès à cette adresse ? Écrivez-nous avec le numéro de commande.',
@@ -71,7 +71,7 @@ export const HELP: HelpCategory[] = [
         id: 'lien-configurer',
         question: 'J’ai commandé en ligne : où est mon lien « Configurer mon espace » ?',
         answer:
-          "Dans l'email de confirmation de commande, et sur la page qui s'affiche juste après le paiement. Le lien est valable 7 jours. Passé ce délai, scannez simplement votre plaque : vous recevrez un nouveau lien par email.",
+          "Dans l'e-mail de confirmation de commande, et sur la page qui s'affiche juste après le paiement. Le lien est valable 7 jours. Passé ce délai, scannez simplement votre plaque : vous recevrez un nouveau lien par e-mail.",
       },
       {
         id: 'page-introuvable',
@@ -101,7 +101,7 @@ export const HELP: HelpCategory[] = [
   {
     id: 'connexion',
     icon: '✉️',
-    title: 'Connexion et code par email',
+    title: 'Connexion et code par e-mail',
     entries: [
       {
         id: 'code-pas-recu',
@@ -111,7 +111,7 @@ export const HELP: HelpCategory[] = [
       },
       {
         id: 'code-incorrect',
-        question: '« Ce code est incorrect ou expiré »',
+        question: '« Ce code n’est pas bon, ou il a expiré »',
         answer:
           'Un code est valable 15 minutes. Utilisez toujours le dernier code reçu : si vous en avez demandé plusieurs, les précédents ne marchent plus.',
       },
@@ -119,7 +119,7 @@ export const HELP: HelpCategory[] = [
         id: 'aucun-compte',
         question: '« Aucun compte avec cette adresse » quand je veux me connecter',
         answer:
-          "Votre compte se crée au moment de l'activation de la plaque, pas avant. Vous venez de recevoir votre plaque ? Scannez-la. Vous avez commandé en ligne ? Utilisez le lien « Configurer mon espace » de l'email de confirmation. Sinon, vérifiez l'orthographe de l'adresse.",
+          "Votre compte se crée au moment de l'activation de la plaque, pas avant. Vous venez de recevoir votre plaque ? Scannez-la. Vous avez commandé en ligne ? Utilisez le lien « Configurer mon espace » de l'e-mail de confirmation. Sinon, vérifiez l'orthographe de l'adresse.",
       },
       {
         id: 'trop-tentatives',
@@ -130,7 +130,7 @@ export const HELP: HelpCategory[] = [
         id: 'mot-de-passe',
         question: 'Quel est mon mot de passe ?',
         answer:
-          "Il n'y en a pas. Vous vous connectez avec votre email et un code à 6 chiffres envoyé à chaque fois, depuis n'importe quel téléphone ou ordinateur.",
+          "Il n'y en a pas. Vous vous connectez avec votre e-mail et un code à 6 chiffres envoyé à chaque fois, depuis n'importe quel téléphone ou ordinateur.",
         link: { label: 'Se connecter', href: '/fr/login' },
       },
     ],
@@ -155,15 +155,15 @@ export const HELP: HelpCategory[] = [
       },
       {
         id: 'societe-ou-ei',
-        question: '« Votre structure juridique » : je choisis quoi ?',
+        question: '« Votre forme juridique » : je choisis quoi ?',
         answer:
-          "SAS, SARL, SA… : « Une société ». Micro-entreprise, auto-entreprise ou entreprise individuelle : « Une entreprise individuelle ou auto-entreprise ».",
+          "SAS, SARL, SA… : « Une société ». Micro-entreprise, auto-entreprise ou entreprise individuelle : « Une entreprise individuelle ou une micro-entreprise ».",
       },
       {
         id: 'formulaire-ne-charge-pas',
         question: 'Le formulaire de vérification ne s’ouvre pas',
         answer:
-          'Rechargez la page. Si le message « Impossible de charger » revient, essayez un autre navigateur ou désactivez temporairement votre bloqueur de publicités. Si Stripe ouvre une fenêtre pour vérifier votre identité, autorisez les fenêtres pop-up pour digitip.app.',
+          'Rechargez la page. Si le formulaire ne s’affiche toujours pas, essayez un autre navigateur ou désactivez temporairement votre bloqueur de publicités. Si Stripe ouvre une fenêtre pour vérifier votre identité, autorisez les fenêtres pop-up pour digitip.app.',
       },
       {
         id: 'verification-incomplete',
@@ -174,13 +174,13 @@ export const HELP: HelpCategory[] = [
       },
       {
         id: 'verification-en-cours',
-        question: '« Vérification en cours chez Stripe » : je dois faire quelque chose ?',
+        question: '« Stripe vérifie vos informations » : je dois faire quelque chose ?',
         answer:
           "Non. Votre page de pourboire s'active toute seule dès que Stripe valide. Si Stripe a besoin d'un document en plus, il apparaît dans « À compléter » sur la page Compte de paiement.",
       },
       {
         id: 'page-fermee',
-        question: 'Mes clients voient « Pas encore actif » ou « Aucun membre n’est encore prêt »',
+        question: 'Mes clients voient « Pas encore actif » ou « Personne dans l’équipe ne peut encore recevoir de pourboire »',
         answer:
           "La page de pourboire reste fermée tant que la vérification de l'établissement n'est pas validée. Une fois validée, elle s'ouvre automatiquement. Vérifiez aussi que votre équipe contient au moins une personne active.",
       },
@@ -225,7 +225,7 @@ export const HELP: HelpCategory[] = [
         id: 'ajouter',
         question: 'Comment ajouter un serveur ou un coiffeur ?',
         answer:
-          'Le plus simple : envoyez le lien d’invitation de votre équipe par SMS ou WhatsApp. Chacun crée son profil depuis son téléphone (prénom, photo, email) en 2 minutes. Vous pouvez aussi inviter quelqu’un par email avec « Inviter un membre ».',
+          'Le plus simple : envoyez le lien d’invitation de votre équipe par SMS ou WhatsApp. Chacun crée son profil depuis son téléphone (prénom, photo, e-mail) en 2 minutes. Vous pouvez aussi inviter quelqu’un par e-mail avec « Inviter quelqu’un ».',
         steps: [
           'Tableau de bord → Équipe.',
           'Touchez « Copier le lien » ou « Copier le SMS ».',
@@ -241,9 +241,9 @@ export const HELP: HelpCategory[] = [
       },
       {
         id: 'email-invitation',
-        question: 'Mon employé n’a pas reçu l’email d’invitation',
+        question: 'Mon employé n’a pas reçu l’e-mail d’invitation',
         answer:
-          "Demandez-lui de regarder dans ses spams. Le plus rapide reste de lui envoyer le lien d'équipe par SMS : il n'a pas besoin de l'email pour s'inscrire.",
+          "Demandez-lui de regarder dans ses spams. Le plus rapide reste de lui envoyer le lien d'équipe par SMS : il n'a pas besoin de l'e-mail pour s'inscrire.",
       },
       {
         id: 'lien-partage',
@@ -334,7 +334,14 @@ export const HELP: HelpCategory[] = [
         question: 'Mon lien Google est enregistré mais mes clients ne voient rien',
         answer:
           "L'invitation à laisser un avis juste après le pourboire fait partie de Digitip Pro, offert 30 jours dès votre premier pourboire, sans carte. Après l'essai, le lien reste enregistré et l'invitation revient dès que Pro est réactivé. Les pourboires et les relevés, eux, fonctionnent sans abonnement.",
-        link: { label: 'Voir Digitip Pro', href: '/fr/dashboard/billing' },
+        link: { label: 'Voir Digitip Pro', href: '/fr/dashboard/billing#pro' },
+      },
+      {
+        id: 'mots-des-clients',
+        question: 'Où lire les petits mots laissés par les clients ?',
+        answer:
+          "Dans « Mots des clients », dans le menu. Vous y voyez qui en reçoit le plus et ce que les clients ont aimé. Chaque membre de l'équipe voit aussi les siens sur son tableau de bord. Si un message n'a rien à faire là, touchez « Masquer » : il disparaît pour l'employé.",
+        link: { label: 'Mots des clients', href: '/fr/dashboard/compliments' },
       },
     ],
   },

@@ -14,7 +14,7 @@ for (const path of PAGES) {
     const errors = trackPageErrors(page);
     const res = await page.goto(path);
     expect(res?.status(), 'HTTP status').toBeLessThan(400);
-    await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
+    await expect(page.getByText("Quelque chose n'a pas marché")).toHaveCount(0);
     await expect(page.locator('h1').first()).toBeVisible();
     expect(errors, 'uncaught page errors').toEqual([]);
   });

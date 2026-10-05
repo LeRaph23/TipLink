@@ -44,12 +44,12 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Et si un serveur quitte l\'établissement ?',
         answer:
-          "Vous le désactivez depuis le tableau de bord et il n'apparaît plus dans la liste. Les pourboires déjà reçus lui restent acquis : ils ont été versés sur son compte, pas sur le vôtre.",
+          "Vous le retirez de l'équipe depuis le tableau de bord, et il n'apparaît plus sur la page de pourboire. Ce qu'il a déjà reçu reste noté à son nom sur vos relevés : vous le lui reversez avec sa dernière paie.",
       },
     ],
     sources: [
       {
-        label: "L'Hôtellerie Restauration — passer au pourboire dématérialisé",
+        label: "L'Hôtellerie Restauration : passer au pourboire dématérialisé",
         url: 'https://www.lhotellerie-restauration.fr/actualite/comment-passer-au-pourboire-dematerialise',
         verifiedOn: '2026-07-27',
       },
@@ -64,7 +64,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       'Service au comptoir, tickets courts, rotation rapide : pourquoi le bar est le format où le pourboire dématérialisé se déclenche le plus souvent.',
     h1: 'Le pourboire par carte, pour les bars et brasseries',
     cardSummary:
-      'Beaucoup de transactions, des montants faibles, un comptoir face au client : le contexte le plus favorable au tag.',
+      'Beaucoup de passages, de petits montants, et un comptoir face au client : c’est là que la plaque sert le plus souvent.',
     datePublished: '2026-07-27',
     dateModified: '2026-07-27',
     related: ['restaurant', 'cafe'],
@@ -72,12 +72,12 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Le montant proposé est-il adapté à un service au comptoir ?',
         answer:
-          "Les montants suggérés sont paramétrables. Sur un bar, des paliers bas déclenchent bien plus souvent qu'un pourcentage calqué sur la restauration assise.",
+          "Vous choisissez les montants proposés. Dans un bar, de petits montants (1, 2, 3 €) marchent bien mieux qu'un pourcentage pensé pour un restaurant.",
       },
       {
         question: 'Où poser la plaque dans un bar ?',
         answer:
-          "Sur le comptoir, côté client, à hauteur de regard au moment de régler. C'est l'emplacement qui convertit le mieux : le geste se fait pendant l'attente du rendu.",
+          "Sur le comptoir, côté client, bien en vue au moment de payer. C'est là qu'elle marche le mieux : le client tape son téléphone pendant qu'il attend sa monnaie ou son ticket.",
       },
       {
         question: 'Est-ce que ça ralentit le service ?',
@@ -87,7 +87,7 @@ export const SOLUTIONS: SolutionMeta[] = [
     ],
     sources: [
       {
-        label: "L'Hôtellerie Restauration — passer au pourboire dématérialisé",
+        label: "L'Hôtellerie Restauration : passer au pourboire dématérialisé",
         url: 'https://www.lhotellerie-restauration.fr/actualite/comment-passer-au-pourboire-dematerialise',
         verifiedOn: '2026-07-27',
       },
@@ -115,12 +115,12 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Et en vente à emporter ?',
         answer:
-          "Le pourboire fonctionne moins bien sans service à table ou au comptoir : il n'y a pas de moment d'échange. Si votre activité est majoritairement à emporter, attendez-vous à un rendement nettement plus faible.",
+          "Le pourboire fonctionne moins bien sans service à table ou au comptoir : il n'y a pas de moment d'échange. Si vous faites surtout de la vente à emporter, attendez-vous à beaucoup moins de pourboires.",
       },
     ],
     sources: [
       {
-        label: 'France Num — mettre en place le pourboire par carte bancaire',
+        label: 'France Num : mettre en place le pourboire par carte bancaire',
         url: 'https://www.francenum.gouv.fr/guides-et-conseils/developpement-commercial/solutions-de-paiement/mettre-en-place-le-pourboire-par',
         verifiedOn: '2026-07-27',
       },
@@ -153,12 +153,12 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Est-ce que ça met le client mal à l\'aise ?',
         answer:
-          "La plaque est passive : elle ne demande rien et ne s'affiche pas sur un écran face au client. C'est précisément l'inverse du terminal qui propose un pourcentage sous les yeux du coiffeur.",
+          "La plaque ne demande rien, elle est juste posée là. C'est tout l'inverse du terminal qui affiche un pourcentage sous les yeux du coiffeur.",
       },
     ],
     sources: [
       {
-        label: "L'Éclaireur des Coiffeurs — pourboires défiscalisés et dématérialisés",
+        label: "L'Éclaireur des Coiffeurs : pourboires défiscalisés et dématérialisés",
         url: 'https://www.leclaireur-coiffeurs.com/les-pourboires-defiscalises-et-dematerialises/',
         verifiedOn: '2026-07-27',
       },
@@ -181,7 +181,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Le pourboire au tatoueur, ça se fait vraiment en France ?',
         answer:
-          "Moins systématiquement qu'aux États-Unis, mais oui — surtout sur les grosses pièces et avec les clients fidèles. La culture existe, elle est simplement bridée par l'absence d'espèces.",
+          "Moins systématiquement qu'aux États-Unis, mais oui, surtout sur les grosses pièces et avec les clients fidèles. La culture existe, elle est simplement bridée par l'absence d'espèces.",
       },
       {
         question: 'Comment gérer un studio avec plusieurs artistes ?',
@@ -219,7 +219,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'En quoi un barbershop diffère-t-il d\'un salon de coiffure ?',
         answer:
-          "Le rythme de retour, surtout : deux à quatre semaines contre six à huit, avec une clientèle plus jeune et une culture du pourboire nettement plus installée. Le même geste rapporte deux à trois fois plus souvent.",
+          "Surtout le rythme : le client revient toutes les deux à quatre semaines, contre six à huit en salon, et il est plus jeune, plus habitué au pourboire. Le même geste revient deux à trois fois plus souvent.",
       },
       {
         question: 'Et les barbiers en location de poste ?',
@@ -229,7 +229,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Une plaque par poste ou une seule au comptoir ?',
         answer:
-          "Une par poste, avec le profil de chacun. Le client sait exactement qui il récompense, et c'est ce lien direct qui déclenche le geste — une plaque commune le dilue.",
+          "Une par poste, avec le profil de chacun. Le client sait exactement qui il récompense, et c'est ce lien direct qui déclenche le geste. Avec une plaque commune, ce lien se perd.",
       },
     ],
     sources: [
@@ -249,7 +249,7 @@ export const SOLUTIONS: SolutionMeta[] = [
       'Sur un free tour, le pourboire est le revenu. Vos clients sont des touristes étrangers sans euros en poche : comment récupérer ce qu\'ils voulaient déjà donner.',
     h1: 'Le pourboire par carte, pour les guides',
     cardSummary:
-      "Le métier où le pourboire n'est pas un bonus mais le salaire — et où les clients n'ont par définition pas de liquide.",
+      "Le métier où le pourboire n'est pas un bonus mais le salaire, et où les clients n'ont par définition pas de liquide.",
     datePublished: '2026-07-27',
     dateModified: '2026-07-27',
     related: ['restaurant', 'cafe'],
@@ -262,17 +262,17 @@ export const SOLUTIONS: SolutionMeta[] = [
       {
         question: 'Un touriste étranger doit-il installer quelque chose ?',
         answer:
-          "Non, et c'est décisif : personne n'installe une application française pour donner 5 € une fois dans sa vie. Le tap ouvre une page web ordinaire, le paiement se fait avec la carte déjà enregistrée dans le téléphone.",
+          "Non, et c'est ce qui fait que ça marche : personne n'installe une application française pour donner 5 € une fois dans sa vie. Le tap ouvre une page web ordinaire, le paiement se fait avec la carte déjà enregistrée dans le téléphone.",
       },
       {
         question: 'Et hors saison ?',
         answer:
-          "La plaque est un achat unique sans abonnement, et la commission ne s'applique qu'aux pourboires encaissés. Les mois sans visite ne coûtent rien.",
+          "La plaque se paie une fois, sans abonnement, et les frais de service sont payés par le client, seulement quand il laisse un pourboire. Un mois sans visite ne vous coûte rien.",
       },
     ],
     sources: [
       {
-        label: 'France Num — mettre en place le pourboire par carte bancaire',
+        label: 'France Num : mettre en place le pourboire par carte bancaire',
         url: 'https://www.francenum.gouv.fr/guides-et-conseils/developpement-commercial/solutions-de-paiement/mettre-en-place-le-pourboire-par',
         verifiedOn: '2026-07-27',
       },

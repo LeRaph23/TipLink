@@ -13,7 +13,7 @@ test('super admin reaches the fulfilment pages', async ({ page }) => {
       const res = await page.goto(path);
       expect(res?.status(), `${path} status`).toBeLessThan(400);
       await expect(page).toHaveURL(new RegExp(path.replace(/\//g, '\\/') + '$'));
-      await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
+      await expect(page.getByText("Quelque chose n'a pas marché")).toHaveCount(0);
     });
   }
   expect(errors, 'uncaught page errors').toEqual([]);

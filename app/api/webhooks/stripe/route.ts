@@ -1358,7 +1358,7 @@ async function handlePackExpressPaid(
       const { invoiceId, invoicePdfUrl: pdf } = await createPackInvoiceForPaymentIntent({
         paymentIntent: intent,
         customerId,
-        description: `Digitip — Pack ${pack === 'solo' ? 'Solo' : 'Duo'} (${quantity} SmartTag${quantity > 1 ? 's' : ''})`,
+        description: `Digitip, pack ${pack === 'solo' ? 'Solo' : 'Duo'} (${quantity} plaque${quantity > 1 ? 's' : ''})`,
         htAmount,
       });
       invoicePdfUrl = pdf;
@@ -1478,7 +1478,7 @@ async function handlePackOrderPaid(
       const res = await createPackInvoiceForPaymentIntent({
         paymentIntent: intent,
         customerId,
-        description: `Digitip — Pack ${pack === 'solo' ? 'Solo' : 'Duo'} (${quantity} SmartTag${quantity > 1 ? 's' : ''})`,
+        description: `Digitip, pack ${pack === 'solo' ? 'Solo' : 'Duo'} (${quantity} plaque${quantity > 1 ? 's' : ''})`,
         htAmount,
       });
       invoiceId = res.invoiceId;

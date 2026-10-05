@@ -45,7 +45,7 @@ export function CommercialContracts({ code }: { code: string }) {
         if (d.error) { setError(d.error); return; }
         setList(d.contracts ?? []);
       })
-      .catch(() => setError('Impossible de charger vos contrats.'));
+      .catch(() => setError('Vos contrats ne s’affichent pas. Rechargez la page.'));
   }, [code]);
 
   useEffect(() => {
@@ -173,7 +173,7 @@ function ContractModal({ code, contractId, onClose }: {
         setSigned(d.status === 'signed');
         setLoading(false);
       })
-      .catch(() => { if (!cancelled) { setError('Impossible de charger le contrat.'); setLoading(false); } });
+      .catch(() => { if (!cancelled) { setError('Le contrat ne s’affiche pas. Rechargez la page.'); setLoading(false); } });
     return () => { cancelled = true; };
   }, [code, contractId]);
 
@@ -356,7 +356,7 @@ function SignatureFooter({
   const submit = async () => {
     setError(null);
     if (!consent) { setError('Vous devez cocher la clause de consentement.'); return; }
-    if (!hasDrawn) { setError('Veuillez tracer votre signature dans le cadre.'); return; }
+    if (!hasDrawn) { setError('Tracez votre signature dans le cadre.'); return; }
     const canvas = canvasRef.current;
     if (!canvas) return;
     setSigning(true);

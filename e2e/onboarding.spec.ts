@@ -25,7 +25,7 @@ test('the Google review step refuses a link that would never be saved', async ({
   // Without a Places API key the automatic search fails and the picker drops
   // into manual entry by itself; only click through if it has not.
   const input = page.getByPlaceholder('https://g.page/r/…/review');
-  const manual = page.getByRole('button', { name: 'Saisir le lien manuellement' });
+  const manual = page.getByRole('button', { name: 'Ajouter le lien moi-même' });
   await expect(input.or(manual).first()).toBeVisible();
   if (!(await input.isVisible())) {
     await manual.click({ timeout: 5_000 }).catch(() => {});
@@ -33,11 +33,11 @@ test('the Google review step refuses a link that would never be saved', async ({
   }
   await input.fill('pas un lien');
   await page.getByRole('button', { name: 'Enregistrer le lien' }).click();
-  await expect(page.getByText('Saisissez un lien d’avis Google valide.')).toBeVisible();
+  await expect(page.getByText("Ce n'est pas un lien d'avis Google.")).toBeVisible();
 
   await input.fill('https://g.page/r/CafeTestJulie');
   await page.getByRole('button', { name: 'Enregistrer le lien' }).click();
-  await expect(page.getByText('Saisissez un lien d’avis Google valide.')).toHaveCount(0);
+  await expect(page.getByText("Ce n'est pas un lien d'avis Google.")).toHaveCount(0);
 });
 
 test('a manager stuck in onboarding can sign out', async ({ page }) => {

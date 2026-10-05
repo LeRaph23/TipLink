@@ -42,7 +42,7 @@ const STEPS: Step[] = [
   {
     n: '01',
     title: 'Candidature',
-    body: "Vous remplissez le formulaire ci-dessous. Nous examinons votre dossier sous 48 h ouvrées.",
+    body: "Vous remplissez le formulaire ci-dessous, et on vous répond sous 48 h ouvrées.",
   },
   {
     n: '02',
@@ -51,13 +51,13 @@ const STEPS: Step[] = [
   },
   {
     n: '03',
-    title: 'Démarchage encadré',
-    body: "Vous présentez le SmartTag à des établissements de proximité (restaurants, bars, cafés, salons, hôtels…) à votre rythme.",
+    title: 'Vous démarchez',
+    body: "Vous présentez la plaque Digitip aux commerces de votre coin (restaurants, bars, cafés, salons, hôtels…), à votre rythme.",
   },
   {
     n: '04',
-    title: 'Commissions versées',
-    body: "À chaque vente confirmée, votre commission est créditée. Retrait Stripe dès 30 € de solde.",
+    title: 'Vous êtes payé',
+    body: "Chaque vente confirmée ajoute votre commission à votre solde. Vous pouvez la retirer dès 30 €.",
   },
 ];
 
@@ -66,17 +66,17 @@ const AUDIENCES: Audience[] = [
   {
     icon: 'users',
     title: 'Étudiants et alternants',
-    body: "Une activité compatible avec les études : horaires libres, intensité ajustable selon les périodes d'examens.",
+    body: "Ça se cale autour des cours : vous choisissez vos horaires, et vous levez le pied pendant les examens.",
   },
   {
     icon: 'trophy',
     title: 'Jeunes diplômés',
-    body: "Un premier revenu commercial pour étoffer un CV : prospection terrain, négociation, suivi client.",
+    body: "Un premier revenu, et une vraie expérience commerciale à mettre sur votre CV : prospection, négociation, suivi.",
   },
   {
     icon: 'wallet',
     title: 'Salariés en complément',
-    body: "Un revenu d'appoint cumulable avec un CDI ou un CDD, sur le temps libre. Statut micro déclaré séparément.",
+    body: "Un complément sur votre temps libre, cumulable avec un CDI ou un CDD. La micro-entreprise se déclare à part.",
   },
   {
     icon: 'refresh',
@@ -86,12 +86,12 @@ const AUDIENCES: Audience[] = [
   {
     icon: 'tag',
     title: 'Indépendants et freelances',
-    body: "Un canal de revenu supplémentaire à intégrer à une activité existante (commerciale, terrain, services).",
+    body: "Un revenu de plus à côté de votre activité, surtout si vous voyez déjà des commerçants.",
   },
   {
     icon: 'clock',
     title: 'Retraités actifs et parents',
-    body: "Un rythme entièrement choisi, quelques heures par semaine, sans contrainte d’objectif.",
+    body: "Quelques heures par semaine si vous voulez, sans objectif imposé.",
   },
 ];
 
@@ -99,13 +99,13 @@ type Trust = { icon: IconName; title: string; body: string };
 const TRUST: Trust[] = [
   {
     icon: 'check',
-    title: 'Activité 100 % déclarée',
-    body: "Vous démarchez sous statut de micro-entrepreneur. Vos commissions sont facturées à Digitip et soumises aux cotisations URSSAF, aucun travail au noir.",
+    title: 'Une activité déclarée',
+    body: "Vous travaillez en micro-entrepreneur. Vous facturez vos commissions à Digitip et vous payez vos cotisations URSSAF dessus, comme pour toute activité.",
   },
   {
     icon: 'lock',
     title: 'Paiements traçables',
-    body: "Les commissions transitent par Stripe Connect, prestataire bancaire agréé. Chaque versement est documenté et téléchargeable depuis le tableau de bord.",
+    body: "Les commissions passent par Stripe, un prestataire de paiement agréé. Chaque versement est téléchargeable depuis votre tableau de bord.",
   },
   {
     icon: 'flag',
@@ -115,7 +115,7 @@ const TRUST: Trust[] = [
   {
     icon: 'clock',
     title: 'Sans engagement',
-    body: "Aucune obligation de résultat, aucune pénalité. Vous testez, vous décidez si cela vous correspond, vous arrêtez quand vous le souhaitez.",
+    body: "Pas d'objectif à tenir, pas de pénalité. Vous essayez, et vous arrêtez quand vous voulez.",
   },
 ];
 
@@ -189,7 +189,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
   {
     q: "Quel produit présente-t-on aux commerces ?",
-    a: "Le SmartTag Digitip : un sticker NFC qui permet aux clients d'un établissement de laisser un pourboire sans contact directement à l'employé qui les a servis. Cible prioritaire : restaurants, bars, cafés, hôtels, salons de coiffure, instituts d'esthétique, barbiers et spas.",
+    a: "La plaque Digitip : une plaque NFC avec QR code, qui permet aux clients de laisser un pourboire par carte, pour la personne qui les a servis. Cible prioritaire : restaurants, bars, cafés, hôtels, salons de coiffure, instituts d'esthétique, barbiers et spas.",
   },
   {
     q: "Et si je ne réalise aucune vente ?",
@@ -279,9 +279,8 @@ export default async function DevenirAmbassadeurPage({
             Rejoignez le programme officiel d&apos;ambassadeurs Digitip.
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 18px' }}>
-            Vous présentez nos SmartTags NFC (un dispositif de pourboire sans contact) à des
-            établissements de proximité (restaurants, bars, cafés, salons, hôtels…), et touchez
-            35 à 45 € par vente.
+            Vous présentez nos plaques de pourboire sans contact aux commerces de proximité
+            (restaurants, bars, cafés, salons, hôtels…), et vous touchez 35 à 45 € par vente.
           </p>
           <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexWrap: 'wrap', gap: '8px 18px' }}>
             {[
@@ -317,9 +316,9 @@ export default async function DevenirAmbassadeurPage({
 
         {/* How it works */}
         <section style={card}>
-          <div style={sectionLabel}>Comment ça marche</div>
-          <h2 style={sectionTitle}>Quatre étapes, encadrées de bout en bout.</h2>
-          <p style={sectionLead}>De la candidature à la première commission versée, le parcours est balisé et transparent.</p>
+          <div style={sectionLabel}>En pratique</div>
+          <h2 style={sectionTitle}>Comment ça se passe</h2>
+          <p style={sectionLead}>De la candidature à votre première commission, en quatre étapes.</p>
 
           <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {STEPS.map(s => (
@@ -366,7 +365,7 @@ export default async function DevenirAmbassadeurPage({
         {/* Audience — explicit for school administrators */}
         <section style={card}>
           <div style={sectionLabel}>À qui s&apos;adresse le programme</div>
-          <h2 style={sectionTitle}>Ouvert à tous les profils, à temps choisi.</h2>
+          <h2 style={sectionTitle}>Pour qui ?</h2>
           <p style={sectionLead}>
             Aucun prérequis de diplôme ni d&apos;âge. Le programme convient aussi bien à un premier revenu
             qu&apos;à un complément d&apos;activité sur le temps libre : vous fixez votre rythme.
@@ -396,7 +395,7 @@ export default async function DevenirAmbassadeurPage({
           <div style={sectionLabel}>Candidature</div>
           <h2 style={sectionTitle}>Postulez en 2 minutes.</h2>
           <p style={sectionLead}>
-            Dossier examiné sous 48 h ouvrées. Aucune information n&apos;est partagée avec des tiers.
+            On vous répond sous 48 h ouvrées. Vos informations ne sont partagées avec personne.
           </p>
           <Suspense fallback={<div style={{ height: 600 }} />}>
             <RecruitmentLandingForm />
@@ -406,10 +405,10 @@ export default async function DevenirAmbassadeurPage({
         {/* Trust / legal framework */}
         <section style={card}>
           <div style={sectionLabel}>Cadre légal et garanties</div>
-          <h2 style={sectionTitle}>Un programme transparent et traçable.</h2>
+          <h2 style={sectionTitle}>Le cadre</h2>
           <p style={sectionLead}>
-            Toutes les conditions sont documentées : contrat d&apos;apporteur d&apos;affaires, charte anti-fraude,
-            relevés Stripe téléchargeables.
+            Tout est écrit noir sur blanc : le contrat d&apos;apporteur d&apos;affaires, la charte anti-fraude,
+            et vos relevés Stripe, que vous pouvez télécharger.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>

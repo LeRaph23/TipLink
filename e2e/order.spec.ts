@@ -26,5 +26,5 @@ test('a step past what the order allows sends back to the first step to fill', a
   // What Back after paying opens: the review step, with the order cleared.
   await page.goto('/fr/order/solo?step=review');
   await expect(page.locator('#order-line1')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Procéder au paiement/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Passer au paiement/ })).toHaveCount(0);
 });

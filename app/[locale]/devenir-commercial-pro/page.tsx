@@ -49,23 +49,23 @@ type Step = { n: string; title: string; body: string };
 const STEPS: Step[] = [
   {
     n: '01',
-    title: 'Candidature qualifiée',
-    body: 'Vous remplissez le formulaire avec votre structure juridique. Étude du dossier sous 48 h ouvrées par notre direction commerciale.',
+    title: 'Vous candidatez',
+    body: 'Vous remplissez le formulaire avec votre forme juridique. On vous répond sous 48 h ouvrées.',
   },
   {
     n: '02',
     title: 'Signature du contrat',
-    body: "Contrat d'apporteur d'affaires en bonne et due forme, signé électroniquement. Vous facturez vos commissions sous le statut juridique déclaré.",
+    body: "On signe un contrat d'apporteur d'affaires, en ligne. Vous facturez ensuite vos commissions sous votre statut.",
   },
   {
     n: '03',
     title: 'Activation du code commercial',
-    body: "Vous recevez votre code promo dédié et l'accès à votre tableau de bord. Votre dispositif Stripe Connect est ouvert dans la foulée.",
+    body: "Vous recevez votre code promo et l'accès à votre tableau de bord. Votre compte de paiement Stripe est ouvert dans la foulée.",
   },
   {
     n: '04',
-    title: 'Démarchage & commissions',
-    body: '50 € par pack Solo vendu, 65 € par pack Duo. Commissions créditées automatiquement à chaque vente confirmée. Virement Stripe dès 30 € de solde.',
+    title: 'Vous démarchez, vous êtes payé',
+    body: '50 € par pack Solo vendu, 65 € par pack Duo. Chaque vente confirmée s’ajoute à votre solde, que vous pouvez retirer dès 30 €.',
   },
 ];
 
@@ -74,22 +74,22 @@ const AUDIENCES: Audience[] = [
   {
     icon: 'trophy',
     title: 'VRP exclusifs et multicartes',
-    body: 'Compatible avec votre carte de représentation actuelle, en multicarte. Digitip vient compléter votre portefeuille avec un produit à fort potentiel de récurrence (SmartTags NFC).',
+    body: 'Compatible avec vos cartes actuelles, en multicarte. Digitip ajoute à votre portefeuille un produit simple à présenter, que le commerçant comprend en une minute.',
   },
   {
     icon: 'flag',
     title: 'Agents commerciaux indépendants',
-    body: 'Une nouvelle carte à présenter à vos clients commerce / restauration. Statut d\'agent commercial inscrit au RSAC parfaitement adapté.',
+    body: 'Une carte de plus à présenter à vos clients commerçants et restaurateurs. Le statut d\'agent commercial inscrit au RSAC convient très bien.',
   },
   {
     icon: 'users',
     title: 'Commerciaux indépendants B2B',
-    body: 'Free-lances, consultants, anciens commerciaux salariés en reconversion : un produit B2B à forte conversion, ticket moyen 200-400 €.',
+    body: 'Freelances, consultants, anciens commerciaux salariés qui se lancent à leur compte : un produit simple, vendu en un ou deux rendez-vous.',
   },
   {
     icon: 'tag',
     title: 'Apporteurs d\'affaires structurés',
-    body: 'Sociétés de prestation commerciale, agences de prospection : nous travaillons en contrat-cadre. Contactez-nous pour un dispositif sur mesure.',
+    body: 'Sociétés de prestation commerciale, agences de prospection : on peut travailler avec un contrat-cadre. Écrivez-nous et on en parle.',
   },
 ];
 
@@ -98,7 +98,7 @@ const TRUST: Trust[] = [
   {
     icon: 'check',
     title: 'Contrat d\'apporteur d\'affaires',
-    body: "Engagement contractuel formel des deux parties, avec barème de commissions, clauses de non-exclusivité, modalités de facturation et conditions de résiliation explicites.",
+    body: "Un contrat signé des deux côtés, qui fixe les commissions, l'absence d'exclusivité, la facturation et la façon d'y mettre fin.",
   },
   {
     icon: 'lock',
@@ -108,11 +108,11 @@ const TRUST: Trust[] = [
   {
     icon: 'bank',
     title: 'Paiement Stripe Connect',
-    body: "Versement automatisé via Stripe Connect dès 30 € de solde, ou virement bancaire classique sur demande pour les structures qui le préfèrent. Tous les relevés sont téléchargeables.",
+    body: "Versement par Stripe dès 30 € de solde, ou par virement classique si vous préférez. Tous les relevés sont téléchargeables.",
   },
   {
     icon: 'flag',
-    title: 'Engagement anti-fraude renforcé',
+    title: 'Tolérance zéro sur la fraude',
     body: "Sur ce programme à barème supérieur, tout manquement (fausse vente, auto-utilisation du code, transaction de complaisance) entraîne la résiliation immédiate du contrat et la suspension des commissions impayées.",
   },
 ];
@@ -189,7 +189,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
   {
     q: 'Quel produit présente-t-on ?',
-    a: 'Le SmartTag Digitip : un sticker NFC qui permet aux clients d\'un établissement de proximité de laisser un pourboire sans contact directement à l\'employé qui les a servis. Cibles prioritaires : restaurants, bars, cafés, hôtels, salons de coiffure, instituts d\'esthétique, barbiers et spas. Ticket moyen 200-400 € HT, cycle de vente court (1-2 RDV).',
+    a: 'La plaque Digitip : une plaque NFC avec QR code, qui permet aux clients d\'un commerce de laisser un pourboire par carte, pour la personne qui les a servis. Cibles prioritaires : restaurants, bars, cafés, hôtels, salons de coiffure, instituts d\'esthétique, barbiers et spas. Ticket moyen 200-400 € HT, cycle de vente court (1-2 RDV).',
   },
 ];
 
@@ -320,11 +320,11 @@ export default async function DevenirCommercialProPage({
             Programme partenaire B2B · Barème commerciaux professionnels
           </div>
           <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.035em', lineHeight: 1.15, margin: '0 0 14px', fontFamily: 'var(--font-display)' }}>
-            Le programme partenaire pensé pour les commerciaux indépendants.
+            Le programme pour les commerciaux indépendants
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 18px' }}>
             Réservé aux <strong style={{ color: 'var(--text)' }}>VRP, agents commerciaux et indépendants B2B</strong> disposant
-            d&apos;une structure juridique déclarée. Vous représentez nos SmartTags NFC auprès des commerces de proximité.
+            d&apos;une structure déclarée. Vous présentez nos plaques de pourboire aux commerces de proximité.
           </p>
           <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
@@ -362,7 +362,7 @@ export default async function DevenirCommercialProPage({
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 22, flexWrap: 'wrap' }}>
             <PrimaryCta />
             <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
-              ~2 minutes · Dossier étudié sous 48 h ouvrées
+              ~2 minutes · Réponse sous 48 h ouvrées
             </span>
           </div>
         </section>
@@ -372,8 +372,8 @@ export default async function DevenirCommercialProPage({
           <div style={sectionLabel}>Comparatif des deux programmes</div>
           <h2 style={sectionTitle}>Ambassadeurs · vs · Commerciaux Pros.</h2>
           <p style={sectionLead}>
-            Le programme Ambassadeurs reste accessible à tous les profils. Le programme Commerciaux Pros offre un cadre B2B
-            renforcé et un barème supérieur, exclusivement pour les commerciaux professionnels.
+            Le programme Ambassadeurs reste ouvert à tous. Celui-ci est réservé aux commerciaux professionnels,
+            avec un contrat d&apos;apporteur d&apos;affaires et des commissions plus élevées.
           </p>
 
           <div style={{
@@ -408,7 +408,7 @@ export default async function DevenirCommercialProPage({
           <div style={sectionLabel}>Parcours d&apos;intégration</div>
           <h2 style={sectionTitle}>De la candidature au premier virement.</h2>
           <p style={sectionLead}>
-            Un processus structuré, encadré contractuellement de bout en bout.
+            Quatre étapes, avec un contrat signé dès le départ.
           </p>
 
           <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -456,10 +456,10 @@ export default async function DevenirCommercialProPage({
         {/* Audience */}
         <section style={card}>
           <div style={sectionLabel}>À qui s&apos;adresse le programme</div>
-          <h2 style={sectionTitle}>Réservé aux commerciaux professionnels.</h2>
+          <h2 style={sectionTitle}>Pour les commerciaux professionnels</h2>
           <p style={sectionLead}>
-            Vous êtes commercial à temps plein ou à temps choisi, sous statut professionnel, avec un objectif de
-            chiffre d&apos;affaires structuré ? Ce programme vous concerne.
+            Vous êtes commercial, à temps plein ou à côté, avec un statut professionnel ?
+            Ce programme est fait pour vous.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
@@ -488,7 +488,7 @@ export default async function DevenirCommercialProPage({
           <div style={sectionLabel}>Candidature</div>
           <h2 style={sectionTitle}>Dossier de candidature commerciale.</h2>
           <p style={sectionLead}>
-            Réservé aux structures déclarées. Dossier étudié sous 48 h ouvrées par notre direction commerciale.
+            Réservé aux structures déclarées. On vous répond sous 48 h ouvrées.
             Vos données ne sont jamais partagées avec des tiers.
           </p>
           <Suspense fallback={<div style={{ height: 800 }} />}>
@@ -501,8 +501,8 @@ export default async function DevenirCommercialProPage({
           <div style={sectionLabel}>Cadre contractuel</div>
           <h2 style={sectionTitle}>Un cadre formel, transparent et conforme.</h2>
           <p style={sectionLead}>
-            Tous les engagements des deux parties sont documentés et signés. Les paiements transitent par un
-            prestataire bancaire agréé (Stripe Connect).
+            Tout ce à quoi chacun s&apos;engage est écrit et signé. Les paiements passent par Stripe,
+            un prestataire de paiement agréé.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>

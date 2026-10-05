@@ -25,7 +25,7 @@ export default function Body() {
       <p>
         C&apos;est un avantage que les autres métiers n&apos;ont pas. Dans un café de
         quartier, le client sait qui lui sert son café tous les matins. Le pourboire
-        nominatif — où le client choisit la personne — fonctionne particulièrement bien
+        nominatif, où le client choisit la personne, marche particulièrement bien
         dans ce contexte, parce que le lien existe déjà.
       </p>
       <p>

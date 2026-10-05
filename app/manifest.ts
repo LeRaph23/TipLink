@@ -2,10 +2,10 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Digitip — Pourboires par CB via NFC',
+    name: 'Digitip, les pourboires par carte',
     short_name: 'Digitip',
     description:
-      'Digitip : la solution de pourboires sans contact par NFC. SmartTags pré-configurés pour restaurants, bars, cafés, salons, hôtels et tous les établissements de proximité — vos clients laissent un pourboire en un tap.',
+      'Vos clients laissent un pourboire par carte en approchant leur téléphone d’une plaque. Pour les restaurants, bars, cafés, salons, hôtels et tous les commerces de proximité.',
     start_url: '/',
     display: 'standalone',
     background_color: '#f9f9f7',

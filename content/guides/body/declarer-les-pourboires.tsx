@@ -15,7 +15,7 @@ export default function Body() {
         classique du pourboire encaissé avec l&apos;addition, ou versé sur le compte de
         l&apos;établissement puis reversé au personnel. L&apos;employeur manipule des
         sommes qui ne lui appartiennent pas : il doit pouvoir les identifier, les
-        justifier, et les traiter en paie selon les règles applicables — exonérées ou non.
+        justifier, et les traiter en paie selon les règles applicables, qu'elles soient exonérées ou non.
       </p>
       <p>
         <strong>Le pourboire va directement au bénéficiaire.</strong> Le client verse sur
@@ -59,7 +59,7 @@ export default function Body() {
 
       <h2>Ce que Digitip fournit</h2>
       <p>
-        Les pourboires encaissés via Digitip sont versés sur le compte de l&apos;établissement, vérifié par Stripe comme l&apos;impose la réglementation anti-blanchiment. Chaque pourboire est attribué à la personne choisie par le client (ou réparti entre l&apos;équipe), et l&apos;administrateur dispose d&apos;un relevé mensuel des montants par salarié — de quoi les reverser avec la paie et documenter les sommes sans ressaisie.
+        Les pourboires encaissés via Digitip sont versés sur le compte de l&apos;établissement, vérifié par Stripe comme l&apos;impose la réglementation anti-blanchiment. Chaque pourboire est attribué à la personne choisie par le client (ou réparti entre l&apos;équipe), et l&apos;administrateur dispose d&apos;un relevé mensuel des montants par salarié, envoyé chaque mois à votre comptable si vous le voulez. Vous pouvez les reverser avec la paie et justifier les sommes sans rien ressaisir.
       </p>
       <p>
         Digitip n&apos;est pas l&apos;employeur des bénéficiaires, n&apos;intervient pas

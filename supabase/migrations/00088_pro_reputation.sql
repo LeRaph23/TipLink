@@ -154,6 +154,7 @@ ALTER TABLE public.tip_compliments ENABLE ROW LEVEL SECURITY;
 -- Owners and managers see every row of their establishments; an employee sees
 -- the compliments addressed to them, minus the ones a manager took down. No
 -- insert or update policy: writes go through routes holding the service role.
+DROP POLICY IF EXISTS tip_compliments_scoped_select ON public.tip_compliments;
 CREATE POLICY tip_compliments_scoped_select ON public.tip_compliments
   FOR SELECT USING (
     is_super_admin()
@@ -188,6 +189,7 @@ COMMENT ON TABLE public.google_listing_snapshots IS
 
 ALTER TABLE public.google_listing_snapshots ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS google_listing_snapshots_scoped_select ON public.google_listing_snapshots;
 CREATE POLICY google_listing_snapshots_scoped_select ON public.google_listing_snapshots
   FOR SELECT USING (
     is_super_admin()

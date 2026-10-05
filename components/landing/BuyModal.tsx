@@ -232,7 +232,7 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
               transition: 'all 140ms',
             }}
           >
-            {loading ? tc('loading') : 'Procéder au paiement →'}
+            {loading ? tc('loading') : 'Passer au paiement →'}
           </button>
           <button onClick={onClose} style={{
             width: '100%', marginTop: 8, padding: '11px',

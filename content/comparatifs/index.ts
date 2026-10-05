@@ -72,7 +72,7 @@ export const COMPARISONS: ComparisonMeta[] = [
       },
       {
         criterion: 'Intégration caisse',
-        digitip: 'Aucune — fonctionne indépendamment de votre caisse',
+        digitip: 'Aucune, Digitip marche à côté de votre caisse',
         competitor: 'Conçu pour s’intégrer au système de caisse du restaurant',
         source: 'https://www.entrepreneurhero.fr/terminal-de-paiement/comparatif-paiement-restaurants/',
         verifiedOn: VERIFIED,
@@ -89,7 +89,7 @@ export const COMPARISONS: ComparisonMeta[] = [
       {
         question: 'Peut-on utiliser les deux ?',
         answer:
-          "Rien ne s'y oppose techniquement : Digitip ne s'intègre pas à votre caisse et ne touche pas au règlement de l'addition. En pratique, proposer deux fois le pourboire dans le même parcours crée de la confusion — mieux vaut trancher.",
+          "Rien ne s'y oppose techniquement : Digitip ne s'intègre pas à votre caisse et ne touche pas au règlement de l'addition. En pratique, proposer deux fois le pourboire dans le même parcours embrouille le client, mieux vaut choisir l'un des deux.",
       },
       {
         question: 'Digitip fonctionne-t-il sans changer de caisse ?',
@@ -141,8 +141,8 @@ export const COMPARISONS: ComparisonMeta[] = [
       },
       {
         criterion: 'Modèle de prix',
-        digitip: 'Achat unique de la plaque, puis 5 % sur les pourboires encaissés',
-        competitor: 'Consulter leur grille tarifaire — non publiée de façon stable',
+        digitip: 'La plaque est payée une fois. Le client paie 0,25 € + 5 % en plus du pourboire, rien n’est pris sur le pourboire',
+        competitor: 'Voir leur grille tarifaire, qui n’est pas publiée de façon stable',
         source: 'https://www.onetip-app.com/',
         verifiedOn: VERIFIED,
       },
@@ -151,7 +151,7 @@ export const COMPARISONS: ComparisonMeta[] = [
       {
         question: 'Faut-il une tablette ?',
         answer:
-          "Pas avec Digitip : la plaque est passive, sans électronique active ni batterie. C'est un choix de fond — une tablette au comptoir demande de l'alimentation, de la place, et se retrouve tôt ou tard éteinte ou déplacée.",
+          "Pas avec Digitip : la plaque est passive, sans électronique active ni batterie. C'est voulu : une tablette au comptoir demande de l'alimentation, de la place, et se retrouve tôt ou tard éteinte ou déplacée.",
       },
       {
         question: 'Qui reçoit les pourboires ?',
@@ -166,7 +166,7 @@ export const COMPARISONS: ComparisonMeta[] = [
         verifiedOn: VERIFIED,
       },
       {
-        label: 'OneTip — site officiel',
+        label: 'OneTip : site officiel',
         url: 'https://www.onetip-app.com/',
         verifiedOn: VERIFIED,
       },

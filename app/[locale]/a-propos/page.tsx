@@ -21,7 +21,7 @@ export function generateStaticParams() {
 
 const TITLE = 'À propos de Digitip';
 const DESCRIPTION =
-  'Digitip est édité par YUZU LABS SAS, société française immatriculée sous le SIREN 994 879 013. Qui est derrière le produit et pourquoi il existe.';
+  'Digitip est édité par YUZU LABS SAS, société française immatriculée sous le SIREN 994 879 013. Qui est derrière Digitip, et pourquoi on l’a fait.';
 
 export async function generateMetadata({
   params,
@@ -117,7 +117,7 @@ export default async function AboutPage({
               Petit-Landau. Directeur de la publication : Raphaël Meyer.
             </p>
             <p>
-              Le service est jeune. Nous préférons le dire plutôt que d&apos;afficher des
+              Digitip démarre. On préfère le dire plutôt que d&apos;afficher des
               chiffres de clientèle que nous n&apos;avons pas : les engagements listés sur
               la page d&apos;accueil sont tous vérifiables dans nos conditions de vente ou
               nos mentions légales.

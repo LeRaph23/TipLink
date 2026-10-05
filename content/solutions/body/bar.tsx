@@ -5,7 +5,7 @@ export default function Body() {
         Le bar est, techniquement, le format le plus favorable au pourboire dématérialisé.
         Beaucoup de transactions, des tickets courts, et surtout un comptoir qui place le
         client face au barman au moment exact où il paie. Le geste a un endroit et un
-        instant naturels — ce qui manque à presque tous les autres métiers.
+        instant naturels, ce qui manque à presque tous les autres métiers.
       </p>
 
       <h2>La fréquence compense les montants</h2>
@@ -71,7 +71,7 @@ export default function Body() {
       </p>
       <p>
         Pour un barman payé autour du SMIC, cela signifie que chaque euro reçu en pourboire
-        est un euro net — sans coût pour vous, puisque la somme vient du client. Dans un
+        est un euro net, sans coût pour vous puisque la somme vient du client. Dans un
         métier où la rotation du personnel est élevée, c&apos;est un argument de fidélisation
         qui ne pèse pas sur la masse salariale.
       </p>
@@ -79,7 +79,7 @@ export default function Body() {
       <h2>Ce que ça coûte</h2>
       <p>
         Achat unique de la plaque, pas d&apos;abonnement. Aucun prélèvement sur les pourboires : le client ajoute des frais de service (0,25 € + 5 % du pourboire) et vous recevez 100 % du pourboire. Aucun
-        pourboire encaissé, aucun frais — ce qui compte quand l&apos;activité est
+        pourboire encaissé, aucun frais, ce qui compte quand l&apos;activité est
         saisonnière.
       </p>
       <p>

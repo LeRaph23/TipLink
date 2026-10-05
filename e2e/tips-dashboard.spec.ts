@@ -92,7 +92,7 @@ test('manager and employee dashboards show the tips, not 0 € nor the fees', as
   await expect(page.getByText('18,88 €')).toHaveCount(0);
 });
 
-/** The "Total perçu" stat card (not the payout banner, which can show the same sum). */
+/** The "Total reçu" stat card (not the payout banner, which can show the same sum). */
 function totalCard(page: Page) {
-  return page.getByText('Total perçu', { exact: true }).locator('xpath=..');
+  return page.getByText('Total reçu', { exact: true }).locator('xpath=..');
 }
