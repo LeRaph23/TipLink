@@ -1351,6 +1351,8 @@ export type Database = {
           plan: string
           platform_fee_bps: number
           platform_fixed_fee_cents: number
+          pro_trial_ends_at: string | null
+          pro_trial_started_at: string | null
           settings: Json
           shipping_address: Json | null
           stripe_customer_id: string | null
@@ -1375,6 +1377,8 @@ export type Database = {
           plan?: string
           platform_fee_bps?: number
           platform_fixed_fee_cents?: number
+          pro_trial_ends_at?: string | null
+          pro_trial_started_at?: string | null
           settings?: Json
           shipping_address?: Json | null
           stripe_customer_id?: string | null
@@ -1399,6 +1403,8 @@ export type Database = {
           plan?: string
           platform_fee_bps?: number
           platform_fixed_fee_cents?: number
+          pro_trial_ends_at?: string | null
+          pro_trial_started_at?: string | null
           settings?: Json
           shipping_address?: Json | null
           stripe_customer_id?: string | null
@@ -2220,6 +2226,61 @@ export type Database = {
           },
           {
             foreignKeyName: "group_tip_transfers_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tip_compliments: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          hidden_at: string | null
+          id: string
+          message: string | null
+          staff_id: string | null
+          tags: string[]
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          hidden_at?: string | null
+          id?: string
+          message?: string | null
+          staff_id?: string | null
+          tags?: string[]
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          hidden_at?: string | null
+          id?: string
+          message?: string | null
+          staff_id?: string | null
+          tags?: string[]
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tip_compliments_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tip_compliments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tip_compliments_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
             referencedRelation: "transactions"

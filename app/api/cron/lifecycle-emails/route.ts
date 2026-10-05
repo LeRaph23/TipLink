@@ -25,9 +25,12 @@ import {
   sendReEngagementEmail,
   sendWeeklyTipRecap,
   sendTrialEndingSoon,
+  sendFreeTrialEndingSoon,
 } from '@/lib/email';
 import { deriveTrialState, isTrialWarningDue } from '@/lib/billing/trial';
 import { getReviewImpact } from '@/lib/billing/review-teaser';
+import { getProImpact } from '@/lib/billing/pro-impact';
+import { longDate } from '@/lib/format/long-date';
 import { getProPricing } from '@/lib/billing/pro-pricing';
 
 export const runtime = 'nodejs';
@@ -399,6 +402,87 @@ async function runReEngagementNudges(service: Db, dryRun: boolean): Promise<Tall
   return t;
 }
 
+// ─── Group admin: the cardless Pro trial ends in three days ─────────────────
+//
+// No card on file, so no charge to warn about: what is at stake is Pro
+// switching off unnoticed. Same window and one-shot dedup as the Stripe one.
+async function runFreeTrialEndingWarnings(service: Db, dryRun: boolean): Promise<Tally> {
+  const t = newTally();
+  const now = new Date();
+
+  const { data: groups } = await service
+    .from('groups')
+    .select('id, name, plan, subscription_status, trial_ends_at, pro_trial_started_at, pro_trial_ends_at')
+    .not('pro_trial_ends_at', 'is', null)
+    .gt('pro_trial_ends_at', now.toISOString())
+    .eq('plan', 'free')
+    .is('deleted_at', null)
+    .limit(LIMIT);
+
+  const due = (groups ?? [])
+    .map((g) => ({
+      group: g,
+      trial: deriveTrialState({
+        plan: g.plan,
+        subscriptionStatus: g.subscription_status,
+        trialEndsAt: g.trial_ends_at,
+        freeTrialEndsAt: g.pro_trial_ends_at,
+      }, now),
+    }))
+    .filter(({ trial }) => trial.state === 'trialing' && trial.cardless && isTrialWarningDue(trial));
+
+  if (dryRun) { t.considered = due.length; return t; }
+  if (due.length === 0) return t;
+
+  const pricing = await getProPricing().catch(() => null);
+  const priceLabel = pricing?.monthly
+    ? new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: pricing.monthly.currency.toUpperCase(),
+        minimumFractionDigits: pricing.monthly.unitAmount % 100 === 0 ? 0 : 2,
+      }).format(pricing.monthly.unitAmount / 100)
+    : null;
+
+  for (const { group, trial } of due) {
+    if (trial.state !== 'trialing') continue;
+    t.considered++;
+    try {
+      const recipient = await resolveGroupAdmin(service, group.id);
+      if (!recipient) { t.skipped++; continue; }
+
+      const impact = await getProImpact(
+        service as unknown as Parameters<typeof getProImpact>[0],
+        group.id,
+        new Date(group.pro_trial_started_at ?? now.toISOString()),
+      );
+
+      const r = await dispatchLifecycleEmail(service, {
+        def: LIFECYCLE.free_trial_ending,
+        groupId: group.id,
+        to: recipient.email,
+        locale: recipient.locale,
+        send: () => sendFreeTrialEndingSoon({
+          to: recipient.email,
+          firstName: firstNameFrom(recipient.name, 'Bonjour'),
+          establishmentName: group.name ?? 'votre établissement',
+          daysLeft: trial.daysLeft,
+          endDate: longDate(trial.endsAt, 'fr'),
+          priceLabel,
+          tipCount: impact?.tipCount ?? 0,
+          clickCount: impact?.clickCount ?? 0,
+          complimentCount: impact?.complimentCount ?? 0,
+          billingUrl: `${getBaseUrl()}/dashboard/billing#pro`,
+        }),
+      });
+      t[r]++;
+    } catch (e) {
+      t.failed++;
+      console.error('[lifecycle] free-trial-ending failed', group.id, e);
+    }
+  }
+  return t;
+}
+
 // ─── Group admin: the Pro trial converts in three days ───────────────────────
 //
 // The one email a trial owes its customer. It fires from a window rather than
@@ -639,6 +723,7 @@ export async function GET(req: NextRequest) {
   // Transactional, so it is not subject to the frequency cap and its position
   // here costs nothing to the sequences above it.
   results.trialEnding = await runTrialEndingWarnings(service, dryRun);
+  results.freeTrialEnding = await runFreeTrialEndingWarnings(service, dryRun);
   if (new Date().getUTCDay() === 1) {
     results.weeklyRecap = await runWeeklyRecap(service, dryRun);
   }

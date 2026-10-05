@@ -321,7 +321,7 @@ export function AmbassadeurDashboard({ code }: { code: string }) {
         setStats(data);
         setAmbassadorName(prev => data.name?.split(' ')[0] ?? prev);
       })
-      .catch(() => setStatsError('Impossible de charger les stats.'));
+      .catch(() => setStatsError('Les stats ne s’affichent pas. Rechargez la page.'));
     refreshBankingAndPayout();
   }, [authState, code, refreshBankingAndPayout]);
 

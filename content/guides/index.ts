@@ -36,17 +36,17 @@ export const GUIDES: GuideMeta[] = [
       {
         question: "L'exonération coûte-t-elle quelque chose à l'employeur ?",
         answer:
-          "Non. Les sommes proviennent des clients, pas de l'entreprise. C'est précisément ce qui rend le pourboire intéressant en matière de rétention : il augmente le net perçu sans peser sur la masse salariale.",
+          "Non. Les sommes proviennent des clients, pas de l'entreprise. C'est pour ça que le pourboire aide à garder ses salariés : il augmente ce qu'ils touchent sans rien ajouter à vos charges.",
       },
     ],
     sources: [
       {
-        label: 'Loi de finances pour 2026 — prolongation de l\'exonération des pourboires',
+        label: 'Loi de finances pour 2026 : prolongation de l\'exonération des pourboires',
         url: 'https://www.lhotellerie-restauration.fr/sos-experts/plf-2026-les-deputes-prolongent-l-exoneration-des-pourboires-jusqu-en-2028',
         verifiedOn: '2026-07-27',
       },
       {
-        label: 'Service-Public Entreprendre — prolongation des mesures d\'exonération',
+        label: 'Service-Public Entreprendre : prolongation des mesures d\'exonération',
         url: 'https://entreprendre.service-public.gouv.fr/actualites/A18726',
         verifiedOn: '2026-07-27',
       },
@@ -88,7 +88,7 @@ export const GUIDES: GuideMeta[] = [
     ],
     sources: [
       {
-        label: 'Service-Public Entreprendre — frais de transport et pourboires',
+        label: 'Service-Public Entreprendre : frais de transport et pourboires',
         url: 'https://entreprendre.service-public.gouv.fr/actualites/A18726',
         verifiedOn: '2026-07-27',
       },
@@ -115,12 +115,12 @@ export const GUIDES: GuideMeta[] = [
       {
         question: 'Faut-il une application pour le client ?',
         answer:
-          "Non, et c'est le critère décisif. Toute solution qui demande au client d'installer quelque chose perd la quasi-totalité des pourboires. Un tag NFC ou un QR code ouvre une page web ordinaire dans le navigateur du téléphone.",
+          "Non, et c'est le point le plus important. Dès qu'on demande au client d'installer quelque chose, presque personne ne laisse de pourboire. Un tag NFC ou un QR code ouvre une page web ordinaire dans le navigateur du téléphone.",
       },
       {
         question: 'Le NFC fonctionne-t-il sur tous les téléphones ?',
         answer:
-          "La grande majorité des smartphones récents lisent le NFC sans réglage. Pour les autres, un QR code imprimé sur la même plaque assure le repli, ce qui couvre l'ensemble des appareils.",
+          "La grande majorité des smartphones récents lisent le NFC sans réglage. Pour les autres, un QR code imprimé sur la même plaque prend le relais. Comme ça, tous les téléphones sont couverts.",
       },
       {
         question: 'Qui reçoit l\'argent ?',
@@ -130,17 +130,17 @@ export const GUIDES: GuideMeta[] = [
       {
         question: 'Combien ça coûte ?',
         answer:
-          "Deux modèles coexistent : un abonnement mensuel, ou une commission prélevée uniquement sur les pourboires encaissés. Sans volume, le premier coûte de l'argent tous les mois, le second ne coûte rien.",
+          "Il existe deux modèles : un abonnement mensuel, ou des frais pris seulement quand un pourboire passe. Un mois creux, le premier vous coûte quand même, le second ne vous coûte rien. Chez Digitip, ces frais sont même payés par le client, en plus du pourboire.",
       },
     ],
     sources: [
       {
-        label: 'France Num — mettre en place le pourboire par carte bancaire',
+        label: 'France Num : mettre en place le pourboire par carte bancaire',
         url: 'https://www.francenum.gouv.fr/guides-et-conseils/developpement-commercial/solutions-de-paiement/mettre-en-place-le-pourboire-par',
         verifiedOn: '2026-07-27',
       },
       {
-        label: "L'Hôtellerie Restauration — comment passer au pourboire dématérialisé",
+        label: "L'Hôtellerie Restauration : comment passer au pourboire dématérialisé",
         url: 'https://www.lhotellerie-restauration.fr/actualite/comment-passer-au-pourboire-dematerialise',
         verifiedOn: '2026-07-27',
       },

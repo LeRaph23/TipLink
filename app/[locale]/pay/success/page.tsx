@@ -4,6 +4,8 @@ import type Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
 import { ReviewInvite } from '@/components/pay/ReviewInvite';
+import { ComplimentForm } from '@/components/pay/ComplimentForm';
+import { effectivePlan } from '@/lib/billing/entitlements';
 import {
   Band, BandBody, DemoBadge, Logo, PayColumn, PayMain, PayTitle, StatusDot, btnProps,
 } from '@/components/pay/ui';
@@ -88,6 +90,32 @@ async function fetchTipContext(
     return { staffName: null, reviewUrl: rows?.[0]?.establishment_review_url ?? null };
   }
   return { staffName: null, reviewUrl: null };
+}
+
+/** Whether the group behind this tip has Pro (subscription or cardless trial). */
+async function groupHasPro(staffId: string | null, establishmentId: string | null): Promise<boolean> {
+  try {
+    const service = createServiceClient();
+    let estId = establishmentId;
+    if (!estId && staffId) {
+      estId = (await service
+        .from('staff_profiles')
+        .select('establishment_id')
+        .eq('id', staffId)
+        .maybeSingle()).data?.establishment_id ?? null;
+    }
+    if (!estId) return false;
+    const { data } = await service
+      .from('establishments')
+      .select('groups(plan, pro_trial_ends_at)')
+      .eq('id', estId)
+      .maybeSingle();
+    const group = (data as { groups?: { plan?: string | null; pro_trial_ends_at?: string | null } | null } | null)?.groups;
+    return effectivePlan(group) === 'pro';
+  } catch {
+    // A thank-you page that fails over a promotional extra is the wrong trade.
+    return false;
+  }
 }
 
 export default async function PaySuccessPage({ params, searchParams }: Props) {
@@ -194,12 +222,18 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
       ? await fetchTipContext(staffId, establishmentId)
       : { staffName: staffId ? (await fetchTipContext(staffId, null)).staffName : null, reviewUrl: null };
 
+  // Compliments are a Pro feature, decided here on the server: the form is not
+  // rendered for a free group at all, and /api/compliments checks again.
+  const complimentsOn = status === 'succeeded'
+    ? await groupHasPro(staffId, establishmentId)
+    : false;
+
   // The tip this page is confirming, looked up only when there is an
-  // invitation to attribute a click to. It is what turns "somebody clicked"
+  // invitation to attribute a click to, or a compliment to attach. It is what turns "somebody clicked"
   // into "12 of your 47 tips this month did", which is the difference between
   // a statistic and something a subscriber can act on. Absent in demo mode:
   // no charge happened, so there is no tip to attribute anything to.
-  const transactionId = reviewUrl && !isDemo && sp.payment_intent
+  const transactionId = (reviewUrl || complimentsOn) && !isDemo && sp.payment_intent
     ? (await createServiceClient()
         .from('transactions')
         .select('id')
@@ -265,12 +299,19 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
           </div>
         )}
 
+        {/* The review invitation first and unconditionally: it does not
+            depend on the compliment below, which is the line between asking
+            every customer for a review and filtering who gets asked. */}
         {succeeded && reviewUrl && (
           <ReviewInvite
             reviewUrl={reviewUrl}
             staffName={staffName}
             transactionId={transactionId}
           />
+        )}
+
+        {succeeded && complimentsOn && (isDemo || transactionId) && (
+          <ComplimentForm transactionId={transactionId} staffName={staffName} demo={isDemo} />
         )}
 
         {succeeded ? (

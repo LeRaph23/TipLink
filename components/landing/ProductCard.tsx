@@ -124,7 +124,7 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
     ? formatPriceCents(selPricing.listAmount, selPricing.currency, locale)
     : null;
   const savings = selPricing?.savingsPercent != null
-    ? `ÉCONOMISEZ ${selPricing.savingsPercent}%`
+    ? `−${selPricing.savingsPercent} %`
     : null;
 
   const packs: Array<{ key: Pack; label: string; sub: string }> = [

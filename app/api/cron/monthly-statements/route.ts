@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { isAuthorizedCronRequest } from '@/lib/auth/require-cron';
-import { sendMonthlyStatement, sendFreeMonthlyRecap } from '@/lib/email';
-import {
-  LIFECYCLE,
-  dispatchLifecycleEmail,
-  resolveGroupAdmin,
-  firstNameFrom,
-  lifecycleUnsubUrl,
-} from '@/lib/email/lifecycle';
-import { getBaseUrl } from '@/lib/env';
+import { sendMonthlyStatement } from '@/lib/email';
 import {
   buildPayrollJournal,
   buildPayrollSummary,
@@ -32,7 +24,7 @@ const PAGE_SIZE = 200;
 const MAX_PAGES = 100;
 
 /**
- * Walks every group matching `plan`, a page at a time.
+ * Walks every group, a page at a time.
  *
  * This used to be a bare `.limit(200)` with no ORDER BY on both the Pro and the
  * free queries. Two things followed. Past 200 groups the rest were simply never
@@ -41,8 +33,8 @@ const MAX_PAGES = 100;
  * different arbitrary 200 each month, so a given group could be skipped
  * indefinitely rather than merely last.
  *
- * The monthly statement is the Digitip Pro feature. Silently not sending it to
- * the 201st paying customer is the worst shape this bug could take.
+ * Silently not sending the statement to the 201st group, whose accountant is
+ * waiting for it, is the worst shape this bug could take.
  *
  * Keyset pagination on `id` rather than `.range()`: the set is stable under
  * concurrent inserts, which matters because a group created while this runs
@@ -50,7 +42,6 @@ const MAX_PAGES = 100;
  */
 async function* eachGroup(
   service: ReturnType<typeof createServiceClient>,
-  plan: 'pro' | 'free',
 ): AsyncGenerator<{ id: string; name: string | null; accountant_email?: string | null }> {
   let cursor: string | null = null;
 
@@ -62,12 +53,11 @@ async function* eachGroup(
       .order('id', { ascending: true })
       .limit(PAGE_SIZE);
 
-    q = plan === 'pro' ? q.eq('plan', 'pro') : q.neq('plan', 'pro');
     if (cursor) q = q.gt('id', cursor);
 
     const { data, error } = await q;
     if (error) {
-      console.error('[monthly-statements] group page failed', { plan, page, error });
+      console.error('[monthly-statements] group page failed', { page, error });
       return;
     }
     if (!data?.length) return;
@@ -78,19 +68,19 @@ async function* eachGroup(
     cursor = data[data.length - 1].id;
 
     if (page === MAX_PAGES - 1) {
-      console.error('[monthly-statements] page cap reached, groups may be unprocessed', { plan });
+      console.error('[monthly-statements] page cap reached, groups may be unprocessed', {});
     }
   }
 }
 
 /**
- * Sends last month's payroll statement to every Pro group, and to their
- * accountant when one is configured. Free groups that took tips get the same
- * month without the attachments, plus what the free plan cost them.
+ * Sends last month's payroll statement to every group that took tips, and to
+ * their accountant when one is configured.
  *
- * This is the Pro feature, not a convenience on top of it: an export the
- * manager has to remember to run is still a chore, and the whole pitch is that
- * it stops being one.
+ * Every plan since 00088. It was the Pro feature, and free groups got a recap
+ * without the files instead, telling them what the free plan had cost them.
+ * A statement is the manager's own data; withholding it to sell a
+ * subscription made the subscription look like a ransom.
  *
  * Scheduled for the 5th so the month is unambiguously closed. Delivery is
  * logged in `lifecycle_email_log` with a per-group, per-month dedup key, so a
@@ -109,7 +99,7 @@ export async function POST(req: Request) {
   let skipped = 0;
   let failed = 0;
 
-  for await (const group of eachGroup(service, 'pro')) {
+  for await (const group of eachGroup(service)) {
     const dedupKey = `monthly_statement:${group.id}:${month}`;
     try {
       const { data: already } = await service
@@ -194,72 +184,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const free = await sendFreeRecaps(service, month, period);
-
-  return NextResponse.json({ ok: true, month, sent, skipped, failed, free });
-}
-
-/**
- * The free plan's version of the same month.
- *
- * Same cron, same closed month, same `lifecycle_email_log` dedup, one email
- * more. It goes through `dispatchLifecycleEmail` rather than writing the log
- * directly the way the Pro statement does, because this one is a recap nobody
- * asked for: it has to honour the opt-out and the per-recipient frequency cap,
- * and the statement above, being something a subscriber pays for, does not.
- *
- * Only groups that actually took tips. "You collected nothing last month, buy
- * our subscription" is an argument against itself.
- */
-async function sendFreeRecaps(
-  service: ReturnType<typeof createServiceClient>,
-  month: string,
-  period: ReturnType<typeof monthPeriod>,
-): Promise<{ sent: number; skipped: number; failed: number }> {
-  const tally = { sent: 0, skipped: 0, failed: 0 };
-
-  for await (const group of eachGroup(service, 'free')) {
-    try {
-      const dataset = await buildPayrollSummary(service, group.id, period);
-      if (dataset.totals.count < 1) { tally.skipped++; continue; }
-
-      const recipient = await resolveGroupAdmin(service, group.id);
-      if (!recipient) { tally.skipped++; continue; }
-
-      const monthLabel = new Intl.DateTimeFormat('fr-FR', {
-        month: 'long', year: 'numeric', timeZone: 'UTC',
-      }).format(new Date(`${month}-01T00:00:00Z`));
-      const totalFormatted = new Intl.NumberFormat('fr-FR', {
-        style: 'currency', currency: 'EUR', minimumFractionDigits: 2,
-      }).format(dataset.totals.amountCents / 100);
-
-      const r = await dispatchLifecycleEmail(service, {
-        def: LIFECYCLE.monthly_recap_free,
-        groupId: group.id,
-        to: recipient.email,
-        locale: recipient.locale,
-        periodBucket: month,
-        send: () => sendFreeMonthlyRecap({
-          to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
-          establishmentName: group.name ?? 'votre établissement',
-          monthLabel,
-          tipCount: dataset.totals.count,
-          totalFormatted,
-          billingUrl: `${getBaseUrl()}/dashboard/billing`,
-          unsubscribeUrl: lifecycleUnsubUrl('group_admin', group.id),
-        }),
-      });
-      if (r === 'sent') tally.sent++;
-      else if (r === 'failed') tally.failed++;
-      else tally.skipped++;
-    } catch (err) {
-      console.error('[monthly-statements] free recap failed', { groupId: group.id, err });
-      tally.failed++;
-    }
-  }
-
-  return tally;
+  return NextResponse.json({ ok: true, month, sent, skipped, failed });
 }
 
 // Vercel cron uses GET with the same auth header.

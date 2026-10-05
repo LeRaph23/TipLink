@@ -681,7 +681,7 @@ export function CommercialDashboard({ code }: { code: string }) {
         setStats(data);
         setCommercialName(prev => data.name?.split(' ')[0] ?? prev);
       })
-      .catch(() => setStatsError('Impossible de charger les statistiques.'));
+      .catch(() => setStatsError('Les statistiques ne s’affichent pas. Rechargez la page.'));
     refreshBankingAndPayout();
   }, [authState, code, refreshBankingAndPayout]);
 

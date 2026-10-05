@@ -4,10 +4,10 @@ export default function Body() {
       <p>
         La restauration est le métier où le passage à la carte a fait le plus de dégâts sur
         le pourboire. Pas parce que les clients sont devenus moins généreux, mais parce que
-        le geste supposait des pièces sur la table — et qu&apos;il n&apos;y en a plus.
+        le geste supposait des pièces sur la table, et qu&apos;il n&apos;y en a plus.
       </p>
 
-      <h2>Ce que le pourboire représente réellement en salle</h2>
+      <h2>Ce que le pourboire pèse en salle</h2>
       <p>
         Un serveur voit trente à quatre-vingts clients par service. Même avec un taux de
         pourboire modeste et des montants de 2 à 3 €, l&apos;ordre de grandeur mensuel se
@@ -32,10 +32,10 @@ export default function Body() {
       <p>
         Dans un secteur où le recrutement est la difficulté numéro un, c&apos;est un des
         rares leviers de rémunération à coût employeur nul. Il ne remplace pas une
-        politique salariale — il s&apos;y ajoute gratuitement.
+        politique salariale, il s&apos;y ajoute sans rien vous coûter.
       </p>
 
-      <h2>Nominatif ou équipe : le vrai arbitrage</h2>
+      <h2>À chacun, ou à toute l&apos;équipe ?</h2>
       <p>
         <strong>Le pourboire nominatif</strong> laisse le client choisir son serveur. Le
         lien entre le service rendu et la somme perçue est direct, ce qui motive fortement
@@ -86,7 +86,7 @@ export default function Body() {
         problème existe déjà avec les espèces, à ceci près qu&apos;il est invisible.
       </p>
       <p>
-        <em>« On ne fait pas de pourboire ici. »</em> Souvent vrai — parce que personne ne
+        <em>« On ne fait pas de pourboire ici. »</em> Souvent vrai, parce que personne ne
         peut plus en laisser. La question n&apos;est pas de savoir si vos clients{' '}
         <em>veulent</em> donner, mais s&apos;ils <em>peuvent</em>.
       </p>

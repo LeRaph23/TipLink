@@ -28,7 +28,8 @@ export type AnalyticsEvent =
   // The one thing Digitip Pro is sold on, and the one thing nothing measured.
   // Its per-establishment counterpart lives in `review_clicks`, because a
   // manager needs their own number and this dashboard is ours.
-  | 'review_cta_clicked';
+  | 'review_cta_clicked'
+  | 'compliment_sent';
 
 type Props = Record<string, string | number | boolean | null>;
 

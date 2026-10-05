@@ -51,7 +51,7 @@ export function ProUpsell({
       </div>
 
       <Link
-        href="/dashboard/billing"
+        href="/dashboard/billing#pro"
         style={{
           display: 'inline-flex',
           alignItems: 'center',

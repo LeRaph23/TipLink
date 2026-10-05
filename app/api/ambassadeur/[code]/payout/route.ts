@@ -269,7 +269,7 @@ export async function POST(
           ok: false,
           amount: inserted.amount_cents,
           status: 'pending',
-          error: 'Virement en cours de vérification — un administrateur confirmera sous peu.',
+          error: 'Le virement est en cours de vérification, un administrateur le confirme sous peu.',
         }, { status: 502 });
       }
 
@@ -282,7 +282,7 @@ export async function POST(
         ok: false,
         amount: inserted.amount_cents,
         status: 'failed',
-        error: 'Le virement a échoué — un administrateur va reprendre la demande.',
+        error: 'Le virement n’est pas passé. Un administrateur va reprendre la demande.',
       }, { status: 502 });
     }
   } finally {

@@ -3,8 +3,7 @@ import { redirect } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { hasPro } from '@/lib/billing/entitlements';
-import { ProUpsell } from '@/components/billing/ProUpsell';
+import { currentMonth, monthPeriod } from '@/lib/export/payroll';
 import { MonthPicker } from './MonthPicker';
 import { PageHeader } from '@/components/dashboard/ui';
 
@@ -18,20 +17,10 @@ const card: React.CSSProperties = {
 function isValidMonth(m: string | undefined): m is string {
   return !!m && /^\d{4}-\d{2}$/.test(m);
 }
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-function monthRange(ym: string): { start: string; end: string } {
-  const [y, m] = ym.split('-').map(Number);
-  return {
-    start: new Date(Date.UTC(y, m - 1, 1)).toISOString(),
-    end: new Date(Date.UTC(y, m, 1)).toISOString(),
-  };
-}
 function recentMonths(n: number): string[] {
   const out: string[] = [];
-  const d = new Date();
+  const [y, m] = currentMonth().split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1, 1));
   for (let i = 0; i < n; i++) {
     out.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
     d.setUTCMonth(d.getUTCMonth() - 1);
@@ -52,7 +41,6 @@ export default async function StatementsPage({
   setRequestLocale(locale);
   const sp = await searchParams;
   const t = await getTranslations('dashboard.statements');
-  const tPro = await getTranslations('dashboard.pro');
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -68,7 +56,9 @@ export default async function StatementsPage({
     .maybeSingle();
 
   const month = isValidMonth(sp.month) ? sp.month : currentMonth();
-  const { start, end } = monthRange(month);
+  // The same Paris-midnight bounds as the CSV, so the screen and the file
+  // never disagree about which month a tip near midnight belongs to.
+  const { start, end } = monthPeriod(month);
   const intl = locale === 'fr' ? 'fr-FR' : 'en-US';
   const fmtMonth = (ym: string) =>
     new Intl.DateTimeFormat(intl, { month: 'long', year: 'numeric', timeZone: 'UTC' })
@@ -76,7 +66,13 @@ export default async function StatementsPage({
   const fmt = new Intl.NumberFormat(intl, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
 
   const rows: Row[] = [];
-  const isPro = roleRow?.group_id ? await hasPro(createServiceClient(), roleRow.group_id) : false;
+  const accountantEmail = roleRow?.group_id
+    ? ((await createServiceClient()
+        .from('groups')
+        .select('accountant_email')
+        .eq('id', roleRow.group_id)
+        .maybeSingle()).data?.accountant_email ?? null)
+    : null;
   if (roleRow?.group_id) {
     const service = createServiceClient();
     const { data: ests } = await service
@@ -115,14 +111,7 @@ export default async function StatementsPage({
 
   const totals = rows.reduce((acc, r) => ({ count: acc.count + r.count, amount: acc.amount + r.amount }), { count: 0, amount: 0 });
 
-  // Viewing any month stays free; exporting one that is not the current month
-  // does not. The picker says so in the option label, so the limit is legible
-  // before anything is clicked rather than after a file has been downloaded.
-  const exportLocked = !isPro && month !== currentMonth();
-  const monthOpts = recentMonths(12).map((m) => ({
-    value: m,
-    label: !isPro && m !== currentMonth() ? `${fmtMonth(m)} · ${t('proBadge')}` : fmtMonth(m),
-  }));
+  const monthOpts = recentMonths(12).map((m) => ({ value: m, label: fmtMonth(m) }));
 
   const th: React.CSSProperties = {
     padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600,
@@ -136,14 +125,6 @@ export default async function StatementsPage({
     minHeight: 44, padding: '0 18px', borderRadius: 'var(--radius)',
     fontSize: 14, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
   };
-  // A locked control keeps its place and its label and loses only its colour.
-  // Hiding it instead, which is what the journal export used to do, means a
-  // free plan never finds out the feature exists.
-  const lockedAction: React.CSSProperties = {
-    ...actionBase,
-    background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-3)',
-  };
-
   return (
     <div style={{ maxWidth: 760 }}>
       <PageHeader title={t('title')} subtitle={t('subtitle')} style={{ marginBottom: 18 }} />
@@ -153,52 +134,44 @@ export default async function StatementsPage({
         <div style={{ flex: '1 1 200px', minWidth: 0 }}>
           <MonthPicker value={month} months={monthOpts} label={t('month')} />
         </div>
-        {exportLocked ? (
-          <Link href="/dashboard/billing" className="btn-ghost" style={lockedAction}>
-            {t('export')} · {t('proBadge')}
-          </Link>
-        ) : (
-          <a
-            className="btn-accent"
-            href={`/api/statements/export.csv?month=${month}`}
-            style={{ ...actionBase, background: 'var(--accent)', color: 'var(--accent-fg)' }}
-          >
-            {t('export')}
-          </a>
-        )}
+        <a
+          className="btn-accent"
+          href={`/api/statements/export.csv?month=${month}`}
+          style={{ ...actionBase, background: 'var(--accent)', color: 'var(--accent-fg)' }}
+        >
+          {t('export')}
+        </a>
+        <a
+          className="btn-ghost"
+          href={`/api/statements/export.csv?month=${month}&scope=journal`}
+          style={{ ...actionBase, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}
+        >
+          {t('exportJournal')}
+        </a>
+      </div>
 
-        {isPro ? (
-          <a
-            className="btn-ghost"
-            href={`/api/statements/export.csv?month=${month}&scope=journal`}
-            style={{ ...actionBase, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}
-          >
-            {t('exportJournal')}
-          </a>
-        ) : (
-          <Link href="/dashboard/billing" className="btn-ghost" style={lockedAction}>
-            {t('exportJournal')} · {t('proBadge')}
+      {/* What used to be the Pro pitch on this page is now a plain fact about
+          the free plan, with the one setting it depends on. A manager who has
+          not entered the accountant's address learns here that one field
+          would stop them ever exporting by hand again. */}
+      <div style={{
+        ...card, padding: '14px 16px', marginBottom: 14,
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+      }}>
+        <div style={{ flex: '1 1 260px', minWidth: 0, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.55 }}>
+          {accountantEmail
+            ? t('autoBodyAccountant', { email: accountantEmail })
+            : t('autoBodyNoAccountant')}
+        </div>
+        {!accountantEmail && (
+          <Link href="/dashboard/settings" className="btn-ghost" style={{
+            ...actionBase, minHeight: 36, padding: '0 14px', fontSize: 13,
+            background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)',
+          }}>
+            {t('autoCta')}
           </Link>
         )}
       </div>
-
-      {/* The free plan exports the current month only. This used to be a grey
-          sentence stating the limit with nothing to click: a manager who had
-          just picked an older month learned they could not have it and was left
-          there. It is the highest-intent moment in the product, so it carries a
-          way out now.
-          The two registers are not the same moment. Having just selected a month
-          you cannot export is a limit hit, and the quiet surface is the right
-          one for it. Sitting on the current month, which exports fine, it is an
-          offer, and dressing an offer as a refusal reads as a nag. */}
-      {!isPro && (
-        <ProUpsell
-          title={tPro('exportTitle')}
-          body={tPro('exportBody')}
-          cta={tPro('exportCta')}
-          emphasis={exportLocked ? 'quiet' : 'normal'}
-        />
-      )}
 
       <div style={{ ...card, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>

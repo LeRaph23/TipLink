@@ -3,7 +3,7 @@ export default function Body() {
     <>
       <p>
         Le barbershop a la culture du pourboire la plus installée de tous les métiers de la
-        coiffure en France — importée avec le modèle américain qui a fait revenir le métier
+        coiffure en France, importée avec le modèle américain qui a fait revenir le métier
         dans les années 2010. Et il a exactement le profil qui fait fonctionner une plaque
         de pourboire : clientèle jeune, paiement au comptoir, relation de fidélité.
       </p>
@@ -41,7 +41,7 @@ export default function Body() {
       <p>
         C&apos;est le point qui rend la plaque efficace ici. Le client règle debout, face
         au barbier qui vient de s&apos;occuper de lui pendant trente à quarante-cinq
-        minutes, souvent en discutant. Le moment d&apos;échange existe déjà — il n&apos;y a
+        minutes, souvent en discutant. Le moment d&apos;échange existe déjà, il n&apos;y a
         pas à le fabriquer.
       </p>
       <p>
@@ -81,7 +81,7 @@ export default function Body() {
         Si vos barbiers sont salariés, c&apos;est un vrai argument de fidélisation qui ne
         vous coûte rien : l&apos;argent vient des clients, pas de votre masse salariale.
         S&apos;ils sont indépendants en location de poste, le dispositif ne s&apos;applique
-        pas de la même façon — à vérifier avec votre comptable plutôt qu&apos;avec une page
+        pas de la même façon : à vérifier avec votre comptable plutôt qu&apos;avec une page
         web.
       </p>
 

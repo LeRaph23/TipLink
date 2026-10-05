@@ -12,6 +12,7 @@ const MANAGER_PAGES = [
   '/fr/dashboard/stickers',
   '/fr/dashboard/settings',
   '/fr/dashboard/billing',
+  '/fr/dashboard/compliments',
 ];
 
 test.describe.configure({ mode: 'serial' });
@@ -25,7 +26,7 @@ test('manager logs in with an email code and browses every dashboard page', asyn
       const res = await page.goto(path);
       expect(res?.status(), `${path} status`).toBeLessThan(400);
       await expect(page, `${path} kept the session`).toHaveURL(new RegExp(path.replace(/\//g, '\\/')));
-      await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
+      await expect(page.getByText("Quelque chose n'a pas marché")).toHaveCount(0);
       await page.screenshot({ path: `.e2e/screens${path.replace(/\//g, '_')}.png`, fullPage: true });
     });
   }
@@ -41,12 +42,12 @@ test('seeded staff appear and their public tip page opens', async ({ page }) => 
   await page.locator('a[href*="/dashboard/staff/"]:not([href$="/new"])').first().click();
   await expect(page).toHaveURL(/\/dashboard\/staff\/[0-9a-f-]{36}/);
   const staffId = page.url().match(/staff\/([0-9a-f-]{36})/)![1];
-  await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
+  await expect(page.getByText("Quelque chose n'a pas marché")).toHaveCount(0);
 
   const errors = trackPageErrors(page);
   const res = await page.goto(`/fr/pay/${staffId}`);
   expect(res?.status()).toBeLessThan(400);
-  await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
+  await expect(page.getByText("Quelque chose n'a pas marché")).toHaveCount(0);
   // The demo establishment has no real Stripe account, so its staff show the
   // "not active yet" card; with Stripe keys and a connected account they show
   // the tip form under their name.

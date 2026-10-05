@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   const siretClean = cleanSiret(String(siret));
   if (!siretClean) {
-    return NextResponse.json({ error: 'SIRET invalide — 14 chiffres requis.' }, { status: 400 });
+    return NextResponse.json({ error: 'Ce SIRET n’est pas valide, il faut 14 chiffres.' }, { status: 400 });
   }
 
   let vatClean: string | null = null;

@@ -34,7 +34,7 @@ describe('getReviewTeaser', () => {
       count: 47,
     });
 
-    expect(await getReviewTeaser(service, GROUP)).toEqual({ tipCount: 47 });
+    expect(await getReviewTeaser(service, GROUP)).toEqual({ tipCount: 47, hasReviewLink: true });
   });
 
   it('counts tips across every establishment in the group', async () => {
@@ -46,18 +46,19 @@ describe('getReviewTeaser', () => {
       count: 3,
     });
 
-    expect(await getReviewTeaser(service, GROUP)).toEqual({ tipCount: 3 });
+    expect(await getReviewTeaser(service, GROUP)).toEqual({ tipCount: 3, hasReviewLink: true });
   });
 
-  // Upgrading alone would not produce a single review — the manager would have
-  // to add the link too. Claiming they are one click away would be false.
-  it('shows nothing when no establishment has a review link', async () => {
+  // Upgrading alone would not produce a single review, so the dashboard must
+  // know to ask for the link first; but compliments still work, so the
+  // teaser no longer vanishes for the groups that most need telling.
+  it('flags a group with no review link instead of hiding the teaser', async () => {
     const service = fakeService({
       ests: [{ id: 'e1', google_review_url: null }, { id: 'e2', google_review_url: '   ' }],
       count: 90,
     });
 
-    expect(await getReviewTeaser(service, GROUP)).toBeNull();
+    expect(await getReviewTeaser(service, GROUP)).toEqual({ tipCount: 90, hasReviewLink: false });
   });
 
   // "0 customers could have left a review" argues against buying.

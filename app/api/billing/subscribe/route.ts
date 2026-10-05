@@ -7,7 +7,7 @@ import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
 import { getBaseUrl, serverEnv } from '@/lib/env';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
-import { TRIAL_DAYS } from '@/lib/billing/trial';
+import { TRIAL_DAYS, trialSpent, MIN_CARRYOVER_MS } from '@/lib/billing/trial';
 
 export const runtime = 'nodejs';
 
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
   const { data: group } = await service
     .from('groups')
-    .select('id, name, stripe_customer_id, stripe_subscription_id, trial_ends_at')
+    .select('id, name, stripe_customer_id, stripe_subscription_id, trial_ends_at, pro_trial_started_at, pro_trial_ends_at')
     .eq('id', groupId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -132,9 +132,14 @@ export async function POST(request: NextRequest) {
       // comes back, and `trial_ends_at` is the record of one already spent.
       // It is also what makes the button honest: it offers the trial only
       // where a trial is actually what happens next.
+      //
+      // A manager still inside the cardless trial keeps the days they have
+      // left: the card goes on file now and nothing is charged before the
+      // date they were already promised. Adding a card early must never cost
+      // the free days, or nobody would add one before the last morning.
       subscription_data: {
         metadata: { group_id: group.id },
-        ...(group.trial_ends_at ? {} : { trial_period_days: TRIAL_DAYS }),
+        ...subscriptionTrial(group),
       },
       automatic_tax: { enabled: true },
       customer_update: { address: 'auto', name: 'auto' },
@@ -148,4 +153,20 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: 'billing_failed' }, { status: 500 });
   }
+}
+
+/**
+ * What trial, if any, a new subscription starts with. See the comment at the
+ * call site; kept apart so the three cases read as three cases.
+ */
+function subscriptionTrial(group: {
+  trial_ends_at: string | null;
+  pro_trial_started_at?: string | null;
+  pro_trial_ends_at?: string | null;
+}): { trial_period_days?: number; trial_end?: number } {
+  const freeEnds = group.pro_trial_ends_at ? new Date(group.pro_trial_ends_at).getTime() : NaN;
+  if (Number.isFinite(freeEnds) && freeEnds - Date.now() > MIN_CARRYOVER_MS) {
+    return { trial_end: Math.floor(freeEnds / 1000) };
+  }
+  return trialSpent(group) ? {} : { trial_period_days: TRIAL_DAYS };
 }

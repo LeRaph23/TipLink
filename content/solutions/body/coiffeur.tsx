@@ -45,7 +45,7 @@ export default function Body() {
       </p>
       <p>
         Un terminal qui affiche « souhaitez-vous laisser 10 % ? » dans ce contexte est
-        franchement inconfortable — pour le client comme pour le coiffeur. Une plaque posée
+        franchement gênant, pour le client comme pour le coiffeur. Une plaque posée
         sur le comptoir ne demande rien : le client la voit, il décide seul, et son refus
         ne se lit sur aucun écran. C&apos;est la différence entre proposer et solliciter.
       </p>
@@ -70,7 +70,7 @@ export default function Body() {
       </p>
       <p>
         Attention au périmètre : le dispositif vise les <em>salariés</em>. Un coiffeur
-        indépendant en location de fauteuil n&apos;est pas salarié du salon — les sommes
+        indépendant en location de fauteuil n&apos;est pas salarié du salon : les sommes
         qu&apos;il perçoit relèvent de son propre régime. Faites vérifier votre situation
         par votre comptable plutôt que de vous fier à une page web, la nôtre comprise.
       </p>

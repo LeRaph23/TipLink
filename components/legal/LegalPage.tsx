@@ -66,9 +66,13 @@ export function LegalPage({
               fontSize: 16, fontWeight: 700, color: 'var(--text)',
               letterSpacing: '-0.01em', marginBottom: 10,
             }}>{s.title}</h2>
-            <p style={{ fontSize: 14.5, color: 'var(--text-2)', lineHeight: 1.8 }}>
-              {s.body}
-            </p>
+            {/* A blank line in the text starts a new paragraph, so a long
+                article (Digitip Pro, 15.1 to 15.7) reads as sub-articles. */}
+            {s.body.split('\n\n').map((para, i) => (
+              <p key={i} style={{ fontSize: 14.5, color: 'var(--text-2)', lineHeight: 1.8, margin: i ? '10px 0 0' : 0 }}>
+                {para}
+              </p>
+            ))}
             {s.action && <div style={{ marginTop: 10, fontSize: 14.5, color: 'var(--text)' }}>{s.action}</div>}
           </section>
         ))}

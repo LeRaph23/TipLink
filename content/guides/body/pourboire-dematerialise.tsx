@@ -5,7 +5,7 @@ export default function Body() {
         Le problème est simple à énoncer : vos clients n&apos;ont plus de liquide. La carte
         a dépassé les espèces dans les paiements des Français, et la proportion est encore
         plus marquée en café et en restaurant. Le geste du pourboire n&apos;a pas disparu
-        parce que les clients sont devenus radins — il a disparu parce qu&apos;ils
+        parce que les clients sont devenus radins. Il a disparu parce qu&apos;ils
         n&apos;ont plus rien dans les poches pour le faire.
       </p>
 
@@ -20,7 +20,7 @@ export default function Body() {
         L&apos;inconvénient est social : le client décide sous le regard du serveur, avec
         la file derrière lui. Beaucoup refusent par gêne, ou acceptent en s&apos;agaçant.
         Et l&apos;argent arrive sur le compte de l&apos;établissement, à charge pour lui de
-        redistribuer — avec la charge administrative que ça implique.
+        redistribuer, avec la charge administrative que ça implique.
       </p>
 
       <h3>2. Le QR code</h3>
@@ -42,11 +42,11 @@ export default function Body() {
       </p>
       <p>
         La grande majorité des smartphones récents lisent le NFC sans réglage. Pour les
-        autres, un QR code imprimé sur la même plaque assure le repli — d&apos;où
+        autres, un QR code imprimé sur la même plaque prend le relais, d&apos;où
         l&apos;intérêt de plaques qui portent les deux.
       </p>
 
-      <h2>La question qui compte : qui reçoit l&apos;argent ?</h2>
+      <h2>Qui reçoit l&apos;argent ?</h2>
       <p>
         C&apos;est le vrai critère de choix, et il est souvent noyé dans les comparatifs
         techniques.
@@ -64,7 +64,7 @@ export default function Body() {
         est visible.
       </p>
 
-      <h2>Ce que ça coûte réellement</h2>
+      <h2>Ce que ça coûte</h2>
       <p>
         Deux modèles économiques coexistent, et l&apos;écart est important quand on
         démarre.
@@ -97,8 +97,8 @@ export default function Body() {
       <h2>Quand ça ne vaut pas le coup</h2>
       <p>
         Autant le dire : le pourboire dématérialisé ne fonctionne pas partout. Sans moment
-        de contact en fin de prestation — vente à emporter, distribution automatique,
-        commande sans interaction — il n&apos;y a pas d&apos;occasion naturelle pour le
+        de contact en fin de prestation (vente à emporter, distribution automatique,
+        commande sans interaction), il n&apos;y a pas d&apos;occasion naturelle pour le
         geste, et le tag ne sera pas tapé. Le matériel ne crée pas la relation, il ne fait
         que lui rendre un moyen d&apos;expression.
       </p>

@@ -20,8 +20,8 @@ test('a custom tip above 500 € is refused on the tip page', async ({ page }) =
   });
 
   await page.goto(`/fr/pay/${staff.id}`);
-  await page.getByRole('button', { name: 'Montant personnalisé' }).click();
-  const input = page.getByLabel('Montant personnalisé');
+  await page.getByRole('button', { name: 'Autre montant' }).click();
+  const input = page.getByLabel('Autre montant');
 
   await input.fill('600');
   await expect(page.getByText('Montant maximum 500,00 €')).toBeVisible();

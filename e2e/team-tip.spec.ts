@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { admin, seed, trackPageErrors } from './helpers';
 
 // Found by the fifth QA run: a verified establishment whose staff had only been
-// invited showed "Aucun membre de l'équipe n'est encore prêt" on its tag page,
+// invited showed "Personne dans l'équipe ne peut encore recevoir de pourboire" on its tag page,
 // so its first customers could not tip at all.
 test('a payable establishment takes team tips before anyone has joined', async ({ page }) => {
   const errors = trackPageErrors(page);
@@ -26,7 +26,7 @@ test('a payable establishment takes team tips before anyone has joined', async (
   });
 
   await page.goto(`/fr/pay/group/${estab.id}`);
-  await expect(page.getByText("Aucun membre de l'équipe n'est encore prêt")).toHaveCount(0);
+  await expect(page.getByText("Personne dans l'équipe ne peut encore recevoir de pourboire")).toHaveCount(0);
   // Invited people are not listed by name on a public page…
   await expect(page.getByText('Marc Invité')).toHaveCount(0);
   // …but the whole team can be tipped.
@@ -48,6 +48,6 @@ test('an establishment with nobody on the team still says so', async ({ page }) 
     },
   });
   await page.goto(`/fr/pay/group/${estab.id}`);
-  await expect(page.getByText("Aucun membre de l'équipe n'est encore prêt")).toBeVisible();
+  await expect(page.getByText("Personne dans l'équipe ne peut encore recevoir de pourboire")).toBeVisible();
   expect((await page.goto(`/fr/pay/group/${estab.id}/team`))?.status()).toBe(404);
 });

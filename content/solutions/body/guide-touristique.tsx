@@ -5,14 +5,14 @@ export default function Body() {
         Pour un guide, le pourboire n&apos;est pas un complément : c&apos;est souvent le
         revenu. Sur le modèle du free tour, la visite est annoncée gratuite et le guide est
         payé uniquement par ce que les participants laissent à la fin. Autant dire que
-        l&apos;absence de moyen de payer sans espèces n&apos;est pas un manque à gagner —
+        l&apos;absence de moyen de payer sans espèces n&apos;est pas un manque à gagner,
         c&apos;est un salaire en moins.
       </p>
 
-      <h2>Le problème est plus aigu ici que partout ailleurs</h2>
+      <h2>Pour vous, c&apos;est encore plus vrai qu&apos;ailleurs</h2>
       <p>
         Vos clients sont des touristes étrangers. Ils arrivent avec une carte, parfois un
-        téléphone, et rarement des euros en liquide — surtout ceux qui viennent de pays où
+        téléphone, et rarement des euros en liquide, surtout ceux qui viennent de pays où
         le sans-contact est encore plus répandu qu&apos;en France.
       </p>
       <p>
@@ -22,7 +22,7 @@ export default function Body() {
         radinerie, c&apos;est une question de secondes.
       </p>
 
-      <h2>L&apos;économie unitaire, sans détour</h2>
+      <h2>Ce que ça rapporte par visite</h2>
       <p>
         C&apos;est le métier où une seule plaque traite le plus de volume. Deux visites par
         jour, quinze à trente participants, un pourboire de 3 à 10 € : on parle de plusieurs
@@ -51,7 +51,7 @@ export default function Body() {
         compte avec une clientèle internationale aux appareils très variés.
       </p>
 
-      <h2>Ce qui compte le plus : aucune application</h2>
+      <h2>Vos clients n&apos;installent rien</h2>
       <p>
         Un touriste ne va pas installer une application française pour vous donner 5 €. Il
         ne va pas non plus créer un compte, ni s&apos;inscrire à quoi que ce soit.
@@ -82,7 +82,7 @@ export default function Body() {
       <p>
         Quand le pourboire constitue l&apos;essentiel de votre revenu, son traitement
         fiscal n&apos;est pas un détail administratif. Faites vérifier votre situation par
-        un comptable — c&apos;est un des rares cas où le conseil vaut vraiment son coût.
+        un comptable : c&apos;est un des rares cas où le conseil vaut vraiment son coût.
       </p>
     </>
   );

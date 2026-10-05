@@ -64,6 +64,9 @@ function InvoiceIcon() {
 function ChartIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 14h12" /><path d="M4 11V8M8 11V4M12 11V6" /></svg>;
 }
+function HeartIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13.5S2 10 2 5.8C2 4 3.4 2.5 5.1 2.5c1.2 0 2.3.7 2.9 1.7.6-1 1.7-1.7 2.9-1.7C12.6 2.5 14 4 14 5.8 14 10 8 13.5 8 13.5z" /></svg>;
+}
 function GearIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="2.2" /><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" /></svg>;
 }
@@ -174,6 +177,7 @@ export function DashboardNav({ userRoles, userEmail, userName }: Props) {
     { href: '/dashboard/establishments', label: tn('establishments'), icon: <EstIcon />, roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/stickers',      label: tn('stickers'),     icon: <NfcIcon />,    roles: ['manager', 'group_admin'] as UserRole['role'][] },
     { href: '/dashboard/analytics',     label: td('analytics.nav'),icon: <ChartIcon />,     roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
+    { href: '/dashboard/compliments',   label: tn('compliments'),  icon: <HeartIcon />,  roles: ['manager', 'group_admin', 'super_admin'] as UserRole['role'][] },
     { href: '/dashboard/settings',      label: tn('settings'),     icon: <GearIcon />,  roles: ['group_admin', 'super_admin'] as UserRole['role'][] },
   ];
 

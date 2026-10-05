@@ -19,7 +19,7 @@ export default function Body() {
       <p>
         <strong>La relation est longue et personnelle.</strong> Deux à six heures en
         tête-à-tête, sur un projet que le client a préparé pendant des semaines. Ce n&apos;est
-        pas une transaction, c&apos;est une collaboration — et ça se voit au moment de payer.
+        pas une transaction, c&apos;est une collaboration, et ça se voit au moment de payer.
       </p>
       <p>
         <strong>La culture existe déjà,</strong> importée des studios américains où le
@@ -27,7 +27,7 @@ export default function Body() {
         elle n&apos;est pas à créer.
       </p>
 
-      <h2>Ce que ça représente concrètement</h2>
+      <h2>Ce que ça représente</h2>
       <p>
         Deux à trois clients par jour, un pourboire moyen autour de 20 € quand il est
         laissé : on parle de plusieurs centaines d&apos;euros par mois. Sur un métier où le
@@ -39,11 +39,11 @@ export default function Body() {
         ne transite par personne : elle arrive sur votre compte, pour votre travail.
       </p>
 
-      <h2>Le vrai problème : le cash a disparu de votre clientèle</h2>
+      <h2>Vos clients n&apos;ont plus de liquide</h2>
       <p>
         Votre clientèle est jeune, urbaine, et paie par carte ou par téléphone. Le geste du
-        pourboire n&apos;a pas disparu parce que les gens sont devenus moins reconnaissants
-        — il a disparu parce que sortir un billet suppose d&apos;en avoir un.
+        pourboire n&apos;a pas disparu parce que les gens sont devenus moins reconnaissants.
+        Il a disparu parce que sortir un billet suppose d&apos;en avoir un.
       </p>
       <p>
         Le résultat est le même dans tous les studios : le client dit « c&apos;est génial,
@@ -60,7 +60,7 @@ export default function Body() {
       <p>
         Deuxième emplacement qui marche bien : à côté du miroir, là où le client regarde
         le résultat avant de partir. C&apos;est le moment d&apos;émotion maximale de toute
-        la séance — bien plus fort que le moment du paiement.
+        la séance, bien plus fort que le moment du paiement.
       </p>
       <p>
         Si le studio compte plusieurs artistes, chacun peut avoir son propre profil : le
@@ -78,7 +78,7 @@ export default function Body() {
       <p>
         Une plaque posée ne demande rien. Le client la voit, décide seul, et son refus ne
         s&apos;affiche sur aucun écran. C&apos;est toute la différence entre proposer et
-        solliciter — et dans un métier qui repose sur la relation, elle compte.
+        solliciter, et dans un métier qui repose sur la relation, elle compte.
       </p>
 
       <h2>Le statut : à vérifier avec votre comptable</h2>
@@ -90,8 +90,8 @@ export default function Body() {
       <p>
         La plupart des tatoueurs exercent en indépendant, souvent en location de poste :
         vous n&apos;êtes alors pas salarié du studio, et les sommes que vous percevez
-        relèvent de votre propre régime. Ne vous fiez pas à cette page pour votre situation
-        — faites-la vérifier. Le dispositif n&apos;est pas ce qui rend le pourboire
+        relèvent de votre propre régime. Ne vous fiez pas à cette page pour votre situation,
+        faites-la vérifier. Le dispositif n&apos;est pas ce qui rend le pourboire
         intéressant chez vous ; ce sont les montants.
       </p>
 

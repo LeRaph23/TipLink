@@ -305,8 +305,8 @@ function KeyAdvantagesSection() {
                 <UsersIcon size={15} color="#E57A97" />
               </div>
               <div>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: '#111118', lineHeight: 1 }}>Répartition libre</div>
-                <div style={{ fontSize: 10.5, color: '#74748a', marginTop: 2 }}>Chaque tip va à la bonne personne</div>
+                <div style={{ fontSize: 11.5, fontWeight: 800, color: '#111118', lineHeight: 1 }}>Le client choisit</div>
+                <div style={{ fontSize: 10.5, color: '#74748a', marginTop: 2 }}>Le pourboire va à la bonne personne</div>
               </div>
             </div>
           </div>
@@ -554,7 +554,7 @@ function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo
                   />
                   {p.save && (
                     <div style={{ position: 'absolute', top: 10, left: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 800, color: '#d97706' }}>
-                      ÉCONOMISEZ {p.save}
+                      −{p.save}
                     </div>
                   )}
                 </div>

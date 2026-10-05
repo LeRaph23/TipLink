@@ -1,15 +1,17 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { hasPro } from '@/lib/billing/entitlements';
-import { getReviewTeaser, getReviewImpact } from '@/lib/billing/review-teaser';
+import { effectivePlan } from '@/lib/billing/entitlements';
+import { getReviewTeaser } from '@/lib/billing/review-teaser';
+import { getProImpact, monthStartParis, type ProImpact as ProImpactData } from '@/lib/billing/pro-impact';
 import { DismissibleProUpsell } from '@/components/billing/DismissibleProUpsell';
 import { deriveTrialState } from '@/lib/billing/trial';
 import { shouldShowProNudge } from '@/lib/dashboard/pro-nudge';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
-import { ReviewImpact } from '@/components/dashboard/ReviewImpact';
+import { ProImpact } from '@/components/dashboard/ProImpact';
+import { StaffCompliments } from '@/components/dashboard/StaffCompliments';
 import { readGettingStarted } from '@/lib/dashboard/getting-started';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { PageHeader } from '@/components/dashboard/ui';
@@ -67,39 +69,68 @@ export default async function DashboardPage({
     ? await readGettingStarted(createServiceClient(), adminGroupId)
     : null;
 
-  // Two sides of the same number, and never both at once. A free group is told
-  // what it gave up this month; a paying one is told what it got. The second
-  // half only became possible with `review_clicks`: before that, a subscriber
-  // had no way at all to tell whether the feature they pay for does anything.
-  const { reviewTeaser, reviewImpact } = adminGroupId
+  // Two sides of the same case, and never both at once. A free group is told
+  // how many happy customers it let go this month; a group with Pro (paid, or
+  // on the cardless trial) is shown what it got, in reviews, clicks and
+  // compliments.
+  type ProSide = {
+    reviewTeaser: { tipCount: number; hasReviewLink: boolean } | null;
+    proImpact: ProImpactData | null;
+    trialDaysLeft: number | null;
+    fixLinkHref: string;
+  };
+  const { reviewTeaser, proImpact, trialDaysLeft, fixLinkHref }: ProSide = adminGroupId
     ? await (async () => {
         const service = createServiceClient();
-        if (await hasPro(service, adminGroupId)) {
-          return { reviewTeaser: null, reviewImpact: await getReviewImpact(service, adminGroupId) };
+        const [{ data: group }, { data: ests }] = await Promise.all([
+          service
+            .from('groups')
+            .select('plan, settings, subscription_status, trial_ends_at, pro_trial_started_at, pro_trial_ends_at')
+            .eq('id', adminGroupId)
+            .maybeSingle(),
+          service
+            .from('establishments')
+            .select('id')
+            .eq('group_id', adminGroupId)
+            .is('deleted_at', null)
+            .limit(2),
+        ]);
+        // With a single establishment, straight to the field; otherwise the
+        // list, where each one says whether its link is set.
+        const fixLinkHref = ests?.length === 1
+          ? `/dashboard/establishments/${ests[0].id}`
+          : '/dashboard/establishments';
+
+        const trial = deriveTrialState({
+          plan: group?.plan ?? null,
+          subscriptionStatus: group?.subscription_status ?? null,
+          trialEndsAt: group?.trial_ends_at ?? null,
+          freeTrialEndsAt: group?.pro_trial_ends_at ?? null,
+        });
+
+        if (effectivePlan(group) === 'pro') {
+          // During the cardless trial the window is the trial itself: "since
+          // your trial began" is the figure the end-of-trial decision rests on.
+          const since = trial.state === 'trialing' && trial.cardless && group?.pro_trial_started_at
+            ? new Date(group.pro_trial_started_at)
+            : monthStartParis();
+          return {
+            reviewTeaser: null,
+            proImpact: await getProImpact(service, adminGroupId, since),
+            trialDaysLeft: trial.state === 'trialing' ? trial.daysLeft : null,
+            fixLinkHref,
+          };
         }
 
         const teaser = await getReviewTeaser(service, adminGroupId);
-        if (!teaser) return { reviewTeaser: null, reviewImpact: null };
+        if (!teaser) return { reviewTeaser: null, proImpact: null, trialDaysLeft: null, fixLinkHref };
 
         // The teaser used to appear on every visit for as long as the group
-        // stayed free, which is how a suggestion becomes a nag. It is now the
-        // monthly nudge: closeable, held for a month, and withheld from the
-        // two groups it would be wrong for. Somebody on trial has the feature,
-        // and somebody who cannot take a payment yet has a real problem that
+        // stayed free, which is how a suggestion becomes a nag. It is the
+        // monthly nudge: closeable, held for a month, and withheld from
+        // somebody who cannot take a payment yet, who has a real problem that
         // this is not.
-        const { data: group } = await service
-          .from('groups')
-          .select('settings, subscription_status, trial_ends_at')
-          .eq('id', adminGroupId)
-          .maybeSingle();
-
         const settings = (group?.settings as Record<string, unknown> | null) ?? {};
-        const trial = deriveTrialState({
-          plan: 'free',
-          subscriptionStatus: group?.subscription_status ?? null,
-          trialEndsAt: group?.trial_ends_at ?? null,
-        });
-
         const show = shouldShowProNudge({
           isPro: false,
           trialing: trial.state === 'trialing',
@@ -110,9 +141,9 @@ export default async function DashboardPage({
             : null,
         });
 
-        return { reviewTeaser: show ? teaser : null, reviewImpact: null };
+        return { reviewTeaser: show ? teaser : null, proImpact: null, trialDaysLeft: null, fixLinkHref };
       })()
-    : { reviewTeaser: null, reviewImpact: null };
+    : { reviewTeaser: null, proImpact: null, trialDaysLeft: null, fixLinkHref: '/dashboard/establishments' };
 
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
@@ -243,21 +274,22 @@ export default async function DashboardPage({
         <DigitipCard staffId={staffProfile.id} locale={locale} />
       )}
 
-      {/* The count is the pitch: every tip this month was a customer who would
-          have been asked for a review at the moment they were demonstrably
-          happy. Shown only when the group actually has a review link and
-          actually took tips — see getReviewTeaser for why both matter. */}
-      {reviewImpact && <ReviewImpact impact={reviewImpact} />}
+      {proImpact && (
+        <ProImpact impact={proImpact} locale={locale} trialDaysLeft={trialDaysLeft} fixLinkHref={fixLinkHref} />
+      )}
+
+      {/* An employee sees what customers said about them: the half of Pro
+          that is for the team, and the reason a team asks to keep it. */}
+      {staffProfile && <StaffCompliments staffId={staffProfile.id} locale={locale} />}
 
       {reviewTeaser && adminGroupId && (
         <DismissibleProUpsell
           groupId={adminGroupId}
           title={t('pro.reviewTeaserTitle', { count: reviewTeaser.tipCount })}
-          body={t('pro.reviewTeaserBody')}
+          body={reviewTeaser.hasReviewLink ? t('pro.reviewTeaserBody') : t('pro.reviewTeaserBodyNoLink')}
           cta={t('pro.reviewTeaserCta')}
         />
       )}
-
 
       {!hasEarnings && statsGrid}
 
