@@ -283,7 +283,7 @@
       "bullet2": "On ne prend rien sur les pourboires",
       "bullet3": "En résine épaisse, faite pour durer",
       "bullet4": "Entreprise française",
-      "bullet5": "Remplacée gratuitement si elle casse, à vie",
+      "bullet5": "Remplacée gratuitement à vie en cas de défaut ou de panne",
       "material": "Résine époxy",
       "size": "10 × 10 cm",
       "adhesive": "Adhésif inclus",
@@ -319,7 +319,7 @@
     },
     "guarantee": {
       "title": "Garantie à vie",
-      "sub": "Si une plaque casse ou ne marche plus, on vous en envoie une nouvelle, gratuitement, quelle que soit son ancienneté."
+      "sub": "Si une plaque a un défaut ou tombe en panne en usage normal, on vous en envoie une nouvelle, gratuitement, quelle que soit son ancienneté."
     },
     "grid": {
       "kicker": "Nos packs",
@@ -365,7 +365,7 @@
       "sub": "Digitip démarre, alors plutôt que des chiffres de clients, voici des engagements que vous pouvez vérifier. Chacun est écrit dans nos CGV ou nos mentions légales.",
       "freeShippingShort": "Livraison offerte",
       "warranty": "Garantie matériel à vie",
-      "warrantySub": "Si une plaque casse ou ne marche plus, on la remplace gratuitement, sans limite de durée.",
+      "warrantySub": "Si une plaque a un défaut ou tombe en panne en usage normal, on la remplace gratuitement, sans limite de durée.",
       "noSubscription": "Pourboires sans abonnement",
       "noSubscriptionSub": "Vous payez la plaque une fois. Ensuite, recevoir des pourboires ne vous coûte rien : les frais de service sont payés par le client.",
       "stripe": "Paiements sécurisés par Stripe",
@@ -391,11 +391,11 @@
       "q2": "Le client peut payer avec Apple Pay ou Google Pay ?",
       "a2": "Oui, et avec n'importe quelle carte bancaire. Il n'a aucune appli à télécharger.",
       "q3": "Combien de temps dure une plaque ?",
-      "a3": "Très longtemps. Il n'y a ni batterie ni électronique qui s'use, la puce s'alimente quand le téléphone s'approche. Et si elle casse, on la remplace, à vie.",
+      "a3": "Très longtemps. Il n'y a ni batterie ni électronique qui s'use, la puce s'alimente quand le téléphone s'approche. Et si elle tombe en panne, on la remplace, à vie.",
       "q4": "On peut utiliser Digitip dans plusieurs établissements ?",
       "a4": "Oui. Un seul compte peut gérer autant d'établissements et d'équipes que vous voulez, chacun avec ses plaques et ses statistiques.",
-      "q5": "Ma plaque est abîmée ou ne marche plus, je fais quoi ?",
-      "a5": "Envoyez-nous une photo par e-mail et on vous en expédie une nouvelle gratuitement. La garantie à vie est comprise dans chaque pack.",
+      "q5": "Ma plaque ne marche plus, je fais quoi ?",
+      "a5": "Envoyez-nous une photo par e-mail et on vous en expédie une nouvelle gratuitement : la garantie à vie couvre les défauts et les pannes en usage normal. Une plaque perdue ou cassée accidentellement n'est pas couverte, mais vous pouvez en commander une autre depuis votre tableau de bord.",
       "q6": "Il me faut un SIRET ou un statut particulier ?",
       "a6": "Pas pour commander les plaques. Pour recevoir les pourboires, l'établissement fait une vérification une seule fois dans Digitip (identité du gérant et coordonnées bancaires), parce que la loi contre le blanchiment l'impose. Vos employés n'ont aucun compte à créer : chaque pourboire est noté à leur nom et vous le reversez avec la paie.",
       "q7": "Comment Digitip gagne de l'argent ?",
@@ -405,7 +405,7 @@
       "g1title": "Une plaque solide",
       "g1body": "Elle est faite pour servir tous les jours : résine épaisse, coins arrondis, puce NFC noyée dedans.",
       "g2title": "Garantie à vie",
-      "g2body": "Si une plaque casse ou ne marche plus, on vous en envoie une neuve, gratuitement, sans limite de durée.",
+      "g2body": "Si une plaque a un défaut ou tombe en panne en usage normal, on vous en envoie une neuve, gratuitement, sans limite de durée.",
       "g3title": "Livraison offerte",
       "g3body": "Pas de frais de port en France, dans l'UE et en Suisse, quel que soit le pack.",
       "g4title": "Rien à payer chaque mois pour les pourboires",
@@ -481,7 +481,7 @@
     "benefits": {
       "preConfigured": "Déjà programmée, vous la posez et c'est prêt",
       "freeShipping": "Livraison gratuite partout en Europe",
-      "lifetimeReplacement": "Remplacée gratuitement si elle casse, à vie",
+      "lifetimeReplacement": "Remplacée gratuitement à vie en cas de défaut ou de panne",
       "dashboard": "Tableau de bord inclus",
       "noSubscription": "Pas d'abonnement pour les pourboires",
       "vatInvoice": "Facture avec TVA envoyée automatiquement"

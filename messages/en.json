@@ -283,7 +283,7 @@
       "bullet2": "We take nothing from tips",
       "bullet3": "Thick resin, made to last",
       "bullet4": "French company",
-      "bullet5": "Replaced for free if it breaks, for life",
+      "bullet5": "Replaced for free for life if it's faulty or stops working",
       "material": "Epoxy resin",
       "size": "10 × 10 cm",
       "adhesive": "Adhesive included",
@@ -319,7 +319,7 @@
     },
     "guarantee": {
       "title": "Guaranteed for life",
-      "sub": "If a plaque breaks or stops working, we send you a new one for free, however old it is."
+      "sub": "If a plaque is faulty or stops working in normal use, we send you a new one for free, however old it is."
     },
     "grid": {
       "kicker": "Our packs",
@@ -365,7 +365,7 @@
       "sub": "Digitip is new, so instead of customer numbers, here are commitments you can check. Each one is written into our terms of sale or legal notice.",
       "freeShippingShort": "Free shipping",
       "warranty": "Lifetime hardware guarantee",
-      "warrantySub": "If a plaque breaks or stops working, we replace it for free, with no time limit.",
+      "warrantySub": "If a plaque is faulty or stops working in normal use, we replace it for free, with no time limit.",
       "noSubscription": "Tipping with no subscription",
       "noSubscriptionSub": "You pay for the plaque once. After that, receiving tips costs you nothing: the service fee is paid by the customer.",
       "stripe": "Payments secured by Stripe",
@@ -391,11 +391,11 @@
       "q2": "Can customers pay with Apple Pay or Google Pay?",
       "a2": "Yes, and with any bank card. They don't download any app.",
       "q3": "How long does a plaque last?",
-      "a3": "A very long time. There's no battery and nothing that wears out: the chip powers up when a phone comes close. And if it breaks, we replace it, for life.",
+      "a3": "A very long time. There's no battery and nothing that wears out: the chip powers up when a phone comes close. And if it stops working, we replace it, for life.",
       "q4": "Can I use Digitip in several venues?",
       "a4": "Yes. One account can run as many venues and teams as you like, each with its own plaques and stats.",
-      "q5": "My plaque is damaged or stopped working. What now?",
-      "a5": "Email us a photo and we'll ship you a new one for free. The lifetime guarantee comes with every pack.",
+      "q5": "My plaque stopped working. What now?",
+      "a5": "Email us a photo and we'll ship you a new one for free: the lifetime guarantee covers defects and failures in normal use. A lost or accidentally broken plaque isn't covered, but you can order another from your dashboard.",
       "q6": "Do I need a company number or a special status?",
       "a6": "Not to order plaques. To receive tips, the business goes through a one-time check in Digitip (the manager's identity and bank details), because anti-money-laundering law requires it. Your staff don't create any account: each tip is recorded in their name and you pay it with their wages.",
       "q7": "How does Digitip make money?",
@@ -405,7 +405,7 @@
       "g1title": "A solid plaque",
       "g1body": "It's made for everyday use: thick resin, rounded corners, NFC chip set inside.",
       "g2title": "Guaranteed for life",
-      "g2body": "If a plaque breaks or stops working, we send you a new one for free, with no time limit.",
+      "g2body": "If a plaque is faulty or stops working in normal use, we send you a new one for free, with no time limit.",
       "g3title": "Free shipping",
       "g3body": "No shipping cost to France, the EU and Switzerland, whatever the pack.",
       "g4title": "Nothing to pay each month for tips",
@@ -481,7 +481,7 @@
     "benefits": {
       "preConfigured": "Already programmed, put it up and it's ready",
       "freeShipping": "Free shipping across Europe",
-      "lifetimeReplacement": "Replaced for free if it breaks, for life",
+      "lifetimeReplacement": "Replaced for free for life if it's faulty or stops working",
       "dashboard": "Dashboard included",
       "noSubscription": "No subscription for tips",
       "vatInvoice": "VAT invoice sent automatically"

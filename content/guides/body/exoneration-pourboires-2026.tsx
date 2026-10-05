@@ -14,7 +14,7 @@ export default function Body() {
         Le dispositif est né avec la loi de finances pour 2022, dans un contexte de
         difficultés de recrutement dans l&apos;hôtellerie-restauration. Il a été reconduit
         par les lois de finances pour 2024 et 2025, puis prolongé de trois ans d&apos;un
-        coup par celle pour 2026. C'est la première fois qu&apos;il dépasse l&apos;horizon
+        coup par celle pour 2026. C&apos;est la première fois qu&apos;il dépasse l&apos;horizon
         annuel.
       </p>
       <p>

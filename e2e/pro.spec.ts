@@ -8,7 +8,7 @@ const reset = (group_id: string) =>
   });
 
 test('the Pro offer starts a trial without a card, and the tip page then asks for a compliment', async ({ page }) => {
-  const { group_id } = seed();
+  const { group_id, establishment_id } = seed();
   await reset(group_id);
   try {
     await login(page);
@@ -27,7 +27,9 @@ test('the Pro offer starts a trial without a card, and the tip page then asks fo
 
     // Pro now shows on the customer's side: the compliment form, in demo mode.
     const [staff] = await admin<{ id: string; full_name: string }[]>(
-      `/rest/v1/staff_profiles?select=id,full_name&deleted_at=is.null&limit=1`,
+      // The seeded establishment's own staff: the first row of the whole table
+      // can belong to a group another spec created, which has no Pro.
+      `/rest/v1/staff_profiles?select=id,full_name&deleted_at=is.null&establishment_id=eq.${establishment_id}&limit=1`,
     );
     await page.goto(`/fr/pay/success?demo=1&staff=${staff.id}&amt=500&cur=eur`);
     await page.getByRole('button', { name: 'Les conseils' }).click();

@@ -15,7 +15,7 @@ export default function Body() {
         classique du pourboire encaissé avec l&apos;addition, ou versé sur le compte de
         l&apos;établissement puis reversé au personnel. L&apos;employeur manipule des
         sommes qui ne lui appartiennent pas : il doit pouvoir les identifier, les
-        justifier, et les traiter en paie selon les règles applicables, qu'elles soient exonérées ou non.
+        justifier, et les traiter en paie selon les règles applicables, qu&apos;elles soient exonérées ou non.
       </p>
       <p>
         <strong>Le pourboire va directement au bénéficiaire.</strong> Le client verse sur
