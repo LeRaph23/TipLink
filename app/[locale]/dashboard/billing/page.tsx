@@ -113,8 +113,6 @@ export default async function BillingPage({
         tipCount: rawImpact.tipCount,
         clickCount: rawImpact.clickCount,
         complimentCount: rawImpact.complimentCount,
-        googleRating: rawImpact.listing?.rating ?? null,
-        googleReviewCount: rawImpact.listing?.reviewCount ?? null,
         hasReviewLink: rawImpact.hasReviewLink,
       }
     : null;

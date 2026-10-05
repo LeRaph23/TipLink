@@ -1,19 +1,18 @@
 import 'server-only';
 import type { createServiceClient } from '@/lib/supabase/service';
 import { deriveReviewImpact } from './review-teaser';
-import { getGroupListing, type ListingStats } from '@/lib/google-listing';
 import { currentMonth, monthPeriod } from '@/lib/export/payroll';
 
 type Service = ReturnType<typeof createServiceClient>;
 
 /**
- * What Pro did for a group over a window, in the four numbers it is sold on.
+ * What Pro did for a group over a window, in the numbers it is sold on.
  *
  * One function for every place that makes the case (the dashboard, the billing
  * card, the end-of-trial email) so they can never quote different figures for
  * the same month. Each number is something the manager could check: tips from
  * their own transactions, clicks and compliments from rows that can only exist
- * against a real tip, and the Google listing as Google reports it right now.
+ * against a real tip.
  */
 export type ProImpact = {
   since: string;
@@ -21,8 +20,6 @@ export type ProImpact = {
   clickCount: number;
   complimentCount: number;
   hasReviewLink: boolean;
-  /** Read live from Google, never stored. Null without a listing or on failure. */
-  listing: (ListingStats & { establishmentName: string }) | null;
 };
 
 export async function getProImpact(
@@ -39,14 +36,13 @@ export async function getProImpact(
 
   const ids = ests.map((e) => e.id);
   const sinceIso = since.toISOString();
-  const [tips, clicks, compliments, listing] = await Promise.all([
+  const [tips, clicks, compliments] = await Promise.all([
     service.from('transactions').select('id', { count: 'exact', head: true })
       .in('establishment_id', ids).eq('status', 'succeeded').gte('created_at', sinceIso),
     service.from('review_clicks').select('id', { count: 'exact', head: true })
       .in('establishment_id', ids).gte('clicked_at', sinceIso),
     service.from('tip_compliments').select('id', { count: 'exact', head: true })
       .in('establishment_id', ids).gte('created_at', sinceIso),
-    getGroupListing(service, groupId).catch(() => null),
   ]);
 
   const tipCount = tips.count ?? 0;
@@ -57,7 +53,6 @@ export async function getProImpact(
     clickCount,
     complimentCount: Math.min(compliments.count ?? 0, tipCount),
     hasReviewLink: ests.some((e) => (e.google_review_url ?? '').trim().length > 0),
-    listing,
   };
 }
 

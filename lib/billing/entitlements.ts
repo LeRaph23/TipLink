@@ -1,6 +1,6 @@
 // What Pro unlocks, for reference: the post-tip Google review invitation
 // (enforced in SQL, see migrations 00076 and 00088), the compliments customers
-// leave for whoever served them, and the Google rating shown on the dashboard.
+// leave for whoever served them.
 //
 // The rule behind that split: nothing which increases tip volume is ever gated,
 // because tips are the platform's own revenue and charging for them would be

@@ -13,8 +13,7 @@
 --   2. compliments: after the tip, the customer can leave a word for the person
 --      who served them, which nothing but Digitip can do because nothing else
 --      knows who that was
---   3. the Google rating and review count on the dashboard, read live (not
---      stored: see section 3)
+--   3. nothing from Google is stored (see section 3)
 -- ============================================================
 
 -- ── 1. Free trial, no card ───────────────────────────────────────────────────
@@ -167,8 +166,8 @@ CREATE POLICY tip_compliments_scoped_select ON public.tip_compliments
     OR (hidden_at IS NULL AND staff_id IS NOT NULL AND staff_id = get_my_staff_profile_id())
   );
 
--- ── 3. Google listing ───────────────────────────────────────────────────────
--- Deliberately no table. Google's Places API policies allow storing the place
--- ID only, so the rating and review count are read live at display time
--- (lib/google-listing.ts) and never written here. The place ID is already on
--- `establishments` (00070).
+-- ── 3. No Google data ────────────────────────────────────────────────────────
+-- Deliberately no table. A first draft stored the listing's rating and review
+-- count weekly; Google's Places API policies allow storing the place ID only,
+-- and reading it live on every dashboard visit cost more than it was worth.
+-- Pro reports what is ours instead: review_clicks and tip_compliments.

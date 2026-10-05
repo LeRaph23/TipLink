@@ -7,9 +7,10 @@ import { cardTitleStyle } from './ui';
  * What Digitip Pro produced, on the dashboard home, for a group that has it
  * (subscribed or on the cardless trial).
  *
- * Three figures: the Google listing as Google reports it now (read live, never
- * stored, credited to Google Maps as the Places policies require), customers
- * who opened it after tipping, and the notes the team received. Set like the rest of the home page, numbers in a
+ * Two figures, both our own data: customers who opened the Google review page
+ * after tipping, and the notes the team received. The Google rating itself
+ * is not shown: the Places policies forbid storing it and reading it live on
+ * every visit cost more than it told the manager. Set like the rest of the home page, numbers in a
  * row divided by a hairline, and a bad month reads as a bad month.
  *
  * A missing Google link turns the first two off, so it takes their place as a
@@ -39,22 +40,6 @@ export async function ProImpact({
   const cells: React.ReactNode[] = [];
   if (impact.hasReviewLink) {
     cells.push(
-      <div key="reviews" style={stat}>
-        {impact.listing ? (
-          <>
-            <div style={big}>
-              {impact.listing.rating !== null ? `${impact.listing.rating.toLocaleString(locale)} ★` : '—'}
-            </div>
-            <div style={small}>
-              {t('reviewsTotal', { count: impact.listing.reviewCount })}
-              <br />
-              <span style={{ fontSize: 11 }}>{t('source')}</span>
-            </div>
-          </>
-        ) : (
-          <div style={{ ...small, marginTop: 0 }}>{t('reviewsUnavailable')}</div>
-        )}
-      </div>,
       <div key="clicks" style={stat}>
         <div style={big}>{t('clicksRatio', { clicks: impact.clickCount, tips: impact.tipCount })}</div>
         <div style={small}>{impact.tipCount > 0 ? t('clicksBody') : t('clicksEmpty')}</div>

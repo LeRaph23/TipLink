@@ -13,9 +13,6 @@ export type CardImpact = {
   tipCount: number;
   clickCount: number;
   complimentCount: number;
-  /** Live from Google, never stored. */
-  googleRating: number | null;
-  googleReviewCount: number | null;
   hasReviewLink: boolean;
 };
 
@@ -154,12 +151,6 @@ export function ProCard({
   // hairline, no boxes. Only the ones that mean something for this group.
   const stats = impact && impact.tipCount > 0
     ? [
-        ...(impact.hasReviewLink && impact.googleReviewCount !== null
-          ? [{
-              v: impact.googleRating !== null ? `${impact.googleRating.toLocaleString(locale)} ★` : String(impact.googleReviewCount),
-              l: t('impactReviews', { count: impact.googleReviewCount }),
-            }]
-          : []),
         ...(impact.hasReviewLink
           ? [{ v: `${impact.clickCount}/${impact.tipCount}`, l: t('impactClicks') }]
           : []),
@@ -267,7 +258,7 @@ export function ProCard({
   // An ordinary dashboard card: a title with the price opposite, one sentence,
   // three rows set like the settings page, the button. What the customer sees
   // is shown as the two real cards, not described.
-  const rows = (['benefitReviews', 'benefitCompliments', 'benefitListing'] as const);
+  const rows = (['benefitReviews', 'benefitCompliments'] as const);
 
   return (
     <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
