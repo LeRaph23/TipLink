@@ -7,7 +7,13 @@
 // - activation link valid 7 days                  → lib/auth/onboarding-token.ts
 // - team invitation link valid 30 days            → lib/auth/team-join-token.ts
 // - tip between 0,50 € and 500 €                  → lib/tips/limits.ts
-// - weekly payouts on Monday                      → lib/stripe/connect.ts
+// - weekly payouts on Monday (accounts created    → lib/stripe/connect.ts
+//   since 4eefd76), of funds already available;
+//   tips go via separate transfers with
+//   source_transaction                            → app/api/stripe/create-intent/route.ts
+// - free plan exports the current month only     → app/[locale]/dashboard/(manager)/statements/page.tsx
+// - review invite shown to Pro only              → supabase/migrations/00076_pro_subscription.sql
+// - lifetime warranty = defects, not loss/damage → legal.cgv s7Body in messages/fr.json
 // - 10 € tip → 10,75 € charged                    → landing.pricing copy, lib/pricing/tip-fees.ts
 
 export type HelpLink = { label: string; href: string };
@@ -51,7 +57,7 @@ export const HELP: HelpCategory[] = [
           "Le NFC demande un téléphone déverrouillé et un contact de quelques secondes. Si ça ne marche toujours pas, le QR code imprimé sur la plaque fait exactement la même chose.",
         steps: [
           'iPhone : déverrouillez l’écran et approchez le haut du téléphone, près de l’appareil photo.',
-          'Android : vérifiez que le NFC est activé (Réglages → Appareils connectés → NFC), puis approchez le dos du téléphone.',
+          'Android : vérifiez que le NFC est activé dans les Réglages (souvent sous « Appareils connectés » ou « Connexions »), puis approchez le dos du téléphone.',
           'Retirez une coque épaisse ou métallique si elle gêne.',
           'Sinon, ouvrez l’appareil photo et visez le QR code de la plaque.',
         ],
@@ -144,7 +150,7 @@ export const HELP: HelpCategory[] = [
         id: 'pourquoi-verification',
         question: 'Pourquoi dois-je faire une vérification ?',
         answer:
-          "La réglementation impose de vérifier l'identité du bénéficiaire avant tout encaissement. C'est fait une seule fois, en environ 2 minutes, dans le formulaire de Stripe (notre partenaire de paiement) intégré à votre tableau de bord. Vos coordonnées bancaires ne transitent jamais par Digitip.",
+          "La réglementation impose de vérifier l'identité du bénéficiaire avant tout encaissement. C'est fait une seule fois, en quelques minutes, dans le formulaire de Stripe (notre partenaire de paiement) intégré à votre tableau de bord. Vos coordonnées bancaires ne transitent jamais par Digitip.",
         link: { label: 'Ouvrir mon compte de paiement', href: '/fr/dashboard/paiements' },
       },
       {
@@ -188,20 +194,20 @@ export const HELP: HelpCategory[] = [
         id: 'quand-argent',
         question: 'Quand l’argent arrive-t-il sur mon compte ?',
         answer:
-          "Les pourboires sont virés par Stripe chaque lundi sur le compte bancaire de l'établissement. Le tout premier virement peut prendre quelques jours de plus, le temps des contrôles de sécurité de Stripe. Le détail est dans « Virements », sur la page Compte de paiement.",
+          "Stripe vire chaque lundi, sur le compte bancaire de l'établissement, les pourboires déjà disponibles. Un pourboire ne devient disponible que quelques jours après le paiement : celui laissé en fin de semaine part donc souvent le lundi suivant. Comptez ensuite 1 à 2 jours ouvrés pour que le virement apparaisse sur votre compte. Le tout premier virement peut prendre plus longtemps, le temps des contrôles de sécurité de Stripe. Le détail est dans « Virements », sur la page Compte de paiement.",
       },
       {
         id: 'reverser-equipe',
         question: 'Comment les employés touchent-ils leurs pourboires ?',
         answer:
-          "Le pourboire est versé sur le compte de l'établissement, qui le reverse à la personne choisie par le client, avec la paie. Les relevés mensuels par employé sont prêts à transmettre à votre comptable.",
+          "Le pourboire est versé sur le compte de l'établissement, qui le reverse à l'équipe avec la paie. Chaque pourboire est attribué à la personne choisie par le client : la page Relevés affiche le total de chaque employé, mois par mois. L'export du mois en cours est gratuit ; celui des mois précédents, et l'envoi automatique à votre comptable, font partie de Digitip Pro.",
         link: { label: 'Voir mes relevés', href: '/fr/dashboard/statements' },
       },
       {
         id: 'frais',
         question: 'Combien coûte un pourboire ?',
         answer:
-          "Rien pour vous : les frais de service sont payés par le client, et le pourboire choisi vous revient en entier. Exemple : pour un pourboire de 10 €, le client paie 10,75 €.",
+          "Aucun frais par pourboire pour l'établissement : les frais de service (0,25 € + 5 % du pourboire) sont ajoutés au montant et payés par le client. Le pourboire choisi est versé en entier à l'établissement, sans aucune retenue. Exemple : pour un pourboire de 10 €, le client paie 10,75 €.",
       },
       {
         id: 'montants',
@@ -302,8 +308,9 @@ export const HELP: HelpCategory[] = [
       },
       {
         id: 'cassee',
-        question: 'Ma plaque est cassée, abîmée ou perdue',
-        answer: `Le matériel est garanti à vie. Écrivez-nous à ${HELP_CONTACT} avec une photo (ou le numéro de commande) : nous vous en envoyons une nouvelle.`,
+        question: 'Ma plaque ne marche plus, est abîmée ou perdue',
+        answer: `Une plaque qui tombe en panne en usage normal ou présente un défaut de fabrication est remplacée gratuitement, à vie : écrivez-nous à ${HELP_CONTACT} avec une photo. Une plaque perdue ou cassée accidentellement n'est pas couverte par la garantie : vous pouvez en commander une nouvelle depuis Facturation.`,
+        link: { label: 'Facturation', href: '/fr/dashboard/billing' },
       },
       {
         id: 'ou-poser',
@@ -314,7 +321,7 @@ export const HELP: HelpCategory[] = [
       {
         id: 'qr-imprimer',
         question: 'Imprimer mon QR code (menu, vitrine, addition)',
-        answer: "Tableau de bord → Plaques → bouton « QR » sur la ligne de la plaque : le fichier se télécharge, prêt à imprimer.",
+        answer: "Tableau de bord → Plaques → bouton « QR » sur la ligne de la plaque, puis « ↓ PNG » : l'image se télécharge, prête à imprimer.",
       },
     ],
   },
