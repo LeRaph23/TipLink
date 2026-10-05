@@ -4,7 +4,11 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Link } from '@/i18n/navigation';
 import { ProCard } from './ProCard';
 import { getProPricing } from '@/lib/billing/pro-pricing';
-import { deriveTrialState, type TrialState } from '@/lib/billing/trial';
+import { deriveTrialState, trialSpent, type TrialState } from '@/lib/billing/trial';
+import { effectivePlan } from '@/lib/billing/entitlements';
+import { getProImpact, monthStartParis } from '@/lib/billing/pro-impact';
+import { getReviewTeaser } from '@/lib/billing/review-teaser';
+import type { CardImpact } from './ProCard';
 import { PageHeader, SectionTitle, Card } from '@/components/dashboard/ui';
 
 export const dynamic = 'force-dynamic';
@@ -71,7 +75,7 @@ export default async function BillingPage({
     primaryGroupId
       ? service
           .from('groups')
-          .select('plan, subscription_status, trial_ends_at, subscription_cancel_at')
+          .select('plan, subscription_status, trial_ends_at, subscription_cancel_at, pro_trial_started_at, pro_trial_ends_at')
           .eq('id', primaryGroupId)
           .is('deleted_at', null)
           .maybeSingle()
@@ -80,14 +84,39 @@ export default async function BillingPage({
     getProPricing(),
   ]);
 
-  const plan = planRow?.plan === 'pro' ? 'pro' : 'free';
+  const plan = effectivePlan(planRow);
   const trial: TrialState = planRow
     ? deriveTrialState({
         plan: planRow.plan,
         subscriptionStatus: planRow.subscription_status,
         trialEndsAt: planRow.trial_ends_at,
+        freeTrialEndsAt: planRow.pro_trial_ends_at,
       })
     : { state: 'none' };
+
+  // The card argues with the group's own figures: what Pro did this month for
+  // a subscriber, what it has done so far for a trialist, what it did during
+  // a trial that ended, and how many customers tipped this month for
+  // somebody who never tried it.
+  const trialStart = planRow?.pro_trial_started_at ? new Date(planRow.pro_trial_started_at) : null;
+  const impactSince = plan === 'pro'
+    ? (trial.state === 'trialing' && trial.cardless && trialStart ? trialStart : monthStartParis())
+    : (trial.state === 'ended' && trialStart ? trialStart : null);
+  const [rawImpact, teaser] = primaryGroupId
+    ? await Promise.all([
+        impactSince ? getProImpact(service, primaryGroupId, impactSince) : Promise.resolve(null),
+        plan === 'pro' ? Promise.resolve(null) : getReviewTeaser(service, primaryGroupId),
+      ])
+    : [null, null];
+  const impact: CardImpact | null = rawImpact
+    ? {
+        tipCount: rawImpact.tipCount,
+        clickCount: rawImpact.clickCount,
+        complimentCount: rawImpact.complimentCount,
+        reviewsGained: rawImpact.listing?.gained ?? null,
+        hasReviewLink: rawImpact.hasReviewLink,
+      }
+    : null;
 
   return (
     <div>
@@ -208,7 +237,9 @@ export default async function BillingPage({
       </section>
 
       {primaryGroupId && (
-        <section>
+        // `#pro` is where every upsell in the product lands: the section is
+        // last on this page on purpose, so the link has to scroll to it.
+        <section id="pro" style={{ scrollMarginTop: 24 }}>
           <SectionTitle>{t('proSection')}</SectionTitle>
           <ProCard
             groupId={primaryGroupId}
@@ -218,6 +249,9 @@ export default async function BillingPage({
             justPaid={justPaid}
             trial={trial}
             cancelAt={planRow?.subscription_cancel_at ?? null}
+            impact={impact}
+            monthTipCount={teaser?.tipCount ?? null}
+            trialAvailable={plan !== 'pro' && !!planRow && !trialSpent(planRow) && !planRow.subscription_status}
           />
         </section>
       )}

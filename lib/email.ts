@@ -1777,8 +1777,21 @@ export async function sendStaffBankingComplete(opts: {
 /** Group admin, establishment received its very first tip. */
 export async function sendFirstTipCelebration(opts: {
   to: string; firstName: string; amount: number; currency: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
+  /** Set when this tip just started the cardless Pro trial. */
+  proTrial?: { hasReviewLink: boolean } | null;
 }): Promise<{ id: string | null }> {
-  const { to, firstName, amount, currency, establishmentName, dashboardUrl, unsubscribeUrl } = opts;
+  const { to, firstName, amount, currency, establishmentName, dashboardUrl, unsubscribeUrl, proTrial } = opts;
+  // The trial is said here because this is the one email certain to be read
+  // the day it starts. Without it, the first a manager hears of Pro is the
+  // email saying it ends in three days.
+  const trialBullets = proTrial
+    ? [
+        '🎁 Digitip Pro est activé pour 30 jours, offert et sans carte : vos clients sont invités à laisser un avis Google et peuvent laisser un compliment à la personne qui les a servis.',
+        ...(proTrial.hasReviewLink
+          ? []
+          : ['⭐ Ajoutez votre fiche Google dans Établissements pour que l\'invitation à laisser un avis s\'affiche.']),
+      ]
+    : [];
   return lifecycleSend(to, `Premier pourboire encaissé chez ${establishmentName} !`,
     lifecycleBody({
       badge: 'Premier pourboire', tone: 'green',
@@ -1787,6 +1800,7 @@ export async function sendFirstTipCelebration(opts: {
       bullets: [
         '→ Posez un SmartTag à chaque poste / chaque caisse',
         '→ Demandez à l\'équipe de le mentionner à chaque encaissement',
+        ...trialBullets,
       ],
       ctaLabel: 'Voir mes pourboires →', ctaUrl: dashboardUrl,
       unsubscribeUrl,
@@ -1845,43 +1859,6 @@ export async function sendWeeklyTipRecap(opts: {
 }
 
 /**
- * Group admin on the free plan, last month's recap (recurring, the 5th).
- *
- * The Pro version of this arrives with the payroll CSVs attached and goes to
- * the accountant too. This one is the same month seen from the free plan: the
- * figures, and the one thing that did not happen. Every tip last month was a
- * customer at the exact moment they were pleased, and not one of them was
- * asked for a review, because the invitation is switched off.
- *
- * Deliberately no projected revenue, no "an avis is worth X". The number of
- * customers who were not asked is a fact; what a review earns is a guess, and
- * a guess in a monthly email is a promise by the third month.
- */
-export async function sendFreeMonthlyRecap(opts: {
-  to: string; firstName: string; establishmentName: string; monthLabel: string;
-  tipCount: number; totalFormatted: string; billingUrl: string;
-  unsubscribeUrl?: string | null;
-}): Promise<{ id: string | null }> {
-  const { to, firstName, establishmentName, monthLabel, tipCount, totalFormatted, billingUrl, unsubscribeUrl } = opts;
-  const plural = tipCount > 1;
-
-  return lifecycleSend(to, `${escapeHtml(establishmentName)} : ${totalFormatted} de pourboires en ${monthLabel}`,
-    lifecycleBody({
-      badge: 'Récap du mois', tone: 'green',
-      title: `${firstName}, ${escapeHtml(establishmentName)} a encaissé ${totalFormatted} en ${monthLabel}`,
-      intro: `<strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${plural ? 's' : ''}</strong> le mois dernier. Autant de client${plural ? 's' : ''} content${plural ? 's' : ''} à qui personne n'a demandé d'avis Google : l'invitation après le pourboire fait partie de Digitip Pro, et elle est désactivée sur votre offre.`,
-      bullets: [
-        '① L\'invitation s\'affiche juste après le pourboire, quand le client est content',
-        '② Le relevé de paie part chaque mois à vous et à votre comptable',
-        '③ L\'export comptable complet, tous les mois, pas seulement le mois en cours',
-      ],
-      ctaLabel: 'Essayer Digitip Pro →', ctaUrl: billingUrl,
-      note: 'Vos pourboires n\'ont jamais besoin d\'abonnement : ils arrivent pareil.',
-      unsubscribeUrl,
-    }));
-}
-
-/**
  * Group admin, three days before the Pro trial converts (transactional).
  *
  * The one email a trial owes its customer. It leads with what the trial
@@ -1912,6 +1889,46 @@ export async function sendTrialEndingSoon(opts: {
       intro: `${evidence} À la fin de l'essai${priceLabel ? `, l'abonnement démarre à <strong class="text-strong" style="color:#0f0f12">${escapeHtml(priceLabel)} HT par mois</strong>` : ", l'abonnement démarre"} pour ${escapeHtml(establishmentName)}. Si vous ne voulez pas continuer, résiliez avant la fin : rien ne sera prélevé.`,
       ctaLabel: 'Gérer mon abonnement →', ctaUrl: billingUrl,
       note: 'Vos pourboires continuent d\'arriver dans tous les cas : ils ne dépendent pas de l\'abonnement.',
+    }));
+}
+
+/**
+ * Group admin, three days before the cardless Pro trial ends.
+ *
+ * The mirror of sendTrialEndingSoon, with the opposite reassurance: no card
+ * is on file, so the risk is not a surprise charge but Pro switching off
+ * unnoticed. It leads with what the trial did, in the same figures as the
+ * dashboard, and says plainly that doing nothing costs nothing.
+ */
+export async function sendFreeTrialEndingSoon(opts: {
+  to: string; firstName: string; establishmentName: string; daysLeft: number; endDate: string;
+  priceLabel: string | null; tipCount: number; clickCount: number; complimentCount: number;
+  reviewsGained: number | null; billingUrl: string; unsubscribeUrl?: string | null;
+}): Promise<{ id: string | null }> {
+  const {
+    to, firstName, establishmentName, daysLeft, endDate, priceLabel, tipCount, clickCount,
+    complimentCount, reviewsGained, billingUrl, unsubscribeUrl,
+  } = opts;
+  const days = `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+  const s = (n: number) => (n > 1 ? 's' : '');
+  const bullets = tipCount > 0
+    ? [
+        ...(reviewsGained !== null ? [`⭐ <strong>+${reviewsGained}</strong> avis sur votre fiche Google depuis le début de l'essai`] : []),
+        `→ <strong>${clickCount}</strong> client${s(clickCount)} sur ${tipCount} envoyé${s(clickCount)} vers votre page d'avis`,
+        `💬 <strong>${complimentCount}</strong> compliment${s(complimentCount)} laissé${s(complimentCount)} à votre équipe`,
+      ]
+    : [];
+  return lifecycleSend(to, `${firstName}, votre essai Digitip Pro se termine dans ${days}`,
+    lifecycleBody({
+      badge: 'Fin d\'essai', tone: 'amber',
+      title: `${firstName}, il vous reste ${days} de Digitip Pro`,
+      intro: tipCount > 0
+        ? `Voici ce que Pro a fait pour ${escapeHtml(establishmentName)} depuis le début de l'essai :`
+        : `Votre essai se termine sans qu'aucun pourboire ne soit passé, donc sans qu'on ait pu vous montrer ce que Pro donne chez vous.`,
+      bullets,
+      ctaLabel: 'Garder Digitip Pro →', ctaUrl: billingUrl,
+      note: `Aucune carte n'est enregistrée : si vous ne faites rien, Pro s'arrête le ${escapeHtml(endDate)} et rien n'est prélevé.${priceLabel ? ` Pour le garder, c'est ${escapeHtml(priceLabel)} HT par mois, sans engagement.` : ''} Vos pourboires et vos relevés, eux, ne changent pas.`,
+      unsubscribeUrl,
     }));
 }
 

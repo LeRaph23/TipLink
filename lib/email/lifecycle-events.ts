@@ -45,6 +45,26 @@ export async function onTipSucceeded(service: Db, transactionId: string): Promis
       .eq('status', 'succeeded');
     if ((count ?? 0) === 1) {
       const recipient = await resolveGroupAdmin(service, groupId);
+      // Whether this tip is the one that started the cardless trial: started
+      // within the hour, and not converted into anything else since.
+      const { data: group } = await service
+        .from('groups')
+        .select('plan, pro_trial_started_at')
+        .eq('id', groupId)
+        .maybeSingle();
+      const trialStartedAt = (group as { pro_trial_started_at?: string | null } | null)?.pro_trial_started_at;
+      const trialJustStarted = Boolean(
+        trialStartedAt && group?.plan !== 'pro' &&
+        Date.now() - new Date(trialStartedAt).getTime() < 3_600_000,
+      );
+      const hasReviewLink = trialJustStarted
+        ? ((await service
+            .from('establishments')
+            .select('id', { count: 'exact', head: true })
+            .eq('group_id', groupId)
+            .is('deleted_at', null)
+            .not('google_review_url', 'is', null)).count ?? 0) > 0
+        : false;
       if (recipient) {
         await dispatchLifecycleEmail(service, {
           def: LIFECYCLE.first_tip_celebration,
@@ -61,6 +81,7 @@ export async function onTipSucceeded(service: Db, transactionId: string): Promis
               establishmentName: est?.name ?? 'votre établissement',
               dashboardUrl: `${getBaseUrl()}/dashboard`,
               unsubscribeUrl: lifecycleUnsubUrl('group_admin', groupId),
+              proTrial: trialJustStarted ? { hasReviewLink } : null,
             }),
         });
       }

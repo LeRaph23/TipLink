@@ -6,25 +6,26 @@ type Service = ReturnType<typeof createServiceClient>;
 export type ReviewTeaser = {
   /** Tips the group actually collected this month. */
   tipCount: number;
+  /**
+   * Whether any establishment has a Google review link. Without one the pitch
+   * changes rather than disappears: compliments work without Google, and the
+   * missing link is the first thing to fix whatever the plan.
+   */
+  hasReviewLink: boolean;
 };
 
 /**
- * How many Google reviews a free group gave up this month.
+ * How many happy customers a free group let go this month.
  *
  * The argument for Pro is not a list of features, it is this number: every tip
- * already collected was a customer who would have been asked for a review, at
- * the one moment they were demonstrably happy. A count of real tips beats a
- * greyed-out button, which is what migration 00076 planned for and what the
- * dashboard never actually grew.
+ * already collected was a customer who could have been invited to review the
+ * place and to leave a word for whoever served them. A count of real tips
+ * beats a greyed-out button.
  *
- * Returns null — show nothing — in the two cases where the pitch would be
- * dishonest or useless:
- *
- *   - no review link on any establishment. Upgrading alone would not produce a
- *     single review; the manager would need to add the link too, so claiming
- *     they are one click from reviews is false.
- *   - no tips yet this month. "0 customers could have left a review" argues
- *     against buying, and a brand-new group has not seen the product work yet.
+ * Returns null, show nothing, when there were no tips yet this month: "0
+ * customers" argues against buying, and a brand-new group has not seen the
+ * product work yet. It used to return null without a review link too, which
+ * meant the groups furthest from getting reviews were the ones never told how.
  */
 export async function getReviewTeaser(
   service: Service,
@@ -38,7 +39,7 @@ export async function getReviewTeaser(
     .is('deleted_at', null);
 
   if (!ests?.length) return null;
-  if (!ests.some((e) => (e.google_review_url ?? '').trim().length > 0)) return null;
+  const hasReviewLink = ests.some((e) => (e.google_review_url ?? '').trim().length > 0);
 
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
@@ -55,7 +56,7 @@ export async function getReviewTeaser(
 
   if (!count || count < 1) return null;
 
-  return { tipCount: count };
+  return { tipCount: count, hasReviewLink };
 }
 
 export type ReviewImpact = {

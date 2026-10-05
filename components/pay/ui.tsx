@@ -85,7 +85,7 @@ export function btnProps(
       borderRadius: 'var(--radius-sm)', font: `600 ${s.fs}px/1 var(--font)`, whiteSpace: 'nowrap',
       textDecoration: 'none', cursor: off ? 'not-allowed' : opts.loading ? 'progress' : 'pointer',
       ...look[variant],
-      ...(off ? { background: 'var(--surface-3)', color: 'var(--text-3)', borderColor: 'transparent' } : {}),
+      ...(off ? { background: 'var(--surface-3)', color: 'var(--text-3)', border: '1px solid transparent' } : {}),
     },
   };
 }

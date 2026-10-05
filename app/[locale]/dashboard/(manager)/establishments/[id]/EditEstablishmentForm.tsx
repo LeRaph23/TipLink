@@ -162,7 +162,7 @@ export function EditEstablishmentForm({
             <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55, marginBottom: 10 }}>
               {tReview('gateBody')}
             </div>
-            <Link href="/dashboard/billing" style={{
+            <Link href="/dashboard/billing#pro" style={{
               display: 'inline-flex', alignItems: 'center',
               fontSize: 12.5, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none',
             }}>

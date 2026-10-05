@@ -462,7 +462,7 @@
         "title": "Where it counts",
         "body": "Recent reviews carry the most weight in local search. A steady trickle beats a handful of old ones."
       },
-      "proNote": "Google reviews are part of Digitip Pro. The plaque and the tips themselves work with no subscription and no commitment: you switch reviews on from your dashboard whenever you decide to."
+      "proNote": "Google reviews and team compliments are part of Digitip Pro, free for 30 days from your first tip, no card needed. The plate, the tips and your statements work with no subscription or commitment."
     }
   },
   "pricing": {
@@ -728,7 +728,27 @@
     "summaryFee": "Service fee",
     "summaryTotal": "Total charged",
     "feeInfoLabel": "Why this fee?",
-    "otherAmount": "Other amount"
+    "otherAmount": "Other amount",
+    "compliment": {
+      "title": "A word for the team?",
+      "titleNamed": "A word for {name}?",
+      "body": "Optional, and always appreciated.",
+      "chipsLabel": "What you liked",
+      "messageLabel": "Your message",
+      "placeholder": "Your message (optional)",
+      "send": "Send",
+      "sent": "Thank you! The team will get your message.",
+      "sentNamed": "Thank you! {name} will get your message.",
+      "error": "That didn't go through. Please try again.",
+      "privacy": "Anonymous: neither your name nor your email is shared.",
+      "tags": {
+        "welcome": "Warm welcome",
+        "advice": "Great advice",
+        "speed": "Quick",
+        "smile": "All smiles",
+        "care": "Really attentive"
+      }
+    }
   },
   "dashboard": {
     "welcome": "Welcome back,",
@@ -759,7 +779,8 @@
       "roleSuperAdmin": "Super admin",
       "statements": "Statements",
       "payments": "Payment account",
-      "help": "Help"
+      "help": "Help",
+      "compliments": "Compliments"
     },
     "billing": {
       "title": "Billing",
@@ -942,7 +963,7 @@
       "saved": "Saved.",
       "noGroup": "No group associated with your account yet.",
       "accountantEmail": "Accountant's email",
-      "accountantEmailHelp": "The monthly tip statement is sent there automatically, alongside your own address. Automatic delivery is part of Digitip Pro; you can fill the address in now either way."
+      "accountantEmailHelp": "The monthly tip statement is emailed there automatically on the 5th of each month, in addition to your address."
     },
     "admin": {
       "nav": {
@@ -1195,7 +1216,10 @@
       "empty": "No payout this month.",
       "export": "Export as CSV",
       "exportJournal": "Detailed journal",
-      "proBadge": "Pro"
+      "autoTitle": "Automatic delivery:",
+      "autoBodyAccountant": "on the 5th of every month, last month's statement goes to you and to {email}.",
+      "autoBodyNoAccountant": "on the 5th of every month, last month's statement is emailed to you. Add your accountant's email so they get it too.",
+      "autoCta": "Add my accountant"
     },
     "payments": {
       "title": "Payment account",
@@ -1218,37 +1242,68 @@
       "verifyChecking": "Checking with Stripe…"
     },
     "pro": {
-      "upsellTitle": "Upgrade to Digitip Pro",
-      "feature1": "A Google review invitation after every tip",
-      "feature2": "Payroll statement emailed monthly to you and your accountant",
-      "feature3": "Detailed accounting export and unlimited history, as CSV",
       "ctaMonthly": "Go Pro",
       "ctaYearly": "Pay yearly",
       "opening": "Opening…",
       "activeTitle": "Digitip Pro is active",
-      "activeBody": "Google reviews and the full payroll export are switched on. You can change or cancel your subscription at any time.",
+      "activeBody": "Your customers are invited to leave a Google review and a compliment after every tip. You can change or cancel your subscription at any time.",
       "manage": "Manage subscription",
       "unavailable": "Pro isn't available yet. Please try again later.",
       "failed": "The payment page could not be opened. Try again in a moment.",
-      "reviewTeaserTitle": "{count, plural, one {# tip this month} other {# tips this month}}",
-      "reviewTeaserBody": "That's as many customers who could have left a Google review. With Digitip Pro, the invitation shows right after the tip, at the exact moment they're happy.",
-      "reviewTeaserCta": "See Digitip Pro",
-      "exportTitle": "Full accounting export",
-      "exportBody": "The free plan exports the current month. Digitip Pro opens the full history and the detailed journal, and emails the statement to your accountant every month.",
-      "exportCta": "Upgrade to Pro",
+      "reviewTeaserTitle": "{count, plural, one {# customer tipped you this month} other {# customers tipped you this month}}",
+      "reviewTeaserBody": "None of them was invited to leave a Google review, or a word for your team. With Digitip Pro, every customer is asked, right after the tip.",
+      "reviewTeaserCta": "Discover Digitip Pro",
       "priceMonthly": "{price} per month, excl. VAT",
       "priceYearly": "or {price} per year, excl. VAT",
       "monthsFree": "{months, plural, one {# month free} other {# months free}}",
       "checkoutDoneTitle": "Payment confirmed",
       "checkoutDoneBody": "Your subscription activates within seconds. Reload the page if the Pro features are not there yet.",
-      "ctaTrial": "Try {days} days, cancel anytime",
       "trialTitle": "Digitip Pro trial in progress",
       "trialDaysLeft": "{days, plural, one {# day left} other {# days left}}",
       "trialBody": "When the trial ends, the subscription starts at {price} per month excl. VAT. You can stop before then and pay nothing.",
       "trialBodyNoPrice": "When the trial ends, the subscription starts automatically. You can stop before then and pay nothing.",
-      "trialEnded": "Your trial ended on {date}. Google reviews and the full export are switched off again.",
+      "trialEnded": "Your trial ended on {date}. The review invitation and compliments are switched off.",
       "canceledTitle": "Subscription cancelled",
-      "canceledBody": "Digitip Pro stays active until {date}, then stops. You will not be charged. You can resume it until then."
+      "canceledBody": "Digitip Pro stays active until {date}, then stops. You will not be charged. You can resume it until then.",
+      "reviewTeaserBodyNoLink": "With Digitip Pro, each of them can leave a compliment for whoever served them, and a Google review as soon as your listing is linked.",
+      "ctaFreeTrial": "Try {days} days free",
+      "ctaKeep": "Keep Pro after the trial",
+      "keepNote": "The first charge is on {date}, not before. No commitment, cancel in one click.",
+      "freeTrialTitle": "Free trial in progress",
+      "freeTrialBody": "No card is on file, so nothing will be charged. If you do nothing, Pro stops on {date}, and your tips and statements carry on as usual.",
+      "impactReviews": "Google reviews gained",
+      "impactClicks": "customers sent to Google",
+      "impactCompliments": "compliments for the team",
+      "duringTrial": "During your trial",
+      "offerTitle": "More Google reviews. A team that feels appreciated.",
+      "offerLead": "Right after the tip, Digitip invites every customer to leave a Google review and a word for whoever served them.",
+      "offerLeadCount": "{count, plural, one {# customer tipped you this month} other {# customers tipped you this month}}. With Pro, each would have been invited to leave a Google review and a word for whoever served them.",
+      "benefitReviewsTitle": "More Google reviews",
+      "benefitReviewsBody": "Every customer is invited to rate your place in one tap, right after tipping.",
+      "benefitComplimentsTitle": "Compliments for the team",
+      "benefitComplimentsBody": "Customers leave a word for whoever served them. You see who makes the difference, and everyone sees their own.",
+      "benefitListingTitle": "Proof that it works",
+      "benefitListingBody": "Your Google rating and review count are read every week, so you see what Pro brings in.",
+      "previewThanks": "Thank you!",
+      "previewReview": "Enjoyed {name}?",
+      "previewReviewButton": "Leave a Google review",
+      "previewCompliment": "A word for {name}?",
+      "previewChip1": "Great advice",
+      "previewChip2": "Warm welcome",
+      "previewChip3": "Quick",
+      "colFree": "Free",
+      "rowTips": "Unlimited tips",
+      "rowTeam": "Unlimited team",
+      "rowStats": "Full analytics",
+      "rowExport": "Payroll statements, export and accountant delivery",
+      "rowReviews": "Google review invitation",
+      "rowCompliments": "Customer compliments for the team",
+      "rowListing": "Google rating tracking",
+      "reassurance": "No commitment, cancel in one click. Your tips never depend on the subscription.",
+      "reassuranceTrial": "No card needed. When the trial ends, you decide whether to keep Pro.",
+      "compareLabel": "Free and Pro compared",
+      "included": "included",
+      "notIncluded": "not included"
     },
     "verifyBanner": {
       "titleHeld": "{amount} is waiting for you",
@@ -1284,15 +1339,49 @@
         "cta": "Open my page"
       }
     },
-    "reviewImpact": {
-      "label": "Google reviews this month",
-      "ratio": "{clicks} of {tips}",
-      "title": "customers went to leave a review",
-      "body": "Since the 1st. The invitation shows after every tip; following it is their call.",
-      "emptyTitle": "No review started this month",
-      "emptyBody": "The invitation does show after every tip, but nobody has followed it yet. Check that your Google link points where you expect.",
-      "noLinkTitle": "Google reviews not switched on yet",
-      "noLinkBody": "No Google listing is linked, so customers see no invitation to leave a review. Add your Google link in Settings."
+    "proImpact": {
+      "label": "Digitip Pro",
+      "titleMonth": "What Pro did for you this month",
+      "titleTrial": "Your Digitip Pro trial",
+      "daysLeft": "{days, plural, one {# day left} other {# days left}}",
+      "noLinkTitle": "Link your Google listing",
+      "noLinkBody": "Without it, customers don't see the review invitation. Compliments already work.",
+      "noLinkCta": "Add my listing",
+      "reviewsGained": "Google reviews since {since}",
+      "reviewsTotal": "{count} in total",
+      "reviewsPending": "Google reviews: first reading of your listing in progress, the counter starts within a week.",
+      "clicksRatio": "{clicks}/{tips}",
+      "clicksBody": "customers opened your Google review page",
+      "clicksEmpty": "no tips in this period yet",
+      "compliments": "compliments for the team"
+    },
+    "compliments": {
+      "title": "Compliments",
+      "subtitle": "What your customers say about your team, right after tipping.",
+      "lockedTitle": "Compliments are part of Digitip Pro",
+      "lockedBody": "After tipping, customers can leave a word for whoever served them. You see who makes the difference, and everyone sees their own.",
+      "lockedCta": "Discover Digitip Pro",
+      "exampleBadge": "Example",
+      "sample1": "Julie recommended the perfect wine, thank you!",
+      "sample2": "Quick service, always with a smile.",
+      "team": "Whole team",
+      "emptyTitle": "No compliments yet",
+      "emptyBody": "They appear here as soon as a customer leaves one after tipping. Nothing to set up: the form shows on its own.",
+      "byPerson": "By person, last {days} days",
+      "messagesCount": "{count, plural, one {# message} other {# messages}}",
+      "recentMessages": "Latest messages",
+      "hiddenBadge": "hidden",
+      "hide": "Hide",
+      "unhide": "Show",
+      "staffTitle": "{count, plural, one {# compliment from your customers} other {# compliments from your customers}}",
+      "staffSub": "Last 30 days, left right after a tip.",
+      "tags": {
+        "welcome": "Warm welcome",
+        "advice": "Great advice",
+        "speed": "Quick",
+        "smile": "All smiles",
+        "care": "Really attentive"
+      }
     }
   },
   "join": {

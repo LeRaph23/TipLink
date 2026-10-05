@@ -462,7 +462,7 @@
         "title": "Là où ça compte",
         "body": "Les avis récents pèsent le plus lourd dans le référencement local. Un flux régulier vaut mieux qu'une poignée d'avis anciens."
       },
-      "proNote": "Les avis Google font partie de Digitip Pro. La plaque et les pourboires, eux, fonctionnent sans abonnement ni engagement : vous activez les avis depuis votre tableau de bord le jour où vous le décidez."
+      "proNote": "Les avis Google et les compliments à l'équipe font partie de Digitip Pro, offert 30 jours dès votre premier pourboire, sans carte. La plaque, les pourboires et vos relevés fonctionnent sans abonnement ni engagement."
     }
   },
   "pricing": {
@@ -728,7 +728,27 @@
     "summaryFee": "Frais de service",
     "summaryTotal": "Total débité",
     "feeInfoLabel": "Pourquoi ces frais ?",
-    "otherAmount": "Autre montant"
+    "otherAmount": "Autre montant",
+    "compliment": {
+      "title": "Un mot pour l'équipe ?",
+      "titleNamed": "Un mot pour {name} ?",
+      "body": "Facultatif, et ça fait toujours plaisir.",
+      "chipsLabel": "Ce qui vous a plu",
+      "messageLabel": "Votre message",
+      "placeholder": "Votre message (facultatif)",
+      "send": "Envoyer",
+      "sent": "Merci ! L'équipe recevra votre mot.",
+      "sentNamed": "Merci ! {name} recevra votre mot.",
+      "error": "L'envoi n'a pas fonctionné. Réessayez.",
+      "privacy": "Anonyme : ni votre nom ni votre e-mail ne sont transmis.",
+      "tags": {
+        "welcome": "Super accueil",
+        "advice": "Bons conseils",
+        "speed": "Rapide",
+        "smile": "Souriant·e",
+        "care": "Aux petits soins"
+      }
+    }
   },
   "dashboard": {
     "welcome": "Bonjour,",
@@ -759,7 +779,8 @@
       "roleSuperAdmin": "Super admin",
       "statements": "Relevés",
       "payments": "Compte de paiement",
-      "help": "Aide"
+      "help": "Aide",
+      "compliments": "Compliments"
     },
     "billing": {
       "title": "Facturation",
@@ -942,7 +963,7 @@
       "saved": "Enregistré.",
       "noGroup": "Aucun groupe n'est encore associé à votre compte.",
       "accountantEmail": "Email du comptable",
-      "accountantEmailHelp": "Le relevé mensuel de pourboires y est envoyé automatiquement, en plus de votre adresse. L'envoi automatique fait partie de Digitip Pro ; vous pouvez renseigner l'adresse dès maintenant."
+      "accountantEmailHelp": "Le relevé mensuel de pourboires y est envoyé automatiquement le 5 de chaque mois, en plus de votre adresse."
     },
     "admin": {
       "nav": {
@@ -1195,7 +1216,10 @@
       "empty": "Aucun versement ce mois-ci.",
       "export": "Exporter en CSV",
       "exportJournal": "Journal détaillé",
-      "proBadge": "Pro"
+      "autoTitle": "Envoi automatique :",
+      "autoBodyAccountant": "le 5 de chaque mois, le relevé du mois écoulé part à vous et à {email}.",
+      "autoBodyNoAccountant": "le 5 de chaque mois, le relevé du mois écoulé vous est envoyé. Ajoutez l'e-mail de votre comptable pour qu'il le reçoive aussi.",
+      "autoCta": "Ajouter mon comptable"
     },
     "payments": {
       "title": "Compte de paiement",
@@ -1218,37 +1242,68 @@
       "verifyChecking": "Vérification auprès de Stripe…"
     },
     "pro": {
-      "upsellTitle": "Passez à Digitip Pro",
-      "feature1": "Invitation à laisser un avis Google après chaque pourboire",
-      "feature2": "Relevé de paie envoyé chaque mois à vous et à votre comptable",
-      "feature3": "Export comptable détaillé et historique illimité, au format CSV",
       "ctaMonthly": "Passer au Pro",
       "ctaYearly": "Payer à l'année",
       "opening": "Ouverture…",
       "activeTitle": "Digitip Pro est actif",
-      "activeBody": "Les avis Google et l'export comptable complet sont activés. Vous pouvez modifier ou résilier votre abonnement à tout moment.",
+      "activeBody": "Vos clients sont invités à laisser un avis Google et un compliment après chaque pourboire. Vous pouvez modifier ou résilier votre abonnement à tout moment.",
       "manage": "Gérer mon abonnement",
       "unavailable": "L'abonnement Pro n'est pas encore disponible. Réessayez plus tard.",
       "failed": "Impossible d'ouvrir la page de paiement. Réessayez dans quelques instants.",
-      "reviewTeaserTitle": "{count, plural, one {# pourboire reçu ce mois-ci} other {# pourboires reçus ce mois-ci}}",
-      "reviewTeaserBody": "Autant de clients qui auraient pu laisser un avis Google. Avec Digitip Pro, l'invitation s'affiche juste après le pourboire, au moment précis où le client est content.",
-      "reviewTeaserCta": "Voir Digitip Pro",
-      "exportTitle": "Export comptable complet",
-      "exportBody": "Le plan gratuit exporte le mois en cours. Digitip Pro ouvre l'historique complet, le journal détaillé, et envoie le relevé chaque mois à votre comptable.",
-      "exportCta": "Passer au Pro",
+      "reviewTeaserTitle": "{count, plural, one {# client vous a laissé un pourboire ce mois-ci} other {# clients vous ont laissé un pourboire ce mois-ci}}",
+      "reviewTeaserBody": "Aucun n'a été invité à laisser un avis Google, ni un mot pour votre équipe. Avec Digitip Pro, c'est proposé à chaque client, juste après le pourboire.",
+      "reviewTeaserCta": "Découvrir Digitip Pro",
       "priceMonthly": "{price} HT par mois",
       "priceYearly": "ou {price} HT par an",
       "monthsFree": "{months, plural, one {# mois offert} other {# mois offerts}}",
       "checkoutDoneTitle": "Paiement confirmé",
       "checkoutDoneBody": "Votre abonnement s'active dans quelques secondes. Rechargez la page si les fonctionnalités Pro n'apparaissent pas encore.",
-      "ctaTrial": "Essayer {days} jours, sans engagement",
       "trialTitle": "Essai Digitip Pro en cours",
       "trialDaysLeft": "{days, plural, one {# jour restant} other {# jours restants}}",
       "trialBody": "À la fin de l'essai, l'abonnement démarre à {price} HT par mois. Vous pouvez l'arrêter avant, sans rien payer.",
       "trialBodyNoPrice": "À la fin de l'essai, l'abonnement démarre automatiquement. Vous pouvez l'arrêter avant, sans rien payer.",
-      "trialEnded": "Votre essai s'est terminé le {date}. Les avis Google et l'export complet sont de nouveau désactivés.",
+      "trialEnded": "Votre essai s'est terminé le {date}. L'invitation à laisser un avis et les compliments sont désactivés.",
       "canceledTitle": "Abonnement résilié",
-      "canceledBody": "Digitip Pro reste actif jusqu'au {date}, puis s'arrête. Rien ne sera prélevé. Vous pouvez le réactiver d'ici là."
+      "canceledBody": "Digitip Pro reste actif jusqu'au {date}, puis s'arrête. Rien ne sera prélevé. Vous pouvez le réactiver d'ici là.",
+      "reviewTeaserBodyNoLink": "Avec Digitip Pro, chacun peut laisser un compliment à la personne qui l'a servi, et un avis Google dès que votre fiche est reliée.",
+      "ctaFreeTrial": "Essayer {days} jours gratuitement",
+      "ctaKeep": "Garder Pro après l'essai",
+      "keepNote": "Le premier prélèvement aura lieu le {date}, pas avant. Sans engagement, résiliable en un clic.",
+      "freeTrialTitle": "Essai gratuit en cours",
+      "freeTrialBody": "Aucune carte n'est enregistrée : rien ne sera prélevé. Si vous ne faites rien, Pro s'arrête le {date}, et vos pourboires et relevés continuent normalement.",
+      "impactReviews": "avis Google gagnés",
+      "impactClicks": "clients envoyés vers Google",
+      "impactCompliments": "compliments pour l'équipe",
+      "duringTrial": "Pendant votre essai",
+      "offerTitle": "Plus d'avis Google. Une équipe qui se sent reconnue.",
+      "offerLead": "Juste après le pourboire, Digitip invite chaque client à laisser un avis Google et un mot pour la personne qui l'a servi.",
+      "offerLeadCount": "{count, plural, one {# client vous a laissé un pourboire ce mois-ci} other {# clients vous ont laissé un pourboire ce mois-ci}}. Avec Pro, chacun aurait été invité à laisser un avis Google et un mot pour la personne qui l'a servi.",
+      "benefitReviewsTitle": "Plus d'avis Google",
+      "benefitReviewsBody": "Chaque client est invité à noter votre établissement en un tap, juste après son pourboire.",
+      "benefitComplimentsTitle": "Des compliments pour l'équipe",
+      "benefitComplimentsBody": "Vos clients laissent un mot à la personne qui les a servis. Vous voyez qui fait la différence, et chacun voit les siens.",
+      "benefitListingTitle": "La preuve que ça marche",
+      "benefitListingBody": "Votre note et votre nombre d'avis Google sont relevés chaque semaine : vous voyez ce que Pro vous rapporte.",
+      "previewThanks": "Merci !",
+      "previewReview": "Vous avez apprécié {name} ?",
+      "previewReviewButton": "Laisser un avis Google",
+      "previewCompliment": "Un mot pour {name} ?",
+      "previewChip1": "Bons conseils",
+      "previewChip2": "Super accueil",
+      "previewChip3": "Rapide",
+      "colFree": "Gratuit",
+      "rowTips": "Pourboires illimités",
+      "rowTeam": "Équipe illimitée",
+      "rowStats": "Statistiques complètes",
+      "rowExport": "Relevés de paie, export et envoi au comptable",
+      "rowReviews": "Invitation à laisser un avis Google",
+      "rowCompliments": "Compliments des clients à l'équipe",
+      "rowListing": "Suivi de votre note Google",
+      "reassurance": "Sans engagement, résiliable en un clic. Vos pourboires ne dépendent jamais de l'abonnement.",
+      "reassuranceTrial": "Aucune carte demandée. À la fin de l'essai, vous choisissez de garder Pro, ou non.",
+      "compareLabel": "Gratuit et Pro comparés",
+      "included": "inclus",
+      "notIncluded": "non inclus"
     },
     "verifyBanner": {
       "titleHeld": "{amount} vous attendent",
@@ -1284,15 +1339,49 @@
         "cta": "Voir ma page"
       }
     },
-    "reviewImpact": {
-      "label": "Avis Google ce mois-ci",
-      "ratio": "{clicks} sur {tips}",
-      "title": "clients sont allés laisser un avis",
-      "body": "Depuis le 1er du mois. L'invitation s'affiche après chaque pourboire ; ce sont eux qui décident de la suivre.",
-      "emptyTitle": "Aucun avis lancé ce mois-ci",
-      "emptyBody": "L'invitation s'affiche bien après chaque pourboire, mais personne ne l'a suivie pour l'instant. Vérifiez que votre lien Google pointe au bon endroit.",
-      "noLinkTitle": "Avis Google pas encore activés",
-      "noLinkBody": "Aucune fiche Google n’est reliée : vos clients ne voient pas d’invitation à laisser un avis. Ajoutez votre lien Google dans Paramètres."
+    "proImpact": {
+      "label": "Digitip Pro",
+      "titleMonth": "Ce que Pro vous a apporté ce mois-ci",
+      "titleTrial": "Votre essai Digitip Pro",
+      "daysLeft": "{days, plural, one {# jour restant} other {# jours restants}}",
+      "noLinkTitle": "Reliez votre fiche Google",
+      "noLinkBody": "Sans elle, vos clients ne voient pas l'invitation à laisser un avis. Les compliments, eux, fonctionnent déjà.",
+      "noLinkCta": "Ajouter ma fiche",
+      "reviewsGained": "avis Google depuis le {since}",
+      "reviewsTotal": "{count} au total",
+      "reviewsPending": "Avis Google : premier relevé de votre fiche en cours, le compteur démarre sous une semaine.",
+      "clicksRatio": "{clicks}/{tips}",
+      "clicksBody": "clients sont allés sur votre page d'avis Google",
+      "clicksEmpty": "aucun pourboire sur la période pour l'instant",
+      "compliments": "compliments pour l'équipe"
+    },
+    "compliments": {
+      "title": "Compliments",
+      "subtitle": "Ce que vos clients disent de votre équipe, juste après leur pourboire.",
+      "lockedTitle": "Les compliments font partie de Digitip Pro",
+      "lockedBody": "Après le pourboire, vos clients peuvent laisser un mot à la personne qui les a servis. Vous voyez qui fait la différence, et chacun voit les siens.",
+      "lockedCta": "Découvrir Digitip Pro",
+      "exampleBadge": "Exemple",
+      "sample1": "Julie nous a conseillé un vin parfait, merci !",
+      "sample2": "Service rapide et toujours avec le sourire.",
+      "team": "Toute l'équipe",
+      "emptyTitle": "Pas encore de compliment",
+      "emptyBody": "Ils apparaissent ici dès qu'un client en laisse un après son pourboire. Rien à configurer : le formulaire s'affiche tout seul.",
+      "byPerson": "Par personne, {days} derniers jours",
+      "messagesCount": "{count, plural, one {# message} other {# messages}}",
+      "recentMessages": "Derniers messages",
+      "hiddenBadge": "masqué",
+      "hide": "Masquer",
+      "unhide": "Afficher",
+      "staffTitle": "{count, plural, one {# compliment de vos clients} other {# compliments de vos clients}}",
+      "staffSub": "Ces 30 derniers jours, laissés juste après un pourboire.",
+      "tags": {
+        "welcome": "Super accueil",
+        "advice": "Bons conseils",
+        "speed": "Rapide",
+        "smile": "Souriant·e",
+        "care": "Aux petits soins"
+      }
     }
   },
   "join": {

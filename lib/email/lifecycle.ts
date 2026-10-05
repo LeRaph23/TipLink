@@ -41,8 +41,15 @@ export const LIFECYCLE: Record<string, LifecycleEmailDef> = {
   // Transactional: it says what is about to be charged and when. Somebody who
   // unsubscribed from nudges still has to be told before their card is billed.
   trial_ending:           { key: 'trial_ending',           audience: 'group_admin', recurrence: 'one_shot',  transactional: true },
+  // The cardless trial ending. Not transactional: no card is on file and
+  // nothing will be charged, so it is a nudge like any other and honours the
+  // opt-out. Its own key, so a group that later starts a Stripe trial still
+  // gets the transactional warning before that one is billed.
+  free_trial_ending:      { key: 'free_trial_ending',      audience: 'group_admin', recurrence: 'one_shot',  transactional: false },
   // The free-plan twin of the Pro monthly statement. Not transactional: it is
   // a recap nobody asked for, so it respects the opt-out like every nudge.
+  // Retired in 00088: free groups now get the full monthly statement. Kept so
+  // the rows already in lifecycle_email_log still resolve to a definition.
   monthly_recap_free:     { key: 'monthly_recap_free',     audience: 'group_admin', recurrence: 'recurring', transactional: false },
 };
 

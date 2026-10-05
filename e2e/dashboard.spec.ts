@@ -12,6 +12,7 @@ const MANAGER_PAGES = [
   '/fr/dashboard/stickers',
   '/fr/dashboard/settings',
   '/fr/dashboard/billing',
+  '/fr/dashboard/compliments',
 ];
 
 test.describe.configure({ mode: 'serial' });

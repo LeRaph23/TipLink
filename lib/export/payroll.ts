@@ -34,17 +34,50 @@ export type PayrollDataset = {
 
 const PAGE = 1000;
 
+/**
+ * The UTC instant of midnight on the 1st of a month in Paris.
+ *
+ * Months used to be cut on UTC, while the journal prints each tip's Paris
+ * date. A tip at 00:30 on 1 November, Paris time, is 23:30 on 31 October in
+ * UTC: it landed in October's statement with a November date on its line, the
+ * kind of discrepancy an accountant stops at. Midnight on the 1st never falls
+ * in a daylight-saving gap (those happen at 02:00 on a Sunday), so the offset
+ * read an hour or two later is the offset at midnight.
+ */
+function parisMonthStart(year: number, month: number): Date {
+  const utcMidnight = Date.UTC(year, month - 1, 1);
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Paris', hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).formatToParts(new Date(utcMidnight));
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  const asLocal = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+  return new Date(utcMidnight - (asLocal - utcMidnight));
+}
+
+/** A month, `YYYY-MM`, bounded on Paris midnights. Half-open. */
 export function monthPeriod(month: string): PayrollPeriod {
   const [y, m] = month.split('-').map(Number);
   return {
-    start: new Date(Date.UTC(y, m - 1, 1)).toISOString(),
-    end: new Date(Date.UTC(y, m, 1)).toISOString(),
+    start: parisMonthStart(y, m).toISOString(),
+    end: parisMonthStart(y, m + 1).toISOString(),
     label: month,
   };
 }
 
+/** The month `now` falls in, in Paris. */
+export function currentMonth(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit',
+  }).formatToParts(now);
+  const y = parts.find((p) => p.type === 'year')?.value;
+  const m = parts.find((p) => p.type === 'month')?.value;
+  return `${y}-${m}`;
+}
+
 export function previousMonth(now: Date = new Date()): string {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const [y, m] = currentMonth(now).split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 2, 1));
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 

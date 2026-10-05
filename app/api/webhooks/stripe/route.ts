@@ -18,6 +18,7 @@ import { COMMISSION_BY_PACK } from '@/lib/ambassador-tiers';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
 import { readAccountStatus } from '@/lib/stripe/connect';
 import { planForSubscriptionStatus } from '@/lib/billing/entitlements';
+import { startFreeTrialOnFirstTip } from '@/lib/billing/free-trial';
 import { splitEqually, allocateToOne, type Allocation } from '@/lib/tips/allocation';
 import { revalidateEstablishmentTipPages } from '@/lib/stripe/establishment-account';
 import { attributionFromMetadata } from '@/lib/marketing/attribution';
@@ -322,6 +323,14 @@ async function handleEvent(
             transactionId,
           }).catch((err) => console.error('[email] sendTipReceipt failed', err));
         }
+      }
+
+      // The first real tip starts the cardless Pro trial. Before the
+      // lifecycle emails, so the first-tip email can say it has begun. Never
+      // throws (see startFreeTrialOnFirstTip).
+      const tipEstablishmentId = curTxn?.establishment_id ?? intent.metadata?.establishment_id ?? null;
+      if (tipEstablishmentId) {
+        await startFreeTrialOnFirstTip(supabase, tipEstablishmentId);
       }
 
       // Lifecycle: first-tip celebration + earnings milestones (non-blocking).

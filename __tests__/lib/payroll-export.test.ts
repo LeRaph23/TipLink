@@ -12,6 +12,7 @@ import {
   journalCsv,
   monthPeriod,
   previousMonth,
+  currentMonth,
   summaryCsv,
   toCsv,
 } from '@/lib/export/payroll';
@@ -101,10 +102,24 @@ describe('parisDateTime', () => {
 });
 
 describe('period helpers', () => {
-  it('bounds a month on UTC, half-open so no tip is counted twice', () => {
+  it('bounds a month on Paris midnights, half-open so no tip is counted twice', () => {
     const p = monthPeriod('2026-02');
-    expect(p.start).toBe('2026-02-01T00:00:00.000Z');
-    expect(p.end).toBe('2026-03-01T00:00:00.000Z');
+    // Winter: Paris is UTC+1.
+    expect(p.start).toBe('2026-01-31T23:00:00.000Z');
+    expect(p.end).toBe('2026-02-28T23:00:00.000Z');
+  });
+
+  it('follows daylight saving across the month', () => {
+    // October starts in summer time (UTC+2) and ends in winter time (UTC+1).
+    const p = monthPeriod('2026-10');
+    expect(p.start).toBe('2026-09-30T22:00:00.000Z');
+    expect(p.end).toBe('2026-10-31T23:00:00.000Z');
+  });
+
+  // 00:30 on 1 November in Paris is still 31 October in UTC.
+  it('puts a tip just after Paris midnight in the new month', () => {
+    expect(currentMonth(new Date('2026-10-31T23:30:00Z'))).toBe('2026-11');
+    expect(previousMonth(new Date('2026-10-31T23:30:00Z'))).toBe('2026-10');
   });
 
   it('rolls back across a year boundary', () => {

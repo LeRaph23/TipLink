@@ -333,7 +333,7 @@ export const HELP: HelpCategory[] = [
         id: 'avis-invisible',
         question: 'Mon lien Google est enregistré mais mes clients ne voient rien',
         answer:
-          "L'invitation à laisser un avis juste après le pourboire fait partie de Digitip Pro. Le lien reste enregistré : il s'affiche dès que Pro est activé. Les pourboires, eux, fonctionnent sans abonnement.",
+          "L'invitation à laisser un avis juste après le pourboire fait partie de Digitip Pro, offert 30 jours dès votre premier pourboire, sans carte. Après l'essai, le lien reste enregistré et l'invitation revient dès que Pro est réactivé. Les pourboires et les relevés, eux, fonctionnent sans abonnement.",
         link: { label: 'Voir Digitip Pro', href: '/fr/dashboard/billing' },
       },
     ],
