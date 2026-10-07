@@ -965,7 +965,7 @@
       "saved": "Enregistré.",
       "noGroup": "Votre compte n'est encore relié à aucun établissement.",
       "accountantEmail": "E-mail du comptable",
-      "accountantEmailHelp": "Le 5 de chaque mois, on lui envoie le relevé des pourboires du mois précédent, et à vous aussi."
+      "accountantEmailHelp": "Le 1er de chaque mois, on lui envoie le relevé des pourboires du mois précédent, et à vous aussi."
     },
     "admin": {
       "nav": {
@@ -1218,8 +1218,8 @@
       "empty": "Aucun pourboire ce mois-ci.",
       "export": "Exporter en CSV",
       "exportJournal": "Journal détaillé",
-      "autoBodyAccountant": "Le 5 de chaque mois, on envoie le relevé du mois précédent à vous et à {email}.",
-      "autoBodyNoAccountant": "Le 5 de chaque mois, on vous envoie le relevé du mois précédent par e-mail. Votre comptable peut le recevoir aussi.",
+      "autoBodyAccountant": "Le 1er de chaque mois, on envoie le relevé du mois précédent à vous et à {email}.",
+      "autoBodyNoAccountant": "Le 1er de chaque mois, on vous envoie le relevé du mois précédent par e-mail. Votre comptable peut le recevoir aussi.",
       "autoCta": "Ajouter son adresse"
     },
     "payments": {

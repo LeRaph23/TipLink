@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   try {
     await sendPlaqueActivationLink({
       to: email,
-      firstName: firstNameFrom(name, 'Bonjour'),
+      firstName: firstNameFrom(name),
       setupUrl,
     });
   } catch (e) {

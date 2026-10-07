@@ -1,6 +1,19 @@
 import { Resend } from 'resend';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { COMMISSION_BY_PACK, REFERRAL_REWARDS, REFERRAL_VALIDATION_MIN_SALES } from '@/lib/ambassador-tiers';
+
+// Every email Digitip sends goes through this file.
+//
+// One layout, one way of writing. Each email says what happened, what (if
+// anything) the reader has to do, and stops. No badges, no emoji in body
+// copy, no first name stuffed into the subject line: an email that looks like
+// a notification gets read as one, and a subject that greets by name is what
+// spam looks like.
+//
+// Facts in these emails are the product's facts, checked against the code:
+// tips are paid to the establishment's account, which passes them on with
+// the salary; nothing is ever paid to an employee's own bank account.
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -8,62 +21,120 @@ const resend = process.env.RESEND_API_KEY
 
 const FROM = 'Digitip <noreply@digitip.app>';
 const FROM_AMBASSADOR = process.env.RESEND_FROM_AMBASSADOR_OUTREACH ?? 'Digitip <ambassadeur@digitip.app>';
+// noreply@ has no mailbox. Every email that says "reply to this email" needs
+// the reply to land somewhere a person reads.
+const REPLY_TO = 'Digitip <contact@digitip.app>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://digitip.app';
 
-// ─── Shared helpers ───────────────────────────────────────────────────────────
-//
-// Emails default to a LIGHT palette (inline styles) and switch to the brand
-// dark palette via `@media (prefers-color-scheme: dark)` plus Outlook.com's
-// `[data-ogsc]` dark-mode attribute. `!important` is required so the media
-// query overrides the inline defaults in supporting clients (Apple Mail,
-// iOS Mail, Gmail mobile/web, Outlook iOS/Android/web).
+type Lang = 'fr' | 'en';
 
-const DARK_OVERRIDES = `
+/** 'fr' unless the value clearly says English. French venues, French default. */
+export function emailLang(raw: string | null | undefined): Lang {
+  return typeof raw === 'string' && raw.toLowerCase().startsWith('en') ? 'en' : 'fr';
+}
+
+/** The tipper's language, carried on the PaymentIntent as `metadata.locale`. */
+export const tipperLocale = emailLang;
+
+const pick = (lang: Lang, fr: string, en: string) => (lang === 'en' ? en : fr);
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+const esc = (s: string | null | undefined) => escapeHtml(s ?? '');
+
+function money(cents: number, currency = 'EUR', lang: Lang = 'fr'): string {
+  return new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'fr-FR', {
+    style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
+/** "Bonjour Clara," or "Bonjour," when there is no usable first name. */
+function hello(lang: Lang, firstName?: string | null): string {
+  const name = (firstName ?? '').trim();
+  return lang === 'en'
+    ? (name ? `Hello ${esc(name)},` : 'Hello,')
+    : (name ? `Bonjour ${esc(name)},` : 'Bonjour,');
+}
+
+function helloTu(firstName?: string | null): string {
+  const name = (firstName ?? '').trim();
+  return name ? `Salut ${esc(name)},` : 'Salut,';
+}
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
+//
+// Light by default (inline styles), dark through `prefers-color-scheme` and
+// Outlook.com's `[data-ogsc]`. `!important` lets the media query override the
+// inline defaults in the clients that support it.
+
+const DARK = `
   .email-body{background:#0a0a0d!important;color:#f2f2f5!important}
   .card{background:#17171d!important;border-color:#2e2e38!important}
-  .divider{border-color:#232329!important}
-  .divider-strong{border-color:#2e2e38!important}
+  .rule{border-color:#2e2e38!important}
   .panel{background:#1f1f27!important;border-color:#2e2e38!important}
-  .panel-row{border-color:#232329!important}
-  .panel-label{color:#5a5a6a!important}
-  .panel-value{color:#9898a8!important}
-  .text-primary{color:#f2f2f5!important}
-  .text-secondary{color:#9898a8!important}
-  .text-muted{color:#5a5a6a!important}
-  .text-body{color:#e2e2ea!important}
-  .text-strong{color:#f2f2f5!important}
-  .highlight{background:#2b1b22!important;border-color:#57313d!important}
-  .neutral-btn{background:#ffffff!important;color:#000000!important}
-  .outline-btn{background:#1f1f27!important;color:#f2f2f5!important;border-color:#2e2e38!important}
+  .row{border-color:#2e2e38!important}
+  .t1{color:#f2f2f5!important}
+  .t2{color:#c9c9d4!important}
+  .t3{color:#8a8a99!important}
+  .btn{background:#ffffff!important;color:#0f0f12!important}
 `;
 
 const THEME_STYLE = `
   :root{color-scheme:light dark;supported-color-schemes:light dark}
   body{margin:0;padding:0}
-  a{color:#E57A97}
-  @media (prefers-color-scheme: dark){${DARK_OVERRIDES}}
-  [data-ogsc] .email-body{background:#0a0a0d!important;color:#f2f2f5!important}
-  [data-ogsc] .card{background:#17171d!important;border-color:#2e2e38!important}
-  [data-ogsc] .divider{border-color:#232329!important}
-  [data-ogsc] .divider-strong{border-color:#2e2e38!important}
-  [data-ogsc] .panel{background:#1f1f27!important;border-color:#2e2e38!important}
-  [data-ogsc] .panel-row{border-color:#232329!important}
-  [data-ogsc] .panel-label{color:#5a5a6a!important}
-  [data-ogsc] .panel-value{color:#9898a8!important}
-  [data-ogsc] .text-primary{color:#f2f2f5!important}
-  [data-ogsc] .text-secondary{color:#9898a8!important}
-  [data-ogsc] .text-muted{color:#5a5a6a!important}
-  [data-ogsc] .text-body{color:#e2e2ea!important}
-  [data-ogsc] .text-strong{color:#f2f2f5!important}
-  [data-ogsc] .highlight{background:#2b1b22!important;border-color:#57313d!important}
-  [data-ogsc] .neutral-btn{background:#ffffff!important;color:#000000!important}
-  [data-ogsc] .outline-btn{background:#1f1f27!important;color:#f2f2f5!important;border-color:#2e2e38!important}
+  a{color:#C2547A}
+  @media (prefers-color-scheme: dark){${DARK}}
+  ${DARK.trim().split('\n').map((l) => `[data-ogsc] ${l.trim()}`).join('\n  ')}
 `;
 
-function themedLayout(content: string, locale: string = 'fr') {
-  const footer = locale === 'fr' ? '© Digitip · Le pourboire sans contact' : '© Digitip · Cashless tips';
+const C = { t1: '#0f0f12', t2: '#3f3f4a', t3: '#7a7a88', rule: '#ececf0', panel: '#f7f7f9' };
+
+type Block = string;
+
+const block = {
+  title: (s: string): Block =>
+    `<h1 class="t1" style="margin:0 0 16px;font-size:22px;line-height:1.3;font-weight:700;color:${C.t1}">${s}</h1>`,
+  p: (s: string): Block =>
+    `<p class="t2" style="margin:0 0 14px;font-size:15px;line-height:1.6;color:${C.t2}">${s}</p>`,
+  small: (s: string): Block =>
+    `<p class="t3" style="margin:14px 0 0;font-size:13px;line-height:1.55;color:${C.t3}">${s}</p>`,
+  strong: (s: string) => `<strong class="t1" style="color:${C.t1}">${s}</strong>`,
+  link: (label: string, url: string) => `<a href="${url}" style="color:#C2547A">${label}</a>`,
+  button: (label: string, url: string): Block =>
+    `<table cellpadding="0" cellspacing="0" style="margin:8px 0 18px"><tr><td>
+      <a href="${url}" class="btn" style="display:inline-block;padding:12px 22px;background:#0f0f12;color:#ffffff;font-size:15px;font-weight:600;border-radius:8px;text-decoration:none">${label}</a>
+    </td></tr></table>`,
+  list: (items: string[], ordered = false): Block =>
+    `<${ordered ? 'ol' : 'ul'} class="t2" style="margin:0 0 16px;padding-left:20px;font-size:15px;line-height:1.6;color:${C.t2}">
+      ${items.map((i) => `<li style="margin:0 0 6px">${i}</li>`).join('')}
+    </${ordered ? 'ol' : 'ul'}>`,
+  details: (rows: Array<[string, string] | null | false>): Block => {
+    const kept = rows.filter((r): r is [string, string] => Array.isArray(r));
+    return `<table width="100%" cellpadding="0" cellspacing="0" class="panel" style="margin:4px 0 18px;background:${C.panel};border:1px solid ${C.rule};border-radius:8px">
+      ${kept.map(([k, v], i) => `<tr><td class="row t3" style="padding:10px 14px;font-size:13px;color:${C.t3};${i ? `border-top:1px solid ${C.rule};` : ''}">${k}</td><td class="row t1" style="padding:10px 14px;font-size:14px;text-align:right;color:${C.t1};${i ? `border-top:1px solid ${C.rule};` : ''}">${v}</td></tr>`).join('')}
+    </table>`;
+  },
+  mono: (s: string) => `<span style="font-family:ui-monospace,Menlo,monospace">${s}</span>`,
+};
+
+/**
+ * The whole email. `preheader` is the line inbox previews show next to the
+ * subject; without one they show the first words of the layout instead.
+ * `footer` replaces the default sign-off line (for unsubscribe links and the
+ * legal identification cold emails must carry).
+ */
+function layout(opts: { lang: Lang; preheader: string; body: Block[]; footer?: string }): string {
+  const footer = opts.footer ?? pick(opts.lang,
+    'Digitip · le pourboire par carte, sans contact · digitip.app',
+    'Digitip · card tips, contactless · digitip.app');
   return `<!DOCTYPE html>
-<html>
+<html lang="${opts.lang}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -71,61 +142,133 @@ function themedLayout(content: string, locale: string = 'fr') {
   <meta name="supported-color-schemes" content="light dark">
   <style>${THEME_STYLE}</style>
 </head>
-<body class="email-body" style="margin:0;padding:0;background:#f6f7f9;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f0f12">
-  <table width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden">
-    ${content}
-    <tr><td class="divider-strong" style="padding:16px 32px;border-top:1px solid #e5e7eb;text-align:center">
-      <span class="text-muted" style="font-size:11px;color:#9898a8">${footer}</span>
-    </td></tr>
-  </table>
+<body class="email-body" style="margin:0;padding:0;background:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${C.t1}">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(opts.preheader)}</div>
+  <table width="100%" cellpadding="0" cellspacing="0" class="email-body" style="background:#f4f4f6"><tr><td align="center" style="padding:32px 16px">
+    <table width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:560px;background:#ffffff;border:1px solid ${C.rule};border-radius:12px">
+      <tr><td style="padding:28px 32px 0">
+        <div class="t1" style="font-size:18px;font-weight:800;letter-spacing:-0.02em;color:${C.t1}">Digitip</div>
+      </td></tr>
+      <tr><td style="padding:22px 32px 18px">
+        ${opts.body.join('\n')}
+      </td></tr>
+      <tr><td class="rule t3" style="padding:16px 32px 22px;border-top:1px solid ${C.rule};font-size:12px;line-height:1.55;color:${C.t3}">${footer}</td></tr>
+    </table>
+  </td></tr></table>
 </body>
 </html>`;
 }
 
-function infoRow(label: string, value: string) {
-  return `<tr class="panel-row" style="border-bottom:1px solid #f1f2f4">
-    <td class="panel-label" style="padding:12px 16px;font-size:12px;color:#9898a8">${label}</td>
-    <td class="panel-value" style="padding:12px 16px;font-size:12px;color:#5a5a6a;text-align:right">${value}</td>
-  </tr>`;
+/** Plain-text twin of the HTML. Spam filters and some readers want one. */
+function toText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<div style="display:none[\s\S]*?<\/div>/i, '')
+    .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_, url: string, label: string) => {
+      const text = label.replace(/<[^>]+>/g, '').trim();
+      return text && text !== url ? `${text} (${url})` : url;
+    })
+    .replace(/<li[^>]*>/gi, '\n- ')
+    .replace(/<\/(p|h1|tr|li|ul|ol|table)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/td>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n /g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
-function packLabel(pack: string, locale: string) {
-  const names: Record<string, Record<string, string>> = {
-    solo: { fr: 'Solo (1 plaque)', en: 'Solo (1 plaque)' },
-    duo:  { fr: 'Duo (2 plaques)',  en: 'Duo (2 plaques)' },
-  };
-  return names[pack]?.[locale] ?? pack.toUpperCase();
-}
+type Attachment = { filename: string; content: Buffer | string };
 
-// ─── Tip receipt ──────────────────────────────────────────────────────────────
-//
-// The three emails a tipper can get (receipt, failed payment, refund) are
-// written in the language of the page they tipped from, carried on the
-// PaymentIntent as `metadata.locale`. French when it is missing: the venues
-// are in France, and intents created before the field existed have none.
+type Outgoing = {
+  to: string | string[];
+  subject: string;
+  html: string;
+  from?: string;
+  replyTo?: string;
+  attachments?: Attachment[];
+  headers?: Record<string, string>;
+};
 
-/** 'fr' or 'en' from whatever the PaymentIntent carried. */
-export function tipperLocale(raw: string | null | undefined): 'fr' | 'en' {
-  return raw === 'en' ? 'en' : 'fr';
-}
-
-function tipperMoney(cents: number, currency: string, locale: 'fr' | 'en'): string {
-  return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
-    style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2,
-  }).format(cents / 100);
-}
-
-/** "Clara chez Le Comptoir", or "l'équipe chez Le Comptoir" for a team tip ("chez"
- * works whatever article the venue name starts with). */
-function tipRecipient(locale: 'fr' | 'en', staffName: string | null, establishmentName: string): string {
-  const est = escapeHtml(establishmentName);
-  if (staffName) {
-    const who = `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(staffName)}</strong>`;
-    if (!est) return who;
-    return locale === 'fr' ? `${who} chez ${est}` : `${who} at ${est}`;
+/**
+ * Sends through Resend and returns the message id. Throws on a rejected send:
+ * callers that must not fail (a webhook) catch it themselves, and callers that
+ * record the outcome (the lifecycle engine) need to see it.
+ */
+async function deliver(m: Outgoing): Promise<{ id: string | null }> {
+  if (!resend) {
+    throw new Error('RESEND_API_KEY is not configured, refusing to report an email as sent.');
   }
-  if (locale === 'fr') return est ? `l\u2019équipe chez <strong class="text-strong" style="color:#0f0f12">${est}</strong>` : 'l\u2019équipe';
-  return est ? `the team at <strong class="text-strong" style="color:#0f0f12">${est}</strong>` : 'the team';
+  const result = await resend.emails.send({
+    from: m.from ?? FROM,
+    to: m.to,
+    subject: m.subject,
+    html: m.html,
+    text: toText(m.html),
+    replyTo: m.replyTo ?? REPLY_TO,
+    ...(m.attachments?.length ? { attachments: m.attachments } : {}),
+    ...(m.headers ? { headers: m.headers } : {}),
+  });
+  if (result.error) throw new Error(result.error.message || 'Resend send failed');
+  return { id: result.data?.id ?? null };
+}
+
+/** For emails whose callers predate `deliver` and expect a silent no-op without a key. */
+async function deliverQuietly(m: Outgoing): Promise<void> {
+  if (!resend) return;
+  await deliver(m);
+}
+
+const replyHint = (lang: Lang) => pick(lang,
+  'Une question ? Répondez simplement à cet e-mail.',
+  'Any question? Just reply to this email.');
+
+function packLabel(pack: string, lang: Lang): string {
+  const names: Record<string, [string, string]> = {
+    solo: ['Solo (1 plaque)', 'Solo (1 plaque)'],
+    duo: ['Duo (2 plaques)', 'Duo (2 plaques)'],
+  };
+  const n = names[pack];
+  return n ? pick(lang, n[0], n[1]) : pack.toUpperCase();
+}
+
+const shortRef = (id: string) => id.slice(0, 8).toUpperCase();
+
+/** "1er octobre", "7 octobre": French writes the first of the month as an ordinal. */
+function frenchDay(iso: string): string {
+  const d = new Date(iso);
+  const day = Number(new Intl.DateTimeFormat('fr-FR', { day: 'numeric', timeZone: 'Europe/Paris' }).format(d));
+  const month = new Intl.DateTimeFormat('fr-FR', { month: 'long', timeZone: 'Europe/Paris' }).format(d);
+  return `${day === 1 ? '1er' : day} ${month}`;
+}
+
+/** "7 octobre 2026 à 12:00", Paris time. */
+function signedLabel(iso: string): string {
+  const d = new Date(iso);
+  const year = new Intl.DateTimeFormat('fr-FR', { year: 'numeric', timeZone: 'Europe/Paris' }).format(d);
+  const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).format(d);
+  return `${frenchDay(iso)} ${year} à ${time}`;
+}
+
+// ═══ Tippers ═══════════════════════════════════════════════════════════════════
+//
+// The three emails a customer can get after tipping, in the language of the
+// page they tipped from. They are not our users: no account, no marketing.
+
+/** "Clara chez Le Comptoir", or "l'équipe chez Le Comptoir" for a team tip. */
+function tipRecipient(lang: Lang, staffName: string | null, establishmentName: string): string {
+  const est = esc(establishmentName);
+  if (staffName) {
+    const who = block.strong(esc(staffName.trim().split(/\s+/)[0] || staffName));
+    if (!est) return who;
+    return pick(lang, `${who} chez ${est}`, `${who} at ${est}`);
+  }
+  return est
+    ? pick(lang, `l’équipe chez ${block.strong(est)}`, `the team at ${block.strong(est)}`)
+    : pick(lang, 'l’équipe', 'the team');
 }
 
 export async function sendTipReceipt(opts: {
@@ -139,50 +282,103 @@ export async function sendTipReceipt(opts: {
   staffName: string | null;
   establishmentName: string;
   transactionId: string;
-  locale: 'fr' | 'en';
+  locale: Lang;
 }): Promise<void> {
-  if (!resend) return;
-
-  const { to, amount, tipAmount, currency, staffName, establishmentName, transactionId, locale } = opts;
-  const fr = locale === 'fr';
-  const total = tipperMoney(amount, currency, locale);
+  const { to, amount, tipAmount, currency, staffName, establishmentName, transactionId, locale: lang } = opts;
+  const total = money(amount, currency, lang);
   const fee = Math.max(0, amount - tipAmount);
-  const shortRef = transactionId.slice(0, 8).toUpperCase();
-  const recipient = tipRecipient(locale, staffName, establishmentName);
 
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
-    subject: fr ? `Votre reçu de pourboire · ${total}` : `Your tip receipt · ${total}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Reçu de pourboire' : 'Tip receipt'}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px">
-      <div class="text-primary" style="font-size:40px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${total}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${fr ? 'Pourboire pour' : 'Tip for'} ${recipient}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow(fr ? 'Pourboire' : 'Tip', tipperMoney(tipAmount, currency, locale))}
-        ${fee > 0 ? infoRow(fr ? 'Frais de service' : 'Service fee', tipperMoney(fee, currency, locale)) : ''}
-        ${infoRow(fr ? 'Total débité' : 'Total charged', total)}
-        ${infoRow(fr ? 'Statut' : 'Status', `<span style="color:#22c55e;font-weight:600">● ${fr ? 'Payé' : 'Paid'}</span>`)}
-        ${infoRow(fr ? 'Référence' : 'Reference', `<span style="font-family:monospace">${shortRef}</span>`)}
-      </table>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">
-        ${fr
-          ? 'Paiement traité par Stripe. Digitip encaisse le pourboire puis le reverse à l\u2019établissement, qui le remet à son équipe. Une question\u00a0? Écrivez à contact@digitip.app.'
-          : 'Payment processed by Stripe. Digitip collects the tip and pays it out to the business, which passes it on to its team. Questions? Write to contact@digitip.app.'}
-      </p>
-    </td></tr>`, locale),
+    subject: pick(lang, `Votre reçu : pourboire de ${money(tipAmount, currency, lang)}`, `Your receipt: ${money(tipAmount, currency, lang)} tip`),
+    html: layout({
+      lang,
+      preheader: pick(lang, `${total} débités. Merci pour votre pourboire.`, `${total} charged. Thank you for your tip.`),
+      body: [
+        block.title(pick(lang, 'Merci pour votre pourboire', 'Thank you for your tip')),
+        block.p(pick(lang,
+          `Votre pourboire pour ${tipRecipient(lang, staffName, establishmentName)} est bien passé.`,
+          `Your tip for ${tipRecipient(lang, staffName, establishmentName)} went through.`)),
+        block.details([
+          [pick(lang, 'Pourboire', 'Tip'), money(tipAmount, currency, lang)],
+          fee > 0 && [pick(lang, 'Frais de service', 'Service fee'), money(fee, currency, lang)],
+          [pick(lang, 'Total débité', 'Total charged'), block.strong(total)],
+          [pick(lang, 'Référence', 'Reference'), block.mono(shortRef(transactionId))],
+        ]),
+        block.small(pick(lang,
+          'Le paiement est traité par Stripe. Digitip encaisse le pourboire puis le verse à l’établissement, qui le remet à son équipe.',
+          'The payment is processed by Stripe. Digitip collects the tip and pays it to the business, which passes it on to its team.')),
+        block.small(replyHint(lang)),
+      ],
+    }),
   });
 }
 
-// ─── Order confirmation ───────────────────────────────────────────────────────
+export async function sendPaymentFailed(opts: {
+  to: string;
+  amount: number;
+  currency: string;
+  /** Null for a team tip. */
+  staffName: string | null;
+  establishmentName: string;
+  locale: Lang;
+}): Promise<void> {
+  const { to, amount, currency, staffName, establishmentName, locale: lang } = opts;
+  const formatted = money(amount, currency, lang);
+
+  await deliverQuietly({
+    to,
+    subject: pick(lang, 'Votre pourboire n’est pas passé', 'Your tip did not go through'),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Rien n’a été débité sur votre carte.', 'Nothing was charged to your card.'),
+      body: [
+        block.title(pick(lang, 'Votre pourboire n’est pas passé', 'Your tip did not go through')),
+        block.p(pick(lang,
+          `Le paiement de ${block.strong(formatted)} pour ${tipRecipient(lang, staffName, establishmentName)} a été refusé. Rien n’a été débité sur votre carte.`,
+          `The payment of ${block.strong(formatted)} for ${tipRecipient(lang, staffName, establishmentName)} was declined. Nothing was charged to your card.`)),
+        block.p(pick(lang,
+          'Pour réessayer, scannez de nouveau la plaque ou rouvrez la page du pourboire. Si le refus se répète, votre banque pourra vous dire pourquoi.',
+          'To try again, scan the plaque again or reopen the tip page. If it keeps being declined, your bank can tell you why.')),
+        block.small(replyHint(lang)),
+      ],
+    }),
+  });
+}
+
+export async function sendTipRefunded(opts: {
+  to: string;
+  amount: number;
+  currency: string;
+  /** Null for a team tip. */
+  staffName: string | null;
+  establishmentName: string;
+  locale: Lang;
+}): Promise<void> {
+  const { to, amount, currency, staffName, establishmentName, locale: lang } = opts;
+  const formatted = money(amount, currency, lang);
+
+  await deliverQuietly({
+    to,
+    subject: pick(lang, `Votre pourboire est remboursé (${formatted})`, `Your tip has been refunded (${formatted})`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Le remboursement arrive sous 5 à 10 jours ouvrés.', 'The refund arrives within 5 to 10 business days.'),
+      body: [
+        block.title(pick(lang, 'Votre pourboire est remboursé', 'Your tip has been refunded')),
+        block.p(pick(lang,
+          `Nous vous remboursons ${block.strong(formatted)} sur votre pourboire pour ${tipRecipient(lang, staffName, establishmentName)}.`,
+          `We are refunding ${block.strong(formatted)} of your tip for ${tipRecipient(lang, staffName, establishmentName)}.`)),
+        block.p(pick(lang,
+          'La somme revient sur la carte utilisée, en général sous 5 à 10 jours ouvrés selon votre banque. Vous n’avez rien à faire.',
+          'The money goes back to the card you used, usually within 5 to 10 business days depending on your bank. There is nothing you need to do.')),
+        block.small(replyHint(lang)),
+      ],
+    }),
+  });
+}
+
+// ═══ Plaque orders ═════════════════════════════════════════════════════════════
 
 export async function sendOrderConfirmation(opts: {
   to: string;
@@ -193,105 +389,40 @@ export async function sendOrderConfirmation(opts: {
   setupUrl?: string | null;
   locale?: string;
 }): Promise<void> {
-  if (!resend) return;
+  const { to, pack, quantity, orderId, invoicePdfUrl, setupUrl } = opts;
+  const lang = emailLang(opts.locale);
+  const label = packLabel(pack, lang);
 
-  const { to, pack, quantity, orderId, invoicePdfUrl, setupUrl, locale = 'fr' } = opts;
-  const isFr = locale === 'fr';
-  const shortRef = orderId.slice(0, 8).toUpperCase();
-  const label = packLabel(pack, locale);
-
-  const subject = isFr
-    ? `C'est commandé : votre pack ${label} Digitip`
-    : `Your Digitip order is confirmed · ${label}`;
-
-  const headline = isFr ? 'Commande confirmée' : 'Order confirmed';
-  const subline = isFr
-    ? 'Merci ! On programme vos plaques à la main.'
-    : 'Thank you! We program your plaques by hand.';
-  const nextStepsTitle = isFr ? 'La suite' : "What happens next";
-  const step1 = isFr
-    ? 'On programme vos plaques et on les expédie sous 3 jours ouvrés.'
-    : 'We program your plaques and ship them within 3 working days.';
-  const step2 = isFr
-    ? "Dès qu'elles partent, vous recevez un e-mail avec le numéro de suivi."
-    : "As soon as they ship, you get an email with the tracking number.";
-  const step3 = isFr
-    ? 'Vous posez la plaque, vous la scannez une fois, et les pourboires peuvent arriver.'
-    : 'Put the plaque up, scan it once, and tips can start coming in.';
-  const invoiceLabel = isFr ? 'Télécharger la facture' : 'Download the invoice';
-  const orderLabel = isFr ? 'Pack commandé' : 'Pack ordered';
-  const qtyLabel = isFr ? 'Quantité' : 'Quantity';
-  const refLabel = isFr ? 'Référence' : 'Reference';
-  const invoiceRow = isFr ? 'Facture' : 'Invoice';
-  const footer = isFr
-    ? 'Une question ? Répondez à cet e-mail, ou écrivez à contact@digitip.app.'
-    : 'Questions? Reply to this email or write to contact@digitip.app.';
-
-  const invoiceSection = invoicePdfUrl
-    ? `<tr><td style="padding:0 32px 24px">
-        <a href="${invoicePdfUrl}" class="neutral-btn" style="display:inline-block;padding:10px 20px;background:#0f0f12;color:#ffffff;font-size:13px;font-weight:600;border-radius:8px;text-decoration:none">
-          ↓ ${invoiceLabel}
-        </a>
-      </td></tr>`
-    : '';
-
-  const setupSection = setupUrl
-    ? `<tr><td style="padding:0 32px 28px">
-        <div class="highlight" style="background:#fde7ee;border:1px solid #f4c2d2;border-radius:12px;padding:20px 24px">
-          <div class="text-strong" style="font-size:14px;font-weight:700;color:#0f0f12;margin-bottom:6px">
-            ${isFr ? 'Configurez votre établissement dès maintenant' : 'Set up your venue now'}
-          </div>
-          <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-bottom:16px;line-height:1.5">
-            ${isFr
-              ? 'Ça prend 2 minutes : le nom de l\'établissement, votre équipe, et vos plaques seront prêtes à recevoir des pourboires dès leur arrivée.'
-              : 'It takes 2 minutes: the venue name, your team, and your plaques will be ready for tips as soon as they arrive.'}
-          </div>
-          <a href="${setupUrl}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#E57A97,#EC97B0);color:#fff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;letter-spacing:-0.01em">
-            ${isFr ? 'Configurer mon espace →' : 'Set up my space →'}
-          </a>
-        </div>
-      </td></tr>`
-    : '';
-
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
-    subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${headline}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${isFr ? 'Paiement reçu' : 'Payment received'}</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:6px">${headline}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${subline}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 24px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow(orderLabel, label)}
-        ${infoRow(qtyLabel, String(quantity))}
-        ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
-        ${invoicePdfUrl ? infoRow(invoiceRow, `<a href="${invoicePdfUrl}" style="color:#E57A97;text-decoration:none">PDF ↓</a>`) : ''}
-      </table>
-    </td></tr>
-    ${invoiceSection}
-    ${setupSection}
-    <tr><td style="padding:0 32px 28px">
-      <div class="text-strong" style="font-size:13px;font-weight:600;color:#0f0f12;margin-bottom:12px">${nextStepsTitle}</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.7">
-        <div style="margin-bottom:6px">1. ${step1}</div>
-        <div style="margin-bottom:6px">2. ${step2}</div>
-        <div>3. ${step3}</div>
-      </div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${footer}</p>
-    </td></tr>`),
+    subject: pick(lang, `Commande confirmée : pack ${label}`, `Order confirmed: ${label} pack`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Vos plaques partent sous 3 jours ouvrés.', 'Your plaques ship within 3 working days.'),
+      body: [
+        block.title(pick(lang, 'Merci pour votre commande', 'Thank you for your order')),
+        block.p(pick(lang,
+          'Nous préparons vos plaques et les expédions sous 3 jours ouvrés. Dès qu’elles partent, vous recevez un e-mail avec le numéro de suivi.',
+          'We are preparing your plaques and will ship them within 3 working days. As soon as they leave, you get an email with the tracking number.')),
+        block.details([
+          ['Pack', label],
+          [pick(lang, 'Quantité', 'Quantity'), String(quantity)],
+          [pick(lang, 'Référence', 'Reference'), block.mono(shortRef(orderId))],
+          invoicePdfUrl ? [pick(lang, 'Facture', 'Invoice'), block.link(pick(lang, 'Télécharger (PDF)', 'Download (PDF)'), invoicePdfUrl)] : null,
+        ]),
+        ...(setupUrl
+          ? [
+              block.p(pick(lang,
+                `${block.strong('Créez votre espace en attendant.')} Sans lui, la plaque ne peut pas recevoir de pourboires. Comptez quelques minutes : votre établissement, le compte qui recevra les pourboires, votre équipe. La plaque marchera dès son arrivée.`,
+                `${block.strong('Set up your account while you wait.')} Without it, the plaque cannot take tips. It takes a few minutes: your business, the account that receives the tips, your team. The plaque will work the moment it arrives.`)),
+              block.button(pick(lang, 'Créer mon espace', 'Set up my account'), setupUrl),
+            ]
+          : []),
+        block.small(replyHint(lang)),
+      ],
+    }),
   });
 }
-
-// ─── Order shipped ────────────────────────────────────────────────────────────
 
 export async function sendOrderShipped(opts: {
   to: string;
@@ -304,220 +435,203 @@ export async function sendOrderShipped(opts: {
   /** The customer has no account yet: the plaque does nothing until they set one up. */
   setupRequired?: boolean;
 }): Promise<void> {
-  if (!resend) throw new Error('RESEND_API_KEY is not set');
-
-  const { to, pack, quantity, orderId, locale = 'fr', onboardingUrl, setupRequired = false } = opts;
+  const { to, pack, quantity, orderId, onboardingUrl, setupRequired = false } = opts;
+  const lang = emailLang(opts.locale);
   const trackingNumber = normalizeTrackingNumber(opts.trackingNumber);
   const trackingUrl = trackingNumber ? laPosteTrackingUrl(trackingNumber) : null;
-  const isFr = locale === 'fr';
-  const shortRef = orderId.slice(0, 8).toUpperCase();
-  const label = packLabel(pack, locale);
+  const plural = quantity > 1;
 
-  const subject = isFr
-    ? `Vos plaques Digitip sont parties`
-    : `Your Digitip order has shipped · ${label}`;
+  // Thrown, not swallowed: the admin action reports to the admin whether the
+  // customer was actually told.
+  await deliver({
+    to,
+    subject: pick(lang, plural ? 'Vos plaques sont parties' : 'Votre plaque est partie', plural ? 'Your plaques have shipped' : 'Your plaque has shipped'),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Livraison en 3 à 5 jours ouvrés en France.', 'Delivery in 3 to 5 working days in France.'),
+      body: [
+        block.title(pick(lang, plural ? 'Vos plaques sont parties' : 'Votre plaque est partie', plural ? 'Your plaques are on their way' : 'Your plaque is on its way')),
+        block.p(pick(lang,
+          'Le colis a été remis à La Poste. Comptez 3 à 5 jours ouvrés en France, 4 à 7 ailleurs en Europe.',
+          'The parcel is with La Poste. Allow 3 to 5 working days in France, 4 to 7 elsewhere in Europe.')),
+        block.details([
+          ['Pack', packLabel(pack, lang)],
+          [pick(lang, 'Quantité', 'Quantity'), String(quantity)],
+          [pick(lang, 'Référence', 'Reference'), block.mono(shortRef(orderId))],
+          [pick(lang, 'Suivi', 'Tracking'), trackingNumber ? block.mono(esc(trackingNumber)) : pick(lang, 'non communiqué', 'not provided')],
+        ]),
+        ...(trackingUrl ? [block.button(pick(lang, 'Suivre le colis', 'Track the parcel'), trackingUrl)] : []),
+        ...(onboardingUrl && setupRequired
+          ? [
+              block.p(pick(lang,
+                `${block.strong('Votre compte n’est pas encore créé.')} Sans lui, la plaque ne peut pas recevoir de pourboires. Créez-le maintenant, en quelques minutes, et elle marchera dès réception.`,
+                `${block.strong('Your account is not set up yet.')} Without it, the plaque cannot take tips. Set it up now, it takes a few minutes, and the plaque will work as soon as it arrives.`)),
+              block.button(pick(lang, 'Créer mon compte', 'Set up my account'), onboardingUrl),
+            ]
+          : onboardingUrl
+            ? [block.small(pick(lang,
+                `Vous suivrez les pourboires dans ${block.link('votre tableau de bord', onboardingUrl)}.`,
+                `You will follow the tips in ${block.link('your dashboard', onboardingUrl)}.`))]
+            : []),
+        block.small(replyHint(lang)),
+      ],
+    }),
+  });
+}
 
-  const headline = isFr ? 'Commande expédiée' : 'Order shipped';
-  const subline = isFr
-    ? (quantity > 1 ? 'Vos plaques sont en route.' : 'Votre plaque est en route.')
-    : (quantity > 1 ? 'Your plaques are on their way.' : 'Your plaque is on its way.');
-  const trackingTitle = isFr ? 'Numéro de suivi' : 'Tracking number';
-  const noTracking = isFr ? 'Non communiqué' : 'Not provided';
-  const estDelivery = isFr ? 'Délai estimé' : 'Estimated delivery';
-  const estDays = isFr ? '3 à 5 jours ouvrés en France, 4 à 7 ailleurs en Europe' : '3–5 working days in France, 4–7 elsewhere in Europe';
-  const refLabel = isFr ? 'Référence' : 'Reference';
-  const orderLabel = isFr ? 'Pack' : 'Pack';
-  const footer = isFr
-    ? 'Une question ? Répondez à cet e-mail, ou écrivez à contact@digitip.app.'
-    : 'Questions? Reply to this email or write to contact@digitip.app.';
+export async function sendOrderDelivered(opts: {
+  to: string;
+  pack: string;
+  quantity: number;
+  orderId: string;
+  dashboardUrl?: string;
+  locale?: string;
+}): Promise<void> {
+  const { to, quantity, orderId, dashboardUrl } = opts;
+  const lang = emailLang(opts.locale);
+  const plural = quantity > 1;
 
-  const trackingSection = trackingUrl
-    ? `<tr><td style="padding:0 32px 24px">
-        <a href="${trackingUrl}" class="neutral-btn" style="display:inline-block;padding:12px 22px;background:#0f0f12;color:#ffffff;font-size:14px;font-weight:600;border-radius:8px;text-decoration:none">
-          ${isFr ? 'Suivre mon colis sur La Poste →' : 'Track my parcel on La Poste →'}
-        </a>
-      </td></tr>`
-    : '';
+  await deliverQuietly({
+    to,
+    subject: pick(lang, plural ? 'Vos plaques sont livrées' : 'Votre plaque est livrée', plural ? 'Your plaques have been delivered' : 'Your plaque has been delivered'),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Trois gestes pour vos premiers pourboires.', 'Three steps to your first tips.'),
+      body: [
+        block.title(pick(lang, 'Le colis est arrivé', 'Your parcel has arrived')),
+        block.p(pick(lang, 'Pour recevoir vos premiers pourboires :', 'To get your first tips:')),
+        block.list([
+          pick(lang,
+            'Posez la plaque là où le client la voit au moment de payer : près de la caisse, ou sur les tables.',
+            'Put the plaque where customers see it when they pay: by the till, or on the tables.'),
+          pick(lang,
+            'Testez-la : approchez votre téléphone, la page de pourboire doit s’ouvrir.',
+            'Test it: hold your phone near it, the tip page should open.'),
+          pick(lang,
+            'Prévenez l’équipe. Une phrase suffit : « Si vous voulez laisser un pourboire, c’est ici. »',
+            'Tell your team. One sentence is enough: “If you’d like to leave a tip, it’s here.”'),
+        ], true),
+        ...(dashboardUrl ? [block.button(pick(lang, 'Ouvrir mon tableau de bord', 'Open my dashboard'), dashboardUrl)] : []),
+        block.small(`${pick(lang, 'Commande', 'Order')} ${block.mono(shortRef(orderId))}. ${replyHint(lang)}`),
+      ],
+    }),
+  });
+}
 
-  // A customer without an account gets a plaque that collects nothing, so the
-  // setup call is the point of the email for them, not an optional extra.
-  const onboardingSection = onboardingUrl
-    ? `<tr><td style="padding:0 32px 24px">
-        <div class="highlight" style="background:#fde7ee;border:1px solid #f4c2d2;border-radius:12px;padding:20px 24px">
-          <div class="text-strong" style="font-size:14px;font-weight:700;color:#0f0f12;margin-bottom:8px">
-            ${setupRequired
-              ? (isFr ? 'Il reste à créer votre compte' : 'Your account still needs setting up')
-              : (isFr ? 'Votre espace Digitip' : 'Your Digitip space')}
-          </div>
-          <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-bottom:16px;line-height:1.6">
-            ${setupRequired
-              ? (isFr
-                ? 'Sans compte, la plaque ne peut pas recevoir de pourboire. Ça prend 5 minutes : faites-le maintenant, et elle marchera dès que vous la recevrez.'
-                : 'Without an account the plaque can\'t take tips. It takes 5 minutes: do it now and it\'ll work the moment it arrives.')
-              : (isFr
-                ? 'Votre plaque sera reliée à votre établissement, et vous verrez les pourboires arriver dans votre tableau de bord.'
-                : 'Your plaque will be linked to your venue. You will follow the tips it collects from your dashboard.')}
-          </div>
-          <a href="${onboardingUrl}" class="neutral-btn" style="display:inline-block;padding:10px 20px;background:#0f0f12;color:#ffffff;font-size:13px;font-weight:600;border-radius:8px;text-decoration:none">
-            ${setupRequired
-              ? (isFr ? 'Activer mon compte →' : 'Activate my account →')
-              : (isFr ? 'Ouvrir mon tableau de bord →' : 'Open my dashboard →')}
-          </a>
-        </div>
-      </td></tr>`
-    : '';
+export async function sendOrderCanceled(opts: {
+  to: string;
+  pack: string;
+  quantity: number;
+  orderId: string;
+  reason?: string | null;
+  locale?: string;
+}): Promise<void> {
+  const { to, pack, quantity, orderId, reason } = opts;
+  const lang = emailLang(opts.locale);
 
-  // Resend reports a rejected send in the result, not by throwing. Surface it
-  // so the admin action can tell the admin the customer was not notified.
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
+    to,
+    subject: pick(lang, 'Votre commande est annulée', 'Your order has been canceled'),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Remboursement intégral sous 5 à 10 jours ouvrés.', 'Full refund within 5 to 10 business days.'),
+      body: [
+        block.title(pick(lang, 'Votre commande est annulée', 'Your order has been canceled')),
+        block.p(pick(lang,
+          'Nous vous remboursons la totalité sur le moyen de paiement utilisé. Comptez 5 à 10 jours ouvrés selon votre banque.',
+          'We are refunding the full amount to the payment method you used. Allow 5 to 10 business days depending on your bank.')),
+        block.details([
+          ['Pack', packLabel(pack, lang)],
+          [pick(lang, 'Quantité', 'Quantity'), String(quantity)],
+          [pick(lang, 'Référence', 'Reference'), block.mono(shortRef(orderId))],
+          reason ? [pick(lang, 'Motif', 'Reason'), esc(reason)] : null,
+        ]),
+        block.small(pick(lang,
+          'Vous n’avez pas demandé cette annulation ? Répondez à cet e-mail, on regarde tout de suite.',
+          'You did not ask for this? Reply to this email and we will look into it right away.')),
+      ],
+    }),
+  });
+}
+
+/** Free-form message from the admin to a customer about their order. */
+export async function sendOrderCustomNote(opts: {
+  to: string;
+  orderId: string;
+  subject: string;
+  bodyText: string;
+  locale?: string;
+  attachments?: { filename: string; content: Buffer }[];
+}): Promise<void> {
+  const { to, orderId, subject, bodyText, attachments = [] } = opts;
+  const lang = emailLang(opts.locale);
+  const paragraphs = bodyText.split(/\n{2,}/).map((para) => block.p(esc(para).replace(/\n/g, '<br>')));
+
+  await deliverQuietly({
     to,
     subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${headline}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#3b82f622;color:#60a5fa;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${isFr ? 'En transit' : 'In transit'}</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:6px">${headline}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${subline}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow(orderLabel, label)}
-        ${infoRow(isFr ? 'Quantité' : 'Quantity', String(quantity))}
-        ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
-        ${infoRow(trackingTitle, trackingUrl
-          ? `<a href="${trackingUrl}" class="text-strong" style="font-family:monospace;color:#0f0f12;text-decoration:underline">${escapeHtml(trackingNumber!)}</a>`
-          : noTracking)}
-        ${infoRow(estDelivery, estDays)}
-      </table>
-    </td></tr>
-    ${trackingSection}
-    ${onboardingSection}
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${footer}</p>
-    </td></tr>`),
+    attachments,
+    html: layout({
+      lang,
+      preheader: bodyText.slice(0, 120),
+      body: [
+        ...paragraphs,
+        block.small(`${pick(lang, 'Commande', 'Order')} ${block.mono(shortRef(orderId))}. ${pick(lang, 'L’équipe Digitip', 'The Digitip team')}`),
+      ],
+    }),
   });
-  if (error) throw new Error(`Shipping email not sent: ${error.message}`);
 }
 
-// ─── Payment failed (tipper) ──────────────────────────────────────────────────
+/** La Poste / Colissimo numbers are printed with spaces; the tracker wants them bare. */
+export function normalizeTrackingNumber(raw: string | null | undefined): string | null {
+  const n = (raw ?? '').replace(/[\s-]+/g, '').toUpperCase();
+  return n || null;
+}
 
-export async function sendPaymentFailed(opts: {
-  to: string;
-  amount: number;
-  currency: string;
-  /** Null for a team tip. */
-  staffName: string | null;
-  establishmentName: string;
-  locale: 'fr' | 'en';
+export function laPosteTrackingUrl(trackingNumber: string): string {
+  return `https://www.laposte.fr/outils/suivre-vos-envois?code=${encodeURIComponent(trackingNumber)}`;
+}
+
+// ═══ Internal alerts (to the Digitip team, French) ═════════════════════════════
+
+const adminFooter = 'Alerte interne Digitip';
+
+export async function sendAdminNewOrder(opts: {
+  to: string[];
+  customerName: string;
+  customerEmail?: string | null;
+  pack: string;
+  quantity: number;
+  orderId: string;
+  promoCode?: string | null;
+  locale: string;
 }): Promise<void> {
-  if (!resend) return;
+  if (opts.to.length === 0) throw new Error('no admin recipient');
+  const { to, customerName, customerEmail, pack, quantity, orderId, promoCode } = opts;
 
-  const { to, amount, currency, staffName, establishmentName, locale } = opts;
-  const fr = locale === 'fr';
-  const formatted = tipperMoney(amount, currency, locale);
-  const recipient = tipRecipient(locale, staffName, establishmentName);
-
-  await resend.emails.send({
-    from: FROM,
+  await deliver({
     to,
-    subject: fr ? `Votre pourboire n\u2019est pas passé · ${formatted}` : `Your tip did not go through · ${formatted}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Paiement refusé' : 'Payment declined'}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${fr ? 'Non débité' : 'Not charged'}</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">${fr ? 'Le paiement n\u2019est pas passé' : 'The payment did not go through'}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${fr
-        ? `Votre pourboire de <strong class="text-strong" style="color:#0f0f12">${formatted}</strong> pour ${recipient} n\u2019a pas abouti.`
-        : `Your tip of <strong class="text-strong" style="color:#0f0f12">${formatted}</strong> for ${recipient} was not completed.`}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">${fr
-        ? 'Votre carte n\u2019a pas été débitée. Pour réessayer, scannez de nouveau la plaque ou rouvrez la page du pourboire.'
-        : 'Your card was not charged. To try again, scan the plaque again or reopen the tip page.'}</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">${fr ? 'Une question\u00a0? Écrivez à contact@digitip.app.' : 'Questions? Write to contact@digitip.app.'}</p>
-    </td></tr>`, locale),
+    ...(customerEmail ? { replyTo: customerEmail } : {}),
+    subject: `Nouvelle commande : ${packLabel(pack, 'fr')}, ${customerName}`,
+    html: layout({
+      lang: 'fr',
+      preheader: `${customerName}, ${quantity} plaque(s)`,
+      footer: adminFooter,
+      body: [
+        block.title(`Nouvelle commande de ${esc(customerName)}`),
+        block.details([
+          customerEmail ? ['E-mail', esc(customerEmail)] : null,
+          ['Pack', packLabel(pack, 'fr')],
+          ['Quantité', String(quantity)],
+          ['Référence', block.mono(shortRef(orderId))],
+          promoCode ? ['Code promo', esc(promoCode)] : null,
+          ['Langue', esc(opts.locale)],
+        ]),
+        block.small('Répondre à cet e-mail écrit directement au client.'),
+      ],
+    }),
   });
 }
-
-// ─── Tip refunded (tipper) ────────────────────────────────────────────────────
-
-export async function sendTipRefunded(opts: {
-  to: string;
-  amount: number;
-  currency: string;
-  /** Null for a team tip. */
-  staffName: string | null;
-  establishmentName: string;
-  locale: 'fr' | 'en';
-}): Promise<void> {
-  if (!resend) return;
-
-  const { to, amount, currency, staffName, establishmentName, locale } = opts;
-  const fr = locale === 'fr';
-  const formatted = tipperMoney(amount, currency, locale);
-  const recipient = tipRecipient(locale, staffName, establishmentName);
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject: fr ? `Votre pourboire a été remboursé · ${formatted}` : `Your tip has been refunded · ${formatted}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Remboursement' : 'Refund'}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#f59e0b22;color:#fbbf24;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${fr ? 'Remboursé' : 'Refunded'}</div>
-      <div class="text-primary" style="font-size:40px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${formatted}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${fr ? `Votre pourboire pour ${recipient} a été remboursé.` : `Your tip for ${recipient} has been refunded.`}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">${fr
-        ? 'La somme revient sur la carte utilisée, en général sous 5 à 10 jours ouvrés selon votre banque.'
-        : 'The money goes back to the card you used, usually within 5 to 10 business days depending on your bank.'}</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">${fr ? 'Une question\u00a0? Écrivez à contact@digitip.app.' : 'Questions? Write to contact@digitip.app.'}</p>
-    </td></tr>`, locale),
-  });
-}
-
-// ─── Ambassador recruitment — applicant confirmation ──────────────────────────
-
-export async function sendAmbassadorApplicationConfirmation(opts: {
-  to: string;
-  firstName: string;
-}): Promise<void> {
-  if (!resend) return;
-
-  const { to, firstName } = opts;
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `Candidature ambassadeur reçue · Digitip`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme ambassadeur</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Candidature reçue</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">Merci ${firstName} !</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">On a bien reçu ta candidature au programme ambassadeur Digitip.</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">On la regarde et on revient vers toi rapidement. En attendant, n'hésite pas à répondre à cet email si tu as des questions.</p>
-    </td></tr>`),
-  });
-}
-
-// ─── Ambassador recruitment — internal admin alert ────────────────────────────
 
 export async function sendAmbassadorApplicationAdmin(opts: {
   to: string[];
@@ -530,153 +644,93 @@ export async function sendAmbassadorApplicationAdmin(opts: {
   notes?: string | null;
 }): Promise<void> {
   const { to, firstName, lastName, city, phone, email, siret, notes } = opts;
-  if (!resend || to.length === 0) return;
+  if (to.length === 0) return;
+  const name = `${firstName} ${lastName}`;
 
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
     replyTo: email,
-    subject: `Nouvelle candidature ambassadeur · ${firstName} ${lastName}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Nouvelle candidature ambassadeur</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${firstName} ${lastName}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${city}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow('Email', `<a href="mailto:${email}" style="color:#E57A97;text-decoration:none">${email}</a>`)}
-        ${infoRow('Téléphone', phone)}
-        ${infoRow('Ville', city)}
-        ${infoRow('SIRET', siret
-          ? `<span style="font-family:monospace">${siret}</span>`
-          : '<span style="color:#9ca3af">Non renseigné, à fournir avant paiement</span>')}
-        ${notes ? infoRow('Notes', notes) : ''}
-      </table>
-    </td></tr>`),
+    subject: `Candidature ambassadeur : ${name} (${city})`,
+    html: layout({
+      lang: 'fr',
+      preheader: `${name}, ${city}`,
+      footer: adminFooter,
+      body: [
+        block.title(`Candidature ambassadeur de ${esc(name)}`),
+        block.details([
+          ['E-mail', esc(email)],
+          ['Téléphone', esc(phone)],
+          ['Ville', esc(city)],
+          ['SIRET', siret ? block.mono(esc(siret)) : 'pas encore, à fournir avant tout paiement'],
+          notes ? ['Notes', esc(notes)] : null,
+        ]),
+        block.button('Voir les candidatures', `${APP_URL}/fr/dashboard/admin/ambassadeurs/recrutement`),
+        block.small('Répondre à cet e-mail écrit directement au candidat.'),
+      ],
+    }),
   });
 }
 
-// ─── Commercial Pros — contract invitation (admin → commercial) ─────────────
-
-export async function sendCommercialContractInvitation(opts: {
-  to: string;
-  firstName: string;
-  contractTitle: string;
-  dashboardUrl: string;
+/**
+ * Daily digest of ambassador applications nobody has answered yet.
+ *
+ * This used to be two reminders sent to the APPLICANT ("ta candidature nous
+ * attend", then "dernière chance, on archive"), as if the delay were theirs.
+ * A pending application is waiting on us, so the reminder goes to us.
+ */
+export async function sendPendingApplicationsDigest(opts: {
+  to: string[];
+  applications: Array<{ name: string; city: string | null; createdAt: string }>;
 }): Promise<void> {
-  if (!resend) return;
-  const { to, firstName, contractTitle, dashboardUrl } = opts;
+  const { to, applications } = opts;
+  if (to.length === 0 || applications.length === 0) return;
+  const n = applications.length;
 
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
-    subject: `Contrat d'apporteur d'affaires à signer · ${contractTitle}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros · Contrat à signer</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">Bonjour ${firstName},</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.65">Votre contrat d'apporteur d'affaires est prêt. Vous pouvez le lire en entier et le signer électronique depuis votre espace commercial sécurisé par code PIN. Aucune impression ni envoi postal n'est requis.</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 28px">
-      <p style="margin:0"><a href="${dashboardUrl}" style="display:inline-block;padding:13px 24px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Consulter &amp; signer le contrat →</a></p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">La signature électronique simple a, par accord entre les Parties, la même valeur juridique qu'une signature manuscrite (eIDAS, articles 1366 et 1367 du Code civil). Une copie horodatée du contrat signé vous sera transmise par email après signature.</p>
-    </td></tr>`),
+    subject: `${n} candidature${n > 1 ? 's' : ''} ambassadeur sans réponse`,
+    html: layout({
+      lang: 'fr',
+      preheader: 'Les candidats attendent une réponse depuis plus de 2 jours.',
+      footer: adminFooter,
+      body: [
+        block.title(`${n} candidature${n > 1 ? 's attendent' : ' attend'} une réponse`),
+        block.p('On a promis une réponse sous 2 jours ouvrés. Ces candidatures sont toujours en attente :'),
+        block.list(applications.map((a) =>
+          `${esc(a.name)}${a.city ? `, ${esc(a.city)}` : ''} (reçue le ${frenchDay(a.createdAt)})`)),
+        block.button('Répondre aux candidatures', `${APP_URL}/fr/dashboard/admin/ambassadeurs/recrutement`),
+      ],
+    }),
   });
 }
 
-// ─── Commercial Pros — signed contract copy (commercial + admin) ────────────
-
-export async function sendSignedCommercialContractCopy(opts: {
-  to: string;
-  firstName: string;
-  contractTitle: string;
-  signedAt: string;
-  contentHash: string;
-  downloadUrl: string;
+export async function sendAmbassadorPayoutAdmin(opts: {
+  to: string[];
+  ambassadorName: string;
+  amountCents: number;
+  status: 'paid' | 'failed';
 }): Promise<void> {
-  if (!resend) return;
-  const { to, firstName, contractTitle, signedAt, contentHash, downloadUrl } = opts;
-  const shortHash = contentHash.slice(0, 16);
+  const { to, ambassadorName, amountCents, status } = opts;
+  if (to.length === 0) return;
+  const amount = money(amountCents);
+  const paid = status === 'paid';
 
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
-    subject: `Contrat signé · ${contractTitle}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros · Contrat signé</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Signé électroniquement</div>
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">Bonjour ${firstName}, votre contrat est signé ✓</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">${contractTitle}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow('Signé le', new Date(signedAt).toLocaleString('fr-FR'))}
-        ${infoRow('Empreinte SHA-256', `<span style="font-family:monospace">${shortHash}…</span>`)}
-      </table>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p style="margin:0"><a href="${downloadUrl}" class="outline-btn" style="display:inline-block;padding:11px 20px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:700;border:1px solid #e5e7eb">Télécharger / imprimer →</a></p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">Conservez cet email comme preuve. Le contenu intégral du contrat reste consultable et téléchargeable depuis votre espace commercial. Toute modification ultérieure est techniquement impossible (immutabilité garantie en base).</p>
-    </td></tr>`),
-  });
-}
-
-// ─── Commercial Pros — application confirmation (candidate side) ─────────────
-
-const LEGAL_FORM_LABELS: Record<string, string> = {
-  sarl: 'SARL',
-  sas: 'SAS',
-  sasu: 'SASU',
-  ei: 'Entreprise individuelle',
-  auto_entrepreneur: 'Auto-entrepreneur',
-  eurl: 'EURL',
-  sa: 'SA',
-  autre: 'Autre',
-};
-
-const VRP_STATUS_LABELS: Record<string, string> = {
-  vrp_exclusif: 'VRP exclusif',
-  vrp_multicarte: 'VRP multicarte',
-  agent_commercial: 'Agent commercial',
-  independant: 'Commercial indépendant',
-  autre: 'Autre',
-};
-
-export async function sendCommercialApplicationConfirmation(opts: {
-  to: string;
-  firstName: string;
-}): Promise<void> {
-  if (!resend) return;
-  const { to, firstName } = opts;
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `Candidature commerciale reçue · Digitip Partenaires`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme Commerciaux Pros</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Dossier reçu</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">Bonjour ${firstName},</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.65">On a bien reçu votre candidature au programme partenaire Digitip. On l'étudie et on revient vers vous sous 48 h ouvrées pour, le cas échéant, la signature du contrat d'apporteur d'affaires et l'activation de votre code commercial.</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">Une question urgente ? Répondez directement à cet e-mail, il arrive chez nous.</p>
-    </td></tr>`),
+    subject: paid
+      ? `Virement ambassadeur effectué : ${ambassadorName}, ${amount}`
+      : `Virement ambassadeur ÉCHOUÉ : ${ambassadorName}, ${amount}`,
+    html: layout({
+      lang: 'fr',
+      preheader: paid ? 'Versé sur son compte Stripe.' : 'À reprendre depuis l’admin.',
+      footer: adminFooter,
+      body: [
+        block.title(paid ? `${esc(ambassadorName)} a retiré ${amount}` : `Le virement de ${esc(ambassadorName)} a échoué`),
+        block.p(paid
+          ? 'Le montant est versé sur son compte Stripe. Il ne comprend que la commission de base et les bonus validés.'
+          : `La demande de ${amount} n’a pas abouti. Le solde n’a pas été débité : reprends le virement depuis l’admin.`),
+      ],
+    }),
   });
 }
 
@@ -699,401 +753,149 @@ export async function sendCommercialApplicationAdmin(opts: {
     to, firstName, lastName, email, phone, city, sector,
     companyName, legalForm, vatNumber, siret, vrpStatus, notes,
   } = opts;
-  if (!resend || to.length === 0) return;
+  if (to.length === 0) return;
+  const name = `${firstName} ${lastName}`;
 
-  const legalLabel = LEGAL_FORM_LABELS[legalForm] ?? legalForm;
-  const vrpLabel = VRP_STATUS_LABELS[vrpStatus] ?? vrpStatus;
-
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
     replyTo: email,
-    subject: `Nouvelle candidature COMMERCIAL PRO · ${firstName} ${lastName} (${companyName})`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Nouvelle candidature Commerciaux Pros</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-primary" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${firstName} ${lastName}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${companyName} · ${city}${sector ? ` · ${sector}` : ''}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow('Email', `<a href="mailto:${email}" style="color:#E57A97;text-decoration:none">${email}</a>`)}
-        ${infoRow('Téléphone', phone)}
-        ${infoRow('Statut commercial', vrpLabel)}
-        ${infoRow('Forme juridique', legalLabel)}
-        ${infoRow('SIRET', `<span style="font-family:monospace">${siret}</span>`)}
-        ${infoRow('N° TVA', vatNumber
-          ? `<span style="font-family:monospace">${vatNumber}</span>`
-          : '<span style="color:#9ca3af">Non renseigné, franchise probable</span>')}
-        ${sector ? infoRow('Secteur géographique', sector) : ''}
-        ${notes ? infoRow('Notes', notes) : ''}
-      </table>
-    </td></tr>`),
+    subject: `Candidature commercial pro : ${name} (${companyName})`,
+    html: layout({
+      lang: 'fr',
+      preheader: `${companyName}, ${city}`,
+      footer: adminFooter,
+      body: [
+        block.title(`Candidature commercial pro de ${esc(name)}`),
+        block.details([
+          ['Société', esc(companyName)],
+          ['E-mail', esc(email)],
+          ['Téléphone', esc(phone)],
+          ['Ville', esc(city)],
+          sector ? ['Secteur', esc(sector)] : null,
+          ['Statut', esc(VRP_STATUS_LABELS[vrpStatus] ?? vrpStatus)],
+          ['Forme juridique', esc(LEGAL_FORM_LABELS[legalForm] ?? legalForm)],
+          ['SIRET', block.mono(esc(siret))],
+          ['TVA', vatNumber ? block.mono(esc(vatNumber)) : 'non renseignée (franchise probable)'],
+          notes ? ['Notes', esc(notes)] : null,
+        ]),
+        block.small('Répondre à cet e-mail écrit directement au candidat.'),
+      ],
+    }),
   });
 }
 
-// ─── Ambassador banking — setup confirmation ──────────────────────────────────
+const LEGAL_FORM_LABELS: Record<string, string> = {
+  sarl: 'SARL', sas: 'SAS', sasu: 'SASU', ei: 'Entreprise individuelle',
+  auto_entrepreneur: 'Auto-entrepreneur', eurl: 'EURL', sa: 'SA', autre: 'Autre',
+};
 
-export async function sendAmbassadorBankingConfirmation(opts: {
+const VRP_STATUS_LABELS: Record<string, string> = {
+  vrp_exclusif: 'VRP exclusif', vrp_multicarte: 'VRP multicarte',
+  agent_commercial: 'Agent commercial', independant: 'Commercial indépendant', autre: 'Autre',
+};
+
+// ═══ Ambassadors (French, "tu", as everywhere in the programme) ═══════════════
+
+const euros = (cents: number) => `${Math.round(cents / 100)} €`;
+const SOLO = euros(COMMISSION_BY_PACK.solo);
+const DUO = euros(COMMISSION_BY_PACK.duo);
+
+export async function sendAmbassadorApplicationConfirmation(opts: {
   to: string;
   firstName: string;
 }): Promise<void> {
-  if (!resend) return;
-
-  const { to, firstName } = opts;
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `Compte bancaire configuré · Digitip Ambassadeur`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme ambassadeur</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Compte configuré</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">Tout est prêt, ${firstName} !</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">Ton compte bancaire est bien enregistré chez Stripe. Tes commissions seront virées sur cet IBAN.</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">On lance les virements à la main, après validation, et tu reçois un e-mail à chaque paiement.</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions ? Réponds à cet email ou écris à contact@digitip.app.</p>
-    </td></tr>`),
+  await deliverQuietly({
+    to: opts.to,
+    subject: 'On a bien reçu ta candidature ambassadeur',
+    html: layout({
+      lang: 'fr',
+      preheader: 'Réponse sous 2 jours ouvrés.',
+      body: [
+        block.p(helloTu(opts.firstName)),
+        block.p('Merci pour ta candidature au programme ambassadeur Digitip. On la lit et on te répond par e-mail sous 2 jours ouvrés.'),
+        block.p(`Pour être payé, il te faudra un SIRET. Si tu n’en as pas encore, la micro-entreprise se crée en ligne gratuitement sur ${block.link('autoentrepreneur.urssaf.fr', 'https://autoentrepreneur.urssaf.fr')}.`),
+        block.small('Une question ? Réponds simplement à cet e-mail.'),
+      ],
+    }),
   });
 }
 
-// ─── Admin — ambassador payout (withdrawal) notification ─────────────────────
-
-export async function sendAmbassadorPayoutAdmin(opts: {
-  to: string[];
-  ambassadorName: string;
-  amountCents: number;
-  status: 'paid' | 'failed';
-}): Promise<void> {
-  const { to, ambassadorName, amountCents, status } = opts;
-  if (!resend || to.length === 0) return;
-
-  const amount = (amountCents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 });
-  const paid = status === 'paid';
-  const badge = paid
-    ? '<div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Virement effectué</div>'
-    : '<div style="display:inline-block;background:#ef444422;color:#ef4444;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Virement échoué, à reprendre</div>';
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `Virement ambassadeur · ${ambassadorName} (${amount} €)`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Demande de virement ambassadeur</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      ${badge}
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${ambassadorName}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">a déclenché un virement de <strong>${amount} €</strong>.</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow('Montant', `<strong>${amount} €</strong>`)}
-        ${infoRow('Statut', paid ? 'Versé sur le compte Stripe de l\'ambassadeur' : 'Échec, à reprendre depuis le dashboard admin')}
-      </table>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Le solde ne contient que la commission de base et les bonus que tu as validés.</p>
-    </td></tr>`),
-  });
-}
-
-// ─── Admin — new SmartTag order alert ─────────────────────────────────────────
-
-export async function sendAdminNewOrder(opts: {
-  to: string[];
-  customerName: string;
-  customerEmail?: string | null;
-  pack: string;
-  quantity: number;
-  orderId: string;
-  promoCode?: string | null;
-  locale: string;
-}): Promise<void> {
-  if (!resend) throw new Error('RESEND_API_KEY is not set');
-  if (opts.to.length === 0) throw new Error('no admin recipient');
-
-  const { to, customerName, customerEmail, pack, quantity, orderId, promoCode, locale } = opts;
-  const shortRef = orderId.slice(0, 8).toUpperCase();
-  const label = packLabel(pack, locale);
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    ...(customerEmail ? { replyTo: customerEmail } : {}),
-    subject: `Nouvelle commande · ${label} · ${customerName}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip Admin</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Nouvelle commande SmartTag</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${customerName}</div>
-      ${customerEmail ? `<div class="text-secondary" style="font-size:14px;color:#5a5a6a">${customerEmail}</div>` : ''}
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow('Pack', label)}
-        ${infoRow('Quantité', String(quantity))}
-        ${infoRow('Référence', `<span style="font-family:monospace">${shortRef}</span>`)}
-        ${promoCode ? infoRow('Code promo', promoCode) : ''}
-      </table>
-    </td></tr>`),
-  });
-  if (error) throw new Error(`Admin order alert not sent: ${error.message}`);
-}
-
-// ─── Order delivered ──────────────────────────────────────────────────────────
-
-export async function sendOrderDelivered(opts: {
+export async function sendReferralWelcomeToCandidate(opts: {
   to: string;
-  pack: string;
-  quantity: number;
-  orderId: string;
-  dashboardUrl?: string;
-  locale?: string;
+  firstName: string;
+  parrainName: string;
 }): Promise<void> {
-  if (!resend) return;
-
-  const { to, pack, quantity, orderId, dashboardUrl, locale = 'fr' } = opts;
-  const isFr = locale === 'fr';
-  const shortRef = orderId.slice(0, 8).toUpperCase();
-  const label = packLabel(pack, locale);
-
-  const subject = isFr
-    ? `Vos plaques Digitip sont arrivées`
-    : `Your Digitip plaques have arrived`;
-
-  const headline = isFr ? 'Livraison confirmée' : 'Delivery confirmed';
-  const subline = isFr
-    ? 'Le colis est livré. Il ne reste qu\'à poser les plaques.'
-    : "The parcel has been delivered. All that's left is to put the plaques up.";
-  const ctaLabel = isFr ? 'Aller au tableau de bord' : 'Go to the dashboard';
-  const step1 = isFr
-    ? 'Posez une plaque sur le comptoir ou sur une table, là où le client la voit.'
-    : 'Put a plaque on the counter or a table, where customers can see it.';
-  const step2 = isFr
-    ? 'Le client approche son téléphone, et le pourboire passe en quelques secondes.'
-    : 'Customers hold up their phone and the tip goes through in seconds.';
-  const step3 = isFr
-    ? 'Vous voyez chaque pourboire arriver dans votre tableau de bord.'
-    : 'You see every tip arrive in your dashboard.';
-  const nextTitle = isFr ? 'Pour démarrer' : 'Getting started';
-  const footer = isFr
-    ? 'Une question ? Répondez à cet e-mail, ou écrivez à contact@digitip.app.'
-    : 'Questions? Reply to this email or write to contact@digitip.app.';
-
-  const ctaSection = dashboardUrl
-    ? `<tr><td style="padding:0 32px 24px">
-        <a href="${dashboardUrl}" class="neutral-btn" style="display:inline-block;padding:11px 22px;background:#0f0f12;color:#ffffff;font-size:13px;font-weight:600;border-radius:8px;text-decoration:none">
-          ${ctaLabel} →
-        </a>
-      </td></tr>`
-    : '';
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${headline}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${isFr ? 'Livré' : 'Delivered'}</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:6px">${headline}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${subline}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 24px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow(isFr ? 'Pack livré' : 'Delivered pack', label)}
-        ${infoRow(isFr ? 'Quantité' : 'Quantity', String(quantity))}
-        ${infoRow(isFr ? 'Référence' : 'Reference', `<span style="font-family:monospace">${shortRef}</span>`)}
-      </table>
-    </td></tr>
-    ${ctaSection}
-    <tr><td style="padding:0 32px 28px">
-      <div class="text-strong" style="font-size:13px;font-weight:600;color:#0f0f12;margin-bottom:12px">${nextTitle}</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.7">
-        <div style="margin-bottom:6px">1. ${step1}</div>
-        <div style="margin-bottom:6px">2. ${step2}</div>
-        <div>3. ${step3}</div>
-      </div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${footer}</p>
-    </td></tr>`),
+  const parrain = esc(opts.parrainName);
+  await deliverQuietly({
+    to: opts.to,
+    subject: 'On a bien reçu ta candidature ambassadeur',
+    html: layout({
+      lang: 'fr',
+      preheader: `Recommandé par ${opts.parrainName}. Réponse sous 2 jours ouvrés.`,
+      body: [
+        block.p(helloTu(opts.firstName)),
+        block.p(`Merci pour ta candidature au programme ambassadeur Digitip, sur la recommandation de ${block.strong(parrain)}. On la lit et on te répond par e-mail sous 2 jours ouvrés.`),
+        block.p(`Pour être payé, il te faudra un SIRET. Si tu n’en as pas encore, la micro-entreprise se crée en ligne gratuitement sur ${block.link('autoentrepreneur.urssaf.fr', 'https://autoentrepreneur.urssaf.fr')}.`),
+        block.small('Une question ? Réponds simplement à cet e-mail.'),
+      ],
+    }),
   });
 }
 
-// ─── Order canceled ───────────────────────────────────────────────────────────
-
-export async function sendOrderCanceled(opts: {
+/** An ambassador invites someone they know, from their dashboard. */
+export async function sendReferralEmailFromAmbassador(opts: {
   to: string;
-  pack: string;
-  quantity: number;
-  orderId: string;
-  reason?: string | null;
-  locale?: string;
+  parrainName: string;
+  referralCode: string;
 }): Promise<void> {
-  if (!resend) return;
-
-  const { to, pack, quantity, orderId, reason, locale = 'fr' } = opts;
-  const isFr = locale === 'fr';
-  const shortRef = orderId.slice(0, 8).toUpperCase();
-  const label = packLabel(pack, locale);
-
-  const subject = isFr
-    ? `Votre commande Digitip est annulée`
-    : `Your Digitip order has been canceled · ${label}`;
-  const headline = isFr ? 'Commande annulée' : 'Order canceled';
-  const subline = isFr
-    ? 'On vous rembourse la totalité, sur le moyen de paiement utilisé. Comptez 5 à 10 jours ouvrés.'
-    : 'The amount paid will be fully refunded to your original payment method within 5–10 business days.';
-  const reasonLabel = isFr ? 'Motif' : 'Reason';
-  const orderLabel = isFr ? 'Pack' : 'Pack';
-  const qtyLabel = isFr ? 'Quantité' : 'Quantity';
-  const refLabel = isFr ? 'Référence' : 'Reference';
-  const footer = isFr
-    ? 'Si c\'est une erreur, répondez à cet e-mail et on regarde tout de suite.'
-    : 'Made a mistake? Reply to this email, we’ll take a look.';
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${headline}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${headline}</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:6px">${headline}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">${subline}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow(orderLabel, label)}
-        ${infoRow(qtyLabel, String(quantity))}
-        ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
-        ${reason ? infoRow(reasonLabel, escapeHtml(reason)) : ''}
-      </table>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${footer}</p>
-    </td></tr>`),
+  const parrain = esc(opts.parrainName);
+  const link = `${APP_URL}/devenir-ambassadeur?ref=${encodeURIComponent(opts.referralCode)}`;
+  await deliverQuietly({
+    from: FROM_AMBASSADOR,
+    to: opts.to,
+    subject: `${opts.parrainName} t’invite à devenir ambassadeur Digitip`,
+    html: layout({
+      lang: 'fr',
+      preheader: `${SOLO} à ${DUO} par commerce équipé.`,
+      footer: `Tu reçois cet e-mail parce que ${parrain} a saisi ton adresse pour t’inviter. On ne t’écrira pas d’autre fois à ce sujet. Digitip · YUZU LABS SAS · contact@digitip.app`,
+      body: [
+        block.p('Salut,'),
+        block.p(`${block.strong(parrain)} est ambassadeur Digitip et pense que ça pourrait te plaire.`),
+        block.p(`Le principe : tu présentes nos plaques de pourboire par carte aux restaurants, cafés et salons autour de toi. Pour chaque commerce qui s’équipe avec ton code, tu touches ${block.strong(SOLO)} (pack Solo) ou ${block.strong(DUO)} (pack Duo). Pas de stock, rien à avancer, pas d’engagement. Il faut juste un SIRET pour être payé.`),
+        block.button('Découvrir le programme', link),
+      ],
+    }),
   });
 }
 
-// ─── Custom order note (admin → customer — free-form) ──────────────────────────
+export async function sendReferralValidatedToParrain(
+  service: SupabaseClient<Database>,
+  parrainId: string,
+  filleulName: string,
+  amountCents: number,
+): Promise<void> {
+  const { data: parrain } = await service
+    .from('ambassadors')
+    .select('email, name')
+    .eq('id', parrainId)
+    .maybeSingle();
+  if (!parrain?.email) return;
+  const amount = euros(amountCents);
 
-export async function sendOrderCustomNote(opts: {
-  to: string;
-  orderId: string;
-  subject: string;
-  bodyText: string;
-  locale?: string;
-  attachments?: { filename: string; content: Buffer }[];
-}): Promise<void> {
-  if (!resend) return;
-
-  const { to, orderId, subject, bodyText, locale = 'fr', attachments = [] } = opts;
-  const isFr = locale === 'fr';
-  const shortRef = orderId.slice(0, 8).toUpperCase();
-  const refLabel = isFr ? 'Référence commande' : 'Order reference';
-  const signature = isFr
-    ? 'L’équipe Digitip · contact@digitip.app'
-    : 'The Digitip team · contact@digitip.app';
-
-  const safeBody = escapeHtml(bodyText).replace(/\n/g, '<br>');
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${escapeHtml(subject)}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-body" style="font-size:14px;color:#3f3f4a;line-height:1.7">${safeBody}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 18px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow(refLabel, `<span style="font-family:monospace">${shortRef}</span>`)}
-      </table>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${signature}</p>
-    </td></tr>`),
-    ...(attachments.length ? { attachments } : {}),
+  await deliverQuietly({
+    to: parrain.email,
+    subject: `Parrainage validé : ${amount} de plus sur ton solde`,
+    html: layout({
+      lang: 'fr',
+      preheader: `${filleulName} a fait sa ${REFERRAL_VALIDATION_MIN_SALES}e vente.`,
+      body: [
+        block.p(helloTu((parrain.name ?? '').split(' ')[0])),
+        block.p(`${block.strong(esc(filleulName))}, que tu as parrainé, vient de faire sa ${REFERRAL_VALIDATION_MIN_SALES}e vente. Ton bonus de ${block.strong(amount)} est crédité sur ton solde : tu peux le retirer avec ta prochaine demande de virement.`),
+        block.p(`Pour la suite : ${euros(REFERRAL_REWARDS.milestone_5)} de plus quand 5 de tes filleuls sont validés, et ${euros(REFERRAL_REWARDS.milestone_10)} à 10.`),
+      ],
+    }),
   });
 }
-
-/** La Poste / Colissimo numbers are printed with spaces; the tracker wants them bare. */
-export function normalizeTrackingNumber(raw: string | null | undefined): string | null {
-  const n = (raw ?? '').replace(/[\s-]+/g, '').toUpperCase();
-  return n || null;
-}
-
-export function laPosteTrackingUrl(trackingNumber: string): string {
-  return `https://www.laposte.fr/outils/suivre-vos-envois?code=${encodeURIComponent(trackingNumber)}`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-// ─── Ambassador — templated email sent by super admin ─────────────────────────
-// `bodyHtml` is the rendered HTML body (placeholders already substituted by
-// the caller via renderTemplate). It is wrapped in the Digitip themed layout.
-
-export async function sendAmbassadorTemplatedEmail(opts: {
-  to: string;
-  subject: string;
-  bodyHtml: string;
-  replyTo?: string;
-}): Promise<{ id: string | null }> {
-  if (!resend) return { id: null };
-  const { to, subject, bodyHtml, replyTo } = opts;
-
-  const html = themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme ambassadeur</div>
-    </td></tr>
-    <tr><td class="text-body" style="padding:28px 32px 16px;color:#3f3f4a;font-size:14px;line-height:1.6">
-      ${bodyHtml}
-    </td></tr>`);
-
-  const result = await resend.emails.send({
-    from: FROM,
-    to,
-    subject,
-    html,
-    ...(replyTo ? { replyTo } : {}),
-  });
-  return { id: result.data?.id ?? null };
-}
-
-// ─── Ambassador — contract invitation (admin → ambassador) ────────────────────
 
 export async function sendAmbassadorContractInvitation(opts: {
   to: string;
@@ -1101,30 +903,22 @@ export async function sendAmbassadorContractInvitation(opts: {
   contractTitle: string;
   dashboardUrl: string;
 }): Promise<void> {
-  if (!resend) return;
   const { to, firstName, contractTitle, dashboardUrl } = opts;
-
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
-    subject: `Contrat à signer · ${contractTitle}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Contrat ambassadeur</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">${firstName}, un contrat t'attend</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Tu peux le lire et le signer en ligne, depuis ton espace protégé par ton code PIN. Rien à imprimer.</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p><a href="${dashboardUrl}" style="display:inline-block;padding:12px 22px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Lire &amp; signer le contrat →</a></p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">Pour ta protection, la signature s'effectue après lecture intégrale et acceptation explicite. Une copie te sera envoyée par email après signature.</p>
-    </td></tr>`),
+    subject: `Ton contrat à signer : ${contractTitle}`,
+    html: layout({
+      lang: 'fr',
+      preheader: 'À lire et signer en ligne, depuis ton espace.',
+      body: [
+        block.p(helloTu(firstName)),
+        block.p(`Ton contrat ${block.strong(esc(contractTitle))} est prêt. Tu le lis et tu le signes en ligne, depuis ton espace ambassadeur (ton code PIN te sera demandé). Rien à imprimer.`),
+        block.button('Lire et signer', dashboardUrl),
+        block.small('Après la signature, tu reçois une copie par e-mail.'),
+      ],
+    }),
   });
 }
-
-// ─── Ambassador — signed contract copy (both parties) ─────────────────────────
 
 export async function sendSignedContractCopy(opts: {
   to: string;
@@ -1134,180 +928,137 @@ export async function sendSignedContractCopy(opts: {
   contentHash: string;
   downloadUrl: string;
 }): Promise<void> {
-  if (!resend) return;
   const { to, firstName, contractTitle, signedAt, contentHash, downloadUrl } = opts;
-  const shortHash = contentHash.slice(0, 16);
-
-  await resend.emails.send({
-    from: FROM,
+  await deliverQuietly({
     to,
-    subject: `Contrat signé · ${contractTitle}`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Contrat signé</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Signé</div>
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:8px">${firstName}, ton contrat est signé ✓</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">${contractTitle}</div>
-    </td></tr>
-    <tr><td style="padding:0 32px 28px">
-      <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow('Signé le', new Date(signedAt).toLocaleString('fr-FR'))}
-        ${infoRow('Empreinte SHA-256', `<span style="font-family:monospace">${shortHash}…</span>`)}
-      </table>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p><a href="${downloadUrl}" class="outline-btn" style="display:inline-block;padding:10px 18px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #e5e7eb">Télécharger / imprimer →</a></p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:18px 0 0;line-height:1.6">Garde cet e-mail comme preuve. Le contenu intégral du contrat reste accessible depuis ton dashboard et ne peut plus être modifié.</p>
-    </td></tr>`),
+    subject: `Contrat signé : ${contractTitle}`,
+    html: layout({
+      lang: 'fr',
+      preheader: 'Ta copie du contrat signé.',
+      body: [
+        block.p(helloTu(firstName)),
+        block.p(`Ton contrat ${block.strong(esc(contractTitle))} est signé. Garde cet e-mail : il prouve la signature et la version du texte.`),
+        block.details([
+          ['Signé le', signedLabel(signedAt)],
+          ['Empreinte du texte (SHA-256)', block.mono(`${contentHash.slice(0, 16)}…`)],
+        ]),
+        block.button('Télécharger le contrat', downloadUrl),
+        block.small('Le texte signé ne peut plus être modifié. Il reste consultable depuis ton espace.'),
+      ],
+    }),
   });
 }
 
-// ─── Ambassador application — reminder cron ──────────────────────────────────
+/**
+ * A template the admin writes and sends from the dashboard. `bodyHtml` is
+ * already rendered (placeholders substituted, values escaped).
+ */
+export async function sendAmbassadorTemplatedEmail(opts: {
+  to: string;
+  subject: string;
+  bodyHtml: string;
+  replyTo?: string;
+}): Promise<{ id: string | null }> {
+  if (!resend) return { id: null };
+  return deliver({
+    to: opts.to,
+    subject: opts.subject,
+    ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+    html: layout({
+      lang: 'fr',
+      preheader: opts.subject,
+      body: [`<div class="t2" style="font-size:15px;line-height:1.6;color:${C.t2}">${opts.bodyHtml}</div>`],
+    }),
+  });
+}
 
-export async function sendAmbassadorApplicationReminder(opts: {
+// ═══ Commercial pros (French, "vous") ═════════════════════════════════════════
+
+export async function sendCommercialApplicationConfirmation(opts: {
   to: string;
   firstName: string;
-  step: 1 | 2;
 }): Promise<void> {
-  if (!resend) return;
-  const { to, firstName, step } = opts;
-  const subject = step === 1
-    ? `${firstName}, ta candidature ambassadeur Digitip nous attend`
-    : `Dernière relance, ta candidature ambassadeur expire bientôt`;
-  const headline = step === 1
-    ? `On a vu ta candidature, ${firstName}`
-    : `Dernière chance, ${firstName}`;
-  const body = step === 1
-    ? `Ton dossier est en cours d'examen. Pour accélérer, assure-toi que ton SIRET et ton RIB sont à jour. Tu n'as pas encore de SIRET ? <a href="https://autoentrepreneur.urssaf.fr" style="color:#E57A97">Crée-le gratuitement ici</a> (10 min, c'est instantané).`
-    : `Si on n'a pas de nouvelles d'ici quelques jours, on archivera ta candidature. Si ça t'intéresse toujours, réponds à cet e-mail : quelqu'un te rappelle dans la journée.`;
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Programme ambassadeur</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-primary" style="font-size:24px;font-weight:800;color:#0f0f12;margin-bottom:10px">${headline}</div>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">${body}</p>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0">Une question ? Réponds simplement à ce mail.</p>
-    </td></tr>`),
+  await deliverQuietly({
+    to: opts.to,
+    subject: 'Votre candidature au programme partenaire Digitip',
+    html: layout({
+      lang: 'fr',
+      preheader: 'Réponse sous 48 heures ouvrées.',
+      body: [
+        block.p(hello('fr', opts.firstName)),
+        block.p('Merci pour votre candidature au programme partenaire Digitip. Nous l’étudions et vous répondons sous 48 heures ouvrées.'),
+        block.p('Si elle est retenue, vous recevrez votre contrat d’apporteur d’affaires à signer en ligne, puis votre code commercial et l’accès à votre tableau de bord.'),
+        block.small(replyHint('fr')),
+      ],
+    }),
   });
 }
 
-// ─── Referral — welcome to candidate who signed up via parrain ──────────────
-
-export async function sendReferralWelcomeToCandidate(opts: {
+export async function sendCommercialContractInvitation(opts: {
   to: string;
   firstName: string;
-  parrainName: string;
+  contractTitle: string;
+  dashboardUrl: string;
 }): Promise<void> {
-  if (!resend) return;
-  const { to, firstName, parrainName } = opts;
-  await resend.emails.send({
-    from: FROM,
+  const { to, firstName, contractTitle, dashboardUrl } = opts;
+  await deliverQuietly({
     to,
-    subject: `${parrainName} t'a recommandé(e) · Bienvenue chez Digitip`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Recommandé par ${parrainName}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#22c55e22;color:#22c55e;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Candidature reçue</div>
-      <div class="text-primary" style="font-size:24px;font-weight:800;color:#0f0f12;margin-bottom:10px">Salut ${firstName} !</div>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">Ta candidature au programme ambassadeur Digitip vient d'arriver via la recommandation de <strong class="text-strong" style="color:#0f0f12">${parrainName}</strong>. On l'examine et on revient vers toi rapidement.</p>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">Pas de SIRET ? C'est gratuit et instantané : <a href="https://autoentrepreneur.urssaf.fr" style="color:#E57A97">autoentrepreneur.urssaf.fr</a></p>
-    </td></tr>`),
+    subject: `Votre contrat d’apporteur d’affaires à signer : ${contractTitle}`,
+    html: layout({
+      lang: 'fr',
+      preheader: 'À lire et signer en ligne, depuis votre espace.',
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p(`Votre contrat ${block.strong(esc(contractTitle))} est prêt. Vous pouvez le lire en entier et le signer en ligne, depuis votre espace commercial (votre code PIN vous sera demandé). Rien à imprimer ni à renvoyer.`),
+        block.button('Lire et signer le contrat', dashboardUrl),
+        block.small('La signature électronique vous engage comme une signature sur papier (article 1367 du Code civil). Vous recevrez une copie horodatée du contrat signé par e-mail.'),
+      ],
+    }),
   });
 }
 
-// ─── Referral — ambassador emails a buddy from their dashboard ───────────────
-
-export async function sendReferralEmailFromAmbassador(opts: {
+export async function sendSignedCommercialContractCopy(opts: {
   to: string;
-  parrainName: string;
-  referralCode: string;
+  firstName: string;
+  contractTitle: string;
+  signedAt: string;
+  contentHash: string;
+  downloadUrl: string;
 }): Promise<void> {
-  if (!resend) return;
-  const { to, parrainName, referralCode } = opts;
-  const link = `${APP_URL}/devenir-ambassadeur?ref=${encodeURIComponent(referralCode)}`;
-  await resend.emails.send({
-    from: FROM_AMBASSADOR,
+  const { to, firstName, contractTitle, signedAt, contentHash, downloadUrl } = opts;
+  await deliverQuietly({
     to,
-    subject: `${parrainName} t'invite à devenir ambassadeur Digitip`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Invitation perso</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div class="text-primary" style="font-size:24px;font-weight:800;color:#0f0f12;margin-bottom:10px">${parrainName} pense à toi</div>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0 0 16px">${parrainName} fait partie du programme ambassadeur Digitip : proposer nos plaques de pourboire aux restos et commerces, pour 35 à 45 € par vente. ${parrainName} pense que ça pourrait te plaire.</p>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">Pas d'engagement, pas de stock à avancer, juste un SIRET (auto-entrepreneur) et l'envie de prospecter.</p>
-    </td></tr>
-    <tr><td style="padding:8px 32px 32px">
-      <p><a href="${link}" style="display:inline-block;padding:12px 22px;background:#E57A97;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">Découvrir le programme →</a></p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0">Tu reçois ce mail parce que ${parrainName} t'a explicitement invité(e). Pour ne pas être recontacté(e), réponds simplement "stop".</p>
-    </td></tr>`),
+    subject: `Contrat signé : ${contractTitle}`,
+    html: layout({
+      lang: 'fr',
+      preheader: 'Votre copie du contrat signé.',
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p(`Votre contrat ${block.strong(esc(contractTitle))} est signé. Conservez cet e-mail : il prouve la signature et la version du texte.`),
+        block.details([
+          ['Signé le', signedLabel(signedAt)],
+          ['Empreinte du texte (SHA-256)', block.mono(`${contentHash.slice(0, 16)}…`)],
+        ]),
+        block.button('Télécharger le contrat', downloadUrl),
+        block.small('Le texte signé ne peut plus être modifié. Il reste consultable depuis votre espace commercial.'),
+      ],
+    }),
   });
 }
 
-// ─── Referral — validated, notify the parrain ────────────────────────────────
+// ═══ Cold outreach ════════════════════════════════════════════════════════════
+//
+// Written to strangers, so "vous", short, honest about where the address
+// came from, and with the sender's legal identity and a one-click opt-out in
+// every message (LCEN art. 20, RGPD art. 21).
 
-export async function sendReferralValidatedToParrain(
-  service: SupabaseClient<Database>,
-  parrainId: string,
-  filleulName: string,
-  amountCents: number,
-): Promise<void> {
-  if (!resend) return;
-  const { data: parrain } = await service
-    .from('ambassadors')
-    .select('email, name')
-    .eq('id', parrainId)
-    .maybeSingle();
-  if (!parrain?.email) return;
+const SENDER_IDENTITY = 'YUZU LABS SAS (Digitip) · SIREN 994&nbsp;879&nbsp;013 · 11 rue de Lorraine, 68490 Petit-Landau · privacy@digitip.app';
 
-  const euros = (amountCents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 0 });
-  await resend.emails.send({
-    from: FROM,
-    to: parrain.email,
-    subject: `Parrainage validé : +${euros}€ pour toi`,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Parrainage validé</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 20px">
-      <div style="font-size:28px;font-weight:800;color:#22c55e;margin-bottom:10px">+${euros}€</div>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">Ton filleul <strong class="text-strong" style="color:#0f0f12">${filleulName}</strong> vient de réaliser sa 2ᵉ vente. Ton bonus de parrainage est crédité sur ton solde et payable lors de ta prochaine demande de virement.</p>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.7">Continue d'inviter des amis : à 5 filleuls validés, tu touches 100 € de plus, et 250 € à 10.</p>
-    </td></tr>`),
-  });
+function coldFooter(unsubscribeUrl: string): string {
+  return `Vous recevez ce message à titre professionnel : votre entreprise figure dans le répertoire public SIRENE de l’INSEE. Base légale : notre intérêt légitime (RGPD, art. 6.1.f). ${block.link('Ne plus recevoir de message', unsubscribeUrl)}, en un clic.<br>${SENDER_IDENTITY}`;
 }
 
-// ─── Cold email B2B sequence ────────────────────────────────────────────────
-
-function coldEmailFooter(unsubscribeUrl: string): string {
-  return `<tr><td class="divider-strong text-muted" style="padding:24px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
-    Vous recevez cet email car votre SIRET figure dans la base publique SIRENE de l'INSEE avec un code NAF compatible avec une activité commerciale. Conformément au RGPD et à notre intérêt légitime de recrutement B2B, vous pouvez vous opposer à tout traitement futur :
-    <a href="${unsubscribeUrl}" style="color:#E57A97">se désinscrire</a> · Digitip · privacy@digitip.app
-  </td></tr>`;
-}
-
+/** Ambassador recruitment, three steps at least four days apart (lib/cold-email/dispatch.ts). */
 export async function sendColdEmailStep(opts: {
   to: string;
   firstName: string | null;
@@ -1318,67 +1069,72 @@ export async function sendColdEmailStep(opts: {
 }): Promise<{ ok: boolean; id?: string }> {
   if (!resend) return { ok: false };
   const { to, firstName, city, step, unsubscribeUrl, landingUrl } = opts;
-  const greet = firstName ? `Salut ${firstName}` : 'Salut';
-  const cityFragment = city ? ` à ${city}` : '';
+  const where = city ? ` à ${esc(city)}` : '';
+  const sign = block.p('Raphaël Meyer<br>Fondateur de Digitip');
 
-  const variants: Record<1 | 2 | 3, { subject: string; body: string }> = {
+  const steps: Record<1 | 2 | 3, { subject: string; preheader: string; body: Block[] }> = {
     1: {
-      subject: `${firstName ? firstName + ', ' : ''}une idée pour ton activité`,
-      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">J'ai trouvé ton SIRET dans la base SIRENE, avec une activité commerciale${cityFragment}. On lance un programme d'ambassadeurs chez Digitip : tu proposes nos plaques de pourboire sans contact aux restos et commerces du coin, et tu touches <strong class="text-strong" style="color:#0f0f12">35 à 45 € par vente</strong>. Pas de stock, rien à avancer.</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si ça t'intéresse, tout est expliqué ici :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Voir le programme →</a></p>`,
+      subject: 'Un complément de revenu en présentant Digitip aux commerces',
+      preheader: `${SOLO} à ${DUO} par commerce équipé, sans stock ni engagement.`,
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p(`Je m’appelle Raphaël, je dirige Digitip. Nous fabriquons une plaque qui permet aux clients d’un restaurant, d’un café ou d’un salon de laisser un pourboire par carte, maintenant que plus personne n’a de monnaie.`),
+        block.p(`Nous cherchons des ambassadeurs${where} pour la présenter aux commerces du quartier. Pour chaque commerce qui s’équipe avec votre code, vous touchez ${block.strong(SOLO)} (pack Solo) ou ${block.strong(DUO)} (pack Duo). Pas de stock, rien à avancer, aucun engagement : votre SIRET suffit.`),
+        block.button('Voir comment ça marche', landingUrl),
+        sign,
+      ],
     },
     2: {
-      subject: `${firstName ? firstName + ', ' : ''}combien ça peut rapporter`,
-      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je reviens vers toi après mon premier mail. Pour te donner un ordre d'idée : à 35 € la vente, <strong class="text-strong" style="color:#0f0f12">10 commerces équipés</strong> dans ton quartier, ça fait 350 €. La plupart se font en un passage, avec la plaque en main.</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si tu veux essayer, le SIRET que tu as déjà suffit :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#E57A97;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Postuler en 2 min →</a></p>`,
+      subject: 'Ce que rapporte le programme ambassadeur Digitip',
+      preheader: 'Un exemple chiffré, et comment se passe une vente.',
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p('Je vous ai écrit il y a quelques jours au sujet du programme ambassadeur Digitip. Un exemple concret :'),
+        block.list([
+          `10 commerces équipés en pack Solo, c’est ${block.strong(euros(COMMISSION_BY_PACK.solo * 10))} de commissions.`,
+          'Une vente, c’est souvent une seule visite : vous montrez la plaque, le commerçant scanne, il voit tout de suite comment ça marche.',
+          'Vous êtes payé par virement depuis votre tableau de bord, dès 30 € de solde.',
+        ]),
+        block.p('La candidature prend deux minutes :'),
+        block.button('Candidater', landingUrl),
+        sign,
+      ],
     },
     3: {
-      subject: `Dernier mail`,
-      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">C'est mon dernier mail, promis. Si ça ne t'intéresse pas, aucun souci : le lien pour te désinscrire est en bas.</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si tu hésites encore, voilà le lien :</p>
-        <p><a href="${landingUrl}" class="outline-btn" style="display:inline-block;padding:10px 18px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #e5e7eb">Découvrir Digitip Ambassadeur</a></p>`,
+      subject: 'Dernier message de ma part',
+      preheader: 'Je ne vous écrirai plus à ce sujet.',
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p('C’est mon dernier message au sujet du programme ambassadeur : je ne vous écrirai plus ensuite. Si le sujet vous intéresse un jour, tout est expliqué ici :'),
+        block.button('Le programme ambassadeur', landingUrl),
+        sign,
+      ],
     },
   };
 
-  const v = variants[step];
-  const result = await resend.emails.send({
-    from: FROM_AMBASSADOR,
-    to,
-    subject: v.subject,
-    html: themedLayout(`
-    <tr><td style="padding:28px 32px 20px">
-      ${v.body}
-    </td></tr>
-    ${coldEmailFooter(unsubscribeUrl)}`),
-  });
-  return { ok: !result.error, id: result.data?.id };
-}
-
-// ─── Commercial Pros cold email B2B sequence (sent via Brevo) ──────────────
-
-function coldEmailFooterCommercial(unsubscribeUrl: string): string {
-  // B2B-tone unsub footer, references intérêt légitime RGPD article 6§1f and
-  // gives the postal address required by Loi Informatique & Libertés. Plain
-  // text styling to match the sobriety of the rest of the commercial mails.
-  return `<tr><td class="divider-strong text-muted" style="padding:24px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
-    Vous recevez ce message à titre professionnel car votre activité figure dans la base publique SIRENE (INSEE) sur un code APE en lien avec une activité de prospection commerciale. Traitement fondé sur notre intérêt légitime de recrutement B2B (art. 6§1 f) du RGPD).
-    <br/>Pour vous opposer à tout traitement futur : <a href="${unsubscribeUrl}" style="color:#E57A97">se désinscrire en un clic</a>.
-    <br/>YUZU LABS · SIREN 994&nbsp;879&nbsp;013 · 11 rue de Lorraine, 68490 Petit-Landau, France · privacy@digitip.app
-  </td></tr>`;
+  const s = steps[step];
+  try {
+    const { id } = await deliver({
+      from: FROM_AMBASSADOR,
+      to,
+      replyTo: FROM_AMBASSADOR,
+      subject: s.subject,
+      headers: {
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+      html: layout({ lang: 'fr', preheader: s.preheader, body: s.body, footer: coldFooter(unsubscribeUrl) }),
+    });
+    return { ok: true, ...(id ? { id } : {}) };
+  } catch {
+    return { ok: false };
+  }
 }
 
 /**
- * Sends a single cold-email step to a commercial pro prospect via Brevo.
- *
- * Brevo is used (not Resend) so the sender reputation of the partner-recruitment
- * domain (partenaires.digitip.app) stays fully isolated from digitip.app
- * transactional traffic. A reputational hit on this channel can never spill
- * over to ambassador / customer / contract emails.
+ * Business-introducer recruitment, sent through Brevo from
+ * partenaires.digitip.app so a reputation hit on cold outreach can never
+ * reach the transactional domain.
  */
 export async function sendCommercialColdEmailStep(opts: {
   to: string;
@@ -1391,78 +1147,71 @@ export async function sendCommercialColdEmailStep(opts: {
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   const { to, firstName, companyName, city, step, unsubscribeUrl, landingUrl } = opts;
   const { brevoSendTransactionalEmail, BREVO_COMMERCIAL_SENDER } = await import('@/lib/brevo/client');
+  const company = companyName ? ` chez ${esc(companyName)}` : '';
+  const where = city ? `, à ${esc(city)}` : '';
+  const sign = block.p('Bien cordialement,<br>Raphaël Meyer<br>Fondateur de Digitip');
 
-  const greet = firstName ? `Bonjour ${firstName}` : 'Bonjour';
-  const companyMention = companyName ? ` (${companyName})` : '';
-  const cityFragment = city ? ` à ${city}` : '';
-
-  const variants: Record<1 | 2 | 3, { subject: string; body: string }> = {
+  const steps: Record<1 | 2 | 3, { subject: string; preheader: string; body: Block[] }> = {
     1: {
-      subject: firstName
-        ? `${firstName}, un partenariat à étudier, apport d'affaires B2B`
-        : `Un partenariat à étudier, apport d'affaires B2B`,
-      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je suis Raphaël Meyer, fondateur de Digitip. On fait une plaque qui permet de laisser un pourboire par carte, pour les commerces de proximité : restaurants, bars, cafés, hôtels, salons, instituts. Votre activité${companyMention}${cityFragment} m'a fait penser que vous pourriez nous présenter à des commerçants, en apporteur d'affaires.</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Tout est cadré : un vrai contrat d'apporteur d'affaires, une facturation entre professionnels, des paiements par Stripe, sans exclusivité ni quota. Côté commerçant, la décision se prend en un ou deux rendez-vous : depuis que plus personne n'a de monnaie, le pourboire se perd, et la plaque règle ça.</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si ça vous intéresse, la candidature prend 2 minutes :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:11px 20px;background:#0f0f12;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Découvrir le programme partenaire →</a></p>
-        <p class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6;margin-top:18px">Cordialement,<br/>Raphaël Meyer · Fondateur Digitip</p>`,
+      subject: 'Apport d’affaires : une offre simple pour vos clients commerçants',
+      preheader: 'Une commission fixe par commerce équipé, sans exclusivité ni quota.',
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p(`Je suis Raphaël Meyer, fondateur de Digitip. Nous fabriquons une plaque qui permet de laisser un pourboire par carte dans les commerces de proximité : restaurants, bars, cafés, hôtels, salons de coiffure et instituts.`),
+        block.p(`Votre activité${company}${where} vous met en contact avec ces commerçants. Je vous propose de nous les présenter, en apporteur d’affaires : une commission fixe par commerce équipé, un contrat en bonne et due forme, une facturation entre professionnels, sans exclusivité ni quota.`),
+        block.p('Pour le commerçant, l’argument est simple : ses clients n’ont plus de monnaie, et le pourboire se perd. La plaque règle ça en quelques minutes d’installation.'),
+        block.button('Découvrir le programme partenaire', landingUrl),
+        sign,
+      ],
     },
     2: {
-      subject: firstName
-        ? `${firstName}, complément d'information sur Digitip`
-        : `Complément d'information sur Digitip`,
-      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Je reviens vers vous après mon premier message, avec quelques précisions :</p>
-        <ul style="font-size:14px;color:#5a5a6a;line-height:1.7;margin:8px 0 14px;padding-left:22px">
-          <li>Une commission fixe par vente, dont je vous envoie le détail si vous me répondez</li>
-          <li>Pas de stock à avancer, rien à investir</li>
-          <li>Paiement par Stripe dès 30&nbsp;€ de solde, avec un contrat signé</li>
-          <li>Votre propre code commercial, et un tableau de bord pour suivre vos ventes</li>
-        </ul>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Pour en parler, répondez simplement à ce mail, ou candidatez en 2 minutes ici :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:11px 20px;background:#0f0f12;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Programme partenaire Digitip →</a></p>
-        <p class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6;margin-top:18px">Cordialement,<br/>Raphaël Meyer · Fondateur Digitip</p>`,
+      subject: 'Programme partenaire Digitip : les conditions',
+      preheader: 'Commission, paiement, contrat : l’essentiel en quatre points.',
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p('Je reviens vers vous avec les conditions du programme partenaire :'),
+        block.list([
+          'une commission fixe par commerce équipé, dont je vous envoie le détail sur simple réponse ;',
+          'aucun stock ni aucun investissement de votre part ;',
+          'un paiement par virement dès 30 € de solde, dans le cadre d’un contrat signé ;',
+          'votre code commercial et un tableau de bord pour suivre chaque vente.',
+        ]),
+        block.p('Pour en parler, répondez à ce message. Pour candidater directement, comptez deux minutes :'),
+        block.button('Candidater', landingUrl),
+        sign,
+      ],
     },
     3: {
-      subject: firstName
-        ? `${firstName}, dernier message`
-        : `Dernier message`,
-      body: `<p class="text-primary" style="font-size:14px;color:#0f0f12;line-height:1.6">${greet},</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">C'est mon dernier message sur le sujet. Si ça ne correspond pas à votre activité, aucun souci : le lien de désinscription est en bas de ce mail, et je ne vous écrirai plus.</p>
-        <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">Si vous voulez en savoir plus, voici le lien une dernière fois :</p>
-        <p><a href="${landingUrl}" style="display:inline-block;padding:10px 18px;background:#f9fafb;color:#0f0f12;text-decoration:none;border-radius:8px;font-weight:600;border:1px solid #e5e7eb">Programme partenaire Digitip</a></p>
-        <p class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6;margin-top:18px">Bien cordialement,<br/>Raphaël Meyer · Fondateur Digitip</p>`,
+      subject: 'Dernier message au sujet du programme partenaire',
+      preheader: 'Je ne vous écrirai plus à ce sujet.',
+      body: [
+        block.p(hello('fr', firstName)),
+        block.p('C’est mon dernier message au sujet du programme partenaire Digitip : je ne vous écrirai plus ensuite. Si le sujet vous intéresse plus tard, vous trouverez tout ici :'),
+        block.button('Le programme partenaire', landingUrl),
+        sign,
+      ],
     },
   };
 
-  const v = variants[step];
-
-  // List-Unsubscribe + List-Unsubscribe-Post are required by Gmail/Outlook
-  // bulk-sender rules (Feb 2024) for senders going beyond ~100/day.
+  const s = steps[step];
   const result = await brevoSendTransactionalEmail({
     sender: { email: BREVO_COMMERCIAL_SENDER.email, name: BREVO_COMMERCIAL_SENDER.name },
     to: [{ email: to, name: firstName ?? undefined }],
     replyTo: { email: BREVO_COMMERCIAL_SENDER.email, name: BREVO_COMMERCIAL_SENDER.name },
-    subject: v.subject,
-    htmlContent: themedLayout(`
-    <tr><td style="padding:28px 32px 20px">
-      ${v.body}
-    </td></tr>
-    ${coldEmailFooterCommercial(unsubscribeUrl)}`),
+    subject: s.subject,
+    htmlContent: layout({ lang: 'fr', preheader: s.preheader, body: s.body, footer: coldFooter(unsubscribeUrl) }),
+    // Required by Gmail and Outlook bulk-sender rules (Feb 2024).
     headers: {
       'List-Unsubscribe': `<${unsubscribeUrl}>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     },
   });
 
-  if (!result.ok) {
-    return { ok: false, error: result.error };
-  }
+  if (!result.ok) return { ok: false, error: result.error };
   return { ok: true, id: result.messageId };
 }
 
-// ─── Staff invite — admin invites a colleague to join an establishment ───────
+// ═══ Staff ════════════════════════════════════════════════════════════════════
 
 export async function sendStaffInviteEmail(opts: {
   to: string;
@@ -1472,536 +1221,506 @@ export async function sendStaffInviteEmail(opts: {
   locale?: string;
 }): Promise<{ ok: boolean }> {
   if (!resend) return { ok: false };
-  const { to, fullName, establishmentName, inviteUrl, locale = 'fr' } = opts;
-  const isFr = locale === 'fr';
+  const { to, fullName, establishmentName, inviteUrl } = opts;
+  const lang = emailLang(opts.locale);
+  const est = esc(establishmentName);
 
-  const subject = isFr
-    ? `Vous êtes invité(e) à rejoindre ${establishmentName} sur Digitip`
-    : `You're invited to join ${establishmentName} on Digitip`;
-
-  const heading = isFr ? 'Bienvenue dans l\'équipe' : 'Welcome to the team';
-  const intro = isFr
-    ? `<strong class="text-strong" style="color:#0f0f12">${establishmentName}</strong> vous invite à rejoindre Digitip pour recevoir vos pourboires directement sur votre compte bancaire.`
-    : `<strong class="text-strong" style="color:#0f0f12">${establishmentName}</strong> is inviting you to join Digitip and receive tips straight into your bank account.`;
-  const ctaLabel = isFr ? 'Créer mon compte' : 'Create my account';
-  const helper = isFr
-    ? `Ce lien vous emmène directement à l'onboarding avec votre email pré-rempli (${to}). Aucun mot de passe : nous vous enverrons un code à 6 chiffres pour confirmer votre adresse.`
-    : `This link takes you straight to onboarding with your email pre-filled (${to}). No password: we will send you a 6 digit code to confirm your address.`;
-  const greeting = isFr ? `Bonjour ${fullName},` : `Hi ${fullName},`;
-  const footer = isFr
-    ? 'Si vous n\'attendiez pas cette invitation, vous pouvez ignorer ce message.'
-    : 'If you weren\'t expecting this invitation, you can safely ignore this message.';
-
-  const result = await resend.emails.send({
-    from: FROM,
-    to,
-    subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${isFr ? 'Invitation équipe' : 'Team invite'}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px 12px">
-      <div class="text-primary" style="font-size:24px;font-weight:800;color:#0f0f12;margin-bottom:10px">${heading}</div>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0 0 8px">${greeting}</p>
-      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6;margin:0">${intro}</p>
-    </td></tr>
-    <tr><td style="padding:8px 32px 8px">
-      <p><a href="${inviteUrl}" style="display:inline-block;padding:12px 22px;background:#E57A97;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">${ctaLabel} →</a></p>
-    </td></tr>
-    <tr><td style="padding:8px 32px 32px">
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0 0 16px;line-height:1.6">${helper}</p>
-      <p class="text-muted" style="font-size:11px;color:#9898a8;margin:0;line-height:1.6">${footer}</p>
-    </td></tr>`),
-  });
-  return { ok: !result.error };
-}
-
-// ─── Lifecycle / automated emails ─────────────────────────────────────────────
-// Personalized onboarding, activation and retention emails (FR), consistent
-// with the cold-email / ambassador communication families. Each function
-// returns the Resend message id (null when email is disabled) and THROWS on a
-// send error so the lifecycle engine (lib/email/lifecycle.ts) records a 'failed'
-// log row.
-
-const LIFECYCLE_TONE: Record<'green' | 'pink' | 'blue' | 'amber', string> = {
-  green: '#22c55e', pink: '#E57A97', blue: '#60a5fa', amber: '#f59e0b',
-};
-
-function lifecycleFooter(unsubscribeUrl: string | null | undefined): string {
-  if (!unsubscribeUrl) return '';
-  return `<tr><td class="divider-strong text-muted" style="padding:20px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
-    Vous recevez ces conseils pour tirer le meilleur de Digitip. Vous pouvez
-    <a href="${unsubscribeUrl}" style="color:#E57A97">ne plus recevoir ces emails</a>. · Digitip · contact@digitip.app
-  </td></tr>`;
-}
-
-function lifecycleBody(opts: {
-  badge: string;
-  tone: 'green' | 'pink' | 'blue' | 'amber';
-  title: string;
-  intro: string;
-  bullets?: string[];
-  ctaLabel?: string;
-  ctaUrl?: string;
-  note?: string;
-  unsubscribeUrl?: string | null;
-}): string {
-  const tone = LIFECYCLE_TONE[opts.tone];
-  const bullets = opts.bullets && opts.bullets.length
-    ? `<tr><td style="padding:6px 32px 2px">
-        <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb">
-          <tr><td style="padding:14px 18px">
-            <div class="text-secondary" style="font-size:13.5px;color:#5a5a6a;line-height:1.85">
-              ${opts.bullets.map((b) => `<div>${b}</div>`).join('')}
-            </div>
-          </td></tr>
-        </table></td></tr>`
-    : '';
-  const cta = opts.ctaLabel && opts.ctaUrl
-    ? `<tr><td style="padding:18px 32px 6px">
-        <a href="${opts.ctaUrl}" style="display:inline-block;padding:13px 26px;background:#E57A97;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">${opts.ctaLabel}</a>
-      </td></tr>`
-    : '';
-  const note = opts.note
-    ? `<tr><td style="padding:14px 32px 30px"><p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">${opts.note}</p></td></tr>`
-    : `<tr><td style="padding:0 0 14px"></td></tr>`;
-  return `
-    <tr><td class="divider" style="padding:30px 32px 20px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-    </td></tr>
-    <tr><td style="padding:26px 32px 0">
-      <div style="display:inline-block;background:${tone}22;color:${tone};font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;margin-bottom:14px">● ${opts.badge}</div>
-      <div class="text-primary" style="font-size:23px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;line-height:1.32">${opts.title}</div>
-    </td></tr>
-    <tr><td style="padding:14px 32px 8px">
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.7">${opts.intro}</div>
-    </td></tr>
-    ${bullets}
-    ${cta}
-    ${note}
-    ${lifecycleFooter(opts.unsubscribeUrl)}`;
-}
-
-async function lifecycleSend(to: string, subject: string, inner: string): Promise<{ id: string | null }> {
-  // Must throw, not return quietly.
-  //
-  // The lifecycle engine writes a `pending` row, calls this, and marks the row
-  // `sent` on success or `failed` on throw. Returning { id: null } here made it
-  // record a send that never happened, and because lifecycle_email_log has a
-  // partial unique index on dedup_key WHERE status IN ('pending','sent'), that
-  // row then blocked the same email to the same recipient forever, including
-  // after the API key was finally configured. `failed` rows are outside the
-  // index, so throwing keeps the send retryable.
-  if (!resend) {
-    throw new Error(
-      'RESEND_API_KEY is not configured, refusing to record a lifecycle email as sent.'
-    );
+  try {
+    await deliver({
+      to,
+      subject: pick(lang, `${establishmentName} vous ajoute à son équipe sur Digitip`, `${establishmentName} added you to its team on Digitip`),
+      html: layout({
+        lang,
+        preheader: pick(lang, 'Activez votre compte pour apparaître sur la page de pourboire.', 'Activate your account to appear on the tip page.'),
+        body: [
+          block.p(hello(lang, fullName.trim().split(/\s+/)[0])),
+          block.p(pick(lang,
+            `${block.strong(est)} reçoit les pourboires par carte avec Digitip et vous ajoute à son équipe. Activez votre compte : vous apparaîtrez sur la page de pourboire, les clients pourront vous choisir, et vous verrez ce que vous recevez.`,
+            `${block.strong(est)} takes card tips with Digitip and has added you to its team. Activate your account: you will appear on the tip page, customers will be able to choose you, and you will see what you receive.`)),
+          block.p(pick(lang,
+            'Les pourboires sont versés à l’établissement, qui vous les reverse avec votre salaire.',
+            'Tips are paid to the business, which passes yours on with your pay.')),
+          block.button(pick(lang, 'Activer mon compte', 'Activate my account'), inviteUrl),
+          block.small(pick(lang,
+            `Pas de mot de passe : un code à 6 chiffres sera envoyé à ${esc(to)} pour confirmer l’adresse. Vous n’attendiez pas ce message ? Ignorez-le.`,
+            `No password: a 6-digit code will be sent to ${esc(to)} to confirm the address. Not expecting this? Just ignore it.`)),
+        ],
+      }),
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false };
   }
-  const result = await resend.emails.send({ from: FROM, to, subject, html: themedLayout(inner) });
-  if (result.error) throw new Error(result.error.message || 'Resend send failed');
-  return { id: result.data?.id ?? null };
 }
 
-function money(cents: number, currency = 'EUR'): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2,
-  }).format(cents / 100);
+// ═══ Lifecycle (dispatched by lib/email/lifecycle.ts) ══════════════════════════
+//
+// Each returns the Resend id and THROWS on failure, so the engine records a
+// `failed` row and the send stays retryable (a phantom `sent` row would block
+// the email for good, see __tests__/lib/lifecycle-send-guard.test.ts).
+
+function lifecycleFooter(lang: Lang, unsubscribeUrl: string | null | undefined): string | undefined {
+  if (!unsubscribeUrl) return undefined;
+  return pick(lang,
+    `Vous recevez ces conseils parce que vous utilisez Digitip. ${block.link('Ne plus les recevoir', unsubscribeUrl)}. Les e-mails sur vos paiements et votre abonnement continuent d’arriver.`,
+    `You get these tips because you use Digitip. ${block.link('Stop receiving them', unsubscribeUrl)}. Emails about your payments and subscription still arrive.`);
 }
 
-/** Group admin, onboarding not completed (J+2 = step 1, J+5 = step 2). */
+async function lifecycleSend(m: { to: string; subject: string; html: string }): Promise<{ id: string | null }> {
+  return deliver(m);
+}
+
+/** Group admin, sign-up started but not finished (day 2, then day 6, then never again). */
 export async function sendGroupOnboardingNudge(opts: {
-  to: string; firstName: string; setupUrl: string; step: 1 | 2; unsubscribeUrl?: string | null;
+  to: string; firstName: string; setupUrl: string; step: 1 | 2; unsubscribeUrl?: string | null; locale?: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, setupUrl, step, unsubscribeUrl } = opts;
-  if (step === 1) {
-    return lifecycleSend(to, `${firstName}, il reste 2 minutes pour finir votre espace Digitip`,
-      lifecycleBody({
-        badge: 'Configuration', tone: 'pink',
-        title: `${firstName}, votre espace Digitip n'est pas encore créé`,
-        intro: `Votre commande est bien passée. Il ne reste qu'à créer votre espace, ça prend <strong class="text-strong" style="color:#0f0f12">moins de 2 minutes</strong> : le nom de l'établissement, votre équipe, et c'est prêt.`,
-        ctaLabel: 'Configurer mon espace →', ctaUrl: setupUrl,
-        note: 'Une question ? Répondez simplement à cet e-mail.',
-        unsubscribeUrl,
-      }));
-  }
-  return lifecycleSend(to, `${firstName}, vos plaques ne peuvent pas encore recevoir de pourboire`,
-    lifecycleBody({
-      badge: 'À finir', tone: 'amber',
-      title: `${firstName}, votre espace n'est toujours pas configuré`,
-      intro: `Tant qu'il ne l'est pas, <strong class="text-strong" style="color:#0f0f12">vos clients ne peuvent pas laisser de pourboire</strong> sur vos plaques. Ça prend 2 minutes.`,
-      ctaLabel: 'Configurer mon espace →', ctaUrl: setupUrl,
-      note: 'Bloqué quelque part ? Répondez à cet e-mail, on vous aide.',
-      unsubscribeUrl,
-    }));
+  const lang = emailLang(opts.locale);
+  const first = step === 1;
+  return lifecycleSend({
+    to,
+    subject: pick(lang,
+      first ? 'Votre inscription Digitip n’est pas terminée' : 'Dernier rappel : votre inscription Digitip',
+      first ? 'Your Digitip sign-up isn’t finished' : 'Last reminder: your Digitip sign-up'),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Tant qu’elle ne l’est pas, la plaque ne peut pas recevoir de pourboires.', 'Until it is, the plaque cannot take tips.'),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          first
+            ? 'Vous avez commencé à créer votre espace Digitip sans le terminer. Il reste quelques minutes : votre établissement, le compte qui recevra les pourboires, votre équipe. Tant que ce n’est pas fait, vos clients ne peuvent pas laisser de pourboire.'
+            : 'Votre espace Digitip n’est toujours pas terminé, et vos clients ne peuvent donc pas encore laisser de pourboire. C’est notre dernier rappel à ce sujet.',
+          first
+            ? 'You started setting up Digitip but didn’t finish. A few minutes are left: your business, the account that will receive the tips, your team. Until it’s done, your customers cannot leave a tip.'
+            : 'Your Digitip account still isn’t finished, so your customers cannot leave tips yet. This is our last reminder about it.')),
+        block.button(pick(lang, 'Terminer mon inscription', 'Finish signing up'), setupUrl),
+        block.small(pick(lang,
+          'Bloqué à une étape ? Répondez à cet e-mail en nous disant laquelle, on vous aide.',
+          'Stuck on a step? Reply and tell us which one, we will help.')),
+      ],
+    }),
+  });
 }
 
-/**
- * Sent on request from the scan of a plaque that is not activated yet: the
- * link opens the setup wizard from the first step. Transactional (the owner
- * asked for it), so no unsubscribe link.
- */
+/** Requested from the scan of a plaque that is not activated yet (transactional). */
 export async function sendPlaqueActivationLink(opts: {
-  to: string; firstName: string; setupUrl: string;
+  to: string; firstName: string; setupUrl: string; locale?: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, setupUrl } = opts;
-  return lifecycleSend(to, `${firstName}, voici le lien pour activer votre plaque`,
-    lifecycleBody({
-      badge: 'Activation', tone: 'pink',
-      title: `${firstName}, activez votre plaque Digitip`,
-      intro: `Vous venez de scanner votre plaque. Cliquez sur le bouton pour configurer votre établissement : ça prend <strong class="text-strong" style="color:#0f0f12">2 minutes</strong>, et vos clients pourront ensuite laisser des pourboires.`,
-      ctaLabel: 'Activer ma plaque →', ctaUrl: setupUrl,
-      note: 'Le lien marche pendant 7 jours. Si vous n\'avez rien demandé, ignorez cet e-mail.',
-    }));
-}
-
-/** Group admin, hardware delivered, no tip yet: place the tag. */
-export async function sendTagDeliveredPlaceNudge(opts: {
-  to: string; firstName: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
-}): Promise<{ id: string | null }> {
-  const { to, firstName, establishmentName, dashboardUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, vos plaques sont arrivées`,
-    lifecycleBody({
-      badge: 'Livré', tone: 'green',
-      title: `${firstName}, vos plaques sont livrées`,
-      intro: `Les plaques de <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> sont arrivées. Le mieux, c'est d'en poser une <strong class="text-strong" style="color:#0f0f12">aujourd'hui</strong>, là où le client la voit :`,
-      bullets: [
-        'Sur le comptoir ou près de la caisse',
-        'Scannez-la une fois avec votre téléphone pour vérifier qu\'elle marche',
-        'Dites à l\'équipe de la montrer aux clients',
+  const lang = emailLang(opts.locale);
+  return lifecycleSend({
+    to,
+    subject: pick(lang, 'Le lien pour activer votre plaque', 'Your link to activate your plaque'),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Valable 7 jours.', 'Valid for 7 days.'),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          'Vous avez demandé à activer votre plaque Digitip. Le bouton ouvre l’inscription : comptez quelques minutes, et la plaque reçoit des pourboires dès qu’elle est terminée.',
+          'You asked to activate your Digitip plaque. The button opens the sign-up: it takes a few minutes, and the plaque takes tips as soon as it is done.')),
+        block.button(pick(lang, 'Activer ma plaque', 'Activate my plaque'), setupUrl),
+        block.small(pick(lang,
+          'Le lien est valable 7 jours. Vous n’avez rien demandé ? Ignorez cet e-mail.',
+          'The link is valid for 7 days. Didn’t ask for this? Ignore this email.')),
       ],
-      ctaLabel: 'Voir mon tableau de bord →', ctaUrl: dashboardUrl,
-      note: 'Une plaque posée le jour de la livraison reçoit bien plus de pourboires la première semaine.',
-      unsubscribeUrl,
-    }));
-}
-
-/** Group admin, onboarded but team is empty: invite staff. */
-export async function sendInviteTeamNudge(opts: {
-  to: string; firstName: string; establishmentName: string; inviteUrl: string; unsubscribeUrl?: string | null;
-}): Promise<{ id: string | null }> {
-  const { to, firstName, establishmentName, inviteUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, votre équipe n'est pas encore sur Digitip`,
-    lifecycleBody({
-      badge: 'Votre équipe', tone: 'pink',
-      title: `${firstName}, ajoutez votre équipe`,
-      intro: `Personne n'est encore ajouté chez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong>. Une fois dans l'équipe, chacun apparaît sur la page de pourboire, et le client peut choisir à qui laisser le sien. Ça motive.`,
-      ctaLabel: 'Ajouter mon équipe →', ctaUrl: inviteUrl,
-      note: 'Le plus rapide : envoyez le lien d\'équipe par SMS, chacun s\'inscrit en 2 minutes.',
-      unsubscribeUrl,
-    }));
+    }),
+  });
 }
 
 /**
- * Group admin, some staff profiles have no email, so they can never be paid.
- *
- * Addressed to the admin rather than the staff member on purpose: a profile
- * with user_id NULL has no address and no account, so no staff-audience email
- * can reach it. Recurring, because the situation persists until the admin acts
- * and it silently caps the establishment's tip volume for as long as it does.
+ * Group admin: nobody has joined the team yet, so the tip page has no one to
+ * tip and turns customers away. Sent once, three days after sign-up.
+ */
+export async function sendInviteTeamNudge(opts: {
+  to: string; firstName: string; establishmentName: string; inviteUrl: string; unsubscribeUrl?: string | null; locale?: string;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, inviteUrl, unsubscribeUrl } = opts;
+  const lang = emailLang(opts.locale);
+  const est = esc(establishmentName);
+  return lifecycleSend({
+    to,
+    subject: pick(lang, 'Votre page de pourboire n’affiche encore personne', 'Nobody is on your tip page yet'),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Sans équipe, les clients ne peuvent pas laisser de pourboire.', 'Without a team, customers cannot leave a tip.'),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `Chez ${block.strong(est)}, personne n’a encore rejoint l’équipe sur Digitip. Or la page de pourboire a besoin d’au moins une personne : sans équipe, un client qui scanne la plaque ne peut rien laisser.`,
+          `Nobody has joined the ${block.strong(est)} team on Digitip yet. The tip page needs at least one person: without a team, a customer who scans the plaque cannot leave anything.`)),
+        block.p(pick(lang,
+          'Le plus rapide : envoyez le lien d’équipe par SMS ou WhatsApp, chacun s’inscrit depuis son téléphone. Vous travaillez seul ? Ajoutez-vous vous-même.',
+          'The quickest way: send the team link by text or WhatsApp, everyone signs up from their phone. Working alone? Add yourself.')),
+        block.button(pick(lang, 'Ajouter mon équipe', 'Add my team'), inviteUrl),
+      ],
+    }),
+  });
+}
+
+/**
+ * Group admin: some staff were added without an email and never joined, so
+ * they are not on the tip page. At most twice, a month apart.
  */
 export async function sendStaffMissingEmailNudge(opts: {
   to: string; firstName: string; establishmentName: string; count: number;
-  staffUrl: string; unsubscribeUrl?: string | null;
+  staffUrl: string; unsubscribeUrl?: string | null; locale?: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, establishmentName, count, staffUrl, unsubscribeUrl } = opts;
-  const people = count === 1 ? 'une personne' : `${count} personnes`;
-  const verb = count === 1 ? 'ne peut' : 'ne peuvent';
-  return lifecycleSend(to, `${firstName}, ${people} de votre équipe ${verb} pas être payée`,
-    lifecycleBody({
-      badge: 'Équipe', tone: 'amber',
-      title: `${people} ${verb} pas recevoir de pourboires`,
-      intro: `Chez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong>, ${people} ${count === 1 ? 'a été ajoutée' : 'ont été ajoutées'} sans adresse e-mail. Sans e-mail, on ne peut pas envoyer d'invitation, donc pas de compte, et les pourboires qui leur sont destinés ne peuvent pas leur être attribués.`,
-      ctaLabel: 'Ajouter leur e-mail →', ctaUrl: staffUrl,
-      note: 'Dès que l\'adresse est ajoutée, l\'invitation part toute seule.',
-      unsubscribeUrl,
-    }));
-}
-
-/** Group admin, live for a while, still zero succeeded tips. */
-export async function sendActivationNudge(opts: {
-  to: string; firstName: string; establishmentName: string; dashboardUrl: string; daysSince: number; unsubscribeUrl?: string | null;
-}): Promise<{ id: string | null }> {
-  const { to, firstName, establishmentName, dashboardUrl, daysSince, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, toujours aucun pourboire chez ${establishmentName}`,
-    lifecycleBody({
-      badge: 'Démarrage', tone: 'amber',
-      title: `${firstName}, votre plaque n'a encore rien reçu`,
-      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> est prêt depuis ${daysSince} jours, mais aucun pourboire n'est passé. En général, c'est l'une de ces raisons :`,
-      bullets: [
-        'La plaque est rangée ou cachée : mettez-la sur le comptoir, bien en vue',
-        'L\'équipe n\'en parle pas : un simple « vous pouvez laisser un pourboire ici » suffit',
-        'Elle n\'a jamais été testée : scannez-la pour voir si elle répond',
+  const lang = emailLang(opts.locale);
+  const est = esc(establishmentName);
+  const one = count === 1;
+  return lifecycleSend({
+    to,
+    subject: pick(lang,
+      one ? 'Une personne de votre équipe n’a pas encore rejoint Digitip' : `${count} personnes de votre équipe n’ont pas encore rejoint Digitip`,
+      one ? 'One person on your team hasn’t joined Digitip yet' : `${count} people on your team haven’t joined Digitip yet`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Tant qu’elles ne l’ont pas fait, les clients ne peuvent pas les choisir.', 'Until they do, customers cannot choose them.'),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `Chez ${block.strong(est)}, ${one ? 'une personne a été ajoutée' : `${count} personnes ont été ajoutées`} sans adresse e-mail et ${one ? 'n’a' : 'n’ont'} pas encore rejoint l’équipe. Tant que ce n’est pas fait, ${one ? 'elle n’apparaît' : 'elles n’apparaissent'} pas sur la page de pourboire et les clients ne peuvent pas ${one ? 'la' : 'les'} choisir.`,
+          `At ${block.strong(est)}, ${one ? 'one person was' : `${count} people were`} added without an email address and ${one ? 'hasn’t' : 'haven’t'} joined the team yet. Until they do, they don’t appear on the tip page and customers cannot choose them.`)),
+        block.p(pick(lang,
+          'Deux solutions : leur envoyer le lien d’équipe par SMS, ou ajouter leur adresse e-mail pour qu’on leur envoie une invitation.',
+          'Two ways to fix it: send them the team link by text, or add their email address so we send them an invitation.')),
+        block.button(pick(lang, 'Voir mon équipe', 'See my team'), staffUrl),
       ],
-      ctaLabel: 'Voir mon tableau de bord →', ctaUrl: dashboardUrl,
-      note: 'Toujours bloqué ? Répondez à cet e-mail et on regarde avec vous.',
-      unsubscribeUrl,
-    }));
+    }),
+  });
 }
 
-/** Staff, invitation not yet claimed (J+3 = step 1, J+7 = step 2). */
+/**
+ * Group admin: live for a week, plaques in hand for a few days, still no tip.
+ * Once.
+ */
+export async function sendActivationNudge(opts: {
+  to: string; firstName: string; establishmentName: string; dashboardUrl: string; daysSince: number; unsubscribeUrl?: string | null; locale?: string;
+}): Promise<{ id: string | null }> {
+  const { to, firstName, establishmentName, dashboardUrl, unsubscribeUrl } = opts;
+  const lang = emailLang(opts.locale);
+  const est = esc(establishmentName);
+  return lifecycleSend({
+    to,
+    subject: pick(lang, `Pas encore de pourboire chez ${establishmentName}`, `No tips yet at ${establishmentName}`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Trois vérifications qui règlent presque toujours le problème.', 'Three checks that almost always fix it.'),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `${block.strong(est)} n’a pas encore reçu de pourboire. Presque toujours, c’est l’une de ces trois raisons :`,
+          `${block.strong(est)} hasn’t received a tip yet. It is almost always one of these three things:`)),
+        block.list([
+          pick(lang,
+            'La plaque n’est pas visible au moment de payer. Posez-la à côté du terminal de paiement ou sur les tables.',
+            'The plaque isn’t visible when people pay. Put it next to the card terminal or on the tables.'),
+          pick(lang,
+            'Personne n’en parle. Une phrase de l’équipe au moment de l’addition fait toute la différence.',
+            'Nobody mentions it. One sentence from the team when the bill comes makes all the difference.'),
+          pick(lang,
+            'Elle n’a jamais été testée. Approchez votre téléphone : la page de pourboire doit s’ouvrir.',
+            'It has never been tested. Hold your phone near it: the tip page should open.'),
+        ]),
+        block.button(pick(lang, 'Ouvrir mon tableau de bord', 'Open my dashboard'), dashboardUrl),
+        block.small(pick(lang,
+          'La plaque ne réagit pas au téléphone ? Répondez à cet e-mail, on règle ça avec vous.',
+          'The plaque doesn’t react to your phone? Reply to this email and we will sort it out with you.')),
+      ],
+    }),
+  });
+}
+
+/** Staff invited by email who hasn't joined (day 3, then day 7). */
 export async function sendStaffInviteReminder(opts: {
-  to: string; firstName: string; establishmentName: string; joinUrl: string; step: 1 | 2; unsubscribeUrl?: string | null;
+  to: string; firstName: string; establishmentName: string; joinUrl: string; step: 1 | 2; unsubscribeUrl?: string | null; locale?: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, establishmentName, joinUrl, step, unsubscribeUrl } = opts;
-  const subject = step === 1
-    ? `${firstName}, ${establishmentName} vous invite dans son équipe`
-    : `${firstName}, votre compte Digitip n'est pas encore activé`;
-  return lifecycleSend(to, subject,
-    lifecycleBody({
-      badge: 'Invitation', tone: 'pink',
-      title: `${firstName}, activez votre compte Digitip`,
-      intro: `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> vous invite à rejoindre son équipe sur Digitip. Activez votre compte pour apparaître sur la page de pourboire : vos clients pourront vous en laisser un à votre nom, et vous le verrez arriver.`,
-      ctaLabel: 'Activer mon compte →', ctaUrl: joinUrl,
-      note: step === 2
-        ? 'Tant que votre compte n\'est pas activé, les clients ne peuvent pas vous choisir.'
-        : 'Ça prend une minute. Votre établissement vous reverse ensuite vos pourboires avec la paie.',
-      unsubscribeUrl,
-    }));
+  const lang = emailLang(opts.locale);
+  const est = esc(establishmentName);
+  return lifecycleSend({
+    to,
+    subject: pick(lang,
+      step === 1 ? `Rappel : ${establishmentName} vous attend sur Digitip` : `Dernier rappel : votre compte Digitip chez ${establishmentName}`,
+      step === 1 ? `Reminder: ${establishmentName} is waiting for you on Digitip` : `Last reminder: your Digitip account at ${establishmentName}`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Activez votre compte pour que les clients puissent vous choisir.', 'Activate your account so customers can choose you.'),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `${block.strong(est)} vous a ajouté à son équipe sur Digitip, mais votre compte n’est pas encore activé. Tant qu’il ne l’est pas, vous n’apparaissez pas sur la page de pourboire et les clients ne peuvent pas vous choisir.`,
+          `${block.strong(est)} added you to its team on Digitip, but your account isn’t activated yet. Until it is, you don’t appear on the tip page and customers cannot choose you.`)),
+        block.button(pick(lang, 'Activer mon compte', 'Activate my account'), joinUrl),
+        block.small(pick(lang,
+          `Ça prend une minute. Les pourboires sont versés à l’établissement, qui vous les reverse avec votre salaire.${step === 2 ? ' C’est notre dernier rappel.' : ''}`,
+          `It takes a minute. Tips are paid to the business, which passes yours on with your pay.${step === 2 ? ' This is our last reminder.' : ''}`)),
+      ],
+    }),
+  });
 }
 
-/** Staff, account claimed but Stripe banking not started (J+1 / J+3 / J+7). */
-export async function sendStaffBankingNudge(opts: {
-  to: string; firstName: string; bankingUrl: string; step: 1 | 2 | 3; unsubscribeUrl?: string | null;
-}): Promise<{ id: string | null }> {
-  const { to, firstName, bankingUrl, step, unsubscribeUrl } = opts;
-  const subject = step === 3
-    ? `${firstName}, vos pourboires sont en attente`
-    : `${firstName}, reliez votre compte pour recevoir vos pourboires`;
-  return lifecycleSend(to, subject,
-    lifecycleBody({
-      badge: 'Compte bancaire', tone: step === 3 ? 'amber' : 'blue',
-      title: `${firstName}, une dernière étape : votre RIB`,
-      intro: `Vos pourboires ne peuvent pas vous être versés tant que votre compte bancaire n'est pas relié. C'est <strong class="text-strong" style="color:#0f0f12">2 minutes</strong>, sécurisé par Stripe, et vous n'avez plus jamais à y revenir.`,
-      ctaLabel: 'Relier mon compte →', ctaUrl: bankingUrl,
-      note: step === 3
-        ? 'Chaque pourboire reçu reste en attente tant que votre RIB n\'est pas renseigné.'
-        : 'Vos coordonnées bancaires sont gérées par Stripe, Digitip n\'y a jamais accès.',
-      unsubscribeUrl,
-    }));
-}
-
-/** Staff, tips captured but HELD because identity/banking isn't set up yet.
- *  Escalates J+7 (1) / J+30 (2) / J+60 (3); step 3 warns before the 90-day
- *  auto-refund. `amount` is a pre-formatted currency string. */
-export async function sendUnclaimedTipsReminder(opts: {
-  to: string; firstName: string; amount: string; bankingUrl: string; step: 1 | 2 | 3; unsubscribeUrl?: string | null;
-}): Promise<{ id: string | null }> {
-  const { to, firstName, amount, bankingUrl, step, unsubscribeUrl } = opts;
-  const subject = step === 3
-    ? `${firstName}, vos ${amount} de pourboires expirent bientôt`
-    : `${firstName}, vous avez ${amount} de pourboires à récupérer`;
-  return lifecycleSend(to, subject,
-    lifecycleBody({
-      badge: 'Pourboires en attente', tone: step === 1 ? 'pink' : 'amber',
-      title: step === 3
-        ? `${firstName}, dernière étape avant expiration`
-        : `${firstName}, vos pourboires vous attendent`,
-      intro: step === 3
-        ? `Vous avez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires en attente. Sans vérification d'identité, ils seront <strong class="text-strong" style="color:#0f0f12">remboursés au client après 90 jours</strong>. Récupérez-les maintenant, 2 minutes, sécurisé par Stripe.`
-        : `Vous avez déjà <strong class="text-strong" style="color:#0f0f12">${escapeHtml(amount)}</strong> de pourboires sur Digitip. Pour les recevoir sur votre compte, confirmez votre identité, 2 minutes, sécurisé par Stripe, à faire une seule fois.`,
-      ctaLabel: 'Récupérer mes pourboires →', ctaUrl: bankingUrl,
-      note: step === 3
-        ? 'Après 90 jours, les pourboires non réclamés sont automatiquement remboursés au client.'
-        : 'Vos coordonnées bancaires sont gérées par Stripe, Digitip n\'y a jamais accès.',
-      unsubscribeUrl,
-    }));
-}
-
-/** Staff, Stripe banking just completed (transactional). */
-export async function sendStaffBankingComplete(opts: {
-  to: string; firstName: string;
-}): Promise<{ id: string | null }> {
-  const { to, firstName } = opts;
-  return lifecycleSend(to, `${firstName}, votre compte est prêt`,
-    lifecycleBody({
-      badge: 'Compte activé', tone: 'green',
-      title: `${firstName}, c'est bon, votre compte est prêt`,
-      intro: `Votre compte bancaire est relié et vérifié. Les pourboires qu'on vous laisse sur la plaque <strong class="text-strong" style="color:#0f0f12">vous seront versés sur ce compte</strong>. Il ne reste qu'à en parler à vos clients.`,
-      note: 'Le pourboire est encaissé par Digitip via Stripe, puis versé sur votre compte.',
-    }));
-}
-
-/** Group admin, establishment received its very first tip. */
+/** Group admin: an establishment received its very first tip. */
 export async function sendFirstTipCelebration(opts: {
   to: string; firstName: string; amount: number; currency: string; establishmentName: string; dashboardUrl: string; unsubscribeUrl?: string | null;
   /** Set when this tip just started the cardless Pro trial. */
   proTrial?: { hasReviewLink: boolean } | null;
+  locale?: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, amount, currency, establishmentName, dashboardUrl, unsubscribeUrl, proTrial } = opts;
-  // The trial is said here because this is the one email certain to be read
-  // the day it starts. Without it, the first a manager hears of Pro is the
-  // email saying it ends in three days.
-  const trialBullets = proTrial
-    ? [
-        '🎁 Au passage, on vous offre Digitip Pro pendant 30 jours, sans carte. Après chaque pourboire, vos clients peuvent maintenant laisser un avis Google et un petit mot au serveur.',
-        ...(proTrial.hasReviewLink
-          ? []
-          : ['⭐ Pour que le bouton d\'avis s\'affiche, reliez votre fiche Google dans Établissements.']),
-      ]
-    : [];
-  return lifecycleSend(to, `${establishmentName} a reçu son premier pourboire`,
-    lifecycleBody({
-      badge: 'Premier pourboire', tone: 'green',
-      title: `${firstName}, premier pourboire reçu chez ${escapeHtml(establishmentName)}`,
-      intro: `Un client vient de laisser <strong class="text-strong" style="color:#0f0f12">${money(amount, currency)}</strong> avec votre plaque. Ça marche ! Pour que ça continue :`,
-      bullets: [
-        'Mettez une plaque à chaque poste ou près de chaque caisse',
-        'Demandez à l\'équipe d\'en parler au moment de payer',
-        ...trialBullets,
+  const lang = emailLang(opts.locale);
+  const est = esc(establishmentName);
+  return lifecycleSend({
+    to,
+    subject: pick(lang, `Premier pourboire chez ${establishmentName}`, `First tip at ${establishmentName}`),
+    html: layout({
+      lang,
+      preheader: pick(lang, `${money(amount, currency, lang)}, laissé avec votre plaque.`, `${money(amount, currency, lang)}, left with your plaque.`),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `Un client vient de laisser le premier pourboire chez ${block.strong(est)} : ${block.strong(money(amount, currency, lang))}. La plaque marche.`,
+          `A customer just left the first tip at ${block.strong(est)}: ${block.strong(money(amount, currency, lang))}. The plaque works.`)),
+        block.p(pick(lang,
+          'Ce qui fait venir les suivants : une plaque visible à chaque endroit où l’on paie, et une équipe qui la mentionne au moment de l’addition.',
+          'What brings the next ones: a plaque in sight wherever people pay, and a team that mentions it when the bill comes.')),
+        ...(proTrial
+          ? [block.p(pick(lang,
+              `${block.strong('Digitip Pro vous est offert pendant 30 jours, sans carte.')} Après chaque pourboire, vos clients peuvent maintenant laisser un avis Google et un petit mot à la personne qui les a servis.${proTrial.hasReviewLink ? '' : ' Pour que l’invitation à laisser un avis s’affiche, ajoutez votre fiche Google dans Établissements.'}`,
+              `${block.strong('Digitip Pro is yours free for 30 days, no card needed.')} After each tip, your customers can now leave a Google review and a note for the person who served them.${proTrial.hasReviewLink ? '' : ' For the review invitation to show, add your Google listing under Establishments.'}`))]
+          : []),
+        block.button(pick(lang, 'Voir mes pourboires', 'See my tips'), dashboardUrl),
       ],
-      ctaLabel: 'Voir mes pourboires →', ctaUrl: dashboardUrl,
-      unsubscribeUrl,
-    }));
+    }),
+  });
 }
 
-/** Staff, cumulative earnings crossed a milestone (€100 / €500). */
+/** Staff: the tips customers left them crossed €100 or €500 in total. */
 export async function sendEarningsMilestone(opts: {
   to: string; firstName: string; milestoneAmount: number; currency: string; dashboardUrl: string; unsubscribeUrl?: string | null;
+  establishmentName?: string | null; locale?: string;
 }): Promise<{ id: string | null }> {
-  const { to, firstName, milestoneAmount, currency, dashboardUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, vous avez dépassé ${money(milestoneAmount, currency)} de pourboires`,
-    lifecycleBody({
-      badge: 'Palier atteint', tone: 'green',
-      title: `${firstName}, déjà ${money(milestoneAmount, currency)} de pourboires`,
-      intro: `Vos pourboires Digitip viennent de passer <strong class="text-strong" style="color:#0f0f12">${money(milestoneAmount, currency)}</strong> au total. Bravo, et continuez à montrer la plaque à vos clients.`,
-      ctaLabel: 'Voir mon total →', ctaUrl: dashboardUrl,
-      unsubscribeUrl,
-    }));
+  const { to, firstName, milestoneAmount, currency, dashboardUrl, unsubscribeUrl, establishmentName } = opts;
+  const lang = emailLang(opts.locale);
+  const amount = new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'fr-FR', {
+    style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: 0,
+  }).format(milestoneAmount / 100);
+  const where = establishmentName ? pick(lang, `Chez ${block.strong(esc(establishmentName))}, les clients`, `Customers at ${block.strong(esc(establishmentName))}`) : pick(lang, 'Les clients', 'Customers');
+  return lifecycleSend({
+    to,
+    subject: pick(lang, `Vous avez reçu ${amount} de pourboires`, `You have received ${amount} in tips`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Merci à vos clients.', 'Thanks to your customers.'),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `${where} vous ont laissé ${block.strong(amount)} de pourboires au total avec Digitip. Bravo.`,
+          `${where} have left you ${block.strong(amount)} in tips in total with Digitip. Well done.`)),
+        block.p(pick(lang,
+          'Ils vous sont reversés par l’établissement, avec votre salaire.',
+          'The business passes them on to you with your pay.')),
+        block.button(pick(lang, 'Voir le détail', 'See the details'), dashboardUrl),
+      ],
+    }),
+  });
 }
 
-/** Group admin, establishment was active then went quiet (recurring). */
+/** Group admin: an establishment that used to get tips has had none for three weeks. Once per quiet spell. */
 export async function sendReEngagementEmail(opts: {
-  to: string; firstName: string; establishmentName: string; daysQuiet: number; dashboardUrl: string; unsubscribeUrl?: string | null;
+  to: string; firstName: string; establishmentName: string; daysQuiet: number; dashboardUrl: string; unsubscribeUrl?: string | null; locale?: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, establishmentName, daysQuiet, dashboardUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${firstName}, ${daysQuiet} jours sans pourboire chez ${establishmentName}`,
-    lifecycleBody({
-      badge: 'Calme plat', tone: 'amber',
-      title: `${firstName}, plus de pourboire depuis ${daysQuiet} jours`,
-      intro: `Chez <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong>, rien n'est passé depuis ${daysQuiet} jours. Le plus souvent, c'est que la plaque n'est plus en vue. Quelques vérifications :`,
-      bullets: [
-        'La plaque est-elle toujours à sa place, bien visible ?',
-        'L\'équipe en parle-t-elle encore aux clients ?',
-        'Scannez-la pour voir si elle répond toujours',
+  const lang = emailLang(opts.locale);
+  const est = esc(establishmentName);
+  return lifecycleSend({
+    to,
+    subject: pick(lang, `Aucun pourboire chez ${establishmentName} depuis ${daysQuiet} jours`, `No tips at ${establishmentName} for ${daysQuiet} days`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Si vous êtes ouvert, la plaque a peut-être bougé.', 'If you are open, the plaque may have moved.'),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `${block.strong(est)} recevait des pourboires, et plus aucun n’est passé depuis ${daysQuiet} jours. Si l’établissement est fermé en ce moment, ignorez ce message.`,
+          `${block.strong(est)} used to get tips, and none has come in for ${daysQuiet} days. If you are closed at the moment, ignore this message.`)),
+        block.p(pick(lang, 'Sinon, deux choses à vérifier :', 'Otherwise, two things to check:')),
+        block.list([
+          pick(lang,
+            'La plaque est-elle toujours en vue, au même endroit ? Elle a pu être rangée ou déplacée.',
+            'Is the plaque still in sight, in the same place? It may have been put away or moved.'),
+          pick(lang,
+            'Répond-elle encore ? Approchez votre téléphone : la page de pourboire doit s’ouvrir.',
+            'Does it still respond? Hold your phone near it: the tip page should open.'),
+        ]),
+        block.button(pick(lang, 'Ouvrir mon tableau de bord', 'Open my dashboard'), dashboardUrl),
+        block.small(pick(lang,
+          'Elle ne répond plus ? Répondez à cet e-mail, on regarde avec vous.',
+          'It no longer responds? Reply to this email and we will look into it with you.')),
       ],
-      ctaLabel: 'Voir mon tableau de bord →', ctaUrl: dashboardUrl,
-      note: 'Si quelque chose cloche, répondez à cet e-mail et on regarde avec vous.',
-      unsubscribeUrl,
-    }));
+    }),
+  });
 }
 
-/** Group admin, weekly recap of tips collected (recurring, Mondays). */
+/** Group admin, Monday morning: last week's tips (Monday to Sunday), one email per group. */
 export async function sendWeeklyTipRecap(opts: {
-  to: string; firstName: string; establishmentName: string; weekTotal: number; tipCount: number; currency: string; dashboardUrl: string; unsubscribeUrl?: string | null;
+  to: string; firstName: string;
+  /** "du 29 septembre au 5 octobre" style label, already formatted. */
+  weekLabel: string;
+  establishments: Array<{ name: string; total: number; count: number }>;
+  currency: string; dashboardUrl: string; unsubscribeUrl?: string | null; locale?: string;
 }): Promise<{ id: string | null }> {
-  const { to, firstName, establishmentName, weekTotal, tipCount, currency, dashboardUrl, unsubscribeUrl } = opts;
-  return lifecycleSend(to, `${establishmentName} : ${money(weekTotal, currency)} de pourboires cette semaine`,
-    lifecycleBody({
-      badge: 'Récap de la semaine', tone: 'green',
-      title: `${firstName}, ${money(weekTotal, currency)} de pourboires cette semaine`,
-      intro: `Cette semaine, les clients de <strong class="text-strong" style="color:#0f0f12">${escapeHtml(establishmentName)}</strong> ont laissé <strong class="text-strong" style="color:#0f0f12">${tipCount} pourboire${tipCount > 1 ? 's' : ''}</strong>, pour <strong class="text-strong" style="color:#0f0f12">${money(weekTotal, currency)}</strong> en tout.`,
-      ctaLabel: 'Voir le détail →', ctaUrl: dashboardUrl,
-      unsubscribeUrl,
-    }));
+  const { to, firstName, weekLabel, establishments, currency, dashboardUrl, unsubscribeUrl } = opts;
+  const lang = emailLang(opts.locale);
+  const total = establishments.reduce((s, e) => s + e.total, 0);
+  const count = establishments.reduce((s, e) => s + e.count, 0);
+  const tips = (n: number) => pick(lang, `${n} pourboire${n > 1 ? 's' : ''}`, `${n} tip${n > 1 ? 's' : ''}`);
+  const several = establishments.length > 1;
+  return lifecycleSend({
+    to,
+    subject: pick(lang, `Vos pourboires de la semaine : ${money(total, currency, lang)}`, `Your tips this week: ${money(total, currency, lang)}`),
+    html: layout({
+      lang,
+      preheader: pick(lang, `${tips(count)}, semaine ${weekLabel}.`, `${tips(count)}, week ${weekLabel}.`),
+      footer: lifecycleFooter(lang, unsubscribeUrl),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `La semaine ${esc(weekLabel)}, vos clients ont laissé ${block.strong(tips(count))}, pour ${block.strong(money(total, currency, lang))} en tout.`,
+          `In the week ${esc(weekLabel)}, your customers left ${block.strong(tips(count))}, worth ${block.strong(money(total, currency, lang))} in total.`)),
+        ...(several
+          ? [block.details(establishments.map((e) => [esc(e.name), `${money(e.total, currency, lang)} · ${tips(e.count)}`] as [string, string]))]
+          : []),
+        block.button(pick(lang, 'Voir le détail', 'See the details'), dashboardUrl),
+        block.small(pick(lang,
+          'Montants des pourboires seuls, sans les frais de service payés par les clients.',
+          'Tip amounts only, excluding the service fee paid by customers.')),
+      ],
+    }),
+  });
 }
 
 /**
- * Group admin, three days before the Pro trial converts (transactional).
- *
- * The one email a trial owes its customer. It leads with what the trial
- * actually produced, because that is the only argument that survives contact
- * with a manager deciding whether to keep paying, and it says the price and
- * the date plainly: a subscription that starts charging without warning is how
- * a trial turns into a chargeback and a bad review.
+ * Group admin, three days before the Stripe trial converts (transactional).
+ * Says the price and the date plainly: a subscription that starts charging
+ * without warning is how a trial turns into a chargeback.
  */
 export async function sendTrialEndingSoon(opts: {
   to: string; firstName: string; establishmentName: string; daysLeft: number;
   priceLabel: string | null; tipCount: number; clickCount: number;
-  billingUrl: string;
+  billingUrl: string; locale?: string;
 }): Promise<{ id: string | null }> {
   const { to, firstName, establishmentName, daysLeft, priceLabel, tipCount, clickCount, billingUrl } = opts;
-  const days = `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
-
-  // What the trial did, or an honest admission that it has nothing to show.
-  // A month with no clicks is a reason to keep the plaque visible, not a
-  // reason to write a sentence that implies otherwise.
-  const evidence = tipCount > 0
-    ? `Pendant votre essai, <strong class="text-strong" style="color:#0f0f12">${clickCount} client${clickCount > 1 ? 's' : ''} sur ${tipCount}</strong> ${clickCount > 1 ? 'ont' : 'a'} ouvert votre fiche Google après leur pourboire.`
-    : `Aucun pourboire n'est passé pendant votre essai, donc on n'a pas encore pu vous montrer ce que donne le bouton d'avis chez vous.`;
-
-  return lifecycleSend(to, `${firstName}, votre essai Digitip Pro se termine dans ${days}`,
-    lifecycleBody({
-      badge: 'Fin d\'essai', tone: 'amber',
-      title: `${firstName}, votre essai se termine dans ${days}`,
-      intro: `${evidence} À la fin de l'essai${priceLabel ? `, l'abonnement de ${escapeHtml(establishmentName)} passe à <strong class="text-strong" style="color:#0f0f12">${escapeHtml(priceLabel)} HT par mois</strong>` : `, l'abonnement de ${escapeHtml(establishmentName)} démarre`}. Si vous ne voulez pas continuer, résiliez avant : vous ne paierez rien.`,
-      ctaLabel: 'Gérer mon abonnement →', ctaUrl: billingUrl,
-      note: 'Vos pourboires continuent d\'arriver quoi qu\'il arrive, ils ne dépendent pas de l\'abonnement.',
-    }));
+  const lang = emailLang(opts.locale);
+  const days = pick(lang, `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`, `${daysLeft} day${daysLeft > 1 ? 's' : ''}`);
+  const est = esc(establishmentName);
+  const price = priceLabel ? esc(priceLabel) : null;
+  return lifecycleSend({
+    to,
+    subject: pick(lang, `Votre essai Digitip Pro se termine dans ${days}`, `Your Digitip Pro trial ends in ${days}`),
+    html: layout({
+      lang,
+      preheader: pick(lang,
+        price ? `Ensuite, ${priceLabel} HT par mois. Résiliable avant sans frais.` : 'Résiliable avant la fin sans frais.',
+        price ? `Then ${priceLabel} excl. VAT a month. Cancel before at no cost.` : 'Cancel before it ends at no cost.'),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `Votre essai de Digitip Pro pour ${block.strong(est)} se termine dans ${days}. ${price ? `L’abonnement démarre alors à ${block.strong(`${price} HT par mois`)}, sur la carte enregistrée.` : 'L’abonnement démarre alors, sur la carte enregistrée.'}`,
+          `Your Digitip Pro trial for ${block.strong(est)} ends in ${days}. ${price ? `The subscription then starts at ${block.strong(`${price} excl. VAT a month`)}, on the card on file.` : 'The subscription then starts, on the card on file.'}`)),
+        block.p(tipCount > 0
+          ? pick(lang,
+              `Pendant l’essai, ${block.strong(`${clickCount} client${clickCount > 1 ? 's' : ''} sur ${tipCount}`)} ${clickCount > 1 ? 'ont ouvert votre fiche Google après leur pourboire' : 'a ouvert votre fiche Google après son pourboire'}.`,
+              `During the trial, ${block.strong(`${clickCount} customer${clickCount === 1 ? '' : 's'} out of ${tipCount}`)} opened your Google listing after tipping.`)
+          : pick(lang,
+              'Aucun pourboire n’est passé pendant l’essai, nous n’avons donc rien pu vous montrer encore.',
+              'No tip came in during the trial, so there is nothing to show you yet.')),
+        block.p(pick(lang,
+          'Pour ne pas continuer, résiliez avant la fin de l’essai : vous ne paierez rien.',
+          'To stop, cancel before the trial ends: you will pay nothing.')),
+        block.button(pick(lang, 'Gérer mon abonnement', 'Manage my subscription'), billingUrl),
+        block.small(pick(lang,
+          'Vos pourboires continuent d’arriver dans tous les cas : ils ne dépendent pas de l’abonnement.',
+          'Your tips keep coming in either way: they do not depend on the subscription.')),
+      ],
+    }),
+  });
 }
 
 /**
- * Group admin, three days before the cardless Pro trial ends.
- *
- * The mirror of sendTrialEndingSoon, with the opposite reassurance: no card
- * is on file, so the risk is not a surprise charge but Pro switching off
- * unnoticed. It leads with what the trial did, in the same figures as the
- * dashboard, and says plainly that doing nothing costs nothing.
+ * Group admin, three days before the cardless Pro trial ends. No card on
+ * file, so nothing will be charged: the risk is Pro switching off unnoticed.
  */
 export async function sendFreeTrialEndingSoon(opts: {
   to: string; firstName: string; establishmentName: string; daysLeft: number; endDate: string;
   priceLabel: string | null; tipCount: number; clickCount: number; complimentCount: number;
-  billingUrl: string;
+  billingUrl: string; locale?: string;
 }): Promise<{ id: string | null }> {
-  const {
-    to, firstName, establishmentName, daysLeft, endDate, priceLabel, tipCount, clickCount,
-    complimentCount, billingUrl,
-  } = opts;
-  const days = `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+  const { to, firstName, establishmentName, daysLeft, endDate, priceLabel, tipCount, clickCount, complimentCount, billingUrl } = opts;
+  const lang = emailLang(opts.locale);
+  const days = pick(lang, `${daysLeft} jour${daysLeft > 1 ? 's' : ''}`, `${daysLeft} day${daysLeft > 1 ? 's' : ''}`);
+  const est = esc(establishmentName);
   const s = (n: number) => (n > 1 ? 's' : '');
-  const bullets = tipCount > 0
-    ? [
-        `${clickCount} client${s(clickCount)} sur ${tipCount} ${clickCount > 1 ? 'ont' : 'a'} ouvert votre fiche Google après leur pourboire`,
-        `${complimentCount} petit${s(complimentCount)} mot${s(complimentCount)} pour l'équipe`,
-      ]
-    : [];
-  return lifecycleSend(to, `${firstName}, votre essai Digitip Pro se termine dans ${days}`,
-    lifecycleBody({
-      badge: 'Fin d\'essai', tone: 'amber',
-      title: `${firstName}, votre essai Pro se termine le ${escapeHtml(endDate)}`,
-      intro: tipCount > 0
-        ? `Depuis le début de l'essai, chez ${escapeHtml(establishmentName)} :`
-        : `Aucun pourboire n'est passé pendant l'essai, donc on n'a rien à vous montrer pour l'instant.`,
-      bullets,
-      ctaLabel: 'Continuer avec Pro →', ctaUrl: billingUrl,
-      note: `Vous n'avez pas donné de carte, donc si vous ne faites rien, Pro s'arrête simplement le ${escapeHtml(endDate)} et vous ne payez rien.${priceLabel ? ` Pour continuer, c'est ${escapeHtml(priceLabel)} HT par mois, sans engagement.` : ''} Vos pourboires et vos relevés ne changent pas.`,
-    }));
+  return lifecycleSend({
+    to,
+    subject: pick(lang, `Votre essai Digitip Pro se termine dans ${days}`, `Your Digitip Pro trial ends in ${days}`),
+    html: layout({
+      lang,
+      preheader: pick(lang, 'Sans action de votre part, rien ne vous sera facturé.', 'If you do nothing, you will not be charged.'),
+      body: [
+        block.p(hello(lang, firstName)),
+        block.p(pick(lang,
+          `Votre essai gratuit de Digitip Pro pour ${block.strong(est)} se termine le ${block.strong(esc(endDate))}.`,
+          `Your free Digitip Pro trial for ${block.strong(est)} ends on ${block.strong(esc(endDate))}.`)),
+        ...(tipCount > 0
+          ? [
+              block.p(pick(lang, 'Depuis le début de l’essai :', 'Since the trial began:')),
+              block.list([
+                pick(lang,
+                  `${clickCount} client${s(clickCount)} sur ${tipCount} ${clickCount > 1 ? 'ont ouvert votre fiche Google après leur pourboire' : 'a ouvert votre fiche Google après son pourboire'} ;`,
+                  `${clickCount} customer${clickCount === 1 ? '' : 's'} out of ${tipCount} opened your Google listing after tipping;`),
+                pick(lang,
+                  complimentCount === 1 ? 'votre équipe a reçu un petit mot d’un client.' : `votre équipe a reçu ${complimentCount} petits mots de clients.`,
+                  `your team received ${complimentCount} note${complimentCount === 1 ? '' : 's'} from customers.`),
+              ]),
+            ]
+          : [block.p(pick(lang,
+              'Aucun pourboire n’est passé pendant l’essai, nous n’avons donc rien pu vous montrer encore.',
+              'No tip came in during the trial, so there is nothing to show you yet.'))]),
+        block.p(pick(lang,
+          `Vous n’avez pas donné de carte : si vous ne faites rien, Pro s’arrête le ${esc(endDate)} et rien ne vous est facturé.${priceLabel ? ` Pour le garder, c’est ${esc(priceLabel)} HT par mois, sans engagement.` : ''}`,
+          `You did not give a card: if you do nothing, Pro stops on ${esc(endDate)} and you are not charged.${priceLabel ? ` To keep it, it is ${esc(priceLabel)} excl. VAT a month, no commitment.` : ''}`)),
+        block.button(pick(lang, 'Garder Digitip Pro', 'Keep Digitip Pro'), billingUrl),
+        block.small(pick(lang,
+          'Vos pourboires et vos relevés mensuels ne changent pas, avec ou sans Pro.',
+          'Your tips and monthly statements stay the same, with or without Pro.')),
+      ],
+    }),
+  });
 }
 
-/** Staff, a Stripe payout failed (transactional). */
-export async function sendPayoutFailedAlert(opts: {
-  to: string; firstName: string; bankingUrl: string;
-}): Promise<{ id: string | null }> {
-  const { to, firstName, bankingUrl } = opts;
-  return lifecycleSend(to, `${firstName}, un virement de vos pourboires n'est pas passé`,
-    lifecycleBody({
-      badge: 'À vérifier', tone: 'amber',
-      title: `${firstName}, un virement n'est pas passé`,
-      intro: `Un virement de vos pourboires a été refusé par la banque. Presque toujours, c'est un RIB faux ou qui n'est plus valable. Vérifiez vos coordonnées bancaires pour que les virements reprennent.`,
-      ctaLabel: 'Vérifier mon RIB →', ctaUrl: bankingUrl,
-      note: 'L\'argent n\'est pas perdu : il sera versé dès que votre compte sera à jour.',
-    }));
-}
-
-// ─── Monthly payroll statement (every plan since 00088) ───────────────────────
+// ═══ Monthly payroll statement ════════════════════════════════════════════════
 
 /**
- * The monthly statement, delivered rather than downloaded. An export the
- * manager has to remember to run every month is still a chore; one that lands
- * in their accountant's inbox on its own is not.
+ * Sent on the 1st of each month, to the manager and, when they gave one, to
+ * their accountant. Each gets their own copy: the accountant may never have
+ * heard of Digitip and needs to know why this is in their inbox.
  */
 export async function sendMonthlyStatement(opts: {
   to: string[];
+  /** The address among `to` that is the accountant's, if any. */
+  accountantEmail?: string | null;
   establishmentName: string;
   monthLabel: string;
   staffCount: number;
@@ -2011,47 +1730,47 @@ export async function sendMonthlyStatement(opts: {
   month: string;
   locale: 'fr' | 'en';
 }): Promise<void> {
-  if (!resend) return;
-  const { to, establishmentName, monthLabel, staffCount, totalFormatted, month, locale } = opts;
+  const { to, accountantEmail, establishmentName, monthLabel, staffCount, totalFormatted, month, locale: lang } = opts;
+  const est = esc(establishmentName);
+  const people = pick(lang, `${staffCount} personne${staffCount > 1 ? 's' : ''}`, `${staffCount} ${staffCount > 1 ? 'people' : 'person'}`);
+  const attachments: Attachment[] = [
+    { filename: `releve-pourboires-${month}.csv`, content: Buffer.from(opts.summaryCsv, 'utf8') },
+    { filename: `journal-pourboires-${month}.csv`, content: Buffer.from(opts.journalCsv, 'utf8') },
+  ];
 
-  const fr = locale === 'fr';
-  const subject = fr
-    ? `Relevé des pourboires de ${monthLabel}, ${establishmentName}`
-    : `Tip statement for ${monthLabel}, ${establishmentName}`;
-
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject,
-    html: themedLayout(`
-    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
-      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Relevé mensuel' : 'Monthly statement'}</div>
-    </td></tr>
-    <tr><td style="padding:28px 32px">
-      <div class="text-primary" style="font-size:18px;font-weight:700;color:#0f0f12;margin-bottom:10px">${establishmentName}, ${monthLabel}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a;line-height:1.6">
-        ${fr
-          ? `Ce mois-ci, <strong class="text-strong" style="color:#0f0f12">${totalFormatted}</strong> de pourboires pour ${staffCount} ${staffCount > 1 ? 'personnes' : 'personne'}.`
-          : `<strong class="text-strong" style="color:#0f0f12">${totalFormatted}</strong> in tips to distribute across ${staffCount} ${staffCount > 1 ? 'people' : 'person'} this month.`}
-      </div>
-    </td></tr>
-    <tr><td style="padding:0 32px 28px">
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;line-height:1.6">
-        ${fr
-          ? 'Il y a deux fichiers joints. Le premier donne le total par personne, pour la paie. Le second liste chaque pourboire, pour le rapprocher du relevé bancaire.'
-          : 'Two files are attached: the per-employee summary for payroll, and the detailed journal of every tip for bank reconciliation.'}
-      </div>
-    </td></tr>`),
-    attachments: [
-      {
-        filename: `releve-pourboires-${month}.csv`,
-        content: Buffer.from(opts.summaryCsv, 'utf8').toString('base64'),
-      },
-      {
-        filename: `journal-pourboires-${month}.csv`,
-        content: Buffer.from(opts.journalCsv, 'utf8').toString('base64'),
-      },
-    ],
-  });
+  for (const recipient of to) {
+    const isAccountant = !!accountantEmail && recipient.toLowerCase() === accountantEmail.toLowerCase();
+    await deliverQuietly({
+      to: recipient,
+      subject: pick(lang, `Relevé des pourboires de ${monthLabel} : ${establishmentName}`, `Tip statement for ${monthLabel}: ${establishmentName}`),
+      attachments,
+      html: layout({
+        lang,
+        preheader: pick(lang, `${totalFormatted} pour ${people}. Deux fichiers joints.`, `${totalFormatted} for ${people}. Two files attached.`),
+        body: [
+          block.p(pick(lang, 'Bonjour,', 'Hello,')),
+          ...(isAccountant
+            ? [block.p(pick(lang,
+                `${block.strong(est)} vous a indiqué sur Digitip comme destinataire de son relevé mensuel de pourboires. Digitip est le service qui encaisse les pourboires par carte de l’établissement.`,
+                `${block.strong(est)} listed you on Digitip as the recipient of its monthly tip statement. Digitip is the service that collects the business’s card tips.`))]
+            : []),
+          block.p(pick(lang,
+            `En ${esc(monthLabel)}, ${block.strong(est)} a reçu ${block.strong(totalFormatted)} de pourboires, attribués à ${people}.`,
+            `In ${esc(monthLabel)}, ${block.strong(est)} received ${block.strong(totalFormatted)} in tips, attributed to ${people}.`)),
+          block.p(pick(lang, 'Deux fichiers sont joints :', 'Two files are attached:')),
+          block.list([
+            pick(lang,
+              `${block.mono(`releve-pourboires-${month}.csv`)} : le total par personne, à reporter sur la paie ;`,
+              `${block.mono(`releve-pourboires-${month}.csv`)}: the total per person, for payroll;`),
+            pick(lang,
+              `${block.mono(`journal-pourboires-${month}.csv`)} : chaque pourboire, pour le rapprochement avec le relevé bancaire.`,
+              `${block.mono(`journal-pourboires-${month}.csv`)}: every tip, to reconcile with the bank statement.`),
+          ]),
+          block.small(pick(lang,
+            'Ce relevé part le 1er de chaque mois. Le responsable de l’établissement peut changer son destinataire dans ses réglages Digitip.',
+            'This statement goes out on the 1st of each month. The business manager can change who receives it in their Digitip settings.')),
+        ],
+      }),
+    });
+  }
 }

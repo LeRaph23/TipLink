@@ -152,7 +152,8 @@ export async function POST(req: Request) {
 
       await sendMonthlyStatement({
         to: [...recipients],
-        // `groups.name` is nullable; the free recap below already falls back.
+        accountantEmail: group.accountant_email ?? null,
+        // `groups.name` is nullable.
         establishmentName: group.name ?? 'Votre établissement',
         monthLabel,
         staffCount: dataset.summary.length,

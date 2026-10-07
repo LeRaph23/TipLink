@@ -13,11 +13,11 @@ import {
   firstNameFrom,
   lifecycleUnsubUrl,
   isoWeekBucket,
-  dayWindowBucket,
+  sendHistory,
 } from '@/lib/email/lifecycle';
+import { lastParisWeek, weekLabel } from '@/lib/email/lifecycle-helpers';
 import {
   sendGroupOnboardingNudge,
-  sendTagDeliveredPlaceNudge,
   sendInviteTeamNudge,
   sendStaffMissingEmailNudge,
   sendActivationNudge,
@@ -45,7 +45,7 @@ const newTally = (): Tally => ({ considered: 0, sent: 0, skipped: 0, failed: 0 }
 // The lifecycle queries touch columns not present in the generated DB types.
 type Db = SupabaseClient;
 
-// ─── Group admin: onboarding not completed (J+2 step 1, J+5 step 2) ──────────
+// ─── Group admin: onboarding not completed (day 2, then day 6, then never) ───
 async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<Tally> {
   const t = newTally();
   const now = Date.now();
@@ -73,7 +73,7 @@ async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<T
       if (!recipient) { t.skipped++; continue; }
 
       const ageDays = (now - new Date(g.created_at).getTime()) / DAY;
-      const step: 1 | 2 = ageDays >= 5 ? 2 : 1;
+      const step: 1 | 2 = ageDays >= 6 ? 2 : 1;
       const setupUrl =
         `${getBaseUrl()}/onboarding?group=${g.id}` +
         `&token=${encodeURIComponent(signOnboardingToken(g.id, recipient.email))}` +
@@ -88,7 +88,8 @@ async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<T
         occurrenceSalt: `step${step}`,
         send: () => sendGroupOnboardingNudge({
           to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
+          locale: recipient.locale,
+          firstName: firstNameFrom(recipient.name),
           setupUrl,
           step,
           unsubscribeUrl: unsub,
@@ -140,61 +141,18 @@ async function establishmentsWithSucceededTip(service: Db, establishmentIds: str
 }
 
 // ─── Group admin: hardware delivered, no tip yet → place the tag ─────────────
-async function runTagDeliveredNudges(service: Db, dryRun: boolean): Promise<Tally> {
-  const t = newTally();
-  const now = Date.now();
-  const { data: orders } = await service
-    .from('smarttag_orders')
-    .select('group_id, delivered_at')
-    .eq('status', 'delivered')
-    .lt('delivered_at', new Date(now - 1 * DAY).toISOString())
-    .gt('delivered_at', new Date(now - 21 * DAY).toISOString())
-    .limit(LIMIT);
-
-  if (dryRun) { t.considered = (orders ?? []).length; return t; }
-
-  // Preload establishments + which ones already have a succeeded tip, once.
-  const groupIds = [...new Set((orders ?? []).map((o) => o.group_id).filter((x): x is string => !!x))];
-  const estByGroup = await establishmentsByGroup(service, groupIds);
-  const tipped = await establishmentsWithSucceededTip(
-    service,
-    [...estByGroup.values()].flat().map((e) => e.id),
-  );
-
-  for (const groupId of groupIds) {
-    t.considered++;
-    try {
-      const ests = estByGroup.get(groupId) ?? [];
-      if (ests.some((e) => tipped.has(e.id))) { t.skipped++; continue; }
-
-      const recipient = await resolveGroupAdmin(service, groupId);
-      if (!recipient) { t.skipped++; continue; }
-      const unsub = lifecycleUnsubUrl('group_admin', groupId);
-
-      const r = await dispatchLifecycleEmail(service, {
-        def: LIFECYCLE.tag_delivered_place,
-        groupId: groupId,
-        establishmentId: ests[0]?.id ?? null,
-        to: recipient.email,
-        locale: recipient.locale,
-        send: () => sendTagDeliveredPlaceNudge({
-          to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
-          establishmentName: ests[0]?.name ?? 'votre salon',
-          dashboardUrl: `${getBaseUrl()}/dashboard`,
-          unsubscribeUrl: unsub,
-        }),
-      });
-      t[r]++;
-    } catch (e) {
-      t.failed++;
-      console.error('[lifecycle] tag delivered nudge failed', groupId, e);
-    }
-  }
-  return t;
-}
-
 // ─── Group admin: onboarded but no team / no tips ────────────────────────────
+//
+// invite_team: nobody active on the team three days after sign-up. With no
+// active staff member the tip page has no one to tip and turns customers
+// away, so this is the most urgent nudge after the sign-up itself.
+//
+// activation_no_tips: a week after sign-up, still no tip, while there IS
+// someone to tip and the plaques have been in hand for at least four days.
+// Without those two conditions the email blamed the manager for plaques
+// still in the post.
+const IN_TRANSIT = ['pending_fulfillment', 'encoding', 'ready_to_ship', 'shipped'];
+
 async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise<{ team: Tally; activation: Tally }> {
   const team = newTally();
   const activation = newTally();
@@ -210,21 +168,35 @@ async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise
 
   if (dryRun) { team.considered = activation.considered = (groups ?? []).length; return { team, activation }; }
 
-  // Preload establishments, succeeded-tip set, and staff counts for every group
-  // in this batch (was an N+1 of 3 lookups per group inside the loop).
   const groupIds = (groups ?? []).map((g) => g.id);
   const estByGroup = await establishmentsByGroup(service, groupIds);
   const allEstIds = [...estByGroup.values()].flat().map((e) => e.id);
   const tipped = await establishmentsWithSucceededTip(service, allEstIds);
-  const staffByEst = new Map<string, number>();
+
+  const activeByEst = new Map<string, number>();
   if (allEstIds.length > 0) {
     const { data: staffRows } = await service
       .from('staff_profiles')
       .select('establishment_id')
       .in('establishment_id', allEstIds)
+      .eq('is_active', true)
       .is('deleted_at', null);
     for (const s of (staffRows ?? []) as Array<{ establishment_id: string | null }>) {
-      if (s.establishment_id) staffByEst.set(s.establishment_id, (staffByEst.get(s.establishment_id) ?? 0) + 1);
+      if (s.establishment_id) activeByEst.set(s.establishment_id, (activeByEst.get(s.establishment_id) ?? 0) + 1);
+    }
+  }
+
+  // Plaques: still on their way, or delivered too recently to judge.
+  const plaquesNotReady = new Set<string>();
+  if (groupIds.length > 0) {
+    const { data: orders } = await service
+      .from('smarttag_orders')
+      .select('group_id, status, delivered_at')
+      .in('group_id', groupIds);
+    for (const o of (orders ?? []) as Array<{ group_id: string | null; status: string; delivered_at: string | null }>) {
+      if (!o.group_id) continue;
+      const recentlyDelivered = o.status === 'delivered' && o.delivered_at && now - new Date(o.delivered_at).getTime() < 4 * DAY;
+      if (IN_TRANSIT.includes(o.status) || recentlyDelivered) plaquesNotReady.add(o.group_id);
     }
   }
 
@@ -235,12 +207,11 @@ async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise
       const recipient = await resolveGroupAdmin(service, g.id);
       if (!recipient) continue;
       const unsub = lifecycleUnsubUrl('group_admin', g.id);
-      const firstName = firstNameFrom(recipient.name, 'Bonjour');
-      const estName = ests[0]?.name ?? 'votre salon';
+      const firstName = firstNameFrom(recipient.name);
+      const estName = ests[0]?.name ?? (recipient.locale.startsWith('en') ? 'your business' : 'votre établissement');
+      const activeStaff = estIds.reduce((sum, id) => sum + (activeByEst.get(id) ?? 0), 0);
 
-      // Invite-team nudge: establishment has at most one staff member.
-      const staffCount = estIds.reduce((sum, id) => sum + (staffByEst.get(id) ?? 0), 0);
-      if (staffCount <= 1) {
+      if (activeStaff === 0) {
         team.considered++;
         const r = await dispatchLifecycleEmail(service, {
           def: LIFECYCLE.invite_team,
@@ -249,17 +220,17 @@ async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise
           to: recipient.email,
           locale: recipient.locale,
           send: () => sendInviteTeamNudge({
-            to: recipient.email, firstName, establishmentName: estName,
+            to: recipient.email, firstName, establishmentName: estName, locale: recipient.locale,
             inviteUrl: `${getBaseUrl()}/dashboard/staff`, unsubscribeUrl: unsub,
           }),
         });
         team[r]++;
+        continue;
       }
 
-      // Activation nudge: 7+ days onboarded and still zero succeeded tips.
       const daysSince = Math.floor((now - new Date(g.onboarding_completed_at).getTime()) / DAY);
       const hasTip = estIds.some((id) => tipped.has(id));
-      if (daysSince >= 7 && !hasTip) {
+      if (daysSince >= 7 && !hasTip && !plaquesNotReady.has(g.id)) {
         activation.considered++;
         const r = await dispatchLifecycleEmail(service, {
           def: LIFECYCLE.activation_no_tips,
@@ -268,7 +239,7 @@ async function runTeamAndActivationNudges(service: Db, dryRun: boolean): Promise
           to: recipient.email,
           locale: recipient.locale,
           send: () => sendActivationNudge({
-            to: recipient.email, firstName, establishmentName: estName,
+            to: recipient.email, firstName, establishmentName: estName, locale: recipient.locale,
             dashboardUrl: `${getBaseUrl()}/dashboard`, daysSince, unsubscribeUrl: unsub,
           }),
         });
@@ -304,7 +275,7 @@ async function runStaffInviteReminders(service: Db, dryRun: boolean): Promise<Ta
       const ageDays = (now - new Date(s.created_at).getTime()) / DAY;
       const step: 1 | 2 = ageDays >= 7 ? 2 : 1;
       const estName =
-        (s.establishments as { name?: string } | null)?.name ?? 'votre établissement';
+        (s.establishments as { name?: string } | null)?.name ?? (recipient.locale.startsWith('en') ? 'your business' : 'votre établissement');
       const unsub = lifecycleUnsubUrl('staff', s.id);
 
       const r = await dispatchLifecycleEmail(service, {
@@ -316,7 +287,8 @@ async function runStaffInviteReminders(service: Db, dryRun: boolean): Promise<Ta
         occurrenceSalt: `step${step}`,
         send: () => sendStaffInviteReminder({
           to: recipient.email,
-          firstName: firstNameFrom(recipient.fullName, 'Bonjour'),
+          locale: recipient.locale,
+          firstName: firstNameFrom(recipient.fullName),
           establishmentName: estName,
           joinUrl: `${getBaseUrl()}/login`,
           step,
@@ -332,7 +304,16 @@ async function runStaffInviteReminders(service: Db, dryRun: boolean): Promise<Ta
   return t;
 }
 
-// ─── Group admin: establishment was active then went quiet (recurring) ───────
+// ─── Group admin: an establishment that used to get tips went quiet ──────────
+//
+// Once per quiet spell: the occurrence is the date of the last tip, so a new
+// email can only follow a new tip and a new silence. The old 30-day calendar
+// bucket could send twice a day apart when the bucket rolled over. At least
+// five tips before the silence, otherwise it is an activation problem, which
+// has its own email.
+const QUIET_DAYS = 21;
+const MIN_TIPS_BEFORE_QUIET = 5;
+
 async function runReEngagementNudges(service: Db, dryRun: boolean): Promise<Tally> {
   const t = newTally();
   const now = Date.now();
@@ -344,16 +325,12 @@ async function runReEngagementNudges(service: Db, dryRun: boolean): Promise<Tall
     .order('succeeded_at', { ascending: false })
     .limit(5000);
 
-  // Most recent succeeded tip per establishment within the 60-day window.
   const latest = new Map<string, string>();
   for (const row of txns ?? []) {
-    if (row.establishment_id && !latest.has(row.establishment_id)) {
-      latest.set(row.establishment_id, row.succeeded_at);
-    }
+    if (row.establishment_id && !latest.has(row.establishment_id)) latest.set(row.establishment_id, row.succeeded_at);
   }
-  const quietCutoff = now - 21 * DAY;
   const candidates = [...latest.entries()]
-    .filter(([, ts]) => new Date(ts).getTime() < quietCutoff)
+    .filter(([, ts]) => now - new Date(ts).getTime() >= QUIET_DAYS * DAY)
     .map(([id, ts]) => ({ id, ts }));
 
   if (dryRun) { t.considered = candidates.length; return t; }
@@ -365,17 +342,22 @@ async function runReEngagementNudges(service: Db, dryRun: boolean): Promise<Tall
     .in('id', candidates.map((c) => c.id))
     .is('deleted_at', null);
   const estById = new Map((ests ?? []).map((e) => [e.id, e]));
-  const periodBucket = dayWindowBucket(new Date(), 30);
 
   for (const c of candidates) {
     const est = estById.get(c.id);
     if (!est?.group_id) continue;
     t.considered++;
     try {
+      const { count } = await service
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('establishment_id', c.id)
+        .eq('status', 'succeeded');
+      if ((count ?? 0) < MIN_TIPS_BEFORE_QUIET) { t.skipped++; continue; }
+
       const recipient = await resolveGroupAdmin(service, est.group_id);
       if (!recipient) { t.skipped++; continue; }
       const daysQuiet = Math.floor((now - new Date(c.ts).getTime()) / DAY);
-      const unsub = lifecycleUnsubUrl('group_admin', est.group_id);
 
       const r = await dispatchLifecycleEmail(service, {
         def: LIFECYCLE.re_engagement,
@@ -383,14 +365,15 @@ async function runReEngagementNudges(service: Db, dryRun: boolean): Promise<Tall
         establishmentId: est.id,
         to: recipient.email,
         locale: recipient.locale,
-        periodBucket,
+        occurrenceSalt: c.ts.slice(0, 10),
         send: () => sendReEngagementEmail({
           to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
-          establishmentName: est.name ?? 'votre salon',
+          locale: recipient.locale,
+          firstName: firstNameFrom(recipient.name),
+          establishmentName: est.name ?? '',
           daysQuiet,
           dashboardUrl: `${getBaseUrl()}/dashboard`,
-          unsubscribeUrl: unsub,
+          unsubscribeUrl: lifecycleUnsubUrl('group_admin', est.group_id),
         }),
       });
       t[r]++;
@@ -463,7 +446,8 @@ async function runFreeTrialEndingWarnings(service: Db, dryRun: boolean): Promise
         locale: recipient.locale,
         send: () => sendFreeTrialEndingSoon({
           to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
+          locale: recipient.locale,
+          firstName: firstNameFrom(recipient.name),
           establishmentName: group.name ?? 'votre établissement',
           daysLeft: trial.daysLeft,
           endDate: longDate(trial.endsAt, 'fr'),
@@ -545,7 +529,8 @@ async function runTrialEndingWarnings(service: Db, dryRun: boolean): Promise<Tal
         locale: recipient.locale,
         send: () => sendTrialEndingSoon({
           to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
+          locale: recipient.locale,
+          firstName: firstNameFrom(recipient.name),
           establishmentName: group.name ?? 'votre établissement',
           daysLeft: trial.daysLeft,
           priceLabel,
@@ -563,85 +548,99 @@ async function runTrialEndingWarnings(service: Db, dryRun: boolean): Promise<Tal
   return t;
 }
 
-// ─── Group admin: weekly recap of tips collected (Mondays) ───────────────────
+// ─── Group admin: Monday recap of last week's tips ───────────────────────────
+//
+// The previous calendar week, Monday 00:00 to Monday 00:00 Paris time, so
+// the email's "semaine du 29 septembre au 5 octobre" is literally true. It
+// used to be the last 168 hours before 09:00 UTC, which straddled two weeks.
+// One email per group, listing each establishment, instead of one per
+// establishment, of which the frequency cap let only the first through.
+
 async function runWeeklyRecap(service: Db, dryRun: boolean): Promise<Tally> {
   const t = newTally();
-  const now = Date.now();
+  const { start, end } = lastParisWeek(new Date());
   const { data: txns } = await service
     .from('transactions')
     .select('establishment_id, amount, currency, metadata')
     .eq('status', 'succeeded')
-    .gte('succeeded_at', new Date(now - 7 * DAY).toISOString())
+    .gte('succeeded_at', start.toISOString())
+    .lt('succeeded_at', end.toISOString())
     .limit(20000);
 
-  const agg = new Map<string, { total: number; count: number; currency: string }>();
+  const byEst = new Map<string, { total: number; count: number; currency: string }>();
   for (const row of txns ?? []) {
     if (!row.establishment_id) continue;
-    const cur = agg.get(row.establishment_id) ?? { total: 0, count: 0, currency: row.currency || 'EUR' };
-    // The tip, not the gross charge. This email says "a encaissé X €", and
-    // `amount` is what the CUSTOMER paid — tip plus the service fee added on
-    // top — so it announced roughly 25 c + 5 % per tip more than the salon's
-    // bank showed, every Monday morning.
+    const cur = byEst.get(row.establishment_id) ?? { total: 0, count: 0, currency: row.currency || 'EUR' };
+    // The tip, not the gross charge: the service fee is not the salon's money.
     cur.total += tipAmountOf(row);
     cur.count += 1;
-    agg.set(row.establishment_id, cur);
+    byEst.set(row.establishment_id, cur);
   }
 
-  if (dryRun) { t.considered = agg.size; return t; }
-  if (agg.size === 0) return t;
+  if (dryRun) { t.considered = byEst.size; return t; }
+  if (byEst.size === 0) return t;
 
   const { data: ests } = await service
     .from('establishments')
     .select('id, name, group_id')
-    .in('id', [...agg.keys()])
+    .in('id', [...byEst.keys()])
     .is('deleted_at', null);
-  const estById = new Map((ests ?? []).map((e) => [e.id, e]));
-  const periodBucket = isoWeekBucket(new Date());
 
-  for (const [estId, sums] of agg) {
-    const est = estById.get(estId);
-    if (!est?.group_id) continue;
+  const byGroup = new Map<string, Array<{ name: string; total: number; count: number; currency: string }>>();
+  for (const e of ests ?? []) {
+    const sums = byEst.get(e.id);
+    if (!e.group_id || !sums) continue;
+    const list = byGroup.get(e.group_id) ?? [];
+    list.push({ name: e.name ?? '', ...sums });
+    byGroup.set(e.group_id, list);
+  }
+  const periodBucket = isoWeekBucket(start);
+
+  for (const [groupId, list] of byGroup) {
     t.considered++;
     try {
-      const recipient = await resolveGroupAdmin(service, est.group_id);
+      const recipient = await resolveGroupAdmin(service, groupId);
       if (!recipient) { t.skipped++; continue; }
-      const unsub = lifecycleUnsubUrl('group_admin', est.group_id);
+      list.sort((a, b) => b.total - a.total);
 
       const r = await dispatchLifecycleEmail(service, {
         def: LIFECYCLE.weekly_tip_recap,
-        groupId: est.group_id,
-        establishmentId: est.id,
+        groupId,
         to: recipient.email,
         locale: recipient.locale,
         periodBucket,
         send: () => sendWeeklyTipRecap({
           to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
-          establishmentName: est.name ?? 'votre salon',
-          weekTotal: sums.total,
-          tipCount: sums.count,
-          currency: sums.currency,
+          locale: recipient.locale,
+          firstName: firstNameFrom(recipient.name),
+          weekLabel: weekLabel(start, end, recipient.locale),
+          establishments: list,
+          currency: list[0].currency,
           dashboardUrl: `${getBaseUrl()}/dashboard`,
-          unsubscribeUrl: unsub,
+          unsubscribeUrl: lifecycleUnsubUrl('group_admin', groupId),
         }),
       });
       t[r]++;
     } catch (e) {
       t.failed++;
-      console.error('[lifecycle] weekly recap failed', estId, e);
+      console.error('[lifecycle] weekly recap failed', groupId, e);
     }
   }
   return t;
 }
 
 
-// ─── Group admin: staff profiles with no email (recurring, 30-day bucket) ────
+// ─── Group admin: staff profiles with no email (day 3, again 30 days later) ──
 // These profiles have user_id NULL: no invite was sent, no account exists, and
-// resolveStaffRecipient() cannot reach them — so no staff-audience sequence
-// ever will. The admin is the only reachable party, and the situation caps the
-// establishment's tip volume for as long as it lasts.
+// resolveStaffRecipient() cannot reach them, so no staff-audience sequence
+// ever will. The admin is the only reachable party. Twice at most: after that
+// the admin has decided, and repeating it every month was nagging.
+const MISSING_EMAIL_MAX_SENDS = 2;
+const MISSING_EMAIL_GAP_DAYS = 30;
+
 async function runStaffMissingEmailNudges(service: Db, dryRun: boolean): Promise<Tally> {
   const t = newTally();
+  const now = Date.now();
   const { data: groups } = await service
     .from('groups')
     .select('id')
@@ -666,27 +665,32 @@ async function runStaffMissingEmailNudges(service: Db, dryRun: boolean): Promise
         .select('id')
         .in('establishment_id', estIds)
         .is('user_id', null)
-        .is('deleted_at', null);
+        .eq('is_active', false)
+        .is('deleted_at', null)
+        .lt('created_at', new Date(now - 3 * DAY).toISOString());
 
       const count = (orphans ?? []).length;
       if (count === 0) continue;
-
       t.considered++;
+
+      const history = await sendHistory(service, LIFECYCLE.staff_missing_email.key, { groupId: g.id });
+      if (history.count >= MISSING_EMAIL_MAX_SENDS) { t.skipped++; continue; }
+      if (history.lastSentAt && now - history.lastSentAt.getTime() < MISSING_EMAIL_GAP_DAYS * DAY) { t.skipped++; continue; }
+
       const recipient = await resolveGroupAdmin(service, g.id);
       if (!recipient) { t.skipped++; continue; }
 
       const r = await dispatchLifecycleEmail(service, {
         def: LIFECYCLE.staff_missing_email,
         groupId: g.id,
-        establishmentId: ests?.[0]?.id ?? null,
         to: recipient.email,
         locale: recipient.locale,
-        // Recurring: re-send at most once per 30-day bucket while unresolved.
-        occurrenceSalt: `m${Math.floor(Date.now() / (30 * DAY))}`,
+        occurrenceSalt: `n${history.count + 1}`,
         send: () => sendStaffMissingEmailNudge({
           to: recipient.email,
-          firstName: firstNameFrom(recipient.name, 'Bonjour'),
-          establishmentName: ests?.[0]?.name ?? 'votre établissement',
+          locale: recipient.locale,
+          firstName: firstNameFrom(recipient.name),
+          establishmentName: ests?.[0]?.name ?? '',
           count,
           staffUrl: `${getBaseUrl()}/dashboard/staff`,
           unsubscribeUrl: lifecycleUnsubUrl('group_admin', g.id),
@@ -715,7 +719,6 @@ export async function GET(req: NextRequest) {
   results.groupOnboarding = await runGroupOnboardingNudges(service, dryRun);
   results.staffInvite = await runStaffInviteReminders(service, dryRun);
   results.staffMissingEmail = await runStaffMissingEmailNudges(service, dryRun);
-  results.tagDelivered = await runTagDeliveredNudges(service, dryRun);
   const ta = await runTeamAndActivationNudges(service, dryRun);
   results.inviteTeam = ta.team;
   results.activation = ta.activation;

@@ -26,7 +26,7 @@
     },
     {
       "path": "/api/cron/monthly-statements",
-      "schedule": "0 6 5 * *"
+      "schedule": "0 6 1 * *"
     },
     {
       "path": "/api/cron/data-retention",

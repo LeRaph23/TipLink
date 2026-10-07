@@ -12,7 +12,7 @@
 //   tips go via separate transfers with
 //   source_transaction                            → app/api/stripe/create-intent/route.ts
 // - every plan exports any month, and the         → app/api/statements/export.csv/route.ts
-//   statement is emailed on the 5th               → app/api/cron/monthly-statements/route.ts
+//   statement is emailed on the 1st               → app/api/cron/monthly-statements/route.ts
 // - review invite and notes shown to Pro only    → supabase/migrations/00088_pro_reputation.sql
 // - cardless 30-day Pro trial from the first tip → lib/billing/free-trial.ts
 // - lifetime warranty = defects, not loss/damage → legal.cgv s7Body in messages/fr.json
@@ -202,7 +202,7 @@ export const HELP: HelpCategory[] = [
         id: 'reverser-equipe',
         question: 'Comment les employés touchent-ils leurs pourboires ?',
         answer:
-          "Le pourboire est versé sur le compte de l'établissement, qui le reverse à l'équipe avec la paie. Chaque pourboire est attribué à la personne choisie par le client : la page Relevés affiche le total de chaque employé, mois par mois. Vous pouvez exporter n'importe quel mois, et le relevé part tout seul le 5 du mois à vous et à votre comptable, gratuitement.",
+          "Le pourboire est versé sur le compte de l'établissement, qui le reverse à l'équipe avec la paie. Chaque pourboire est attribué à la personne choisie par le client : la page Relevés affiche le total de chaque employé, mois par mois. Vous pouvez exporter n'importe quel mois, et le relevé part tout seul le 1er du mois à vous et à votre comptable, gratuitement.",
         link: { label: 'Voir mes relevés', href: '/fr/dashboard/statements' },
       },
       {

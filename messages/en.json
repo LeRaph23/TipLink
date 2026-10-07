@@ -965,7 +965,7 @@
       "saved": "Saved.",
       "noGroup": "Your account isn't linked to any venue yet.",
       "accountantEmail": "Accountant's email",
-      "accountantEmailHelp": "On the 5th of each month we send them last month's tip statement, and you too."
+      "accountantEmailHelp": "On the 1st of each month we send them last month's tip statement, and you too."
     },
     "admin": {
       "nav": {
@@ -1218,8 +1218,8 @@
       "empty": "No tips this month.",
       "export": "Export as CSV",
       "exportJournal": "Detailed journal",
-      "autoBodyAccountant": "On the 5th of each month, we email last month's statement to you and to {email}.",
-      "autoBodyNoAccountant": "On the 5th of each month, we email you last month's statement. Your accountant can get it too.",
+      "autoBodyAccountant": "On the 1st of each month, we email last month's statement to you and to {email}.",
+      "autoBodyNoAccountant": "On the 1st of each month, we email you last month's statement. Your accountant can get it too.",
       "autoCta": "Add their address"
     },
     "payments": {

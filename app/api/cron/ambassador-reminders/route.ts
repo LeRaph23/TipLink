@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { sendAmbassadorApplicationReminder } from '@/lib/email';
+import { sendPendingApplicationsDigest } from '@/lib/email';
+import { getSuperAdminEmails } from '@/lib/admin/super-admins';
 import { isAuthorizedCronRequest } from '@/lib/auth/require-cron';
 import { settleExpiredChallenges } from '@/lib/ambassador-monthly-challenge';
 
@@ -14,33 +15,44 @@ export async function GET(req: NextRequest) {
 
   const service = createServiceClient();
   const now = Date.now();
-  const twoDaysAgo = new Date(now - 2 * 86400000).toISOString();
-  const fiveDaysAgo = new Date(now - 5 * 86400000).toISOString();
 
+  // Applications still unanswered after 2 days (we promise an answer within
+  // 2 working days), then again after 5. The reminder goes to the Digitip
+  // team, not the applicant: a pending application is waiting on us.
+  // reminder_count counts these alerts, so each application is raised twice
+  // at most.
   const { data: candidates } = await service
     .from('ambassador_recruitment_applications')
-    .select('id, first_name, email, reminder_count, created_at, last_reminder_at')
+    .select('id, first_name, last_name, city, reminder_count, created_at')
     .eq('status', 'pending')
     .lt('reminder_count', 2);
 
-  const toRemind = (candidates ?? []).filter(c => {
-    if (c.reminder_count === 0) return c.created_at < twoDaysAgo;
-    if (c.reminder_count === 1) return (c.last_reminder_at ?? c.created_at) < fiveDaysAgo;
-    return false;
+  const due = (candidates ?? []).filter((c) => {
+    const age = now - new Date(c.created_at).getTime();
+    return c.reminder_count === 0 ? age > 2 * 86400000 : age > 5 * 86400000;
   });
 
   let sent = 0;
-  for (const c of toRemind) {
-    const step = (c.reminder_count + 1) as 1 | 2;
+  if (due.length > 0) {
+    const admins = await getSuperAdminEmails(service);
     try {
-      await sendAmbassadorApplicationReminder({ to: c.email, firstName: c.first_name, step });
-      await service
-        .from('ambassador_recruitment_applications')
-        .update({ reminder_count: step, last_reminder_at: new Date().toISOString() })
-        .eq('id', c.id);
-      sent++;
+      await sendPendingApplicationsDigest({
+        to: admins,
+        applications: due.map((c) => ({
+          name: [c.first_name, c.last_name].filter(Boolean).join(' '),
+          city: c.city,
+          createdAt: c.created_at,
+        })),
+      });
+      for (const c of due) {
+        await service
+          .from('ambassador_recruitment_applications')
+          .update({ reminder_count: c.reminder_count + 1, last_reminder_at: new Date().toISOString() })
+          .eq('id', c.id);
+      }
+      sent = due.length;
     } catch (e) {
-      console.error('reminder failed', c.id, e);
+      console.error('pending applications digest failed', e);
     }
   }
 
@@ -65,7 +77,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     considered: candidates?.length ?? 0,
-    sent,
+    flagged: sent,
     challengesSettled,
     importResumed,
   });

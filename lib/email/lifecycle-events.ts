@@ -9,11 +9,8 @@ import {
   firstNameFrom,
   lifecycleUnsubUrl,
 } from '@/lib/email/lifecycle';
-import {
-  sendFirstTipCelebration,
-  sendEarningsMilestone,
-  sendStaffBankingComplete,
-} from '@/lib/email';
+import { sendFirstTipCelebration, sendEarningsMilestone } from '@/lib/email';
+import { tipAmountOf } from '@/lib/tips/amounts';
 
 // Event-triggered lifecycle emails dispatched inline from the Stripe webhook.
 // Every entry point goes through the shared engine, so a redelivered webhook
@@ -28,7 +25,7 @@ const MILESTONES = [10_000, 50_000];
 export async function onTipSucceeded(service: Db, transactionId: string): Promise<void> {
   const { data: txn } = await service
     .from('transactions')
-    .select('amount, currency, establishment_id, staff_id, establishments(name, group_id)')
+    .select('amount, currency, metadata, establishment_id, staff_id, establishments(name, group_id)')
     .eq('id', transactionId)
     .single();
   if (!txn) return;
@@ -75,28 +72,33 @@ export async function onTipSucceeded(service: Db, transactionId: string): Promis
           send: () =>
             sendFirstTipCelebration({
               to: recipient.email,
-              firstName: firstNameFrom(recipient.name, 'Bonjour'),
-              amount: txn.amount,
+              firstName: firstNameFrom(recipient.name),
+              // The tip, not the card charge: the service fee never reaches them.
+              amount: tipAmountOf(txn),
               currency: txn.currency,
               establishmentName: est?.name ?? 'votre établissement',
               dashboardUrl: `${getBaseUrl()}/dashboard`,
               unsubscribeUrl: lifecycleUnsubUrl('group_admin', groupId),
               proTrial: trialJustStarted ? { hasReviewLink } : null,
+              locale: recipient.locale,
             }),
         });
       }
     }
   }
 
-  // Cumulative earnings milestone for an individual staff member (solo tips).
+  // Cumulative tips milestone for an individual staff member (solo tips).
+  // Counted on the tip itself: the card charge includes the service fee the
+  // customer paid on top, which the employee never receives, so summing
+  // `amount` announced "100 €" around 92 € of actual tips.
   if (txn.staff_id) {
     const { data: rows } = await service
       .from('transactions')
-      .select('amount')
+      .select('amount, metadata')
       .eq('staff_id', txn.staff_id)
       .eq('status', 'succeeded');
-    const newTotal = (rows ?? []).reduce((a, r) => a + (r.amount ?? 0), 0);
-    const prevTotal = newTotal - txn.amount;
+    const newTotal = (rows ?? []).reduce((a, r) => a + tipAmountOf(r), 0);
+    const prevTotal = newTotal - tipAmountOf(txn);
     for (const threshold of MILESTONES) {
       if (prevTotal < threshold && newTotal >= threshold) {
         const recipient = await resolveStaffRecipient(service, txn.staff_id);
@@ -111,32 +113,16 @@ export async function onTipSucceeded(service: Db, transactionId: string): Promis
           send: () =>
             sendEarningsMilestone({
               to: recipient.email,
-              firstName: firstNameFrom(recipient.fullName, 'Bravo'),
+              firstName: firstNameFrom(recipient.fullName),
               milestoneAmount: threshold,
               currency: txn.currency,
+              establishmentName: est?.name ?? null,
               dashboardUrl: `${getBaseUrl()}/dashboard`,
               unsubscribeUrl: lifecycleUnsubUrl('staff', txn.staff_id),
+              locale: recipient.locale,
             }),
         });
       }
     }
   }
 }
-
-/** Staff Stripe Connect onboarding just transitioned to 'complete'. */
-export async function onStaffBankingComplete(service: Db, staffId: string): Promise<void> {
-  const recipient = await resolveStaffRecipient(service, staffId);
-  if (!recipient) return;
-  await dispatchLifecycleEmail(service, {
-    def: LIFECYCLE.staff_banking_complete,
-    staffId,
-    to: recipient.email,
-    locale: recipient.locale,
-    send: () =>
-      sendStaffBankingComplete({
-        to: recipient.email,
-        firstName: firstNameFrom(recipient.fullName, 'Bonjour'),
-      }),
-  });
-}
-

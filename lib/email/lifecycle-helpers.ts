@@ -24,3 +24,31 @@ export function isoWeekBucket(d: Date): string {
 export function dayWindowBucket(d: Date, windowDays: number): string {
   return `w${Math.floor(Math.floor(d.getTime() / 86400000) / windowDays)}`;
 }
+
+const DAY = 86_400_000;
+
+/** Milliseconds Paris is ahead of UTC at `at`. */
+function parisOffsetMs(at: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris', hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(at);
+  const n = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'), n('second')) - Math.floor(at.getTime() / 1000) * 1000;
+}
+
+/** Last Monday-to-Monday week in Paris, as UTC instants. */
+export function lastParisWeek(now: Date): { start: Date; end: Date } {
+  const local = new Date(now.getTime() + parisOffsetMs(now));
+  const dow = (local.getUTCDay() + 6) % 7; // Monday = 0
+  const mondayLocal = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() - dow);
+  const toUtc = (localMidnight: number) => new Date(localMidnight - parisOffsetMs(new Date(localMidnight)));
+  return { start: toUtc(mondayLocal - 7 * DAY), end: toUtc(mondayLocal) };
+}
+
+export function weekLabel(start: Date, end: Date, locale: string): string {
+  const en = locale.startsWith('en');
+  const fmt = new Intl.DateTimeFormat(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
+  const last = new Date(end.getTime() - 1);
+  return en ? `of ${fmt.format(start)} to ${fmt.format(last)}` : `du ${fmt.format(start)} au ${fmt.format(last)}`;
+}
