@@ -376,6 +376,16 @@ input, select, textarea, button { font-family: var(--font); }
   .land-claim-num    { font-size: 44px !important; }
   .land-claim-title  { font-size: 18px !important; }
 
+  /* ── Dashboard: the page scrolls, not an inner box ──
+     See DashboardShell. !important beats the desktop frame's inline styles. */
+  .dash-shell {
+    display: block !important;
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+  .dash-main { overflow: visible !important; }
+
   /* ── Dashboard sidebar becomes a fixed overlay ── */
   .dash-sidebar {
     position: fixed;
@@ -449,6 +459,8 @@ input, select, textarea, button { font-family: var(--font); }
   /* Horizontally-scrollable tables: wrap any wide table in .dash-scroll-x */
   .dash-scroll-x {
     overflow-x: auto;
+    /* Explicit, or it computes to auto and the box takes vertical swipes too. */
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     margin: 0 -16px; /* bleed to screen edges so the scroll feels natural */
     padding: 0 16px;
@@ -460,6 +472,7 @@ input, select, textarea, button { font-family: var(--font); }
   .dash-main-pad table {
     display: block;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
     max-width: 100%;
@@ -472,6 +485,7 @@ input, select, textarea, button { font-family: var(--font); }
   /* Tabs that overflow → horizontal scroll */
   .dash-tabs {
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap !important;
     scrollbar-width: none;

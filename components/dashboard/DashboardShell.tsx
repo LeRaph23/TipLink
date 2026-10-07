@@ -27,7 +27,13 @@ export function DashboardShell({ userRoles, userEmail, userName, children }: Pro
   }
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--bg)' }}>
+    // On desktop the shell is a fixed-height frame and <main> scrolls inside
+    // it, so the sidebar stays put. On mobile the page itself scrolls instead
+    // (.dash-shell / .dash-main in globals.css): an inner scroll container
+    // under a 100dvh frame is what iOS Safari loses track of when the address
+    // bar collapses, leaving a page that scrolls down and will not scroll
+    // back up.
+    <div className="dash-shell" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--bg)' }}>
       {/* Mobile backdrop. It used to mount and unmount instantly while the
           drawer beside it slid over 300ms, so the two halves of one gesture
           were visibly out of step. */}
@@ -48,7 +54,7 @@ export function DashboardShell({ userRoles, userEmail, userName, children }: Pro
       </div>
 
       {/* Main content */}
-      <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)', minWidth: 0 }}>
+      <main className="dash-main" style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)', minWidth: 0 }}>
         {/* Mobile top bar */}
         <div className="mob-bar">
           <button className="mob-hamburger" onClick={() => setOpen(true)} aria-label="Ouvrir le menu">
