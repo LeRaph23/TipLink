@@ -311,7 +311,7 @@ export const HELP: HelpCategory[] = [
       {
         id: 'cassee',
         question: 'Ma plaque ne marche plus, est abîmée ou perdue',
-        answer: `Une plaque qui tombe en panne en usage normal ou présente un défaut de fabrication est remplacée gratuitement, à vie : écrivez-nous à ${HELP_CONTACT} avec une photo. Une plaque perdue ou cassée accidentellement n'est pas couverte par la garantie : vous pouvez en commander une nouvelle depuis Facturation.`,
+        answer: `Une plaque qui tombe en panne en usage normal ou présente un défaut de fabrication est remplacée gratuitement tant que votre compte Digitip est actif, en plus des garanties légales : écrivez-nous à ${HELP_CONTACT} avec une photo. Une plaque perdue ou cassée accidentellement n'est pas couverte par la garantie : vous pouvez en commander une nouvelle depuis Facturation.`,
         link: { label: 'Facturation', href: '/fr/dashboard/billing' },
       },
       {

@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createServiceClient } from '@/lib/supabase/service';
+import { registerPinAttempt } from '@/lib/auth/pin-attempts';
 
 export const runtime = 'nodejs';
-
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_ATTEMPTS = 5; // per IP + code
-
-// Global backstop across ALL IPs for a single code. The per-IP limit above is
-// trivially bypassed by rotating IPs (cheap proxies), which against a 4-digit
-// PIN (10 000 combos) makes brute-force feasible. This caps total guesses per
-// code per hour regardless of source IP. Trade-off: an attacker burning the
-// quota can lock the legitimate ambassador out for up to CODE_WINDOW_MS — kept
-// short (1 h) so the DoS window stays small while still raising brute-force cost
-// from "unbounded" to ~30/h (≈ 2 weeks to exhaust the keyspace).
-const CODE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_CODE_ATTEMPTS = 30;
 
 // Server-enforced, tamper-proof session lifetime (issuedAt lives in the signed
 // cookie payload — see buildCookieValue/verifyCookieValue).
@@ -87,48 +75,22 @@ export async function POST(
   const { code } = await params;
   const supabase = createServiceClient();
 
-  // Rate limit: max MAX_ATTEMPTS per IP+code in 15 min
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? request.headers.get('x-real-ip')
     ?? 'unknown';
   const ipHash = hashIp(ip);
-  const windowStart = new Date(Date.now() - WINDOW_MS).toISOString();
 
-  const { count } = await supabase
-    .from('ambassador_pin_attempts')
-    .select('id', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash)
-    .eq('code', code.toLowerCase())
-    .gte('attempted_at', windowStart);
-
-  if ((count ?? 0) >= MAX_ATTEMPTS) {
+  // Recorded and counted atomically before the PIN is looked at.
+  const verdict = await registerPinAttempt(supabase, 'ambassador', code, ipHash);
+  if (!verdict.ok) {
+    if (verdict.reason === 'error') {
+      return NextResponse.json({ error: 'Service momentanément indisponible. Réessaie dans un instant.' }, { status: 503 });
+    }
     return NextResponse.json(
-      { error: 'Trop de tentatives. Réessaie dans 15 minutes.' },
+      { error: verdict.reason === 'ip' ? 'Trop de tentatives. Réessaie dans 15 minutes.' : 'Trop de tentatives sur ce code. Réessaie plus tard.' },
       { status: 429 }
     );
   }
-
-  // Global backstop: cap total guesses for this code across every IP, so the
-  // per-IP limit can't be bypassed by rotating IPs against the 4-digit PIN.
-  const codeWindowStart = new Date(Date.now() - CODE_WINDOW_MS).toISOString();
-  const { count: codeCount } = await supabase
-    .from('ambassador_pin_attempts')
-    .select('id', { count: 'exact', head: true })
-    .eq('code', code.toLowerCase())
-    .gte('attempted_at', codeWindowStart);
-
-  if ((codeCount ?? 0) >= MAX_CODE_ATTEMPTS) {
-    return NextResponse.json(
-      { error: 'Trop de tentatives sur ce code. Réessaie dans 1 heure.' },
-      { status: 429 }
-    );
-  }
-
-  // Record attempt
-  await supabase.from('ambassador_pin_attempts').insert({
-    ip_hash: ipHash,
-    code: code.toLowerCase(),
-  });
 
   const body = await request.json().catch(() => ({}));
   const pin = String(body.pin ?? '');

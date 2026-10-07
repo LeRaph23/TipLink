@@ -78,6 +78,13 @@ export function MetaPixel({ pixelId }: { pixelId: string }) {
   const choose = useCallback((value: AdConsent) => {
     writeConsent(value);
     if (value === 'denied') revokePixel();
+    // Remembers (or, on refusal, forgets) the ad campaign of this page; the
+    // server does it because the attribution cookie is httpOnly.
+    void fetch('/api/consent/attribution', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ href: window.location.href }),
+    }).catch(() => {});
     setConsent(value);
     setForcedOpen(false);
   }, []);

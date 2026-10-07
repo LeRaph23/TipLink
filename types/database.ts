@@ -1360,6 +1360,8 @@ export type Database = {
           subscription_cancel_at: string | null
           subscription_current_period_end: string | null
           subscription_status: string | null
+          terms_accepted_at: string | null
+          terms_version: string | null
           trial_ends_at: string | null
           vat_number: string | null
         }
@@ -1386,6 +1388,8 @@ export type Database = {
           subscription_cancel_at?: string | null
           subscription_current_period_end?: string | null
           subscription_status?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           trial_ends_at?: string | null
           vat_number?: string | null
         }
@@ -1412,6 +1416,8 @@ export type Database = {
           subscription_cancel_at?: string | null
           subscription_current_period_end?: string | null
           subscription_status?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           trial_ends_at?: string | null
           vat_number?: string | null
         }

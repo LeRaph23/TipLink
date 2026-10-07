@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { verifyTeamJoinToken } from '@/lib/auth/team-join-token';
+import { readTeamJoinVersion } from '@/lib/auth/team-join-link';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Max 2 MB
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -55,6 +60,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
   }
 
+  // Only someone joining a real team may store a photo in the public bucket:
+  // a signed-in user (emailed invitation, existing account) or a holder of the
+  // establishment's signed team link. Anonymous uploads made the bucket free
+  // public image hosting for anyone.
+  const establishmentId = String(formData.get('establishmentId') ?? '');
+  const teamToken = formData.get('teamToken');
+  if (!UUID_RE.test(establishmentId)) {
+    return NextResponse.json({ error: 'Missing establishment' }, { status: 400 });
+  }
+  const supabase = createServiceClient();
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  const hasTeamLink = typeof teamToken === 'string' && verifyTeamJoinToken(
+    teamToken,
+    establishmentId,
+    await readTeamJoinVersion(supabase, establishmentId),
+  ).valid;
+  if (!user && !hasTeamLink) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const file = formData.get('file');
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -74,9 +99,8 @@ export async function POST(req: NextRequest) {
   }
 
   const ext = EXT_MAP[detectedType];
-  const path = `avatars/anon/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path = `avatars/join/${establishmentId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const supabase = createServiceClient();
   const { data, error } = await supabase.storage
     .from('public-media')
     .upload(path, buffer, {
@@ -85,7 +109,8 @@ export async function POST(req: NextRequest) {
     });
 
   if (error || !data) {
-    return NextResponse.json({ error: error?.message ?? 'Upload failed' }, { status: 500 });
+    console.error('[upload/avatar] storage upload failed', error);
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 
   const { data: { publicUrl } } = supabase.storage

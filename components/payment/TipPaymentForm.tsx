@@ -11,6 +11,7 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import { PayError } from '@/components/pay/ui';
+import { Link } from '@/i18n/navigation';
 import { tipElementsAppearance } from '@/lib/stripe/tip-appearance';
 import { moneyFormatter } from '@/lib/money';
 import { PayButton, PayField, TextAction, useSiteTheme } from './tip-ui';
@@ -250,6 +251,13 @@ function InnerForm({ endpoint, body, amount, currency }: Props) {
             </span>
           )}
         </PayButton>
+        {/* Pre-contractual notice owed to the consumer before paying the
+            service fee (L.221-5, L.221-28 1° C. conso). */}
+        <p style={{ margin: 0, textAlign: 'center', font: '400 11.5px/16px var(--font)', color: 'var(--text-3)' }}>
+          {t.rich('legal.payNotice', {
+            terms: (c) => <Link href="/conditions-pourboire" target="_blank" style={{ color: 'inherit', textDecoration: 'underline' }}>{c}</Link>,
+          })}
+        </p>
         {slow && (
           <p className="fade-in" style={{ margin: 0, textAlign: 'center', font: '400 13px/18px var(--font)', color: 'var(--text-2)' }}>
             {t('dontClose')}

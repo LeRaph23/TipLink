@@ -8,6 +8,7 @@ import {
   attributionFromUrl,
   serializeAttribution,
 } from './lib/marketing/attribution';
+import { CONSENT_COOKIE, parseConsent } from './lib/marketing/consent';
 import { scanDestination, tipLocaleFromAcceptLanguage, type StickerRow } from './lib/nfc/scan-destination';
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -99,11 +100,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // 3) Ad attribution: a visit tagged with utm_* parameters replaces whatever
-  //    campaign was remembered before (last touch). Set here rather than in a
-  //    client component so it holds even when the visitor never runs our JS
-  //    before paying, and it costs nothing on untagged requests.
+  //    campaign was remembered before (last touch). Only with the visitor's
+  //    advertising consent: measuring which ad produced an order is not one of
+  //    the purposes the CNIL exempts from consent. A visitor who accepts on the
+  //    landing page itself is caught by /api/consent/attribution instead.
   const attribution = attributionFromUrl(request.nextUrl.searchParams, pathname);
-  if (attribution) {
+  if (attribution && parseConsent(request.cookies.get(CONSENT_COOKIE)?.value) === 'granted') {
     intlResponse.cookies.set(ATTRIBUTION_COOKIE, serializeAttribution(attribution), {
       maxAge: ATTRIBUTION_MAX_AGE_S,
       httpOnly: true,

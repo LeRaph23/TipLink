@@ -79,7 +79,8 @@ export async function POST(
       upsert: false,
     });
   if (uploadErr) {
-    return NextResponse.json({ error: `Upload signature échoué: ${uploadErr.message}` }, { status: 500 });
+    console.error('contract signature upload failed', uploadErr);
+    return NextResponse.json({ error: 'Enregistrement de la signature impossible. Réessayez.' }, { status: 500 });
   }
 
   const { error: updateErr } = await service
@@ -97,7 +98,8 @@ export async function POST(
   if (updateErr) {
     // Best effort: try to clean uploaded file (signature wasn't persisted in row)
     await service.storage.from('ambassador-signatures').remove([signaturePath]).catch(() => {});
-    return NextResponse.json({ error: `Signature refusée: ${updateErr.message}` }, { status: 500 });
+    console.error('contract signature update failed', updateErr);
+    return NextResponse.json({ error: 'Signature refusée. Réessayez ou contactez Digitip.' }, { status: 500 });
   }
 
   await service.from('ambassador_contract_audit_log').insert({

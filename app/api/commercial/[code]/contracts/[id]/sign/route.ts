@@ -74,7 +74,8 @@ export async function POST(
     .from('commercial-signatures')
     .upload(signaturePath, pngBuffer, { contentType: 'image/png', upsert: false });
   if (uploadErr) {
-    return NextResponse.json({ error: `Upload signature échoué: ${uploadErr.message}` }, { status: 500 });
+    console.error('contract signature upload failed', uploadErr);
+    return NextResponse.json({ error: 'Enregistrement de la signature impossible. Réessayez.' }, { status: 500 });
   }
 
   const { error: updateErr } = await service
@@ -91,7 +92,8 @@ export async function POST(
   if (updateErr) {
     // Roll back the orphan upload — the signature row didn't persist.
     await service.storage.from('commercial-signatures').remove([signaturePath]).catch(() => {});
-    return NextResponse.json({ error: `Signature refusée: ${updateErr.message}` }, { status: 500 });
+    console.error('contract signature update failed', updateErr);
+    return NextResponse.json({ error: 'Signature refusée. Réessayez ou contactez Digitip.' }, { status: 500 });
   }
 
   await service.from('commercial_contract_audit_log').insert({

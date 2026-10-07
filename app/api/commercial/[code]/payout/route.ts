@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
 import { settlePayoutTransferError } from '@/lib/stripe/payout-settlement';
+import { reservePartnerPayout } from '@/lib/payouts/reserve';
+import { sendPartnerSecurityAlert } from '@/lib/email';
 import { authenticateCommercialRequest } from '@/lib/auth/commercial-session';
 import { COMMERCIAL_MIN_PAYOUT_CENTS } from '@/lib/commercial-tiers';
 
@@ -74,9 +76,9 @@ export async function GET(
   });
 }
 
-// POST — request a payout of the full available balance. Serialized via an
-// advisory lock + partial unique index — two concurrent POSTs cannot both
-// open a pending payout for the same commercial.
+// POST — request a payout of the full available balance. Serialized by
+// reservePartnerPayout (row lock + committed-total check) and the partial
+// unique index — two concurrent POSTs cannot both withdraw the same balance.
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> },
@@ -91,7 +93,7 @@ export async function POST(
 
   const { data: com } = await service
     .from('commerciaux')
-    .select('id, stripe_account_id, name, is_active, payouts_frozen')
+    .select('id, stripe_account_id, name, email, is_active, payouts_frozen')
     .eq('id', commercialId)
     .maybeSingle();
 
@@ -112,121 +114,95 @@ export async function POST(
     );
   }
 
-  // RPC types lag the migration that introduced them — cast minimally so the
-  // build stays clean without regenerating.
-  const tryLock = (service.rpc.bind(service) as unknown as (
-    fn: 'try_advisory_lock_commercial_payout',
-    args: { p_commercial_id: string },
-  ) => Promise<{ data: boolean | null; error: unknown }>);
-  const { data: lockAcquired } = await tryLock('try_advisory_lock_commercial_payout', {
-    p_commercial_id: commercialId,
-  });
-  if (!lockAcquired) {
-    return NextResponse.json(
-      { error: 'Demande déjà en cours, réessayez dans un instant.' },
-      { status: 409 },
-    );
+  const { available, paidOrPendingTotal } = await computeAvailableCents(commercialId);
+
+  if (available < COMMERCIAL_MIN_PAYOUT_CENTS) {
+    return NextResponse.json({
+      error: `Solde insuffisant (${(available / 100).toFixed(2)} €). Minimum ${COMMERCIAL_MIN_PAYOUT_CENTS / 100} € pour un virement.`,
+    }, { status: 400 });
+  }
+
+  const reservation = await reservePartnerPayout(service, 'commercial', commercialId, available, paidOrPendingTotal);
+  if (!reservation.ok) {
+    return reservation.reason === 'busy'
+      ? NextResponse.json({ error: 'Demande déjà en cours, réessayez dans un instant.' }, { status: 409 })
+      : NextResponse.json({ error: 'Erreur enregistrement de la demande' }, { status: 500 });
+  }
+  const inserted = { id: reservation.id, amount_cents: available };
+  if (com.email) {
+    void sendPartnerSecurityAlert({
+      to: com.email,
+      firstName: com.name.split(' ')[0] ?? com.name,
+      event: 'payout',
+      amountCents: available,
+    }).catch((e) => console.error('payout security alert failed', e));
   }
 
   try {
-    const { available } = await computeAvailableCents(commercialId);
+    const transfer = await stripe.transfers.create({
+      amount: inserted.amount_cents,
+      currency: 'eur',
+      destination: com.stripe_account_id,
+      metadata: { commercial_id: commercialId, payout_id: inserted.id },
+    }, { idempotencyKey: `com_payout_transfer:${inserted.id}` });
 
-    if (available < COMMERCIAL_MIN_PAYOUT_CENTS) {
-      return NextResponse.json({
-        error: `Solde insuffisant (${(available / 100).toFixed(2)} €). Minimum ${COMMERCIAL_MIN_PAYOUT_CENTS / 100} € pour un virement.`,
-      }, { status: 400 });
-    }
-
-    const { data: inserted, error: insErr } = await service
+    await service
       .from('commercial_payouts')
-      .insert({
-        commercial_id: commercialId,
-        amount_cents: available,
-        status: 'pending',
+      .update({
+        status: 'paid',
+        stripe_transfer_id: transfer.id,
+        paid_at: new Date().toISOString(),
       })
-      .select('id, amount_cents')
-      .single();
+      .eq('id', inserted.id);
 
-    if (insErr || !inserted) {
-      if (insErr && (insErr as { code?: string }).code === '23505') {
-        return NextResponse.json({ error: 'Demande déjà en cours.' }, { status: 409 });
-      }
-      console.error('commercial payout insert failed', insErr);
-      return NextResponse.json({ error: 'Erreur enregistrement de la demande' }, { status: 500 });
-    }
+    return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
+  } catch (err) {
+    console.error('commercial payout transfer failed', err);
+    // Same reasoning as the ambassador route: a throw is not proof the money
+    // stayed put, and releasing the balance on an unconfirmed failure is how
+    // the same funds get transferred twice.
+    const settlement = await settlePayoutTransferError(err, {
+      destination: com.stripe_account_id,
+      payoutId: inserted.id,
+    });
 
-    try {
-      const transfer = await stripe.transfers.create({
-        amount: inserted.amount_cents,
-        currency: 'eur',
-        destination: com.stripe_account_id,
-        metadata: { commercial_id: commercialId, payout_id: inserted.id },
-      }, { idempotencyKey: `com_payout_transfer:${inserted.id}` });
-
+    if (settlement.outcome === 'paid') {
       await service
         .from('commercial_payouts')
         .update({
           status: 'paid',
-          stripe_transfer_id: transfer.id,
+          stripe_transfer_id: settlement.transferId,
           paid_at: new Date().toISOString(),
         })
         .eq('id', inserted.id);
-
       return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
-    } catch (err) {
-      console.error('commercial payout transfer failed', err);
-      // Same reasoning as the ambassador route: a throw is not proof the money
-      // stayed put, and releasing the balance on an unconfirmed failure is how
-      // the same funds get transferred twice.
-      const settlement = await settlePayoutTransferError(err, {
-        destination: com.stripe_account_id,
-        payoutId: inserted.id,
-      });
+    }
 
-      if (settlement.outcome === 'paid') {
-        await service
-          .from('commercial_payouts')
-          .update({
-            status: 'paid',
-            stripe_transfer_id: settlement.transferId,
-            paid_at: new Date().toISOString(),
-          })
-          .eq('id', inserted.id);
-        return NextResponse.json({ ok: true, amount: inserted.amount_cents, status: 'paid' });
-      }
-
-      if (settlement.outcome === 'indeterminate') {
-        // Stays `pending`, so the amount remains committed and the
-        // one-pending-per-commercial index (migration 00081) blocks a retry
-        // until a super-admin has resolved it.
-        await service
-          .from('commercial_payouts')
-          .update({ failure_reason: settlement.message })
-          .eq('id', inserted.id);
-        return NextResponse.json({
-          ok: false,
-          amount: inserted.amount_cents,
-          status: 'pending',
-          error: 'Le virement est en cours de vérification, un administrateur le confirme sous peu.',
-        }, { status: 502 });
-      }
-
+    if (settlement.outcome === 'indeterminate') {
+      // Stays `pending`, so the amount remains committed and the
+      // one-pending-per-commercial index (migration 00081) blocks a retry
+      // until a super-admin has resolved it.
       await service
         .from('commercial_payouts')
-        .update({ status: 'failed', failure_reason: settlement.message })
+        .update({ failure_reason: settlement.message })
         .eq('id', inserted.id);
       return NextResponse.json({
         ok: false,
         amount: inserted.amount_cents,
-        status: 'failed',
-        error: 'Le virement n’est pas passé. Un administrateur va reprendre la demande.',
+        status: 'pending',
+        error: 'Le virement est en cours de vérification, un administrateur le confirme sous peu.',
       }, { status: 502 });
     }
-  } finally {
-    const releaseLock = (service.rpc.bind(service) as unknown as (
-      fn: 'release_advisory_lock_commercial_payout',
-      args: { p_commercial_id: string },
-    ) => Promise<unknown>);
-    await releaseLock('release_advisory_lock_commercial_payout', { p_commercial_id: commercialId });
+
+    await service
+      .from('commercial_payouts')
+      .update({ status: 'failed', failure_reason: settlement.message })
+      .eq('id', inserted.id);
+    return NextResponse.json({
+      ok: false,
+      amount: inserted.amount_cents,
+      status: 'failed',
+      error: 'Le virement n’est pas passé. Un administrateur va reprendre la demande.',
+    }, { status: 502 });
   }
 }

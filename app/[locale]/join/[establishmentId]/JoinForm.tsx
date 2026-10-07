@@ -168,6 +168,8 @@ export function JoinForm({
     try {
       const form = new FormData();
       form.append('file', file);
+      form.append('establishmentId', establishmentId);
+      if (teamToken) form.append('teamToken', teamToken);
       const res = await fetch('/api/upload/avatar', { method: 'POST', body: form });
       const json = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !json.url) throw new Error(json.error ?? 'Upload failed');

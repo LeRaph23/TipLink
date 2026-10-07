@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createServiceClient } from '@/lib/supabase/service';
+import { registerPinAttempt } from '@/lib/auth/pin-attempts';
 import {
   COMMERCIAL_COOKIE,
   buildCommercialCookieValue,
@@ -9,14 +10,6 @@ import {
 } from '@/lib/auth/commercial-session';
 
 export const runtime = 'nodejs';
-
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5; // per IP + code
-
-// Global backstop across all IPs for one code — see the ambassador auth route
-// for the rationale (defeats IP rotation against the 4-digit PIN).
-const CODE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_CODE_ATTEMPTS = 30;
 
 function hashIp(ip: string): string {
   return crypto.createHash('sha256').update(ip).digest('hex');
@@ -34,41 +27,18 @@ export async function POST(
     ?? request.headers.get('x-real-ip')
     ?? 'unknown';
   const ipHash = hashIp(ip);
-  const windowStart = new Date(Date.now() - WINDOW_MS).toISOString();
 
-  const { count } = await supabase
-    .from('commercial_pin_attempts')
-    .select('id', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash)
-    .eq('code', code.toLowerCase())
-    .gte('attempted_at', windowStart);
-
-  if ((count ?? 0) >= MAX_ATTEMPTS) {
+  // Recorded and counted atomically before the PIN is looked at.
+  const verdict = await registerPinAttempt(supabase, 'commercial', code, ipHash);
+  if (!verdict.ok) {
+    if (verdict.reason === 'error') {
+      return NextResponse.json({ error: 'Service momentanément indisponible. Réessayez dans un instant.' }, { status: 503 });
+    }
     return NextResponse.json(
-      { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
-      { status: 429 },
+      { error: verdict.reason === 'ip' ? 'Trop de tentatives. Réessayez dans 15 minutes.' : 'Trop de tentatives sur ce code. Réessayez plus tard.' },
+      { status: 429 }
     );
   }
-
-  // Global backstop: cap total guesses for this code across every IP.
-  const codeWindowStart = new Date(Date.now() - CODE_WINDOW_MS).toISOString();
-  const { count: codeCount } = await supabase
-    .from('commercial_pin_attempts')
-    .select('id', { count: 'exact', head: true })
-    .eq('code', code.toLowerCase())
-    .gte('attempted_at', codeWindowStart);
-
-  if ((codeCount ?? 0) >= MAX_CODE_ATTEMPTS) {
-    return NextResponse.json(
-      { error: 'Trop de tentatives sur ce code. Réessayez dans 1 heure.' },
-      { status: 429 },
-    );
-  }
-
-  await supabase.from('commercial_pin_attempts').insert({
-    ip_hash: ipHash,
-    code: code.toLowerCase(),
-  });
 
   const body = await request.json().catch(() => ({}));
   const pin = String(body.pin ?? '');

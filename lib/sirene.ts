@@ -51,7 +51,9 @@ export type SireneSearchResult = {
 
 type RawEtablissement = {
   siret?: string;
+  statutDiffusionEtablissement?: string | null;
   uniteLegale?: {
+    statutDiffusionUniteLegale?: string | null;
     denominationUniteLegale?: string | null;
     prenomUsuelUniteLegale?: string | null;
     nomUniteLegale?: string | null;
@@ -125,6 +127,10 @@ function cleanSireneValue(v: string | null | undefined): string | null {
 function mapEtablissement(raw: RawEtablissement): SireneEtablissement | null {
   if (!raw.siret) return null;
   const ul = raw.uniteLegale ?? {};
+  // "P" = diffusion partielle: the person objected to the public use of their
+  // data (art. A123-96 C. com.). INSEE forbids prospecting them, so they never
+  // enter the prospect list, whatever else the record holds.
+  if (raw.statutDiffusionEtablissement === 'P' || ul.statutDiffusionUniteLegale === 'P') return null;
   const adr = raw.adresseEtablissement ?? {};
   const denomination = cleanSireneValue(ul.denominationUniteLegale);
   const firstName = cleanSireneValue(ul.prenomUsuelUniteLegale);

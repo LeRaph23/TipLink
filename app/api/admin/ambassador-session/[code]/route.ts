@@ -29,6 +29,15 @@ export async function GET(
 ) {
   const { code } = await params;
 
+  // A GET that mints a session: only follow it from our own admin page. A link
+  // planted on another site would otherwise ride the admin's cookies (Lax
+  // cookies are sent on top-level cross-site GETs) and write fake takeover
+  // entries in the audit log. Browsers that omit the header are let through.
+  const fetchSite = _req.headers.get('sec-fetch-site');
+  if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const adminUserId = await getSuperAdminUserId();
   if (!adminUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

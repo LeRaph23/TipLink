@@ -1,5 +1,6 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { LegalPage } from '@/components/legal/LegalPage';
+import { legalNavLinks } from '@/lib/legal/nav';
 import { buildPageMetadata } from '@/lib/seo';
 import { publicEnv } from '@/lib/env';
 import { CookieSettingsLink } from '@/components/marketing/MetaPixel';
@@ -35,12 +36,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
       : undefined,
   }));
 
-  const navLinks = [
-    { label: tc('mentionsLegales'), href: '/mentions-legales' as const },
-    { label: tc('cgv'),             href: '/cgv'              as const },
-    { label: tc('terms'),           href: '/terms'            as const },
-    { label: tc('privacy'),         href: '/privacy'          as const },
-  ];
+  const navLinks = legalNavLinks(tc);
 
   return (
     <LegalPage

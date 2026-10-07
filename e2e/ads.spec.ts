@@ -4,7 +4,14 @@ import { admin, login, seed } from './helpers';
 // Paid-ads measurement: which campaign brought each order, and the Meta pixel
 // behind an opt-in banner. See lib/marketing and components/marketing.
 
-test('a tagged visit is remembered for 30 days, without any identifier', async ({ page, context }) => {
+test('a tagged visit is not remembered without advertising consent', async ({ page, context }) => {
+  await page.goto('/fr/solutions/tatoueur?utm_source=meta&utm_campaign=e2e');
+  const cookie = (await context.cookies()).find((c) => c.name === 'dt_attr');
+  expect(cookie, 'attribution cookie before consent').toBeFalsy();
+});
+
+test('with consent, a tagged visit is remembered for 30 days, without any identifier', async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: 'dt_consent', value: 'granted', url: baseURL ?? 'http://localhost:3000' }]);
   await page.goto('/fr/solutions/tatoueur?utm_source=meta&utm_campaign=e2e&fbclid=IwAR_e2e');
   const cookie = (await context.cookies()).find((c) => c.name === 'dt_attr');
   expect(cookie, 'attribution cookie').toBeTruthy();

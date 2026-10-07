@@ -43,6 +43,8 @@ export const PUBLIC_PATHS: PublicPath[] = [
   { path: '/terms', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
   { path: '/privacy', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
   { path: '/mentions-legales', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
+  { path: '/dpa', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
+  { path: '/conditions-pourboire', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
 ];
 
 /**

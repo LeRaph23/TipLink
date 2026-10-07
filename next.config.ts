@@ -46,8 +46,11 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   // Don't send full Referer to cross-origin destinations
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  // Disable browser features not needed by the app
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // Disable browser features not needed by the app. Geolocation stays allowed
+  // for our own origin only: the salon map's "my position" and the partner
+  // visit log call navigator.geolocation, which `geolocation=()` silently
+  // denied on every page (each visit then logged as unverified).
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
   // Disable DNS prefetch to avoid leaking URLs
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
   // Enforce HTTPS for 1 year (Vercel/CDN may add this too, belt-and-suspenders)

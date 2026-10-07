@@ -716,6 +716,45 @@ export async function sendAmbassadorBankingConfirmation(opts: {
   });
 }
 
+// ─── Partner portals — security alert ────────────────────────────────────────
+
+/**
+ * Tells an ambassador or commercial that a sensitive action just happened on
+ * their PIN-protected portal (bank account set up, withdrawal). Sent to the
+ * address on file, never to one supplied in the request, so a hijacked
+ * session cannot silence it.
+ */
+export async function sendPartnerSecurityAlert(opts: {
+  to: string;
+  firstName: string;
+  event: 'banking' | 'payout';
+  amountCents?: number;
+}): Promise<void> {
+  if (!resend) return;
+  const { to, firstName, event, amountCents } = opts;
+  const what = event === 'banking'
+    ? 'Une configuration de compte bancaire vient d’être lancée depuis votre espace partenaire Digitip.'
+    : `Une demande de virement${amountCents ? ` de <strong>${(amountCents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</strong>` : ''} vient d’être faite depuis votre espace partenaire Digitip.`;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: event === 'banking'
+      ? 'Alerte sécurité · compte bancaire configuré sur votre espace Digitip'
+      : 'Alerte sécurité · demande de virement sur votre espace Digitip',
+    html: themedLayout(`
+    <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
+      <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Alerte de sécurité</div>
+    </td></tr>
+    <tr><td style="padding:28px 32px 32px">
+      <div class="text-primary" style="font-size:20px;font-weight:800;color:#0f0f12;margin-bottom:10px">Bonjour ${escapeHtml(firstName)},</div>
+      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;margin:0 0 12px;line-height:1.7">${what}</p>
+      <p class="text-secondary" style="font-size:14px;color:#5a5a6a;margin:0;line-height:1.7">Si c’est vous, il n’y a rien à faire. <strong>Si ce n’est pas vous</strong>, répondez immédiatement à cet e-mail ou écrivez à contact@digitip.app : nous gèlerons vos virements le temps de sécuriser votre accès.</p>
+    </td></tr>`),
+  });
+}
+
 // ─── Admin — ambassador payout (withdrawal) notification ─────────────────────
 
 export async function sendAmbassadorPayoutAdmin(opts: {
@@ -1253,8 +1292,8 @@ export async function sendReferralValidatedToParrain(
 
 function coldEmailFooter(unsubscribeUrl: string): string {
   return `<tr><td class="divider-strong text-muted" style="padding:24px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
-    Vous recevez cet email car votre SIRET figure dans la base publique SIRENE de l'INSEE avec un code NAF compatible avec une activité commerciale. Conformément au RGPD et à notre intérêt légitime de recrutement B2B, vous pouvez vous opposer à tout traitement futur :
-    <a href="${unsubscribeUrl}" style="color:#E57A97">se désinscrire</a> · Digitip · privacy@digitip.app
+    Vous recevez cet email car votre SIRET figure dans la base publique SIRENE de l'INSEE avec un code NAF compatible avec une activité commerciale ; votre adresse e-mail professionnelle provient de votre site ou de votre fiche professionnelle publique. Responsable du traitement : YUZU LABS SAS (Digitip), 11 rue de Lorraine, 68490 Petit-Landau. Base légale : intérêt légitime de recrutement B2B (art. 6§1 f) du RGPD). Données conservées 3 ans au plus après le dernier contact. Vous pouvez vous opposer à tout traitement futur :
+    <a href="${unsubscribeUrl}" style="color:#E57A97">se désinscrire</a> · <a href="https://digitip.app/fr/privacy" style="color:#9898a8">politique de confidentialité</a> · privacy@digitip.app
   </td></tr>`;
 }
 
@@ -1316,7 +1355,7 @@ function coldEmailFooterCommercial(unsubscribeUrl: string): string {
   // gives the postal address required by Loi Informatique & Libertés. Plain
   // text styling to match the sobriety of the rest of the commercial mails.
   return `<tr><td class="divider-strong text-muted" style="padding:24px 32px;border-top:1px solid #e5e7eb;font-size:11px;color:#9898a8;line-height:1.6">
-    Vous recevez ce message à titre professionnel car votre activité figure dans la base publique SIRENE (INSEE) sur un code APE en lien avec une activité de prospection commerciale. Traitement fondé sur notre intérêt légitime de recrutement B2B (art. 6§1 f) du RGPD).
+    Vous recevez ce message à titre professionnel car votre activité figure dans la base publique SIRENE (INSEE) sur un code APE en lien avec une activité de prospection commerciale ; votre adresse e-mail professionnelle provient de votre site ou de votre fiche professionnelle publique. Traitement fondé sur notre intérêt légitime de recrutement B2B (art. 6§1 f) du RGPD), données conservées 3 ans au plus après le dernier contact (<a href="https://digitip.app/fr/privacy" style="color:#9898a8">politique de confidentialité</a>).
     <br/>Pour vous opposer à tout traitement futur : <a href="${unsubscribeUrl}" style="color:#E57A97">se désinscrire en un clic</a>.
     <br/>YUZU LABS · SIREN 994&nbsp;879&nbsp;013 · 11 rue de Lorraine, 68490 Petit-Landau, France · privacy@digitip.app
   </td></tr>`;

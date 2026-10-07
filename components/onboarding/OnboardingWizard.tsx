@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   completePostPurchaseOnboarding,
@@ -215,6 +216,8 @@ export function OnboardingWizard(props: Props) {
   // back from storage would offer a finish button with no session behind it.
   const [verified, setVerified] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Mandatory before the account is created (see TERMS_VERSION in the action).
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [done, setDone] = useState(false);
 
   // Persist on every answer. Writing from an effect rather than inside the
@@ -329,7 +332,7 @@ export function OnboardingWizard(props: Props) {
   async function handleFinish() {
     // Re-entrant guard: the button can be clicked twice, and in scan mode a
     // second provisioning run creates a duplicate group.
-    if (submitting) return;
+    if (submitting || !termsAccepted) return;
     setSubmitting(true);
     setError(null);
 
@@ -409,6 +412,7 @@ export function OnboardingWizard(props: Props) {
       if (!userId) return { error: tAuth('errorGeneric') };
 
       const result = await completeNfcOnboarding({
+        acceptTerms: true,
         // No userId: the action reads the caller's session. currentUserId()
         // above still runs, as the check that a session exists at all.
         nfcCodes: state.nfcCodes,
@@ -430,6 +434,7 @@ export function OnboardingWizard(props: Props) {
       if (!userId) return { error: tAuth('errorGeneric') };
 
       const result = await completeExpressOnboarding({
+        acceptTerms: true,
         groupId: props.groupId,
         token: props.token,
         establishmentName: state.establishmentName,
@@ -447,6 +452,7 @@ export function OnboardingWizard(props: Props) {
     }
 
     const result = await completePostPurchaseOnboarding({
+        acceptTerms: true,
       establishmentName: state.establishmentName,
       address: state.address,
       googlePlaceId: state.googlePlaceId || undefined,
@@ -760,13 +766,29 @@ export function OnboardingWizard(props: Props) {
       <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {awaitingCode ? null : isLastStep ? (
           <>
+            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                style={{ marginTop: 3, accentColor: 'var(--accent)' }}
+              />
+              <span>
+                {t.rich('acceptTerms', {
+                  terms: (c) => <Link href="/terms" target="_blank" style={{ color: 'var(--text)', textDecoration: 'underline' }}>{c}</Link>,
+                  cgv: (c) => <Link href="/cgv" target="_blank" style={{ color: 'var(--text)', textDecoration: 'underline' }}>{c}</Link>,
+                  dpa: (c) => <Link href="/dpa" target="_blank" style={{ color: 'var(--text)', textDecoration: 'underline' }}>{c}</Link>,
+                  privacy: (c) => <Link href="/privacy" target="_blank" style={{ color: 'var(--text)', textDecoration: 'underline' }}>{c}</Link>,
+                })}
+              </span>
+            </label>
             <button
               type="button"
               onClick={() => handleFinish()}
-              disabled={submitting || !canAdvance()}
+              disabled={submitting || !canAdvance() || !termsAccepted}
               style={{
                 ...btnPrimary,
-                opacity: (submitting || !canAdvance()) ? 0.5 : 1,
+                opacity: (submitting || !canAdvance() || !termsAccepted) ? 0.5 : 1,
               }}
             >
               {submitting ? t('finishing') : t('finish')}

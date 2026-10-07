@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   const { data: rowsRaw } = await service
     .from('transactions')
-    .select('id, stripe_charge_id, refunded_amount, metadata')
+    .select('id, amount, stripe_charge_id, refunded_amount, metadata')
     .eq('status', 'succeeded')
     .is('stripe_transfer_id', null)
     .or('transfer_status.is.null,transfer_status.in.(pending,failed)')
@@ -65,6 +65,7 @@ export async function POST(req: Request) {
 
   const rows = (rowsRaw ?? []) as unknown as Array<{
     id: string;
+    amount: number;
     stripe_charge_id: string | null;
     refunded_amount: number | null;
     metadata: { tip_amount?: number } | null;
@@ -75,10 +76,12 @@ export async function POST(req: Request) {
 
   for (const r of rows) {
     const chargeId = r.stripe_charge_id;
-    // Refund only the tip. The service fee covered Stripe's own cost on a
-    // charge that did go through, and refunding it would leave the platform out
-    // of pocket on a failure it did not cause.
-    const amount = Number(r.metadata?.tip_amount);
+    // Refund everything still held, service fee included. The fee pays for
+    // getting the tip to the team; when that never happened the service was
+    // not rendered, and keeping the fee from a consumer for it would not
+    // survive a challenge (art. 1217 C. civ., R.212-1 C. conso). The VAT
+    // report already prorates the kept fee on refunds (lib/billing/vat-report).
+    const amount = Number(r.amount) - Number(r.refunded_amount ?? 0);
     if (!chargeId || !Number.isFinite(amount) || amount <= 0) {
       // Not refundable without a human. Record why, rather than counting it and
       // moving on: an untouched row stays in this query for ever and holds one
@@ -86,6 +89,7 @@ export async function POST(req: Request) {
       // actually be returned. 'failed' keeps it in the reconcile cron's view,
       // where attempts burn and it surfaces in the exhausted count.
       console.error('[unclaimed-tips-expire] not refundable', {
+        tipAmount: r.metadata?.tip_amount,
         transactionId: r.id,
         hasCharge: !!chargeId,
         amount,
@@ -94,7 +98,7 @@ export async function POST(req: Request) {
         .from('transactions')
         .update({
           transfer_status: 'failed',
-          transfer_error: 'expiry_blocked:no_tip_amount',
+          transfer_error: 'expiry_blocked:nothing_refundable',
         } as never)
         .eq('id', r.id);
       failed++;

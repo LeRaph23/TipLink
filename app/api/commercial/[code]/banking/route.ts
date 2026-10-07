@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe/client';
 import { createStandardAccount, createOnboardingLink } from '@/lib/stripe/connect';
 import { getBaseUrl } from '@/lib/env';
+import { sendPartnerSecurityAlert } from '@/lib/email';
 import { authenticateCommercialRequest } from '@/lib/auth/commercial-session';
 
 export const runtime = 'nodejs';
@@ -46,7 +47,7 @@ export async function POST(
   const service = createServiceClient();
   const { data: com } = await service
     .from('commerciaux')
-    .select('id, stripe_account_id')
+    .select('id, name, email, stripe_account_id')
     .eq('id', commercialId)
     .maybeSingle();
 
@@ -57,7 +58,7 @@ export async function POST(
     let accountId = com.stripe_account_id;
     if (!accountId) {
       accountId = await createStandardAccount({
-        email: email || undefined,
+        email: com.email ?? (email || undefined),
         metadata: { commercial_id: commercialId },
       });
     }
@@ -66,7 +67,9 @@ export async function POST(
       .update({
         stripe_account_id: accountId,
         siret: siretClean,
-        ...(email ? { email } : {}),
+        // Only fills a missing address: the one on file receives the security
+        // alerts, so a hijacked session must not be able to replace it.
+        ...(email && !com.email ? { email } : {}),
         onboarding_status: 'pending',
       })
       .eq('id', commercialId);
@@ -75,12 +78,17 @@ export async function POST(
       return NextResponse.json({ error: 'Erreur enregistrement' }, { status: 500 });
     }
 
+    const alertTo = com.email ?? email;
+    if (alertTo) {
+      void sendPartnerSecurityAlert({ to: alertTo, firstName: com.name.split(' ')[0] ?? com.name, event: 'banking' })
+        .catch((e) => console.error('banking security alert failed', e));
+    }
+
     const onboardingUrl = await createOnboardingLink(accountId, urls);
     return NextResponse.json({ ok: true, onboardingUrl });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Création du compte Stripe échouée';
     console.error('commercial banking: Stripe call failed', err);
-    return NextResponse.json({ error: msg }, { status: 400 });
+    return NextResponse.json({ error: 'Création du compte Stripe échouée. Réessayez ou contactez Digitip.' }, { status: 400 });
   }
 }
 

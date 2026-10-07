@@ -120,6 +120,23 @@ describe('searchSirene', () => {
     });
   });
 
+  it('drops people who asked for partial disclosure (statut de diffusion P)', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        header: { total: 3 },
+        etablissements: [
+          { siret: '11111111111111', statutDiffusionEtablissement: 'O', uniteLegale: { nomUniteLegale: 'Visible', categorieJuridiqueUniteLegale: '1000' } },
+          { siret: '22222222222222', statutDiffusionEtablissement: 'P', uniteLegale: { nomUniteLegale: '[ND]', categorieJuridiqueUniteLegale: '1000' } },
+          { siret: '33333333333333', uniteLegale: { statutDiffusionUniteLegale: 'P', nomUniteLegale: '[ND]', categorieJuridiqueUniteLegale: '1000' } },
+        ],
+      }),
+    }) as unknown as typeof fetch;
+
+    const r = await searchSirene({ nafCodes: ['4791B'] });
+    expect(r.results.map((e) => e.siret)).toEqual(['11111111111111']);
+  });
+
   it('detects when more pages are available', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,

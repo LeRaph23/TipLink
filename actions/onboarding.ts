@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { TERMS_VERSION } from '@/lib/legal/terms-version';
 import { revalidatePath } from 'next/cache';
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -71,7 +72,17 @@ function mintOnboardingToken(groupId: string, email: string | undefined): string
   }
 }
 
+// The wizard's final screen carries a mandatory checkbox. Enforced here too:
+// conditions never shown or never accepted are not enforceable against the
+// customer, and a server action is a public endpoint.
+const TermsAcceptance = { acceptTerms: z.literal(true) };
+
+function termsStamp() {
+  return { terms_accepted_at: new Date().toISOString(), terms_version: TERMS_VERSION };
+}
+
 const PostPurchaseSchema = z.object({
+  ...TermsAcceptance,
   establishmentName: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
   adminFullName: z.string().min(1).max(200),
@@ -81,6 +92,7 @@ const PostPurchaseSchema = z.object({
 });
 
 const NfcOnboardingSchema = z.object({
+  ...TermsAcceptance,
   // No `userId`. It used to be read straight from the request body and the
   // action only checked that such a user existed, which made this public POST
   // endpoint a way to mint a group_admin role against any account id. The
@@ -154,7 +166,7 @@ export async function completePostPurchaseOnboarding(
   // Update group name to match
   const { error: groupNameErr } = await service
     .from('groups')
-    .update({ name: establishmentName })
+    .update({ name: establishmentName, ...termsStamp() })
     .eq('id', roleRow.group_id);
 
   if (groupNameErr) return actionError(classifyDbError(groupNameErr), groupNameErr, 'completePostPurchaseOnboarding.group');
@@ -190,6 +202,7 @@ export async function completePostPurchaseOnboarding(
 }
 
 const ExpressOnboardingSchema = z.object({
+  ...TermsAcceptance,
   groupId: z.string().uuid(),
   // HMAC token signed by the server when the order confirmation email was sent.
   // Without it the wizard cannot be completed for an arbitrary group UUID.
@@ -277,7 +290,7 @@ export async function completeExpressOnboarding(
 
   // Update group name
   await service.from('groups')
-    .update({ name: establishmentName })
+    .update({ name: establishmentName, ...termsStamp() })
     .eq('id', groupId);
 
   // Link user as group_admin
@@ -352,6 +365,7 @@ export async function completeNfcOnboarding(
     .insert({
       name: establishmentName,
       settings: { tip_thresholds: [5, 10, 20] },
+      ...termsStamp(),
       // Deliberately NOT marked complete here: the wizard still has to take the
       // manager through the Connect step. finalizeOnboarding() sets it once
       // Stripe confirms the onboarding form was submitted.

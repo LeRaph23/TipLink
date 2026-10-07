@@ -1,9 +1,8 @@
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import type { LegalPath } from '@/lib/legal/nav';
 
 export type LegalSection = { title: string; body: string; action?: React.ReactNode };
-
-type LegalPath = '/privacy' | '/terms' | '/mentions-legales' | '/cgv';
 
 export function LegalPage({
   title,
