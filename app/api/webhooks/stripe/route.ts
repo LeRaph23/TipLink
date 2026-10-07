@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { createServiceClient } from '@/lib/supabase/service';
-import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder } from '@/lib/email';
+import { sendTipReceipt, sendOrderConfirmation, sendPaymentFailed, sendTipRefunded, sendAdminNewOrder, tipperLocale } from '@/lib/email';
 import { getSuperAdminEmails } from '@/lib/admin/super-admins';
 import { onTipSucceeded } from '@/lib/email/lifecycle-events';
 import { reverseTransactionTransfers, refundTransactionFull } from '@/lib/stripe/refunds';
@@ -20,6 +20,7 @@ import { readAccountStatus } from '@/lib/stripe/connect';
 import { planForSubscriptionStatus } from '@/lib/billing/entitlements';
 import { startFreeTrialOnFirstTip } from '@/lib/billing/free-trial';
 import { splitEqually, allocateToOne, type Allocation } from '@/lib/tips/allocation';
+import { tipAmountOf } from '@/lib/tips/amounts';
 import { revalidateEstablishmentTipPages } from '@/lib/stripe/establishment-account';
 import { attributionFromMetadata } from '@/lib/marketing/attribution';
 import { sendMetaPurchase } from '@/lib/meta/capi';
@@ -308,19 +309,22 @@ async function handleEvent(
       if (intent.receipt_email) {
         const { data: txn } = await supabase
           .from('transactions')
-          .select('amount, currency, staff_profiles(full_name, establishments(name))')
+          .select('amount, currency, metadata, staff_profiles(full_name), establishments(name)')
           .eq('id', transactionId)
           .single();
 
         if (txn) {
-          const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
+          const staff = txn.staff_profiles as { full_name: string } | null;
+          const est = txn.establishments as { name: string } | null;
           await sendTipReceipt({
             to: intent.receipt_email,
             amount: txn.amount,
+            tipAmount: tipAmountOf({ amount: txn.amount, metadata: txn.metadata }),
             currency: txn.currency,
-            staffName: staff?.full_name ?? 'your server',
-            establishmentName: staff?.establishments?.name ?? '',
+            staffName: staff?.full_name ?? null,
+            establishmentName: est?.name ?? '',
             transactionId,
+            locale: tipperLocale(intent.metadata?.locale),
           }).catch((err) => console.error('[email] sendTipReceipt failed', err));
         }
       }
@@ -357,18 +361,20 @@ async function handleEvent(
       if (intent.receipt_email) {
         const { data: txn } = await supabase
           .from('transactions')
-          .select('amount, currency, staff_profiles(full_name, establishments(name))')
+          .select('staff_profiles(full_name), establishments(name)')
           .eq('id', transactionId)
           .single();
 
         if (txn) {
-          const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
+          const staff = txn.staff_profiles as { full_name: string } | null;
+          const est = txn.establishments as { name: string } | null;
           await sendPaymentFailed({
             to: intent.receipt_email,
             amount: intent.amount,
             currency: intent.currency,
-            staffName: staff?.full_name ?? 'the staff member',
-            establishmentName: staff?.establishments?.name ?? '',
+            staffName: staff?.full_name ?? null,
+            establishmentName: est?.name ?? '',
+            locale: tipperLocale(intent.metadata?.locale),
           }).catch(() => {});
         }
       }
@@ -387,7 +393,7 @@ async function handleEvent(
 
       const { data: txn } = await supabase
         .from('transactions')
-        .select('id, amount, currency, staff_profiles(full_name, establishments(name))')
+        .select('id, amount, currency, metadata, staff_profiles(full_name), establishments(name)')
         .eq('stripe_payment_intent_id', paymentIntentId)
         .maybeSingle();
 
@@ -422,13 +428,16 @@ async function handleEvent(
 
       const customerEmail = charge.receipt_email ?? charge.billing_details.email;
       if (customerEmail && txn) {
-        const staff = txn.staff_profiles as { full_name: string; establishments: { name: string } | null } | null;
+        const staff = txn.staff_profiles as { full_name: string } | null;
+        const est = txn.establishments as { name: string } | null;
+        const meta = (txn.metadata ?? {}) as { locale?: string };
         await sendTipRefunded({
           to: customerEmail,
           amount: charge.amount_refunded,
           currency: charge.currency,
-          staffName: staff?.full_name ?? undefined,
-          establishmentName: staff?.establishments?.name ?? undefined,
+          staffName: staff?.full_name ?? null,
+          establishmentName: est?.name ?? '',
+          locale: tipperLocale(meta.locale),
         }).catch(() => {});
       }
 

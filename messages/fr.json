@@ -122,7 +122,7 @@
   },
   "legal": {
     "lastUpdated": "Dernière mise à jour",
-    "updatedDate": "5 octobre 2026",
+    "updatedDate": "7 octobre 2026",
     "backHome": "Retour à l'accueil",
     "privacy": {
       "title": "Politique de confidentialité",
@@ -136,7 +136,7 @@
       "s4Title": "4. Partage des données",
       "s4Body": "Nous partageons vos données uniquement avec : Stripe (paiements et vérification d'identité), Supabase (authentification et base de données, hébergées dans l'Union européenne), Vercel (hébergement du site et mesure d'audience sans cookie), Resend (e-mails transactionnels), Brevo (e-mails de prospection professionnelle), Google (lorsque vous cherchez la fiche de votre établissement à l'inscription, nous lui transmettons le nom et l'adresse que vous saisissez), Meta pour la mesure de nos publicités uniquement si vous l'avez accepté (voir section 7), et les autorités lorsque la loi l'exige. Certains de ces prestataires (notamment Vercel, Resend et Google) sont établis aux États-Unis ; les transferts sont encadrés par le cadre de protection des données UE–États-Unis ou par les clauses contractuelles types de la Commission européenne.",
       "s5Title": "5. Conservation",
-      "s5Body": "Les données de compte sont conservées tant que votre compte est actif, puis 3 ans pour les archives commerciales. Les documents comptables (factures, pourboires) sont conservés 10 ans conformément à la loi. Les petits mots et les statistiques de clics vers Google sont conservés tant que le compte de l'établissement est actif, puis supprimés avec lui. Les données de prospection sont conservées 3 ans au plus après le dernier contact, ou supprimées dès votre désinscription. Les contrats partenaires sont conservés 5 ans après leur fin. Vous pouvez demander la suppression de vos données à tout moment, sous réserve de ces obligations légales.",
+      "s5Body": "Les données de compte sont conservées tant que votre compte est actif, puis 3 ans après sa fermeture. Les documents comptables (pourboires, factures) sont conservés 10 ans, comme la loi l'impose. Les petits mots et les statistiques de clics vers Google sont supprimés avec le compte de l'établissement. Les données de prospection sont conservées 3 ans au plus après le dernier contact et supprimées dès votre désinscription : nous ne gardons alors que votre numéro SIRET, pour ne plus vous écrire. Les demandes de contact sont conservées 3 ans, les candidatures non retenues 2 ans, les contrats partenaires 5 ans après leur fin. Les journaux techniques (événements de paiement, tentatives de connexion) sont supprimés après 30 à 90 jours. Vous pouvez demander la suppression de vos données à tout moment, sous réserve de ces obligations légales.",
       "s6Title": "6. Vos droits (RGPD)",
       "s6Body": "Vous pouvez accéder à vos données, les rectifier, les supprimer ou les exporter, vous opposer à leur traitement (notamment à la prospection, à tout moment), en demander la limitation, et introduire une réclamation auprès de la CNIL. Si vous avez laissé un petit mot et souhaitez qu'il soit supprimé, écrivez-nous en indiquant la date et le montant du pourboire. Écrivez à privacy@digitip.app pour exercer vos droits.",
       "s7Title": "7. Cookies",

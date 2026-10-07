@@ -493,20 +493,14 @@ async function runEnrichGoogle(
             .eq('id', c.id);
           missing += 1;
         } else {
-          const isClosed = place.businessStatus === 'CLOSED_PERMANENTLY';
+          // The place ID only: Google's terms allow storing nothing else.
+          const isClosed = place.permanentlyClosed;
           if (isClosed) closed += 1;
           const update: Database['public']['Tables']['salons']['Update'] = {
             google_place_id: place.placeId,
-            business_status: place.businessStatus ?? undefined,
-            opening_hours: (place.openingHours as Json | null) ?? null,
-            google_rating: place.rating ?? null,
-            google_user_ratings_total: place.userRatingCount ?? null,
             google_enriched_at: new Date().toISOString(),
           };
           if (isClosed) update.is_active = false;
-          if (place.phoneNumber)      update.phone = place.phoneNumber;
-          if (place.websiteUri)       update.website = place.websiteUri;
-          if (place.formattedAddress) update.address = place.formattedAddress;
           const { error } = await service.from('salons').update(update).eq('id', c.id);
           if (!error) matched += 1;
         }

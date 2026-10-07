@@ -1920,21 +1920,17 @@ export type Database = {
       salons: {
         Row: {
           address: string | null
-          business_status: string | null
           category: string
           city: string
           converted_at: string | null
           created_at: string
           google_enriched_at: string | null
           google_place_id: string | null
-          google_rating: number | null
-          google_user_ratings_total: number | null
           id: string
           is_active: boolean
           lat: number | null
           lon: number | null
           name: string
-          opening_hours: Json | null
           osm_id: number | null
           osm_type: string | null
           phone: string | null
@@ -1945,21 +1941,17 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          business_status?: string | null
           category?: string
           city: string
           converted_at?: string | null
           created_at?: string
           google_enriched_at?: string | null
           google_place_id?: string | null
-          google_rating?: number | null
-          google_user_ratings_total?: number | null
           id?: string
           is_active?: boolean
           lat?: number | null
           lon?: number | null
           name: string
-          opening_hours?: Json | null
           osm_id?: number | null
           osm_type?: string | null
           phone?: string | null
@@ -1970,21 +1962,17 @@ export type Database = {
         }
         Update: {
           address?: string | null
-          business_status?: string | null
           category?: string
           city?: string
           converted_at?: string | null
           created_at?: string
           google_enriched_at?: string | null
           google_place_id?: string | null
-          google_rating?: number | null
-          google_user_ratings_total?: number | null
           id?: string
           is_active?: boolean
           lat?: number | null
           lon?: number | null
           name?: string
-          opening_hours?: Json | null
           osm_id?: number | null
           osm_type?: string | null
           phone?: string | null

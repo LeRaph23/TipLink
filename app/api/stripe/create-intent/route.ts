@@ -20,6 +20,9 @@ const BodySchema = z.object({
   currency: z.enum(['eur', 'EUR', 'usd', 'USD', 'gbp', 'GBP']),
   nonce: z.string().min(8).max(128),
   customerEmail: z.string().email().optional(),
+  // The tipper's page language, so the emails Stripe events trigger later
+  // (receipt, refund, failure) are written in it.
+  locale: z.enum(['fr', 'en']).optional(),
   // Establishment expected by the page (resolved from the NFC sticker scan).
   // Optional for legacy /pay/[staffId] callers that don't yet send it; when
   // present the staff must belong to that establishment.
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
   }
-  const { staffId, amount, tipAmount, currency, nonce, customerEmail, expectedEstablishmentId } = parsed.data;
+  const { staffId, amount, tipAmount, currency, nonce, customerEmail, expectedEstablishmentId, locale } = parsed.data;
 
   // The amount is validated further down, once the establishment's fee config
   // is known — a group on a non-default rate charges a different total.
@@ -147,6 +150,9 @@ export async function POST(request: NextRequest) {
       idempotency_key: idempotencyKey,
       metadata: {
         source: 'nfc',
+        // Language of the tipper's emails; read back by the refund handler,
+        // which only has the charge.
+        locale: locale ?? 'fr',
         tip_amount: tipAmount,
         // Whole fee paid by the tipper on top of the tip — the platform's
         // gross revenue on this transaction, out of which Stripe is paid.
@@ -210,6 +216,7 @@ export async function POST(request: NextRequest) {
           fee_fixed_cents: String(feeConfig.fixedCents),
           net_for_staff: String(netForStaff),
           transfer_group: transferGroup,
+          locale: locale ?? 'fr',
         },
       },
       { idempotencyKey }

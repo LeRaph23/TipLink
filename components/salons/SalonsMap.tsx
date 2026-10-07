@@ -6,7 +6,7 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './salons-map.css';
-import { isOpenNow, mapsLink, type OpeningHours } from '@/lib/salon-hours';
+import { mapsLink } from '@/lib/salon-hours';
 import { UserLocation } from './UserLocation';
 
 // ─── Public types ────────────────────────────────────────────────────────────
@@ -21,9 +21,6 @@ export type AmbassadorSalon = {
   phone: string | null;
   lat: number | null;
   lon: number | null;
-  opening_hours: OpeningHours;
-  business_status: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
-  google_rating: number | null;
   visit: {
     lastVisitAt: string;
     bestRating: number;
@@ -45,9 +42,6 @@ export type AdminSalon = {
   phone: string | null;
   lat: number | null;
   lon: number | null;
-  opening_hours: OpeningHours;
-  business_status: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
-  google_rating: number | null;
   isActive: boolean;
   visitCount: number;
   googleEnriched: boolean;
@@ -163,10 +157,10 @@ export function CategoryIcon({
   );
 }
 
-// Status colour: converted (client) > closed > visited > to-canvass.
+// Status colour: converted (client) > visited > to-canvass. Closed salons are
+// deactivated by the Google match and never reach the ambassador list.
 function salonStatusColor(s: AmbassadorSalon): string {
   if (s.converted) return '#2563eb';                               // bleu — client
-  if (s.business_status === 'CLOSED_PERMANENTLY') return '#94a3b8'; // gris — fermé
   if (s.visit) return '#f59e0b';                                   // ambre — démarché, en attente
   return '#16a34a';                                                // vert — à démarcher
 }
@@ -185,7 +179,7 @@ function ambassadorIcon(s: AmbassadorSalon): L.DivIcon {
 }
 
 function adminIcon(s: AdminSalon): L.DivIcon {
-  if (!s.isActive || s.business_status === 'CLOSED_PERMANENTLY') return makeIcon('closed', '✕');
+  if (!s.isActive) return makeIcon('closed', '✕');
   const best = s.visits.reduce((m, v) => Math.max(m, v.likelihoodRating), 0);
   if (best === 3) return makeIcon('r3', '★');
   if (best === 2) return makeIcon('r2');
@@ -288,19 +282,12 @@ type AmbStatus = 'all' | 'todo' | 'mine' | 'others';
 function useAmbassadorFilters(all: AmbassadorSalon[]) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<AmbStatus>('all');
-  const [openNow, setOpenNow] = useState(false);
-  const [showClosed, setShowClosed] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return all.filter((s) => {
       if (s.lat == null || s.lon == null) return false;
-      if (!showClosed && s.business_status === 'CLOSED_PERMANENTLY') return false;
       if (q && !s.name.toLowerCase().includes(q) && !(s.address ?? '').toLowerCase().includes(q)) return false;
-      if (openNow) {
-        const o = isOpenNow(s.opening_hours);
-        if (!o?.open) return false;
-      }
       switch (status) {
         case 'todo':   return !s.visit;
         case 'mine':   return s.visit?.visitedByMe === true;
@@ -308,9 +295,9 @@ function useAmbassadorFilters(all: AmbassadorSalon[]) {
         default:       return true;
       }
     });
-  }, [all, search, status, openNow, showClosed]);
+  }, [all, search, status]);
 
-  return { filtered, state: { search, status, openNow, showClosed }, setters: { setSearch, setStatus, setOpenNow, setShowClosed } };
+  return { filtered, state: { search, status }, setters: { setSearch, setStatus } };
 }
 
 // ─── Admin variant filter state ──────────────────────────────────────────────
@@ -323,7 +310,6 @@ function useAdminFilters(all: AdminSalon[]) {
   const [zoneId, setZoneId] = useState<string>('all');
   const [ambassadorId, setAmbassadorId] = useState<string>('all');
   const [status, setStatus] = useState<AdminStatus>('all');
-  const [openNow, setOpenNow] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
   const [showBboxes, setShowBboxes] = useState(false);
 
@@ -347,16 +333,11 @@ function useAdminFilters(all: AdminSalon[]) {
     const q = search.trim().toLowerCase();
     return all.filter((s) => {
       if (s.lat == null || s.lon == null) return false;
-      const closed = !s.isActive || s.business_status === 'CLOSED_PERMANENTLY';
-      if (!showClosed && closed) return false;
+      if (!showClosed && !s.isActive) return false;
       if (city !== 'all' && s.city !== city) return false;
       if (zoneId !== 'all' && s.zoneId !== zoneId) return false;
       if (ambassadorId !== 'all' && !s.visits.some((v) => v.ambassadorId === ambassadorId)) return false;
       if (q && !s.name.toLowerCase().includes(q) && !(s.address ?? '').toLowerCase().includes(q)) return false;
-      if (openNow) {
-        const o = isOpenNow(s.opening_hours);
-        if (!o?.open) return false;
-      }
       const best = s.visits.reduce((m, v) => Math.max(m, v.likelihoodRating), 0);
       switch (status) {
         case 'never': return s.visits.length === 0;
@@ -366,13 +347,13 @@ function useAdminFilters(all: AdminSalon[]) {
         default:      return true;
       }
     });
-  }, [all, search, city, zoneId, ambassadorId, status, openNow, showClosed]);
+  }, [all, search, city, zoneId, ambassadorId, status, showClosed]);
 
   return {
     filtered,
     cities, zones, ambassadors,
-    state: { search, city, zoneId, ambassadorId, status, openNow, showClosed, showBboxes },
-    setters: { setSearch, setCity, setZoneId, setAmbassadorId, setStatus, setOpenNow, setShowClosed, setShowBboxes },
+    state: { search, city, zoneId, ambassadorId, status, showClosed, showBboxes },
+    setters: { setSearch, setCity, setZoneId, setAmbassadorId, setStatus, setShowClosed, setShowBboxes },
   };
 }
 
@@ -383,7 +364,6 @@ function fmtDate(iso: string) {
 }
 
 function AmbassadorPopup({ salon, onLogVisit }: { salon: AmbassadorSalon; onLogVisit: (s: AmbassadorSalon) => void }) {
-  const open = isOpenNow(salon.opening_hours);
   const v = salon.visit;
   return (
     <div className="salon-popup">
@@ -399,11 +379,6 @@ function AmbassadorPopup({ salon, onLogVisit }: { salon: AmbassadorSalon; onLogV
             style={{ background: 'rgba(37,99,235,0.12)', color: '#2563eb', border: '1px solid #2563eb' }}
           >
             🔵 Client
-          </span>
-        )}
-        {open && (
-          <span className={`salon-popup__pill ${open.open ? 'open' : 'shut'}`}>
-            {open.open ? '● Ouvert' : '○ Fermé'}{open.nextChange ? ` · ${open.nextChange}` : ''}
           </span>
         )}
       </div>
@@ -434,17 +409,11 @@ function AmbassadorPopup({ salon, onLogVisit }: { salon: AmbassadorSalon; onLogV
 }
 
 function AdminPopup({ salon }: { salon: AdminSalon }) {
-  const open = isOpenNow(salon.opening_hours);
   return (
     <div className="salon-popup">
       <div className="salon-popup__title">{salon.name}</div>
       <div className="salon-popup__row">
         <span className="salon-popup__pill rate">{salon.city}{salon.zoneName ? ` · ${salon.zoneName}` : ''}</span>
-        {open && (
-          <span className={`salon-popup__pill ${open.open ? 'open' : 'shut'}`}>
-            {open.open ? '● Ouvert' : '○ Fermé'}
-          </span>
-        )}
       </div>
       {salon.address && (
         <div className="salon-popup__addr">
@@ -521,8 +490,6 @@ function AmbassadorMap({
         <Chip active={state.status === 'todo'}   onClick={() => setters.setStatus('todo')}>À faire</Chip>
         <Chip active={state.status === 'mine'}   onClick={() => setters.setStatus('mine')}>Mes visites</Chip>
         <Chip active={state.status === 'others'} onClick={() => setters.setStatus('others')}>Faits</Chip>
-        <Chip active={state.openNow}             onClick={() => setters.setOpenNow(!state.openNow)}>Ouvert</Chip>
-        <Chip active={state.showClosed}          onClick={() => setters.setShowClosed(!state.showClosed)}>Fermés</Chip>
       </div>
 
       <div className="salon-map-wrap">
@@ -634,7 +601,6 @@ function AdminMap({
         <Chip active={f.state.status === 'r3'}    onClick={() => f.setters.setStatus('r3')}>3★</Chip>
         <Chip active={f.state.status === 'r2'}    onClick={() => f.setters.setStatus('r2')}>2★</Chip>
         <Chip active={f.state.status === 'r1'}    onClick={() => f.setters.setStatus('r1')}>1★</Chip>
-        <Chip active={f.state.openNow}            onClick={() => f.setters.setOpenNow(!f.state.openNow)}>Ouvert</Chip>
         <Chip active={f.state.showClosed}         onClick={() => f.setters.setShowClosed(!f.state.showClosed)}>Fermés</Chip>
         <Chip active={f.state.showBboxes}         onClick={() => f.setters.setShowBboxes(!f.state.showBboxes)}>Bbox zones</Chip>
       </div>

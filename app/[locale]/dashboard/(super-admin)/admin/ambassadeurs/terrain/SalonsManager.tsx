@@ -646,7 +646,7 @@ function SalonsTable({
   const [cityFilter, setCityF]  = useState<string>('');
   const [addrFilter, setAddrF]  = useState<'all' | 'with' | 'without'>('all');
   const [googleFilter, setGF]   = useState<'all' | 'enriched' | 'not_enriched'>('all');
-  const [statusFilter, setSF]   = useState<'all' | 'active' | 'inactive' | 'closed'>('all');
+  const [statusFilter, setSF]   = useState<'all' | 'active' | 'inactive'>('all');
 
   // Cap rendered DOM rows so a full-France dataset doesn't freeze the tab.
   // The filtered list can be huge; we only paint a slice and grow on demand.
@@ -669,7 +669,6 @@ function SalonsTable({
       if (googleFilter === 'not_enriched' &&  s.googleEnriched) return false;
       if (statusFilter === 'active'   && !s.isActive) return false;
       if (statusFilter === 'inactive' &&  s.isActive) return false;
-      if (statusFilter === 'closed'   && s.business_status !== 'CLOSED_PERMANENTLY') return false;
       if (q) {
         const hay = `${s.name} ${s.address ?? ''} ${s.city} ${s.phone ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -749,7 +748,6 @@ function SalonsTable({
           <option value="all">Statut : tous</option>
           <option value="active">Actifs</option>
           <option value="inactive">Inactifs</option>
-          <option value="closed">Fermés Google</option>
         </select>
         <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 'auto' }}>
           {visible.length} / {salons.length}

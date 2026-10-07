@@ -53,12 +53,10 @@ export default async function AdminSalonsPage({
       id: string; zone_id: string | null; city: string; name: string;
       address: string | null; postal_code: string | null; phone: string | null;
       is_active: boolean; google_enriched_at: string | null;
-      business_status: string | null;
       lat: number | null; lon: number | null;
-      opening_hours: unknown; google_rating: number | null;
     }>(
       (a, b) => service.from('salons')
-        .select('id, zone_id, city, name, address, postal_code, phone, is_active, google_enriched_at, business_status, lat, lon, opening_hours, google_rating')
+        .select('id, zone_id, city, name, address, postal_code, phone, is_active, google_enriched_at, lat, lon')
         .order('id')
         .range(a, b)
     ),
@@ -166,9 +164,6 @@ export default async function AdminSalonsPage({
       phone: s.phone,
       lat: s.lat == null ? null : Number(s.lat),
       lon: s.lon == null ? null : Number(s.lon),
-      opening_hours: s.opening_hours as never,
-      business_status: (s.business_status as 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null) ?? null,
-      google_rating: s.google_rating == null ? null : Number(s.google_rating),
       isActive: s.is_active,
       visitCount: visitCountBySalon.get(s.id) ?? 0,
       googleEnriched: !!s.google_enriched_at,

@@ -1,4 +1,5 @@
-// Google Places API (New) — text search + place details in one round-trip.
+// Google Places API (New): text search, used to match a prospect salon to its
+// listing and to let a manager find their own.
 //
 // We use the "Search Text" endpoint with a tight location restriction around
 // the salon's known GPS position. Field masks keep the cost low (we only ask
@@ -8,41 +9,25 @@
 
 const PLACES_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
 
-// Field mask — billing tier is determined by the most expensive field requested.
-// businessStatus, regularOpeningHours, rating, userRatingCount = Place Details
-// (Pro SKU). formattedAddress + displayName + id are Essentials (cheap).
+// Field mask for matching a prospect salon to its Google listing.
+//
+// Google's Places terms let us store the place ID and nothing else, so this asks
+// only for what the match itself needs: the id to keep, the location to check
+// it is the same shop, and the business status to stop canvassing one that has
+// closed for good. Neither of the last two is stored. Everything else a listing
+// carries (hours, rating, phone, website, address) is deliberately absent: it
+// could not be kept anyway, and asking for it bills every call at a higher tier.
 const FIELD_MASK = [
   'places.id',
-  'places.displayName',
-  'places.formattedAddress',
-  'places.businessStatus',
-  'places.regularOpeningHours',
-  'places.rating',
-  'places.userRatingCount',
-  'places.internationalPhoneNumber',
-  'places.websiteUri',
   'places.location',
+  'places.businessStatus',
 ].join(',');
 
+/** The outcome of a match: what we may keep, and what we decide from it. */
 export type GooglePlaceData = {
   placeId: string;
-  displayName: string | null;
-  formattedAddress: string | null;
-  businessStatus: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | null;
-  openingHours: GoogleOpeningHours | null;
-  rating: number | null;
-  userRatingCount: number | null;
-  phoneNumber: string | null;
-  websiteUri: string | null;
-};
-
-export type GoogleOpeningHours = {
-  weekdayDescriptions?: string[];
-  periods?: Array<{
-    open?: { day: number; hour: number; minute: number };
-    close?: { day: number; hour: number; minute: number };
-  }>;
-  openNow?: boolean;
+  /** Read once to deactivate a closed salon; never stored. */
+  permanentlyClosed: boolean;
 };
 
 type SearchTextResponse = {
@@ -51,7 +36,6 @@ type SearchTextResponse = {
     displayName?: { text?: string };
     formattedAddress?: string;
     businessStatus?: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY';
-    regularOpeningHours?: GoogleOpeningHours;
     rating?: number;
     userRatingCount?: number;
     internationalPhoneNumber?: string;
@@ -212,14 +196,7 @@ export async function findGooglePlaceForSalon(input: {
 
   return {
     placeId: best.id,
-    displayName: best.displayName?.text ?? null,
-    formattedAddress: best.formattedAddress ?? null,
-    businessStatus: best.businessStatus ?? null,
-    openingHours: best.regularOpeningHours ?? null,
-    rating: best.rating ?? null,
-    userRatingCount: best.userRatingCount ?? null,
-    phoneNumber: best.internationalPhoneNumber ?? null,
-    websiteUri: best.websiteUri ?? null,
+    permanentlyClosed: best.businessStatus === 'CLOSED_PERMANENTLY',
   };
 }
 

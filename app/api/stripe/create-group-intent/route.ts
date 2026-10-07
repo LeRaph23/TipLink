@@ -20,6 +20,9 @@ const BodySchema = z.object({
   currency: z.enum(['eur', 'EUR', 'usd', 'USD', 'gbp', 'GBP']),
   nonce: z.string().min(8).max(128),
   customerEmail: z.string().email().optional(),
+  // The tipper's page language, so the emails Stripe events trigger later
+  // (receipt, refund, failure) are written in it.
+  locale: z.enum(['fr', 'en']).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
   }
-  const { establishmentId, amount, tipAmount, currency, nonce, customerEmail } = parsed.data;
+  const { establishmentId, amount, tipAmount, currency, nonce, customerEmail, locale } = parsed.data;
 
   // The amount is validated further down, once the establishment's fee config
   // is known — a group on a non-default rate charges a different total.
@@ -123,6 +126,9 @@ export async function POST(request: NextRequest) {
       idempotency_key: idempotencyKey,
       metadata: {
         source: 'group_tip',
+        // Language of the tipper's emails; read back by the refund handler,
+        // which only has the charge.
+        locale: locale ?? 'fr',
         tip_amount: tipAmount,
         // Whole fee paid by the tipper on top of the tip — the platform's
         // gross revenue. No `platform_fee` key: nothing is taken from the tip.
@@ -183,6 +189,7 @@ export async function POST(request: NextRequest) {
           fee_fixed_cents: String(feeConfig.fixedCents),
           net_for_staff: String(netForStaff),
           transfer_group: transferGroup,
+          locale: locale ?? 'fr',
         },
       },
       { idempotencyKey }

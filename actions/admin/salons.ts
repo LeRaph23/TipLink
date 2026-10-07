@@ -6,7 +6,6 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { logAdminAction } from '@/lib/admin/audit';
 import { fetchZonesForCity, fetchSalonsInBbox, reverseGeocodeBatch } from '@/lib/osm-import';
 import { enrichSalonsViaGoogle } from '@/lib/google-places';
-import type { Json } from '@/types/database';
 
 async function requireSuperAdminUser() {
   const supabase = await createClient();
@@ -376,8 +375,9 @@ export async function enrichSalonAddressesForZone(
 
 // ─── Google Places enrichment ────────────────────────────────────────────────
 // For each salon in the zone, do a text+location search against Google Places.
-// Stores opening hours, business status, rating. Salons flagged
-// CLOSED_PERMANENTLY are deactivated (is_active = false).
+// Stores the place ID only (Google's terms allow nothing else). Salons Google
+// reports as closed for good are deactivated (is_active = false) so nobody
+// canvasses them.
 export async function enrichSalonsViaGoogleForZone(
   zoneId: string,
   opts: { force?: boolean } = {}
@@ -452,33 +452,14 @@ export async function enrichSalonsViaGoogleForZone(
       }
 
       matched += 1;
-      const isClosed = place.businessStatus === 'CLOSED_PERMANENTLY';
+      const isClosed = place.permanentlyClosed;
       if (isClosed) closed += 1;
 
-      const update: {
-        google_place_id?: string;
-        business_status?: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY';
-        opening_hours?: Json | null;
-        google_rating?: number | null;
-        google_user_ratings_total?: number | null;
-        google_enriched_at: string;
-        is_active?: boolean;
-        // Backfill OSM-missing data when Google has it
-        phone?: string | null;
-        website?: string | null;
-        address?: string | null;
-      } = {
+      const update: { google_place_id: string; google_enriched_at: string; is_active?: boolean } = {
         google_place_id: place.placeId,
-        business_status: place.businessStatus ?? undefined,
-        opening_hours: (place.openingHours as unknown as Json) ?? null,
-        google_rating: place.rating ?? null,
-        google_user_ratings_total: place.userRatingCount ?? null,
         google_enriched_at: new Date().toISOString(),
       };
       if (isClosed) update.is_active = false;
-      if (place.phoneNumber) update.phone = place.phoneNumber;
-      if (place.websiteUri) update.website = place.websiteUri;
-      if (place.formattedAddress) update.address = place.formattedAddress;
 
       const { error } = await service.from('salons').update(update).eq('id', salonId);
       if (error) matched -= 1; // count only successful writes

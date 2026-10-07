@@ -120,6 +120,8 @@ function InnerForm({ endpoint, body, amount, currency }: Props) {
           currency,
           nonce: newNonce(),
           customerEmail: email || undefined,
+          // The language of the receipt, refund and failure emails.
+          locale,
         }),
       });
       const data = await res.json().catch(() => ({} as { clientSecret?: string; error?: string }));

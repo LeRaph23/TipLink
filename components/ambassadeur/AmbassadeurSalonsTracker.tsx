@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { isOpenNow, mapsLink as buildMapsLink } from '@/lib/salon-hours';
+import { mapsLink as buildMapsLink } from '@/lib/salon-hours';
 import { CategoryIcon, type AmbassadorSalon } from '@/components/salons/SalonsMap';
 import { Card, SectionHeader, Button, Badge, Modal, Field, Textarea, Input, EmptyState, FONT, WEIGHT, SPACE } from './ui';
 import { Icon, type IconName } from './icons';
@@ -353,7 +353,6 @@ function SalonRow({
   salon, onLogVisit, dimmed,
 }: { salon: Salon; onLogVisit: (() => void) | null; dimmed?: boolean }) {
   const v = salon.visit;
-  const openState = isOpenNow(salon.opening_hours);
   return (
     <div style={{
       padding: '12px 16px',
@@ -368,18 +367,7 @@ function SalonRow({
               <span style={{ fontSize: FONT.body + 1, fontWeight: WEIGHT.bold, color: 'var(--text)' }}>{salon.name}</span>
             </span>
             {salon.converted && <Badge tone="accent">Client</Badge>}
-            {openState && (
-              <Badge tone={openState.open ? 'success' : 'error'}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
-                {openState.open ? 'Ouvert' : 'Fermé'}
-              </Badge>
-            )}
           </div>
-          {openState?.nextChange && (
-            <div style={{ fontSize: FONT.micro, color: 'var(--text-3)', marginTop: 2 }}>
-              {openState.nextChange}
-            </div>
-          )}
           {salon.address && (
             <div style={{ fontSize: FONT.label, color: 'var(--text-3)', marginTop: 2 }}>
               {salon.address}{salon.postal_code ? ` · ${salon.postal_code}` : ''}

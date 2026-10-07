@@ -407,6 +407,17 @@ export function GoogleReviewPicker({
         ))}
       </div>
 
+      {/* Google requires its attribution wherever Places results are shown
+          outside a Google map. The brand name stays untranslated. */}
+      {candidates.length > 0 && (
+        <div
+          translate="no"
+          style={{ marginTop: 6, textAlign: 'right', fontSize: 11, color: 'var(--text-3)', fontFamily: 'Roboto, Arial, sans-serif' }}
+        >
+          Google Maps
+        </div>
+      )}
+
       {searched && !loading && candidates.length === 0 && (
         <p style={{
           fontSize: 12.5,

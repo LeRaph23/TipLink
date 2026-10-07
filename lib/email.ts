@@ -60,7 +60,8 @@ const THEME_STYLE = `
   [data-ogsc] .outline-btn{background:#1f1f27!important;color:#f2f2f5!important;border-color:#2e2e38!important}
 `;
 
-function themedLayout(content: string) {
+function themedLayout(content: string, locale: string = 'fr') {
+  const footer = locale === 'fr' ? '© Digitip · Le pourboire sans contact' : '© Digitip · Cashless tips';
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -74,7 +75,7 @@ function themedLayout(content: string) {
   <table width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden">
     ${content}
     <tr><td class="divider-strong" style="padding:16px 32px;border-top:1px solid #e5e7eb;text-align:center">
-      <span class="text-muted" style="font-size:11px;color:#9898a8">© Digitip · Cashless tips via NFC</span>
+      <span class="text-muted" style="font-size:11px;color:#9898a8">${footer}</span>
     </td></tr>
   </table>
 </body>
@@ -97,47 +98,87 @@ function packLabel(pack: string, locale: string) {
 }
 
 // ─── Tip receipt ──────────────────────────────────────────────────────────────
+//
+// The three emails a tipper can get (receipt, failed payment, refund) are
+// written in the language of the page they tipped from, carried on the
+// PaymentIntent as `metadata.locale`. French when it is missing: the venues
+// are in France, and intents created before the field existed have none.
+
+/** 'fr' or 'en' from whatever the PaymentIntent carried. */
+export function tipperLocale(raw: string | null | undefined): 'fr' | 'en' {
+  return raw === 'en' ? 'en' : 'fr';
+}
+
+function tipperMoney(cents: number, currency: string, locale: 'fr' | 'en'): string {
+  return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+    style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
+/** "Clara chez Le Comptoir", or "l'équipe chez Le Comptoir" for a team tip ("chez"
+ * works whatever article the venue name starts with). */
+function tipRecipient(locale: 'fr' | 'en', staffName: string | null, establishmentName: string): string {
+  const est = escapeHtml(establishmentName);
+  if (staffName) {
+    const who = `<strong class="text-strong" style="color:#0f0f12">${escapeHtml(staffName)}</strong>`;
+    if (!est) return who;
+    return locale === 'fr' ? `${who} chez ${est}` : `${who} at ${est}`;
+  }
+  if (locale === 'fr') return est ? `l\u2019équipe chez <strong class="text-strong" style="color:#0f0f12">${est}</strong>` : 'l\u2019équipe';
+  return est ? `the team at <strong class="text-strong" style="color:#0f0f12">${est}</strong>` : 'the team';
+}
 
 export async function sendTipReceipt(opts: {
   to: string;
+  /** What the card was charged: the tip plus the service fee. */
   amount: number;
+  /** The tip alone. */
+  tipAmount: number;
   currency: string;
-  staffName: string;
+  /** Null for a team tip. */
+  staffName: string | null;
   establishmentName: string;
   transactionId: string;
+  locale: 'fr' | 'en';
 }): Promise<void> {
   if (!resend) return;
 
-  const { to, amount, currency, staffName, establishmentName, transactionId } = opts;
-  const fmt = new Intl.NumberFormat('en', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 });
-  const formatted = fmt.format(amount / 100);
+  const { to, amount, tipAmount, currency, staffName, establishmentName, transactionId, locale } = opts;
+  const fr = locale === 'fr';
+  const total = tipperMoney(amount, currency, locale);
+  const fee = Math.max(0, amount - tipAmount);
   const shortRef = transactionId.slice(0, 8).toUpperCase();
+  const recipient = tipRecipient(locale, staffName, establishmentName);
 
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Your tip receipt · ${formatted}`,
+    subject: fr ? `Votre reçu de pourboire · ${total}` : `Your tip receipt · ${total}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Tip receipt</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Reçu de pourboire' : 'Tip receipt'}</div>
     </td></tr>
     <tr><td style="padding:28px 32px">
-      <div class="text-primary" style="font-size:40px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${formatted}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">Tip sent to <strong class="text-strong" style="color:#0f0f12">${staffName}</strong> at ${establishmentName}</div>
+      <div class="text-primary" style="font-size:40px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${total}</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${fr ? 'Pourboire pour' : 'Tip for'} ${recipient}</div>
     </td></tr>
     <tr><td style="padding:0 32px 28px">
       <table width="100%" cellpadding="0" cellspacing="0" class="panel" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden">
-        ${infoRow('Status', '<span style="color:#22c55e;font-weight:600">● Succeeded</span>')}
-        ${infoRow('Reference', `<span style="font-family:monospace">${shortRef}</span>`)}
-        ${infoRow('Processor', 'Stripe ✓')}
+        ${infoRow(fr ? 'Pourboire' : 'Tip', tipperMoney(tipAmount, currency, locale))}
+        ${fee > 0 ? infoRow(fr ? 'Frais de service' : 'Service fee', tipperMoney(fee, currency, locale)) : ''}
+        ${infoRow(fr ? 'Total débité' : 'Total charged', total)}
+        ${infoRow(fr ? 'Statut' : 'Status', `<span style="color:#22c55e;font-weight:600">● ${fr ? 'Payé' : 'Paid'}</span>`)}
+        ${infoRow(fr ? 'Référence' : 'Reference', `<span style="font-family:monospace">${shortRef}</span>`)}
       </table>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
       <p class="text-muted" style="font-size:12px;color:#9898a8;margin:0;line-height:1.6">
-        Your payment went directly to ${staffName}'s bank account via Stripe Connect. Digitip never holds your funds.
+        ${fr
+          ? 'Paiement traité par Stripe. Digitip encaisse le pourboire puis le reverse à l\u2019établissement, qui le remet à son équipe. Une question\u00a0? Écrivez à contact@digitip.app.'
+          : 'Payment processed by Stripe. Digitip collects the tip and pays it out to the business, which passes it on to its team. Questions? Write to contact@digitip.app.'}
       </p>
-    </td></tr>`),
+    </td></tr>`, locale),
   });
 }
 
@@ -368,33 +409,40 @@ export async function sendPaymentFailed(opts: {
   to: string;
   amount: number;
   currency: string;
-  staffName: string;
+  /** Null for a team tip. */
+  staffName: string | null;
   establishmentName: string;
+  locale: 'fr' | 'en';
 }): Promise<void> {
   if (!resend) return;
 
-  const { to, amount, currency, staffName, establishmentName } = opts;
-  const fmt = new Intl.NumberFormat('en', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 });
-  const formatted = fmt.format(amount / 100);
+  const { to, amount, currency, staffName, establishmentName, locale } = opts;
+  const fr = locale === 'fr';
+  const formatted = tipperMoney(amount, currency, locale);
+  const recipient = tipRecipient(locale, staffName, establishmentName);
 
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Your tip payment did not go through · ${formatted}`,
+    subject: fr ? `Votre pourboire n\u2019est pas passé · ${formatted}` : `Your tip did not go through · ${formatted}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Payment issue</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Paiement refusé' : 'Payment declined'}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Payment failed</div>
-      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">We couldn't process your tip</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">Your tip of <strong class="text-strong" style="color:#0f0f12">${formatted}</strong> to <strong class="text-strong" style="color:#0f0f12">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} was not completed.</div>
+      <div style="display:inline-block;background:#ef444422;color:#f87171;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${fr ? 'Non débité' : 'Not charged'}</div>
+      <div class="text-primary" style="font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:10px">${fr ? 'Le paiement n\u2019est pas passé' : 'The payment did not go through'}</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${fr
+        ? `Votre pourboire de <strong class="text-strong" style="color:#0f0f12">${formatted}</strong> pour ${recipient} n\u2019a pas abouti.`
+        : `Your tip of <strong class="text-strong" style="color:#0f0f12">${formatted}</strong> for ${recipient} was not completed.`}</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">No charge was made to your card. If you'd like to try again, simply scan the NFC tag or visit the tip page again.</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to contact@digitip.app.</p>
-    </td></tr>`),
+      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">${fr
+        ? 'Votre carte n\u2019a pas été débitée. Pour réessayer, scannez de nouveau la plaque ou rouvrez la page du pourboire.'
+        : 'Your card was not charged. To try again, scan the plaque again or reopen the tip page.'}</p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">${fr ? 'Une question\u00a0? Écrivez à contact@digitip.app.' : 'Questions? Write to contact@digitip.app.'}</p>
+    </td></tr>`, locale),
   });
 }
 
@@ -404,36 +452,38 @@ export async function sendTipRefunded(opts: {
   to: string;
   amount: number;
   currency: string;
-  staffName?: string;
-  establishmentName?: string;
+  /** Null for a team tip. */
+  staffName: string | null;
+  establishmentName: string;
+  locale: 'fr' | 'en';
 }): Promise<void> {
   if (!resend) return;
 
-  const { to, amount, currency, staffName, establishmentName } = opts;
-  const fmt = new Intl.NumberFormat('en', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 });
-  const formatted = fmt.format(amount / 100);
-  const contextLine = staffName
-    ? `Your tip to <strong class="text-strong" style="color:#0f0f12">${staffName}</strong>${establishmentName ? ` at ${establishmentName}` : ''} has been refunded.`
-    : 'Your tip has been refunded.';
+  const { to, amount, currency, staffName, establishmentName, locale } = opts;
+  const fr = locale === 'fr';
+  const formatted = tipperMoney(amount, currency, locale);
+  const recipient = tipRecipient(locale, staffName, establishmentName);
 
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Your tip has been refunded · ${formatted}`,
+    subject: fr ? `Votre pourboire a été remboursé · ${formatted}` : `Your tip has been refunded · ${formatted}`,
     html: themedLayout(`
     <tr><td class="divider" style="padding:32px 32px 24px;border-bottom:1px solid #f1f2f4">
       <div class="text-primary" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12">Digitip</div>
-      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">Refund confirmation</div>
+      <div class="text-secondary" style="font-size:13px;color:#5a5a6a;margin-top:2px">${fr ? 'Remboursement' : 'Refund'}</div>
     </td></tr>
     <tr><td style="padding:28px 32px 20px">
-      <div style="display:inline-block;background:#f59e0b22;color:#fbbf24;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● Refunded</div>
+      <div style="display:inline-block;background:#f59e0b22;color:#fbbf24;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:14px">● ${fr ? 'Remboursé' : 'Refunded'}</div>
       <div class="text-primary" style="font-size:40px;font-weight:800;letter-spacing:-0.02em;color:#0f0f12;margin-bottom:4px">${formatted}</div>
-      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${contextLine}</div>
+      <div class="text-secondary" style="font-size:14px;color:#5a5a6a">${fr ? `Votre pourboire pour ${recipient} a été remboursé.` : `Your tip for ${recipient} has been refunded.`}</div>
     </td></tr>
     <tr><td style="padding:0 32px 32px">
-      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">The refunded amount will appear on your original payment method within 5–10 business days, depending on your bank.</p>
-      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">Questions? Reply to this email or write to contact@digitip.app.</p>
-    </td></tr>`),
+      <p class="text-secondary" style="font-size:13px;color:#5a5a6a;margin:0;line-height:1.6">${fr
+        ? 'La somme revient sur la carte utilisée, en général sous 5 à 10 jours ouvrés selon votre banque.'
+        : 'The money goes back to the card you used, usually within 5 to 10 business days depending on your bank.'}</p>
+      <p class="text-muted" style="font-size:12px;color:#9898a8;margin:16px 0 0;line-height:1.6">${fr ? 'Une question\u00a0? Écrivez à contact@digitip.app.' : 'Questions? Write to contact@digitip.app.'}</p>
+    </td></tr>`, locale),
   });
 }
 

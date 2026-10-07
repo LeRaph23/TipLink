@@ -83,7 +83,7 @@ export default async function ReceiptPage({
   const shortRef = txn.id.slice(0, 8).toUpperCase();
   const recipient = staff?.full_name
     ? staff.full_name
-    : isFr ? `l’équipe${establishment ? ` de ${establishment.name}` : ''}` : `the team${establishment ? ` at ${establishment.name}` : ''}`;
+    : isFr ? `l’équipe${establishment ? ` chez ${establishment.name}` : ''}` : `the team${establishment ? ` at ${establishment.name}` : ''}`;
 
   const statusLabel: Record<string, string> = isFr
     ? { succeeded: 'Payé', pending: 'En attente', failed: 'Échoué', refunded: 'Remboursé', partially_refunded: 'Partiellement remboursé' }
