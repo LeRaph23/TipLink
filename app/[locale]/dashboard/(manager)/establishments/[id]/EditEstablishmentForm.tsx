@@ -1,26 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { EU_COUNTRIES, countryName } from '@/components/order/formStyles';
 import { useRouter, Link } from '@/i18n/navigation';
 import { updateEstablishment, deleteEstablishment } from '@/actions/establishment';
 import { GoogleReviewPicker } from '@/components/onboarding/GoogleReviewPicker';
 
-const COUNTRIES = [
-  ['FR', 'France'], ['DE', 'Germany'], ['GB', 'United Kingdom'],
-  ['BE', 'Belgium'], ['NL', 'Netherlands'], ['ES', 'Spain'],
-  ['IT', 'Italy'], ['PT', 'Portugal'], ['CH', 'Switzerland'],
-  ['AT', 'Austria'], ['LU', 'Luxembourg'], ['IE', 'Ireland'],
-];
-
-const CURRENCIES = [
-  ['eur', 'EUR (Euro)'],
-  ['gbp', 'GBP (British Pound)'],
-  ['chf', 'CHF (Swiss Franc)'],
-  ['usd', 'USD (US Dollar)'],
-  ['cad', 'CAD (Canadian Dollar)'],
-];
-
+// The countries we operate in, the same list as plaque delivery, named in the
+// page language. Tips are taken in euros only: the tip intents accept no
+// other currency a European venue would use (CHF was offered here and would
+// have left a Swiss venue unable to take a single tip).
 const fieldStyle = {
   width: '100%', padding: '9px 12px', borderRadius: 8,
   border: '1px solid var(--border)', background: 'var(--surface-2)',
@@ -53,12 +43,13 @@ export function EditEstablishmentForm({
   isPro: boolean;
 }) {
   const t = useTranslations('dashboard.establishments');
+  const locale = useLocale();
   const tReview = useTranslations('onboarding.googleReview');
   const router = useRouter();
   const [name, setName] = useState(establishment.name);
   const [businessType, setBusinessType] = useState(establishment.business_type as 'restaurant' | 'beauty');
   const [country, setCountry] = useState(establishment.country);
-  const [currency, setCurrency] = useState(establishment.currency);
+  const currency = 'eur';
   const [googlePlaceId, setGooglePlaceId] = useState(establishment.google_place_id ?? '');
   const [googleReviewUrl, setGoogleReviewUrl] = useState(establishment.google_review_url ?? '');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -114,17 +105,8 @@ export function EditEstablishmentForm({
       <div>
         <label style={labelStyle}>{t('country')}</label>
         <select value={country} onChange={e => setCountry(e.target.value)} style={fieldStyle}>
-          {COUNTRIES.map(([code, label]) => (
-            <option key={code} value={code}>{label} ({code})</option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label style={labelStyle}>{t('currency')}</label>
-        <select value={currency} onChange={e => setCurrency(e.target.value)} style={fieldStyle}>
-          {CURRENCIES.map(([code, label]) => (
-            <option key={code} value={code}>{label}</option>
+          {EU_COUNTRIES.map((code) => (
+            <option key={code} value={code}>{countryName(code, locale)}</option>
           ))}
         </select>
       </div>
@@ -206,7 +188,11 @@ export function EditEstablishmentForm({
         </button>
       </div>
 
-      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 18, marginTop: 4 }}>
+      {/* Set well apart from Save, with what it does spelled out: it sat
+          right under it, one slip away. */}
+      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 20, marginTop: 28 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{t('deleteZoneTitle')}</div>
+        <p style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55, margin: '0 0 12px' }}>{t('deleteZoneBody')}</p>
         <button
           className="btn-ghost"
           type="button"

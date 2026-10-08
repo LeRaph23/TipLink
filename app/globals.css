@@ -219,7 +219,12 @@ input, select, textarea, button { font-family: var(--font); }
   from { opacity: 0; transform: scale(.6); }
   to   { opacity: 1; transform: scale(1); }
 }
-.fade-up  { animation: fadeUp  var(--dur-3) var(--ease-out) both; }
+/* `backwards`, not `both`: a kept end state is a kept transform, even
+   translateY(0), and any transform makes the element the containing block of
+   its position: fixed descendants. Every modal inside a page wrapped in
+   .fade-up (all of the dashboard) then dimmed the content box only, not the
+   sidebar or the bottom of the screen. */
+.fade-up  { animation: fadeUp  var(--dur-3) var(--ease-out) backwards; }
 .alert-in { animation: alertIn 220ms var(--ease-out) both; }
 .amount-tick { display: inline-block; animation: amountTick 180ms var(--ease-out) both; }
 .fade-in  { animation: fadeIn  var(--dur-2) var(--ease-out) both; }

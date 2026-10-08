@@ -15,7 +15,9 @@ export function formatPrice(cents: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-IE', {
     style: 'currency',
     currency: 'EUR',
-    minimumFractionDigits: 0,
+    // "99 €" for a round price, "154,80 €" otherwise: "154,8 €" read as a
+    // typo next to the payment screen's "154,80 €".
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
   }).format(cents / 100);
 }
 
@@ -83,7 +85,7 @@ export function OrderSummary({
             {t('pack', { pack: pack.toUpperCase() })}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
-            {def.quantity} SmartTags
+            {t('plaques', { count: def.quantity })}
           </div>
         </div>
       </div>

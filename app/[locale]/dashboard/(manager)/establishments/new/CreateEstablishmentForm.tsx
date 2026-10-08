@@ -1,25 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { EU_COUNTRIES, countryName } from '@/components/order/formStyles';
 import { useRouter } from '@/i18n/navigation';
 import { createEstablishment } from '@/actions/establishment';
 
-const COUNTRIES = [
-  ['FR', 'France'], ['DE', 'Germany'], ['GB', 'United Kingdom'],
-  ['BE', 'Belgium'], ['NL', 'Netherlands'], ['ES', 'Spain'],
-  ['IT', 'Italy'], ['PT', 'Portugal'], ['CH', 'Switzerland'],
-  ['AT', 'Austria'], ['LU', 'Luxembourg'], ['IE', 'Ireland'],
-];
-
-const CURRENCIES = [
-  ['eur', 'EUR (Euro)'],
-  ['gbp', 'GBP (British Pound)'],
-  ['chf', 'CHF (Swiss Franc)'],
-  ['usd', 'USD (US Dollar)'],
-  ['cad', 'CAD (Canadian Dollar)'],
-];
-
+// The countries we operate in, the same list as plaque delivery, named in the
+// page language. Tips are taken in euros only: the tip intents accept no
+// other currency a European venue would use (CHF was offered here and would
+// have left a Swiss venue unable to take a single tip).
 const fieldStyle = {
   width: '100%', padding: '9px 12px', borderRadius: 8,
   border: '1px solid var(--border)', background: 'var(--surface-2)',
@@ -34,11 +24,12 @@ const labelStyle = {
 
 export function CreateEstablishmentForm() {
   const t = useTranslations('dashboard.establishments');
+  const locale = useLocale();
   const router = useRouter();
   const [name, setName] = useState('');
   const [businessType, setBusinessType] = useState<'restaurant' | 'beauty'>('beauty');
   const [country, setCountry] = useState('FR');
-  const [currency, setCurrency] = useState('eur');
+  const currency = 'eur';
   const [status, setStatus] = useState<'idle' | 'creating' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -91,17 +82,8 @@ export function CreateEstablishmentForm() {
       <div>
         <label style={labelStyle}>{t('country')}</label>
         <select value={country} onChange={e => setCountry(e.target.value)} style={fieldStyle}>
-          {COUNTRIES.map(([code, label]) => (
-            <option key={code} value={code}>{label} ({code})</option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label style={labelStyle}>{t('currency')}</label>
-        <select value={currency} onChange={e => setCurrency(e.target.value)} style={fieldStyle}>
-          {CURRENCIES.map(([code, label]) => (
-            <option key={code} value={code}>{label}</option>
+          {EU_COUNTRIES.map((code) => (
+            <option key={code} value={code}>{countryName(code, locale)}</option>
           ))}
         </select>
       </div>

@@ -106,7 +106,7 @@ export function StepReview({
               Pack {state.pack.toUpperCase()}
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-              {def.quantity} SmartTags
+              {t('plaques', { count: def.quantity })}
             </div>
           </div>
           <button

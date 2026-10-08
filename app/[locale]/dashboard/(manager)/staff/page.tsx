@@ -188,7 +188,7 @@ export default async function StaffListPage({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {[t('colName'), 'Email', t('colEstablishment'), t('colPayout'), t('colStatus'), ''].map((h, i) => (
+                {[t('colName'), t('colEmail'), t('colEstablishment'), t('colPayout'), t('colStatus'), ''].map((h, i) => (
                   <th
                     key={i}
                     style={{
@@ -233,18 +233,12 @@ export default async function StaffListPage({
               {staffMembers?.map((s) => {
                 const estRow = Array.isArray(s.establishments) ? s.establishments[0] : s.establishments;
                 const email = s.user_id ? emailMap.get(s.user_id) : undefined;
-                const payoutLabel =
-                  s.onboarding_status === 'complete'
-                    ? t('detail.payoutComplete')
-                    : s.onboarding_status === 'pending'
-                      ? t('detail.payoutPending')
-                      : s.user_id
-                        ? t('detail.payoutNotStarted')
-                        : t('invited');
-                const payoutColor =
-                  s.onboarding_status === 'complete' ? 'var(--success)' :
-                  s.onboarding_status === 'pending'  ? 'var(--warning)' :
-                  'var(--text-3)';
+                // Whether the person has their own login. The column used to show
+                // each employee's Stripe payout onboarding, from when tips were
+                // paid to employees; they go to the establishment now, so it
+                // read "not signed up" beside "Active" for a working employee.
+                const payoutLabel = s.user_id ? t('accountYes') : t('accountNo');
+                const payoutColor = s.user_id ? 'var(--text-2)' : 'var(--text-3)';
                 return (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>
@@ -278,7 +272,7 @@ export default async function StaffListPage({
                             whiteSpace: 'nowrap',
                           }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
-                            {isActive ? t('active') : isPending ? 'En attente' : t('inactive')}
+                            {isActive ? t('active') : isPending ? t('statusPending') : t('inactive')}
                           </span>
                         );
                       })()}

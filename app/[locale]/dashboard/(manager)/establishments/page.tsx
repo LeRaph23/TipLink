@@ -138,7 +138,7 @@ export default async function EstablishmentsPage({
                             fontSize: 12, fontWeight: 500, textDecoration: 'none',
                           }}
                         >
-                          Edit
+                          {t('edit')}
                         </Link>
                       </div>
                     </td>

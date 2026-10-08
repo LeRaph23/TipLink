@@ -24,6 +24,7 @@ interface Props {
 
 export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
   const t = useTranslations('dashboard.stickers');
+  const tc = useTranslations('common');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrShortId, setQrShortId] = useState<string | null>(null);
   const [reassignError, setReassignError] = useState<string | null>(null);
@@ -254,7 +255,7 @@ export function StickerList({ stickers, establishments = [], baseUrl }: Props) {
                   cursor: 'pointer', fontFamily: 'var(--font)',
                 }}
               >
-                Close
+                {tc('close')}
               </button>
             </div>
           </div>

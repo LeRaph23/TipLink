@@ -1,3 +1,4 @@
+import { getProPricing } from '@/lib/billing/pro-pricing';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Image from 'next/image';
@@ -33,6 +34,8 @@ function Check() {
   );
 }
 
+const isFrLocale = (locale: string) => locale === 'fr';
+
 export default async function PricingPage({
   params,
 }: {
@@ -48,6 +51,15 @@ export default async function PricingPage({
 
   // Pricing comes from Stripe (single source of truth).
   const pricing = await getAllPackPricing();
+  // The Pro price was only ever shown inside the dashboard. Best effort: the
+  // card still explains Pro without a price if Stripe is unreachable.
+  const proPricing = await getProPricing().catch(() => null);
+  const proMonthly = proPricing?.monthly
+    ? new Intl.NumberFormat(isFrLocale(locale) ? 'fr-FR' : 'en-IE', {
+        style: 'currency', currency: proPricing.monthly.currency.toUpperCase(),
+        minimumFractionDigits: proPricing.monthly.unitAmount % 100 === 0 ? 0 : 2,
+      }).format(proPricing.monthly.unitAmount / 100)
+    : null;
 
   const isFr = locale === 'fr';
   const formatPrice = (cents: number) =>
@@ -202,6 +214,25 @@ export default async function PricingPage({
               </div>
             );
           })}
+        </div>
+
+        {/* Digitip Pro, the optional subscription */}
+        <div style={{
+          marginTop: 20, padding: 'clamp(22px,3vw,32px) clamp(20px,3vw,32px)',
+          background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 18,
+        }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
+            {t('proKicker')}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em' }}>Digitip Pro</span>
+            {proMonthly && (
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#3a3b4f' }}>{t('proPrice', { price: proMonthly })}</span>
+            )}
+          </div>
+          <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.65, maxWidth: 640 }}>
+            {t('proBody')}
+          </p>
         </div>
 
         {/* Enterprise card */}

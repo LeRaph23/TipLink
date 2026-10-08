@@ -466,7 +466,7 @@
         "title": "Là où ça compte",
         "body": "Pour apparaître dans les recherches autour de chez vous, des avis récents comptent plus que quelques vieux avis. Un peu chaque semaine, c'est ce qui marche le mieux."
       },
-      "proNote": "L'invitation à laisser un avis Google fait partie de Digitip Pro, offert pendant 30 jours à partir de votre premier pourboire, sans carte bancaire. La plaque et les pourboires, eux, n'ont pas d'abonnement."
+      "proNote": "L'invitation à laisser un avis Google fait partie de Digitip Pro : 30 jours offerts, sans carte bancaire, qui démarrent à votre premier pourboire (ou plus tôt, si vous le lancez vous-même). La plaque et les pourboires, eux, n'ont pas d'abonnement."
     },
     "ui": {
       "choosePack": "Choisir",
@@ -511,7 +511,10 @@
     },
     "trust1": "Sécurisé par Stripe",
     "trust2": "Facture avec TVA",
-    "trust3": "Sans engagement"
+    "trust3": "Sans engagement",
+    "proKicker": "En option",
+    "proPrice": "{price} HT par mois, sans engagement",
+    "proBody": "Après chaque pourboire, vos clients sont invités à laisser un avis Google et peuvent écrire un petit mot à la personne qui les a servis. 30 jours offerts sans carte bancaire, à partir de votre premier pourboire. Les plaques et les pourboires fonctionnent sans."
   },
   "contact": {
     "kicker": "Contact",
@@ -629,7 +632,8 @@
       "edit": "Modifier",
       "promoCodeLabel": "Code promo (optionnel)",
       "promoCodePlaceholder": "Votre code",
-      "promoCodeHint": "Le code sera déduit au moment du paiement."
+      "promoCodeHint": "Le code sera déduit au moment du paiement.",
+      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
     },
     "summary": {
       "title": "Votre commande",
@@ -641,7 +645,8 @@
       "free": "Offerte",
       "total": "Total aujourd'hui",
       "totalToday": "Total aujourd'hui",
-      "ttcHint": "soit {amount} TTC en France (TVA 20 %). La TVA exacte selon votre pays est calculée au paiement."
+      "ttcHint": "soit {amount} TTC en France (TVA 20 %). La TVA exacte selon votre pays est calculée au paiement.",
+      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
     },
     "errors": {
       "shipping_invalid": "Indiquez l'adresse de livraison complète : rue, code postal et ville.",
@@ -779,7 +784,7 @@
     "amount": "Montant",
     "status": "Statut",
     "nav": {
-      "overview": "Vue d'ensemble",
+      "overview": "Accueil",
       "transactions": "Transactions",
       "staff": "Équipe",
       "stickers": "Plaques",
@@ -796,7 +801,7 @@
       "statements": "Relevés",
       "payments": "Compte de paiement",
       "help": "Aide",
-      "compliments": "Mots des clients"
+      "compliments": "Petits mots"
     },
     "billing": {
       "title": "Facturation",
@@ -872,7 +877,7 @@
       "empty": "Personne dans l'équipe pour l'instant.",
       "colName": "Nom",
       "colEstablishment": "Établissement",
-      "colPayout": "Espace employé",
+      "colPayout": "Compte",
       "colStatus": "Statut",
       "active": "Actif",
       "inactive": "Inactif",
@@ -916,7 +921,11 @@
       "tipLinkCopy": "Copier",
       "tipLinkCopied": "Copié",
       "stripeDashboard": "Ouvrir mon espace Stripe",
-      "stripeLoading": "Ouverture…"
+      "stripeLoading": "Ouverture…",
+      "accountYes": "Créé",
+      "accountNo": "Pas encore",
+      "statusPending": "En attente",
+      "colEmail": "E-mail"
     },
     "establishments": {
       "title": "Établissements",
@@ -925,8 +934,8 @@
       "empty": "Pas encore d'établissement. Créez-en un pour commencer à recevoir des pourboires.",
       "name": "Nom de l'établissement",
       "type": "Type d'activité",
-      "typeRestaurant": "Restaurant",
-      "typeBeauty": "Coiffure, beauté",
+      "typeRestaurant": "Restaurant, bar, café ou hôtel",
+      "typeBeauty": "Coiffure, beauté, bien-être ou tatouage",
       "country": "Pays",
       "currency": "Devise",
       "save": "Enregistrer",
@@ -939,7 +948,10 @@
       "tipLink": "Page de pourboire",
       "copyLink": "Copier le lien",
       "linkCopied": "Copié",
-      "createHint": "Ne créez un autre établissement que si vous en gérez plusieurs. Il lui faudra ensuite une plaque, à relier depuis l'onglet Plaques : sans plaque, il ne peut pas recevoir de pourboire."
+      "createHint": "Ne créez un autre établissement que si vous en gérez plusieurs. Il lui faudra ensuite une plaque, à relier depuis l'onglet Plaques : sans plaque, il ne peut pas recevoir de pourboire.",
+      "edit": "Modifier",
+      "deleteZoneTitle": "Supprimer cet établissement",
+      "deleteZoneBody": "Ses plaques ne recevront plus de pourboires et sa page disparaîtra. Les pourboires déjà reçus restent dans vos relevés."
     },
     "stickers": {
       "title": "Plaques",
@@ -967,7 +979,7 @@
       "subtitle": "Le nom de l'équipe, votre logo et les montants proposés aux clients.",
       "sectionBranding": "Logo et nom",
       "logo": "Logo",
-      "logoHelp": "PNG, JPG ou WebP, plutôt carré, 2 Mo max.",
+      "logoHelp": "Plutôt carré : il s'affiche en petit sur la page de pourboire.",
       "teamName": "Nom de l'équipe",
       "sectionTips": "Montants proposés",
       "tipsHelp": "Ils s'affichent sur la page de pourboire, du plus petit au plus grand. Vous pouvez en mettre trois ou quatre : laissez la dernière case vide pour n'en proposer que trois.",
@@ -1281,7 +1293,7 @@
       "canceledTitle": "Abonnement résilié",
       "canceledBody": "Digitip Pro marche jusqu'au {date}, puis s'arrête, et vous ne payez plus rien. Vous pouvez le réactiver d'ici là.",
       "reviewTeaserBodyNoLink": "Avec Digitip Pro, ils auraient pu laisser un petit mot à l'équipe, et un avis Google une fois votre fiche reliée.",
-      "ctaFreeTrial": "Essayer 30 jours gratuitement",
+      "ctaFreeTrial": "Commencer l'essai maintenant",
       "ctaKeep": "Continuer après l'essai",
       "keepNote": "On vous demandera une carte, mais le premier paiement n'aura lieu que le {date}. L'abonnement se renouvelle ensuite chaque mois (ou chaque année), et vous pouvez le résilier à tout moment.",
       "freeTrialTitle": "Essai gratuit en cours",
@@ -1303,7 +1315,7 @@
       "previewChip2": "Les conseils",
       "previewChip3": "Le sourire",
       "reassurance": "Sans engagement. L'abonnement se renouvelle chaque mois (ou chaque année) jusqu'à ce que vous le résiliez, ce que vous pouvez faire à tout moment.",
-      "reassuranceTrial": "Sans carte bancaire. Au bout de 30 jours, Pro s'arrête tout seul si vous ne faites rien.",
+      "reassuranceTrial": "30 jours offerts, sans carte bancaire. Si vous ne le lancez pas ici, l'essai démarre tout seul à votre premier pourboire. Au bout de 30 jours, Pro s'arrête si vous ne faites rien.",
       "previewLabel": "Ce que voit le client après avoir payé",
       "previewReviewBody": "Laissez un avis Google, ça prend 10 secondes.",
       "alwaysFree": "Les pourboires, l'équipe, les statistiques, les relevés et l'envoi au comptable restent gratuits, avec ou sans Pro.",
@@ -1357,7 +1369,7 @@
       "complimentsLink": "Les lire"
     },
     "compliments": {
-      "title": "Mots des clients",
+      "title": "Petits mots des clients",
       "subtitle": "Ce que vos clients ont écrit à l'équipe après leur pourboire.",
       "lockedTitle": "Les petits mots font partie de Digitip Pro",
       "lockedBody": "Après le pourboire, le client peut dire ce qu'il a aimé et écrire une phrase à la personne qui l'a servi. Ça s'affiche ici, et chacun voit les siens.",
@@ -1453,8 +1465,8 @@
       "payoutsPendingBody": "Il faut encore vérifier votre établissement auprès de Stripe : environ 2 minutes, une seule fois. Tant que ce n'est pas fait, votre page de pourboire reste fermée. Vous trouverez le bouton en haut de votre tableau de bord."
     },
     "businessType": {
-      "restaurant": "Restaurant, bar ou café",
-      "beauty": "Coiffure, beauté ou bien-être"
+      "restaurant": "Restaurant, bar, café ou hôtel",
+      "beauty": "Coiffure, beauté, bien-être ou tatouage"
     },
     "address": {
       "searching": "Recherche…",
@@ -1489,7 +1501,10 @@
       "guide3": "Copiez ce lien et collez-le ci-dessous.",
       "gateTitle": "Le bouton d'avis n'est pas encore activé",
       "gateBody": "Votre lien est bien enregistré, mais sans Digitip Pro le client ne le voit pas après son pourboire.",
-      "gateCta": "Voir Digitip Pro"
+      "gateCta": "Voir Digitip Pro",
+      "changeKeep": "La fiche actuelle reste liée tant que vous n'en choisissez pas une autre.",
+      "changeCancel": "Annuler",
+      "unlink": "Retirer la fiche"
     },
     "confirm": {
       "title": "C'est bien ça ?",

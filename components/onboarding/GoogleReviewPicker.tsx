@@ -63,6 +63,9 @@ export function GoogleReviewPicker({
   const [manualUrl, setManualUrl] = useState(value);
   const [manualError, setManualError] = useState<string | null>(null);
   const didAutoSearch = useRef(false);
+  // "Changer" opens the search without dropping the listing already linked:
+  // it used to clear it on the spot, before anything replaced it.
+  const [changing, setChanging] = useState(false);
 
   const selectedReviewUrl = value;
 
@@ -116,6 +119,7 @@ export function GoogleReviewPicker({
   }, [name, address, value, runSearch]);
 
   function choose(c: Candidate) {
+    setChanging(false);
     setManual(false);
     setManualError(null);
     onChange({
@@ -130,6 +134,7 @@ export function GoogleReviewPicker({
   }
 
   function clearSelection() {
+    setChanging(false);
     onChange({ placeId: null, reviewUrl: '' });
   }
 
@@ -142,6 +147,7 @@ export function GoogleReviewPicker({
       return;
     }
     setManualError(null);
+    setChanging(false);
     onChange({ placeId: null, reviewUrl: url });
   }
 
@@ -158,8 +164,21 @@ export function GoogleReviewPicker({
     outline: 'none',
   };
 
+  const linkButton: React.CSSProperties = {
+    background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 12.5,
+    cursor: 'pointer', fontFamily: 'var(--font)', textDecoration: 'underline',
+    textUnderlineOffset: 3, padding: 0,
+  };
+  const changeBar = changing && selectedReviewUrl ? (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', marginBottom: 12, fontSize: 12.5, color: 'var(--text-3)' }}>
+      <span>{t('changeKeep')}</span>
+      <button type="button" onClick={() => setChanging(false)} style={linkButton}>{t('changeCancel')}</button>
+      <button type="button" onClick={clearSelection} style={{ ...linkButton, color: 'var(--error)' }}>{t('unlink')}</button>
+    </div>
+  ) : null;
+
   // ── Already selected → confirmation card ───────────────────────────────────
-  if (selectedReviewUrl) {
+  if (selectedReviewUrl && !changing) {
     return (
       <div>
         <div
@@ -192,7 +211,7 @@ export function GoogleReviewPicker({
         </div>
         <button
           type="button"
-          onClick={clearSelection}
+          onClick={() => setChanging(true)}
           style={{
             marginTop: 10,
             background: 'none',
@@ -216,6 +235,7 @@ export function GoogleReviewPicker({
   if (manual) {
     return (
       <div>
+        {changeBar}
         {failed && (
           <p style={{
             fontSize: compact ? 12 : 13,
@@ -330,6 +350,7 @@ export function GoogleReviewPicker({
   // ── Search + candidate list ────────────────────────────────────────────────
   return (
     <div>
+      {changeBar}
       <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
         <input
           type="text"

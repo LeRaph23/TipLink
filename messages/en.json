@@ -466,7 +466,7 @@
         "title": "Where it counts",
         "body": "To show up in nearby searches, recent reviews count more than a few old ones. A few every week works best."
       },
-      "proNote": "The Google review invitation is part of Digitip Pro, free for 30 days from your first tip, no card needed. The plaque and the tips have no subscription."
+      "proNote": "The Google review invitation is part of Digitip Pro: 30 days free, no card needed, starting with your first tip (or earlier, if you start it yourself). The plaque and the tips have no subscription."
     },
     "ui": {
       "choosePack": "Choose",
@@ -511,7 +511,10 @@
     },
     "trust1": "Secured by Stripe",
     "trust2": "VAT invoice",
-    "trust3": "No commitment"
+    "trust3": "No commitment",
+    "proKicker": "Optional",
+    "proPrice": "{price} excl. VAT a month, no commitment",
+    "proBody": "After each tip, your customers are invited to leave a Google review and can write a note to the person who served them. 30 days free with no card, from your first tip. The plaques and the tips work without it."
   },
   "contact": {
     "kicker": "Contact",
@@ -629,7 +632,8 @@
       "edit": "Edit",
       "promoCodeLabel": "Promo code (optional)",
       "promoCodePlaceholder": "Your code",
-      "promoCodeHint": "The code comes off at payment."
+      "promoCodeHint": "The code comes off at payment.",
+      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
     },
     "summary": {
       "title": "Your order",
@@ -641,7 +645,8 @@
       "free": "Free",
       "total": "Total today",
       "totalToday": "Total today",
-      "ttcHint": "that is {amount} incl. VAT in France (20%). The exact VAT for your country is calculated at payment."
+      "ttcHint": "that is {amount} incl. VAT in France (20%). The exact VAT for your country is calculated at payment.",
+      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
     },
     "errors": {
       "shipping_invalid": "Enter the full shipping address: street, postal code and city.",
@@ -779,7 +784,7 @@
     "amount": "Amount",
     "status": "Status",
     "nav": {
-      "overview": "Overview",
+      "overview": "Home",
       "transactions": "Transactions",
       "staff": "Staff",
       "stickers": "Plaques",
@@ -872,7 +877,7 @@
       "empty": "Nobody on the team yet.",
       "colName": "Name",
       "colEstablishment": "Establishment",
-      "colPayout": "Staff space",
+      "colPayout": "Account",
       "colStatus": "Status",
       "active": "Active",
       "inactive": "Inactive",
@@ -916,7 +921,11 @@
       "tipLinkCopy": "Copy",
       "tipLinkCopied": "Copied",
       "stripeDashboard": "Open my Stripe space",
-      "stripeLoading": "Opening…"
+      "stripeLoading": "Opening…",
+      "accountYes": "Created",
+      "accountNo": "Not yet",
+      "statusPending": "Pending",
+      "colEmail": "Email"
     },
     "establishments": {
       "title": "Establishments",
@@ -925,8 +934,8 @@
       "empty": "No venue yet. Create one to start receiving tips.",
       "name": "Establishment name",
       "type": "Business type",
-      "typeRestaurant": "Restaurant",
-      "typeBeauty": "Hair, beauty",
+      "typeRestaurant": "Restaurant, bar, café or hotel",
+      "typeBeauty": "Hair, beauty, wellness or tattoo",
       "country": "Country",
       "currency": "Currency",
       "save": "Save changes",
@@ -939,7 +948,10 @@
       "tipLink": "Tip page",
       "copyLink": "Copy link",
       "linkCopied": "Copied",
-      "createHint": "Only create another venue if you run several. It'll then need a plaque, linked from the Plaques tab: without one it can't receive tips."
+      "createHint": "Only create another venue if you run several. It'll then need a plaque, linked from the Plaques tab: without one it can't receive tips.",
+      "edit": "Edit",
+      "deleteZoneTitle": "Delete this business",
+      "deleteZoneBody": "Its plaques will stop taking tips and its page will disappear. Tips already received stay in your statements."
     },
     "stickers": {
       "title": "Plaques",
@@ -967,7 +979,7 @@
       "subtitle": "Your team name, your logo and the amounts offered to customers.",
       "sectionBranding": "Logo and name",
       "logo": "Logo",
-      "logoHelp": "PNG, JPG or WebP, ideally square, 2 MB max.",
+      "logoHelp": "Ideally square: it shows small on the tip page.",
       "teamName": "Team name",
       "sectionTips": "Amounts offered",
       "tipsHelp": "They show on the tip page, smallest first. You can have three or four: leave the last box empty to offer only three.",
@@ -1281,7 +1293,7 @@
       "canceledTitle": "Subscription cancelled",
       "canceledBody": "Digitip Pro works until {date}, then stops, and you won't pay anything more. You can switch it back on until then.",
       "reviewTeaserBodyNoLink": "With Digitip Pro, they could have left a note for the team, and a Google review once your listing is linked.",
-      "ctaFreeTrial": "Try it free for 30 days",
+      "ctaFreeTrial": "Start the trial now",
       "ctaKeep": "Keep it after the trial",
       "keepNote": "We'll ask for a card, but the first payment only happens on {date}. The subscription then renews every month (or year), and you can cancel at any time.",
       "freeTrialTitle": "Free trial",
@@ -1303,7 +1315,7 @@
       "previewChip2": "The advice",
       "previewChip3": "The smile",
       "reassurance": "No commitment. The subscription renews every month (or year) until you cancel it, which you can do at any time.",
-      "reassuranceTrial": "No card needed. After 30 days Pro simply stops if you do nothing.",
+      "reassuranceTrial": "30 days free, no card needed. If you don't start it here, the trial starts on its own with your first tip. After 30 days, Pro stops unless you choose to keep it.",
       "previewLabel": "What the customer sees after paying",
       "previewReviewBody": "Leave a Google review, it takes 10 seconds.",
       "alwaysFree": "Tips, your team, analytics, statements and delivery to your accountant stay free, with or without Pro.",
@@ -1453,8 +1465,8 @@
       "payoutsPendingBody": "Your venue still has to be checked by Stripe: about 2 minutes, just once. Until then, your tip page stays closed. The button is at the top of your dashboard."
     },
     "businessType": {
-      "restaurant": "Restaurant, bar or café",
-      "beauty": "Hair, beauty or wellness"
+      "restaurant": "Restaurant, bar, café or hotel",
+      "beauty": "Hair, beauty, wellness or tattoo"
     },
     "address": {
       "searching": "Searching…",
@@ -1489,7 +1501,10 @@
       "guide3": "Copy that link and paste it below.",
       "gateTitle": "The review button isn't on yet",
       "gateBody": "Your link is saved, but without Digitip Pro customers don't see it after tipping.",
-      "gateCta": "See Digitip Pro"
+      "gateCta": "See Digitip Pro",
+      "changeKeep": "The current listing stays linked until you pick another one.",
+      "changeCancel": "Cancel",
+      "unlink": "Remove the listing"
     },
     "confirm": {
       "title": "Is this right?",

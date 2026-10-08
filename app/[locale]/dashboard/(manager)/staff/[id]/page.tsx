@@ -51,16 +51,11 @@ export default async function StaffDetailPage({
 
   const est = Array.isArray(staff.establishments) ? staff.establishments[0] : staff.establishments;
 
-  const payoutLabel =
-    staff.onboarding_status === 'complete'
-      ? t('detail.payoutComplete')
-      : staff.onboarding_status === 'pending'
-        ? t('detail.payoutPending')
-        : t('detail.payoutNotStarted');
-  const payoutColor =
-    staff.onboarding_status === 'complete' ? 'var(--success)' :
-    staff.onboarding_status === 'pending'  ? 'var(--warning)' :
-    'var(--text-3)';
+  // Whether the person has their own login. This used to show the employee's
+  // Stripe payout onboarding, from when tips were paid to employees directly;
+  // they go to the establishment now.
+  const payoutLabel = staff.user_id ? t('accountYes') : t('accountNo');
+  const payoutColor = staff.user_id ? 'var(--text)' : 'var(--text-3)';
 
   return (
     <div style={{ maxWidth: 640 }}>
@@ -101,7 +96,7 @@ export default async function StaffDetailPage({
       }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-            {t('detail.payoutStatus')}
+            {t('colPayout')}
           </div>
           <div style={{ fontSize: 13.5, color: payoutColor, fontWeight: 500 }}>
             {payoutLabel}
