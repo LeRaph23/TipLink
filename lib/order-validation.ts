@@ -20,10 +20,6 @@ export type OrderState = {
     billing_same: boolean;
     billing?: Address;
   };
-  account: {
-    full_name: string;
-    email: string;
-  };
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -106,21 +102,14 @@ export function validateBilling(state: OrderState): string | null {
   return null;
 }
 
-export function validateAccount(state: OrderState): string | null {
-  if (state.account.full_name.trim().length < 2) return 'full_name_required';
-  if (!isValidEmail(state.account.email)) return 'email_invalid';
-  return null;
-}
-
 export function validateAll(state: OrderState): string | null {
   return (
     validateShipping(state) ||
-    validateBilling(state) ||
-    validateAccount(state)
+    validateBilling(state)
   );
 }
 
-export const STEPS = ['pack', 'shipping', 'billing', 'account', 'review'] as const;
+export const STEPS = ['pack', 'shipping', 'billing', 'review'] as const;
 export type Step = (typeof STEPS)[number];
 
 export function parseStep(v: unknown): Step {
@@ -136,6 +125,5 @@ export function emptyOrder(pack: PackId): OrderState {
     pack,
     shipping: { line1: '', line2: '', city: '', postal_code: '', country: 'FR' },
     business: { legal_name: '', vat_number: '', billing_same: true },
-    account: { full_name: '', email: '' },
   };
 }

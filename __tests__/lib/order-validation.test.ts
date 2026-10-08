@@ -6,7 +6,6 @@ import {
   validatePack,
   validateShipping,
   validateBilling,
-  validateAccount,
   emptyOrder,
   parseStep,
   stepIndex,
@@ -95,19 +94,6 @@ describe('step validators', () => {
       },
     };
     expect(validateBilling(badBilling)).toBe('billing_invalid');
-  });
-
-  // The password this used to check is gone: the account is created by a
-  // six-digit code sent to the address, so a name and a reachable address are
-  // everything the step can validate on its own.
-  it('validateAccount requires a name and an email', () => {
-    expect(validateAccount(base)).toBe('full_name_required');
-
-    const noEmail = { ...base, account: { ...base.account, full_name: 'Marco' } };
-    expect(validateAccount(noEmail)).toBe('email_invalid');
-
-    const ok = { ...base, account: { full_name: 'Marco', email: 'a@b.co' } };
-    expect(validateAccount(ok)).toBeNull();
   });
 });
 

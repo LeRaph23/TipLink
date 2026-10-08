@@ -4,7 +4,6 @@ import { useCallback, useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { type PackId } from '@/lib/env';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import {
@@ -13,7 +12,6 @@ import {
   STEPS,
   validateShipping,
   validateBilling,
-  validateAccount,
   type OrderState,
   type Step,
 } from '@/lib/order-validation';
@@ -21,7 +19,6 @@ import { OrderLayout } from '@/components/order/OrderLayout';
 import { StepPack } from '@/components/order/StepPack';
 import { StepShipping } from '@/components/order/StepShipping';
 import { StepBilling } from '@/components/order/StepBilling';
-import { StepAccount } from '@/components/order/StepAccount';
 import { StepReview } from '@/components/order/StepReview';
 import { OrderPayment } from '@/components/order/OrderPayment';
 
@@ -70,8 +67,7 @@ type Action =
   | { type: 'hydrate'; payload: OrderState }
   | { type: 'setPack'; pack: PackId }
   | { type: 'setShipping'; value: OrderState['shipping'] }
-  | { type: 'setBusiness'; value: OrderState['business'] }
-  | { type: 'setAccount'; value: OrderState['account'] };
+  | { type: 'setBusiness'; value: OrderState['business'] };
 
 function reducer(state: OrderState, action: Action): OrderState {
   switch (action.type) {
@@ -79,44 +75,29 @@ function reducer(state: OrderState, action: Action): OrderState {
     case 'setPack': return { ...state, pack: action.pack };
     case 'setShipping': return { ...state, shipping: action.value };
     case 'setBusiness': return { ...state, business: action.value };
-    case 'setAccount': return { ...state, account: action.value };
     default: return state;
   }
 }
 
 // Max step the user has legitimately reached (for progress-bar click safety).
-function maxReachable(
-  state: OrderState,
-  activeSteps: readonly Step[],
-  otpVerified: boolean,
-): Step {
-  if (validateShipping(state)) return activeSteps.includes('shipping') ? 'shipping' : activeSteps[0];
-  if (validateBilling(state)) return activeSteps.includes('billing') ? 'billing' : activeSteps[0];
-  // Unverified stops here even with the fields filled in: the stepper is
-  // clickable, and reaching review without a session would only surface as a
-  // 401 from /api/billing/checkout after the order was re-entered.
-  if (activeSteps.includes('account') && (validateAccount(state) || !otpVerified)) return 'account';
+function maxReachable(state: OrderState): Step {
+  if (validateShipping(state)) return 'shipping';
+  if (validateBilling(state)) return 'billing';
   return 'review';
 }
 
-export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, signedIn = null }: { pack: PackId; locale: string; isAuthenticated?: boolean; pricing: Record<PackId, PackPricing>; signedIn?: { email: string; fullName: string } | null }) {
+// Signed-in customers only: a visitor is sent to the quick checkout instead
+// (see page.tsx), so the session /api/billing/checkout needs always exists.
+export function OrderWizard({ pack, locale, pricing, signedIn }: { pack: PackId; locale: string; pricing: Record<PackId, PackPricing>; signedIn: { email: string; fullName: string } }) {
   const t = useTranslations('order');
   const tErrors = useTranslations('order.errors');
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const activeSteps = isAuthenticated
-    ? (STEPS.filter(s => s !== 'account') as readonly Step[])
-    : STEPS;
-
   const [state, dispatch] = useReducer(reducer, pack, emptyOrder);
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // The six-digit code was accepted, so a session exists and checkout can run.
-  // Held in memory only: rehydrating a stale "verified" from localStorage would
-  // walk someone into /api/billing/checkout with no session and a 401.
-  const [otpVerified, setOtpVerified] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   // Once set, the wizard shows the in-page payment instead of the step form.
   const [payment, setPayment] = useState<{
@@ -157,9 +138,6 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
   useEffect(() => {
     if (!hydrated) return;
     try {
-      // The whole order is safe to persist now that the account step holds no
-      // secret: it is a name and an email, and the six-digit code that proves
-      // the address is never stored (see otpVerified).
       window.localStorage.setItem(STORAGE_KEY(pack), JSON.stringify(state));
     } catch {
       // quota exceeded / private mode — ignore
@@ -200,11 +178,11 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
 
   // A step past what the order allows is never shown: Back after paying lands
   // on ?step=review with the order already cleared, and a reload restores the
-  // URL but not the verified code. The first step still to fill is shown
-  // instead (the stepper and Continue then move on from there).
+  // URL. The first step still to fill is shown instead (the stepper and
+  // Continue then move on from there).
   const requestedStep = parseStep(searchParams.get('step'));
-  const reachableStep = maxReachable(state, activeSteps, otpVerified || isAuthenticated);
-  const currentStep = activeSteps.indexOf(requestedStep) > activeSteps.indexOf(reachableStep)
+  const reachableStep = maxReachable(state);
+  const currentStep = STEPS.indexOf(requestedStep) > STEPS.indexOf(reachableStep)
     ? reachableStep
     : requestedStep;
 
@@ -213,12 +191,6 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
       case 'pack': return null;
       case 'shipping': return validateShipping(state);
       case 'billing': return validateBilling(state);
-      case 'account':
-        if (isAuthenticated) return null;
-        // Checkout needs a session, so the code has to be verified before the
-        // review step rather than at payment time: discovering there that the
-        // address is unreachable would mean re-entering the whole order.
-        return validateAccount(state) ?? (otpVerified ? null : 'code_required');
       case 'review': return null;
     }
   };
@@ -230,15 +202,15 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
       return;
     }
     setError(null);
-    const idx = activeSteps.indexOf(currentStep);
-    const next = activeSteps[idx + 1];
+    const idx = STEPS.indexOf(currentStep);
+    const next = STEPS[idx + 1];
     if (next) goToStep(next);
   };
 
   const handleBack = () => {
     setError(null);
-    const idx = activeSteps.indexOf(currentStep);
-    const prev = activeSteps[idx - 1];
+    const idx = STEPS.indexOf(currentStep);
+    const prev = STEPS[idx - 1];
     if (prev) goToStep(prev);
   };
 
@@ -247,11 +219,6 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
     setSubmitting(true);
 
     try {
-      // No sign-up here any more: verifying the code on the account step both
-      // created the account and left a live session, which is exactly what
-      // /api/billing/checkout requires. The three failure modes this used to
-      // have (signup_failed, email_in_use, email_confirmation_required) were
-      // all consequences of trying to create an account at payment time.
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -316,7 +283,6 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
     pack: { title: t('pack.title'), subtitle: t('pack.subtitle') },
     shipping: { title: t('shipping.title'), subtitle: t('shipping.subtitle') },
     billing: { title: t('billing.title'), subtitle: t('billing.subtitle') },
-    account: { title: t('account.title'), subtitle: t('account.subtitle') },
     review: { title: t('review.title'), subtitle: t('review.subtitle') },
   };
 
@@ -347,23 +313,10 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
         return <StepShipping value={state.shipping} onChange={(v) => dispatch({ type: 'setShipping', value: v })} />;
       case 'billing':
         return <StepBilling value={state.business} onChange={(v) => dispatch({ type: 'setBusiness', value: v })} />;
-      case 'account':
-        return (
-          <StepAccount
-            value={state.account}
-            onChange={(v) => dispatch({ type: 'setAccount', value: v })}
-            verified={otpVerified}
-            onVerified={() => { setOtpVerified(true); goToStep('review'); }}
-          />
-        );
       case 'review':
         return <StepReview state={state} locale={locale} pricing={pricing} onEdit={goToStep} promoCode={promoCode} onPromoChange={setPromoCode} signedIn={signedIn} />;
     }
   };
-
-  // On the account step, the OTP widget carries its own send and verify
-  // buttons; a second "Continue" beside them would be two ways to do one thing.
-  const awaitingCode = currentStep === 'account' && !isAuthenticated && !otpVerified;
 
   const footer = (
     <>
@@ -381,7 +334,7 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
       )}
       <div style={{ display: 'flex', gap: 10 }}>
         {currentStep !== 'pack' && <BackBtn onBack={handleBack} label={t('back')} />}
-        {awaitingCode ? null : currentStep !== 'review' ? (
+        {currentStep !== 'review' ? (
           <ContinueBtn onClick={handleContinue}>
             {t('continue')} →
           </ContinueBtn>
@@ -416,8 +369,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
         locale={locale}
         pricing={pricing}
         step="review"
-        reachable={maxReachable(state, activeSteps, otpVerified || isAuthenticated)}
-        steps={activeSteps}
+        reachable={maxReachable(state)}
+        steps={STEPS}
         title={locale === 'fr' ? 'Paiement' : 'Payment'}
         subtitle={locale === 'fr' ? 'Réglez votre commande en toute sécurité.' : 'Pay for your order securely.'}
         footer={<BackBtn onBack={() => setPayment(null)} label={t('back')} />}
@@ -456,8 +409,8 @@ export function OrderWizard({ pack, locale, isAuthenticated = false, pricing, si
       locale={locale}
       pricing={pricing}
       step={currentStep}
-      reachable={maxReachable(state, activeSteps, otpVerified || isAuthenticated)}
-      steps={activeSteps}
+      reachable={maxReachable(state)}
+      steps={STEPS}
       title={titles[currentStep].title}
       subtitle={titles[currentStep].subtitle}
       footer={footer}

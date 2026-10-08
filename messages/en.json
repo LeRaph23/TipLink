@@ -592,7 +592,6 @@
       "pack": "Pack",
       "shipping": "Shipping",
       "billing": "Billing",
-      "account": "Account",
       "review": "Review"
     },
     "pack": {
@@ -612,14 +611,6 @@
       "title": "The invoice",
       "subtitle": "We need this for a proper invoice. You can change it later from your dashboard.",
       "vatAutoReverse": "With a valid EU VAT number, no VAT is charged (reverse charge)."
-    },
-    "account": {
-      "title": "Your account",
-      "subtitle": "Last step before paying. You'll use your account to run your team and your plaques.",
-      "already": "Already have an account?",
-      "signIn": "Sign in",
-      "codeHint": "We'll send a 6-digit code to confirm this address before payment.",
-      "verified": "Address confirmed."
     },
     "review": {
       "title": "All good",
@@ -658,11 +649,8 @@
       "legal_name_required": "Enter the company name.",
       "vat_invalid": "This VAT number is not in the right format. It starts with the country code, for example FR12345678901. Leave it empty if you don't have one.",
       "billing_invalid": "Enter the full billing address: street, postal code and city.",
-      "full_name_required": "Enter your name.",
-      "email_invalid": "That email address isn't valid.",
       "promo_invalid": "That promo code doesn't work or has expired. Fix it or remove it to carry on.",
       "checkout_failed": "The payment didn't go through. Try again in a moment.",
-      "code_required": "First confirm your email with the code we sent.",
       "admin_account": "You're signed in with an admin account, which can't place orders. Sign out to order for a customer.",
       "shipping_postal_invalid": "This postal code does not match the selected country (in France: 5 digits, for example 75009).",
       "billing_postal_invalid": "The billing postal code does not match the selected country."

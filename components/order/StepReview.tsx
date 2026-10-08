@@ -147,12 +147,13 @@ export function StepReview({
         {billingLines.map((l, i) => <div key={i}>{l}</div>)}
       </Row>
 
-      {/* Signed in, the account step is skipped and state.account stays empty:
-          the block showed blank (sixth QA run). Show the session's account. */}
-      <Row label={t('account')} step="account" onEdit={signedIn ? null : onEdit}>
-        <div style={{ fontWeight: 600, marginBottom: 2 }}>{signedIn ? signedIn.fullName : state.account.full_name}</div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{signedIn ? signedIn.email : state.account.email}</div>
-      </Row>
+      {/* The wizard is for signed-in customers: show the session's account. */}
+      {signedIn && (
+        <Row label={t('account')} step="review" onEdit={null}>
+          <div style={{ fontWeight: 600, marginBottom: 2 }}>{signedIn.fullName}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{signedIn.email}</div>
+        </Row>
+      )}
 
       {/* Promo code input */}
       {onPromoChange !== undefined && (

@@ -592,7 +592,6 @@
       "pack": "Pack",
       "shipping": "Livraison",
       "billing": "Facturation",
-      "account": "Compte",
       "review": "Récapitulatif"
     },
     "pack": {
@@ -612,14 +611,6 @@
       "title": "La facture",
       "subtitle": "On en a besoin pour une facture en règle. Vous pourrez le changer plus tard depuis votre tableau de bord.",
       "vatAutoReverse": "Avec un numéro de TVA européen valide, la TVA n'est pas facturée (autoliquidation)."
-    },
-    "account": {
-      "title": "Votre compte",
-      "subtitle": "Dernière étape avant de payer. Votre compte vous servira à gérer votre équipe et vos plaques.",
-      "already": "Vous avez déjà un compte ?",
-      "signIn": "Se connecter",
-      "codeHint": "On vous envoie un code à 6 chiffres pour confirmer cette adresse avant le paiement.",
-      "verified": "Adresse confirmée."
     },
     "review": {
       "title": "Tout est bon",
@@ -658,11 +649,8 @@
       "legal_name_required": "Indiquez la raison sociale.",
       "vat_invalid": "Ce numéro de TVA n'a pas le bon format. Il commence par le code du pays, par exemple FR12345678901. Laissez le champ vide si vous n'en avez pas.",
       "billing_invalid": "Indiquez l'adresse de facturation complète : rue, code postal et ville.",
-      "full_name_required": "Indiquez votre nom.",
-      "email_invalid": "Cette adresse e-mail n'est pas valide.",
       "promo_invalid": "Ce code promo ne marche pas ou a expiré. Corrigez-le ou retirez-le pour continuer.",
       "checkout_failed": "Le paiement n'est pas passé. Réessayez dans un instant.",
-      "code_required": "Confirmez d'abord votre e-mail avec le code reçu.",
       "admin_account": "Vous êtes connecté avec un compte administrateur, qui ne peut pas commander. Déconnectez-vous pour commander pour un client.",
       "shipping_postal_invalid": "Ce code postal ne correspond pas au pays choisi (en France : 5 chiffres, par exemple 75009).",
       "billing_postal_invalid": "Le code postal de facturation ne correspond pas au pays choisi."

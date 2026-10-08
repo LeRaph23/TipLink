@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { validatePack } from '@/lib/order-validation';
 import { createClient } from '@/lib/supabase/server';
@@ -40,6 +40,14 @@ export default async function OrderPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Signed out, ordering is the quick checkout: one page, straight to Stripe,
+  // with the account created from the payment (webhook pack-express). The
+  // wizard used to make a visitor create and verify an account before paying.
+  // It stays for signed-in customers, whose order joins their existing group.
+  if (!user) {
+    redirect(`/${locale}/checkout?pack=${pack}`);
+  }
+
   // Pricing comes from Stripe (single source of truth).
   const pricing = await getAllPackPricing();
 
@@ -48,9 +56,8 @@ export default async function OrderPage({
       <OrderWizard
         pack={pack}
         locale={locale}
-        isAuthenticated={!!user}
         pricing={pricing}
-        signedIn={user ? { email: user.email ?? '', fullName: (user.user_metadata?.full_name as string | undefined) ?? '' } : null}
+        signedIn={{ email: user.email ?? '', fullName: (user.user_metadata?.full_name as string | undefined) ?? '' }}
       />
     </Suspense>
   );
