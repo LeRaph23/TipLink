@@ -112,17 +112,20 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
   return (
     <>
       <header style={{ position: 'sticky', top: 38, zIndex: 200, height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px, 4vw, 48px)', background: scrolled ? 'rgba(255,255,255,0.97)' : '#fff', backdropFilter: scrolled ? 'blur(12px)' : 'none', borderBottom: '1px solid #e4e4ec', transition: 'background 300ms' }}>
-        <Link href="/" aria-label="Digitip, accueil" title="Digitip" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <Link href="/" aria-label={t('ui.homeLabel')} title="Digitip" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
           <span style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#111118' }}>DigiTip</span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="land-nav-desktop" style={{ gap: 2, alignItems: 'center' }}>
-          {navItems.map(({ key, href }) => (
-            <a key={key} href={href} className="land-nav-link" style={{ padding: '6px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13.5, fontWeight: 500, borderRadius: 7, transition: 'color 150ms' }}>
-              {t(`nav.${key}` as Parameters<typeof t>[0])}
-            </a>
-          ))}
+          {navItems.map(({ key, href }) => {
+            const style = { padding: '6px 14px', textDecoration: 'none', color: '#74748a', fontSize: 13.5, fontWeight: 500, borderRadius: 7, transition: 'color 150ms' } as const;
+            const label = t(`nav.${key}` as Parameters<typeof t>[0]);
+            // Pages through the locale-aware Link, or /en lands on /fr/contact.
+            return href.startsWith('#')
+              ? <a key={key} href={href} className="land-nav-link" style={style}>{label}</a>
+              : <Link key={key} href={href} className="land-nav-link" style={style}>{label}</Link>;
+          })}
         </nav>
 
         {/* Desktop buttons */}
@@ -159,11 +162,13 @@ function Header({ onOrderClick }: { onOrderClick: () => void }) {
           </div>
           {/* Nav links */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 20px', gap: 4 }}>
-            {navItems.map(({ key, href }) => (
-              <a key={key} href={href} onClick={() => setMobileOpen(false)} style={{ padding: '14px 16px', textDecoration: 'none', color: '#111118', fontSize: 17, fontWeight: 600, borderRadius: 12, display: 'block' }}>
-                {t(`nav.${key}` as Parameters<typeof t>[0])}
-              </a>
-            ))}
+            {navItems.map(({ key, href }) => {
+              const style = { padding: '14px 16px', textDecoration: 'none', color: '#111118', fontSize: 17, fontWeight: 600, borderRadius: 12, display: 'block' } as const;
+              const label = t(`nav.${key}` as Parameters<typeof t>[0]);
+              return href.startsWith('#')
+                ? <a key={key} href={href} onClick={() => setMobileOpen(false)} style={style}>{label}</a>
+                : <Link key={key} href={href} onClick={() => setMobileOpen(false)} style={style}>{label}</Link>;
+            })}
           </div>
           {/* CTA */}
           <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -236,7 +241,7 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
         <div className="fade-up land-hero-visual" style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: '160ms' }}>
           <div style={{ position: 'relative', width: 300, height: 300 }}>
             <div style={{ width: 300, height: 300, borderRadius: 24, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)', position: 'relative' }}>
-              <Image src="/products/duo-double.jpg" alt="Plaques époxy NFC Digitip" fill sizes="300px" style={{ objectFit: 'cover' }} priority />
+              <Image src="/products/duo-double.jpg" alt={t('ui.altPlaques')} fill sizes="300px" style={{ objectFit: 'cover' }} priority />
             </div>
             <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#E57A97', display: 'flex', alignItems: 'center', gap: 5 }}>
               <BoltIcon size={12} color="#E57A97" /> {t('product.get3s')}
@@ -297,7 +302,7 @@ function KeyAdvantagesSection() {
         <Reveal delay={120} style={{ flex: '0 1 300px', display: 'flex', justifyContent: 'center', alignSelf: 'flex-end' }}>
           <div style={{ position: 'relative' }}>
             <div style={{ borderRadius: 36, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.10)', width: 260, lineHeight: 0 }}>
-              <Image src="/mockup-app.jpg" alt="Digitip, choisir à qui va le pourboire" width={260} height={520} style={{ objectFit: 'cover', display: 'block', width: '100%', height: 'auto' }} />
+              <Image src="/mockup-app.jpg" alt={t('ui.altMockup')} width={260} height={520} style={{ objectFit: 'cover', display: 'block', width: '100%', height: 'auto' }} />
             </div>
             {/* Floating badge */}
             <div style={{ position: 'absolute', bottom: -14, left: -20, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 12, padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
@@ -305,8 +310,8 @@ function KeyAdvantagesSection() {
                 <UsersIcon size={15} color="#E57A97" />
               </div>
               <div>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: '#111118', lineHeight: 1 }}>Le client choisit</div>
-                <div style={{ fontSize: 10.5, color: '#74748a', marginTop: 2 }}>Le pourboire va à la bonne personne</div>
+                <div style={{ fontSize: 11.5, fontWeight: 800, color: '#111118', lineHeight: 1 }}>{t('ui.heroBadgeTitle')}</div>
+                <div style={{ fontSize: 10.5, color: '#74748a', marginTop: 2 }}>{t('ui.heroBadgeBody')}</div>
               </div>
             </div>
           </div>
@@ -806,9 +811,15 @@ function FooterSection() {
               { label: t('howItWorks.kicker'), href: '#comment-ca-marche' },
               { label: t('faq.kicker'), href: '#faq' },
               { label: tc('contact'), href: '/contact' },
-            ].map((l) => (
-              <a key={l.href} href={l.href} className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</a>
-            ))}
+            ].map((l) => {
+              const style = { display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' } as const;
+              // In-page anchors stay plain links. Pages go through the
+              // locale-aware Link: a bare href="/contact" was redirected to
+              // /fr/contact from the English page.
+              return l.href.startsWith('#')
+                ? <a key={l.href} href={l.href} className="land-footer-link" style={style}>{l.label}</a>
+                : <Link key={l.href} href={l.href} className="land-footer-link" style={style}>{l.label}</Link>;
+            })}
           </div>
           {/* Content hubs. Without these the guides, trade pages and
               comparisons are orphans: reachable only from the sitemap, so they

@@ -120,6 +120,7 @@ export function AmountSelector({ staffId, currency, thresholds, expectedEstablis
             kind="staff"
             targetId={staffId}
             amount={totalAmount}
+            tip={tipAmount ?? 0}
             currency={currency}
           />
         ) : (

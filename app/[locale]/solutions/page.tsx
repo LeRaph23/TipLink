@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
@@ -44,7 +44,9 @@ export default async function SolutionsHub({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  if (locale !== 'fr') notFound();
+  // French-only content: send the other locales to it rather than a 404,
+  // since the locale-aware footer and nav links point here from /en.
+  if (locale !== 'fr') permanentRedirect('/fr/solutions');
   setRequestLocale(locale);
 
   const url = `${BASE_URL}/fr/solutions`;

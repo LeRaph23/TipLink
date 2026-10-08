@@ -135,3 +135,27 @@ describe('isValidPostalCode', () => {
     expect(isValidPostalCode('12', 'DE')).toBe(false);
   });
 });
+
+describe('per-country checks (QA run: "ABC" and "FR123" went through)', () => {
+  it('rejects a French VAT number with the wrong length', () => {
+    expect(isValidVat('FR123')).toBe(false);
+    expect(isValidVat('FR 12 345 678 901')).toBe(true);
+    expect(isValidVat('NL123456789B01')).toBe(true);
+    expect(isValidVat('CHE-123.456.789 TVA')).toBe(true);
+    expect(isValidVat('XX123456789')).toBe(false);
+  });
+
+  it('checks postal codes against the country', () => {
+    expect(isValidPostalCode('ABC', 'FR')).toBe(false);
+    expect(isValidPostalCode('1012 AB', 'NL')).toBe(true);
+    expect(isValidPostalCode('1000-001', 'PT')).toBe(true);
+    expect(isValidPostalCode('L-1234', 'LU')).toBe(true);
+    expect(isValidPostalCode('75009', 'BE')).toBe(false);
+  });
+
+  it('says which part of the address is wrong', () => {
+    const base = emptyOrder('solo');
+    const badPostal = { ...base, shipping: { line1: '1 rue Lafayette', city: 'Paris', postal_code: 'ABC', country: 'FR' } };
+    expect(validateShipping(badPostal)).toBe('shipping_postal_invalid');
+  });
+});

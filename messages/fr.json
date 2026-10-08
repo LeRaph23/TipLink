@@ -15,7 +15,7 @@
     "altSolo": "Plaque époxy NFC Digitip Solo",
     "altDuo": "Pack Duo, 2 plaques époxy NFC Digitip",
     "trustWarranty": "Garantie matériel à vie",
-    "trustDelivery": "Livraison offerte en France, dans l’UE et en Suisse, expédiée sous 3 jours ouvrés",
+    "trustDelivery": "Livraison offerte dans 13 pays d'Europe, expédiée sous 3 jours ouvrés",
     "trustStripe": "Paiement sécurisé par Stripe",
     "trustRefund": "Remboursé si vous nous la renvoyez sous 14 jours",
     "orPayByCard": "Ou payer par carte",
@@ -83,7 +83,9 @@
     "arrowRight": "→",
     "language": "Langue",
     "close": "Fermer",
-    "yourOrder": "Votre commande"
+    "yourOrder": "Votre commande",
+    "bestPrice": "MEILLEUR PRIX",
+    "plaqueName": "Plaque NFC en époxy Digitip"
   },
   "imageUpload": {
     "upload": "Ajouter une image",
@@ -310,9 +312,9 @@
     },
     "shipping": {
       "kicker": "Livraison",
-      "title": "Livrée vite, partout en Europe",
+      "title": "Livrée vite, dans 13 pays d'Europe",
       "processing": "Expédiée sous 3 jours ouvrés",
-      "freeEU": "Livraison offerte en France, dans l’UE et en Suisse",
+      "freeEU": "Livraison offerte en France et dans 12 autres pays d'Europe, Suisse comprise",
       "timezoneFR": "France : 3–5 jours ouvrés après expédition",
       "timezoneEU": "Europe et Suisse : 4–7 jours ouvrés après expédition",
       "tracking": "Avec numéro de suivi"
@@ -407,7 +409,7 @@
       "g2title": "Garantie à vie",
       "g2body": "Si une plaque a un défaut ou tombe en panne en usage normal, on vous en envoie une neuve, gratuitement, sans limite de durée.",
       "g3title": "Livraison offerte",
-      "g3body": "Pas de frais de port en France, dans l'UE et en Suisse, quel que soit le pack.",
+      "g3body": "Pas de frais de port, quel que soit le pack, vers les 13 pays où nous livrons : la France, la Suisse et 11 autres pays de l'UE.",
       "g4title": "Rien à payer chaque mois pour les pourboires",
       "g4body": "Vous payez la plaque une fois, et vous recevez des pourboires aussi longtemps que vous voulez."
     },
@@ -465,6 +467,15 @@
         "body": "Pour apparaître dans les recherches autour de chez vous, des avis récents comptent plus que quelques vieux avis. Un peu chaque semaine, c'est ce qui marche le mieux."
       },
       "proNote": "L'invitation à laisser un avis Google fait partie de Digitip Pro, offert pendant 30 jours à partir de votre premier pourboire, sans carte bancaire. La plaque et les pourboires, eux, n'ont pas d'abonnement."
+    },
+    "ui": {
+      "choosePack": "Choisir",
+      "bestPrice": "MEILLEUR PRIX",
+      "heroBadgeTitle": "Le client choisit",
+      "heroBadgeBody": "Le pourboire va à la bonne personne",
+      "altPlaques": "Plaques NFC en époxy Digitip",
+      "altMockup": "Digitip : choisir à qui va le pourboire",
+      "homeLabel": "Digitip, accueil"
     }
   },
   "pricing": {
@@ -480,7 +491,7 @@
     "enterpriseCta": "Nous contacter",
     "benefits": {
       "preConfigured": "Déjà programmée, vous la posez et c'est prêt",
-      "freeShipping": "Livraison gratuite partout en Europe",
+      "freeShipping": "Livraison offerte dans 13 pays d'Europe",
       "lifetimeReplacement": "Remplacée gratuitement à vie en cas de défaut ou de panne",
       "dashboard": "Tableau de bord inclus",
       "noSubscription": "Pas d'abonnement pour les pourboires",
@@ -585,7 +596,7 @@
     },
     "shipping": {
       "title": "Où livrer vos plaques ?",
-      "subtitle": "Expédiées gratuitement sous 3 jours ouvrés, en Europe et en Suisse. Elles arrivent programmées, prêtes à poser.",
+      "subtitle": "Expédiées gratuitement sous 3 jours ouvrés, dans 13 pays d'Europe, Suisse comprise. Elles arrivent programmées, prêtes à poser.",
       "recipient": "Destinataire",
       "recipientPlaceholder": "Nom complet ou établissement"
     },
@@ -629,19 +640,22 @@
       "shipping": "Livraison",
       "free": "Offerte",
       "total": "Total aujourd'hui",
-      "totalToday": "Total aujourd'hui"
+      "totalToday": "Total aujourd'hui",
+      "ttcHint": "soit {amount} TTC en France (TVA 20 %). La TVA exacte selon votre pays est calculée au paiement."
     },
     "errors": {
-      "shipping_invalid": "Il manque quelque chose dans l'adresse de livraison.",
+      "shipping_invalid": "Indiquez l'adresse de livraison complète : rue, code postal et ville.",
       "legal_name_required": "Indiquez la raison sociale.",
-      "vat_invalid": "Ce numéro de TVA n'a pas le bon format (exemple : FR12345678901).",
-      "billing_invalid": "Il manque quelque chose dans l'adresse de facturation.",
+      "vat_invalid": "Ce numéro de TVA n'a pas le bon format. Il commence par le code du pays, par exemple FR12345678901. Laissez le champ vide si vous n'en avez pas.",
+      "billing_invalid": "Indiquez l'adresse de facturation complète : rue, code postal et ville.",
       "full_name_required": "Indiquez votre nom.",
       "email_invalid": "Cette adresse e-mail n'est pas valide.",
       "promo_invalid": "Ce code promo ne marche pas ou a expiré. Corrigez-le ou retirez-le pour continuer.",
       "checkout_failed": "Le paiement n'est pas passé. Réessayez dans un instant.",
       "code_required": "Confirmez d'abord votre e-mail avec le code reçu.",
-      "admin_account": "Vous êtes connecté avec un compte administrateur, qui ne peut pas commander. Déconnectez-vous pour commander pour un client."
+      "admin_account": "Vous êtes connecté avec un compte administrateur, qui ne peut pas commander. Déconnectez-vous pour commander pour un client.",
+      "shipping_postal_invalid": "Ce code postal ne correspond pas au pays choisi (en France : 5 chiffres, par exemple 75009).",
+      "billing_postal_invalid": "Le code postal de facturation ne correspond pas au pays choisi."
     }
   },
   "pay": {

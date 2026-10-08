@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import { ArticleLayout } from '@/components/content/ArticleLayout';
@@ -48,7 +48,9 @@ export default async function GuidePage({ params }: Props) {
   const { locale, slug } = await params;
   // FR-only: the subject matter is French tax law, so an /en variant would be
   // duplication with no query behind it.
-  if (locale !== 'fr') notFound();
+  // French-only content: send the other locales to it rather than a 404,
+  // since the locale-aware footer and nav links point here from /en.
+  if (locale !== 'fr') permanentRedirect(`/fr/guides/${slug}`);
 
   const guide = getGuide(slug);
   const load = GUIDE_BODIES[slug];

@@ -23,6 +23,7 @@ interface Props {
     redirect_status?: string;
     // Demo mode (no real charge): the pay page routes here directly.
     demo?: string;
+    tip?: string;
     staff?: string;
     establishment?: string;
     amt?: string;
@@ -90,6 +91,34 @@ async function fetchTipContext(
     return { staffName: null, reviewUrl: rows?.[0]?.establishment_review_url ?? null };
   }
   return { staffName: null, reviewUrl: null };
+}
+
+/** The establishment behind a demo tip, if it really is in demo mode. */
+async function demoEstablishment(
+  staffId: string | null,
+  establishmentId: string | null,
+): Promise<{ reviewUrl: string | null } | null> {
+  try {
+    const service = createServiceClient();
+    let estId = establishmentId;
+    if (!estId && staffId) {
+      estId = (await service
+        .from('staff_profiles')
+        .select('establishment_id')
+        .eq('id', staffId)
+        .maybeSingle()).data?.establishment_id ?? null;
+    }
+    if (!estId) return null;
+    const { data } = await service
+      .from('establishments')
+      .select('is_demo, google_review_url')
+      .eq('id', estId)
+      .maybeSingle();
+    if (!data?.is_demo) return null;
+    return { reviewUrl: data.google_review_url?.trim() || null };
+  } catch {
+    return null;
+  }
 }
 
 /** Whether the group behind this tip has Pro (subscription or cardless trial). */
@@ -191,6 +220,13 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   let tipCents: number | null = null;
   let feeCents: number | null = null;
   let receiptTransactionId: string | null = null;
+  if (isDemo && amountCents !== null) {
+    const tip = Number(sp.tip);
+    if (Number.isInteger(tip) && tip > 0 && tip <= amountCents) {
+      tipCents = tip;
+      feeCents = amountCents - tip > 0 ? amountCents - tip : null;
+    }
+  }
 
   if (intent && sp.redirect_status === 'succeeded') {
     const pi = intent;
@@ -217,15 +253,24 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
 
   // Only fetch the review link on success — there's nothing to celebrate (or
   // ask a review for) on a failed/processing payment.
-  const { staffName, reviewUrl } =
+  const context =
     status === 'succeeded'
       ? await fetchTipContext(staffId, establishmentId)
       : { staffName: staffId ? (await fetchTipContext(staffId, null)).staffName : null, reviewUrl: null };
+  const staffName = context.staffName;
+
+  // A demo establishment previews Pro whatever its plan: it exists to show a
+  // merchant the whole experience. `?demo=1` is only a query string anyone can
+  // add, so the establishment's demo flag is checked here, server-side.
+  const demoPreview = isDemo && status === 'succeeded'
+    ? await demoEstablishment(staffId, establishmentId)
+    : null;
+  const reviewUrl = context.reviewUrl ?? demoPreview?.reviewUrl ?? null;
 
   // Compliments are a Pro feature, decided here on the server: the form is not
   // rendered for a free group at all, and /api/compliments checks again.
   const complimentsOn = status === 'succeeded'
-    ? await groupHasPro(staffId, establishmentId)
+    ? demoPreview !== null || await groupHasPro(staffId, establishmentId)
     : false;
 
   // The tip this page is confirming, looked up only when there is an

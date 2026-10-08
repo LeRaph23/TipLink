@@ -246,7 +246,7 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
 
         {/* Pack selector */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 10 }}>Choisir</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 10 }}>{t('ui.choosePack')}</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {packs.map((p) => (
               <button key={p.key} onClick={() => { setSelectedPack(p.key); setActiveImg(0); }} style={{
@@ -263,7 +263,7 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
                     position: 'absolute', top: -9, right: 8,
                     background: '#E57A97', color: '#fff', fontSize: 9, fontWeight: 800,
                     padding: '2px 7px', borderRadius: 20, letterSpacing: '0.04em',
-                  }}>MEILLEUR PRIX</span>
+                  }}>{t('ui.bestPrice')}</span>
                 )}
                 <div style={{ fontWeight: 700 }}>{p.label}</div>
                 <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>{p.sub}</div>

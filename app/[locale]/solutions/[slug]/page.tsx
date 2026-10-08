@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import { ArticleLayout } from '@/components/content/ArticleLayout';
@@ -61,7 +61,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SolutionPage({ params }: Props) {
   const { locale, slug } = await params;
-  if (locale !== 'fr') notFound();
+  // French-only content: send the other locales to it rather than a 404,
+  // since the locale-aware footer and nav links point here from /en.
+  if (locale !== 'fr') permanentRedirect(`/fr/solutions/${slug}`);
 
   const sol = getSolution(slug);
   const load = SOLUTION_BODIES[slug];

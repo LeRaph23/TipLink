@@ -124,6 +124,7 @@ export function GroupAmountSelector({ establishmentId, currency, thresholds, sta
             kind="group"
             targetId={establishmentId}
             amount={totalAmount}
+            tip={tipAmount ?? 0}
             currency={currency}
           />
         ) : (

@@ -107,6 +107,12 @@ export function OrderSummary({
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', marginLeft: 4 }}>{htSuffix(locale)}</span>
         </span>
       </div>
+      {/* The price with VAT, before the last step: it used to appear only on
+          the payment screen. French rate shown; Stripe computes the exact VAT
+          for the buyer's country at payment. */}
+      <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'right', marginTop: -4 }}>
+        {t('ttcHint', { amount: formatPrice(Math.round(amount * 1.2), locale) })}
+      </div>
     </div>
   );
 }

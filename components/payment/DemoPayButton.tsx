@@ -11,13 +11,14 @@ interface Props {
   kind: 'staff' | 'group';
   targetId: string; // staffId or establishmentId
   amount: number;   // total charge in cents (tip + service fee), shown on success
+  tip: number;      // the tip alone, so the success screen can show what the total is made of
   currency: string;
 }
 
 // Replaces the Stripe checkout when an establishment is in demo mode: no charge,
 // no PaymentIntent, no DB write — just routes to the success screen so the full
 // experience (incl. the Google review prompt) can be shown in a sales demo.
-export function DemoPayButton({ kind, targetId, amount, currency }: Props) {
+export function DemoPayButton({ kind, targetId, amount, tip, currency }: Props) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('pay');
@@ -33,6 +34,7 @@ export function DemoPayButton({ kind, targetId, amount, currency }: Props) {
     const params = new URLSearchParams({
       demo: '1',
       amt: String(amount),
+      tip: String(tip),
       cur: currency,
     });
     if (kind === 'staff') params.set('staff', targetId);

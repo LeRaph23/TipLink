@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { pageAlternates } from '@/lib/seo';
 import { Icon, type IconName } from '@/components/ambassadeur/icons';
@@ -236,7 +236,9 @@ export default async function DevenirAmbassadeurPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  if (locale !== 'fr') notFound();
+  // French-only content: send the other locales to it rather than a 404,
+  // since the locale-aware footer and nav links point here from /en.
+  if (locale !== 'fr') permanentRedirect('/fr/devenir-ambassadeur');
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', padding: '48px 20px 64px', fontFamily: 'var(--font)' }}>

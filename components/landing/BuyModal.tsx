@@ -154,7 +154,7 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
                       position: 'absolute', top: -8, right: 8,
                       background: '#E57A97', color: '#fff', fontSize: 9, fontWeight: 800,
                       padding: '2px 7px', borderRadius: 20, letterSpacing: '0.04em',
-                    }}>MEILLEUR PRIX</span>
+                    }}>{tc('bestPrice')}</span>
                   )}
                   <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#E57A97' : '#0f1020', marginBottom: 2 }}>
                     {p === 'solo' ? 'Solo' : 'Duo'}
@@ -187,7 +187,7 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
               />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: '#0f1020' }}>Plaque époxy NFC Digitip</div>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: '#0f1020' }}>{tc('plaqueName')}</div>
               <div style={{ fontSize: 12.5, color: '#6b6d85', marginTop: 2 }}>
                 {selectedPack === 'solo' ? 'Solo, 1 plaque époxy NFC' : 'Duo, 2 plaques époxy NFC'}
               </div>

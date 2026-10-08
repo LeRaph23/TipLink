@@ -15,7 +15,7 @@
     "altSolo": "Digitip Solo NFC epoxy plaque",
     "altDuo": "Duo pack, 2 Digitip NFC epoxy plaques",
     "trustWarranty": "Lifetime hardware warranty",
-    "trustDelivery": "Free delivery to France, the EU and Switzerland, shipped within 3 working days",
+    "trustDelivery": "Free delivery to 13 European countries, shipped within 3 working days",
     "trustStripe": "Payment secured by Stripe",
     "trustRefund": "Refunded if you send it back within 14 days",
     "orPayByCard": "Or pay by card",
@@ -83,7 +83,9 @@
     "arrowRight": "→",
     "language": "Language",
     "close": "Close",
-    "yourOrder": "Your order"
+    "yourOrder": "Your order",
+    "bestPrice": "BEST PRICE",
+    "plaqueName": "Digitip epoxy NFC plaque"
   },
   "imageUpload": {
     "upload": "Add an image",
@@ -310,9 +312,9 @@
     },
     "shipping": {
       "kicker": "Shipping",
-      "title": "Delivered fast, across Europe",
+      "title": "Delivered fast, to 13 European countries",
       "processing": "Shipped within 3 working days",
-      "freeEU": "Free shipping to France, the EU and Switzerland",
+      "freeEU": "Free shipping to France and 12 other European countries, Switzerland included",
       "timezoneFR": "France: 3–5 business days after shipping",
       "timezoneEU": "Europe and Switzerland: 4–7 business days after shipping",
       "tracking": "With a tracking number"
@@ -407,7 +409,7 @@
       "g2title": "Guaranteed for life",
       "g2body": "If a plaque is faulty or stops working in normal use, we send you a new one for free, with no time limit.",
       "g3title": "Free shipping",
-      "g3body": "No shipping cost to France, the EU and Switzerland, whatever the pack.",
+      "g3body": "No shipping cost, whatever the pack, to the 13 countries we deliver to: France, Switzerland and 11 other EU countries.",
       "g4title": "Nothing to pay each month for tips",
       "g4body": "You pay for the plaque once, and receive tips for as long as you like."
     },
@@ -465,6 +467,15 @@
         "body": "To show up in nearby searches, recent reviews count more than a few old ones. A few every week works best."
       },
       "proNote": "The Google review invitation is part of Digitip Pro, free for 30 days from your first tip, no card needed. The plaque and the tips have no subscription."
+    },
+    "ui": {
+      "choosePack": "Choose",
+      "bestPrice": "BEST PRICE",
+      "heroBadgeTitle": "The customer chooses",
+      "heroBadgeBody": "The tip goes to the right person",
+      "altPlaques": "Digitip epoxy NFC plaques",
+      "altMockup": "Digitip: choosing who gets the tip",
+      "homeLabel": "Digitip, home"
     }
   },
   "pricing": {
@@ -480,7 +491,7 @@
     "enterpriseCta": "Contact us",
     "benefits": {
       "preConfigured": "Already programmed, put it up and it's ready",
-      "freeShipping": "Free shipping across Europe",
+      "freeShipping": "Free shipping to 13 European countries",
       "lifetimeReplacement": "Replaced for free for life if it's faulty or stops working",
       "dashboard": "Dashboard included",
       "noSubscription": "No subscription for tips",
@@ -585,7 +596,7 @@
     },
     "shipping": {
       "title": "Where should we send your plaques?",
-      "subtitle": "Shipped for free within 3 working days, across Europe and Switzerland. They arrive programmed, ready to put up.",
+      "subtitle": "Shipped for free within 3 working days to 13 European countries, Switzerland included. They arrive programmed, ready to put up.",
       "recipient": "Recipient",
       "recipientPlaceholder": "Full name or business"
     },
@@ -629,19 +640,22 @@
       "shipping": "Shipping",
       "free": "Free",
       "total": "Total today",
-      "totalToday": "Total today"
+      "totalToday": "Total today",
+      "ttcHint": "that is {amount} incl. VAT in France (20%). The exact VAT for your country is calculated at payment."
     },
     "errors": {
-      "shipping_invalid": "Something's missing from the delivery address.",
+      "shipping_invalid": "Enter the full shipping address: street, postal code and city.",
       "legal_name_required": "Enter the company name.",
-      "vat_invalid": "That VAT number isn't in the right format (for example FR12345678901).",
-      "billing_invalid": "Something's missing from the billing address.",
+      "vat_invalid": "This VAT number is not in the right format. It starts with the country code, for example FR12345678901. Leave it empty if you don't have one.",
+      "billing_invalid": "Enter the full billing address: street, postal code and city.",
       "full_name_required": "Enter your name.",
       "email_invalid": "That email address isn't valid.",
       "promo_invalid": "That promo code doesn't work or has expired. Fix it or remove it to carry on.",
       "checkout_failed": "The payment didn't go through. Try again in a moment.",
       "code_required": "First confirm your email with the code we sent.",
-      "admin_account": "You're signed in with an admin account, which can't place orders. Sign out to order for a customer."
+      "admin_account": "You're signed in with an admin account, which can't place orders. Sign out to order for a customer.",
+      "shipping_postal_invalid": "This postal code does not match the selected country (in France: 5 digits, for example 75009).",
+      "billing_postal_invalid": "The billing postal code does not match the selected country."
     }
   },
   "pay": {
