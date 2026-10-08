@@ -239,7 +239,7 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
         </div>
 
         {/* Right: the product in use — a phone taps the plaque and tips. */}
-        <div className="fade-up" style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', animationDelay: '160ms' }}>
+        <div className="fade-up" style={{ flex: '1 1 360px', minWidth: 0, display: 'flex', justifyContent: 'center', animationDelay: '160ms' }}>
           <HeroScene />
         </div>
       </div>

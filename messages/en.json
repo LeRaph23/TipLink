@@ -477,7 +477,7 @@
       "homeLabel": "Digitip, home"
     },
     "heroScene": {
-      "alt": "A phone taps the Digitip plaque, the tip page opens and the tip is sent in a few seconds.",
+      "alt": "A phone taps the Digitip plaque, the customer picks who to thank and the tip is sent in a few seconds.",
       "now": "now",
       "nfcBanner": "Open digitip.app",
       "payButton": "Pay {amount}"

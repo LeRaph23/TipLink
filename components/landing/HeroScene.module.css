@@ -1,56 +1,60 @@
-/* Hero scene: a phone taps the plaque, the tip page opens, a tip goes through.
-   Every moving part reads the same 10 s timeline, so the keyframe percentages
-   below are one score:
+/* Hero scene: a phone taps the plaque, the team page opens, the customer
+   picks who to thank, the tip goes through. Every moving part reads the same
+   13 s timeline, so the keyframe percentages below are one score:
 
-     0–10 %   phone at rest, lock screen
-     10–24 %  phone reaches the plaque's NFC mark; it shrinks as it goes
+     0–6 %    phone at rest, lock screen
+     6–17 %   phone reaches the plaque's NFC mark; it shrinks as it goes
               because the plaque sits further back than the resting phone
-     25–29 %  the system's NFC banner drops in
-     30–40 %  phone comes back up while the tip page opens
-     52–55 %  the pay button is pressed
-     56–61 %  the receipt replaces the tip page, the tick draws itself
-     90–97 %  back to the lock screen
+     18–23 %  the system's NFC banner drops in
+     24–33 %  phone comes back up while the team page opens
+     38–42 %  a name is tapped
+     42–47 %  the tip page slides in over the team page
+     56–59 %  the pay button is pressed
+     60–65 %  the receipt replaces the tip page, the tick draws itself
+     91–96 %  back to the lock screen
 
-   Transform and opacity only, so the loop runs on the compositor. The resting
-   styles (outside the motion query) are the tip page: what the scene shows
-   with reduced motion. */
+   Transform and opacity only, so the loop runs on the compositor. The phone
+   never scales above 1, so it is rasterised at full size and stays sharp at
+   rest. The resting styles (outside the motion query) are the tip page: what
+   the scene shows with reduced motion. */
 
 .frame {
-  --k: 1;
   position: relative;
-  width: calc(470px * var(--k));
-  height: calc(560px * var(--k));
+  width: 560px;
+  height: 620px;
   flex-shrink: 0;
+}
+
+/* `zoom` rather than a scale transform, for the same sharpness reason as the
+   screen. */
+@media (min-width: 768px) and (max-width: 1180px) {
+  .frame { zoom: .82; }
+}
+@media (max-width: 767px) {
+  .frame { zoom: .68; }
+}
+@media (max-width: 380px) {
+  .frame { zoom: .6; }
 }
 
 .stage {
   /* Where the phone goes to touch the plaque, from its resting place. */
-  --dx: -287px;
-  --dy: 183px;
-  --near: .72;
+  --dx: -328px;
+  --dy: 137px;
+  --near: .5;
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 470px;
-  height: 560px;
-  transform: scale(var(--k));
-  transform-origin: 0 0;
-}
-
-@media (max-width: 767px) {
-  .frame { --k: .74; margin: 8px auto 0; }
-}
-@media (max-width: 359px) {
-  .frame { --k: .64; }
+  inset: 0;
 }
 
 /* ── Plaque ─────────────────────────────────────────────────────────────── */
+/* Drawn at 284 px, the size its type was set for, then zoomed down. */
 .plaque {
   position: absolute;
   left: 0;
-  top: 100px;
+  top: 180px;
   width: 284px;
   height: 284px;
+  zoom: .83;
 }
 
 /* The acrylic block's thickness, seen past the face. */
@@ -189,60 +193,59 @@
 .phone,
 .phoneShadow {
   position: absolute;
-  left: 273px;
-  top: 22px;
-  width: 196px;
-  height: 404px;
-  border-radius: 36px;
+  left: 262px;
+  top: 16px;
+  width: 286px;
+  height: 588px;
+  border-radius: 50px;
 }
 
 .phoneShadow {
-  background: rgba(46, 16, 40, .5);
-  filter: blur(22px);
-  opacity: .5;
-  transform: translate(14px, 26px);
+  background: rgba(46, 16, 40, .45);
+  filter: blur(28px);
+  opacity: .55;
+  transform: translate(16px, 30px);
 }
 
 .phone {
   z-index: 2;
-  padding: 6px;
+  padding: 8px;
   background: linear-gradient(145deg, #3a3a40 0%, #17171a 46%, #2b2b30 100%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, .14),
-    inset 0 0 0 2.5px #0d0d0f,
+    inset 0 0 0 3px #0d0d0f,
     0 1px 2px rgba(0, 0, 0, .3);
 }
 
 .side {
   position: absolute;
-  width: 3px;
+  width: 4px;
   border-radius: 2px;
   background: linear-gradient(90deg, #1d1d21, #45454c);
 }
-.sideAction  { left: -2px; top: 78px;  height: 18px; }
-.sideVolUp   { left: -2px; top: 108px; height: 34px; }
-.sideVolDown { left: -2px; top: 150px; height: 34px; }
-.sidePower   { right: -2px; top: 124px; height: 52px; transform: scaleX(-1); }
+.sideAction  { left: -3px; top: 112px; height: 26px; }
+.sideVolUp   { left: -3px; top: 156px; height: 50px; }
+.sideVolDown { left: -3px; top: 216px; height: 50px; }
+.sidePower   { right: -3px; top: 180px; height: 76px; transform: scaleX(-1); }
 
 .screen {
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  border-radius: 30px;
+  border-radius: 42px;
   background: #000;
   isolation: isolate;
 }
 
-/* The tip page at a real phone's width, scaled to the screen: 184 / 390. */
+/* The pages at a real phone's width, zoomed to the screen: 270 / 390. */
 .viewport {
   position: absolute;
   left: 0;
   top: 0;
   width: 390px;
-  height: 832px;
-  transform: scale(.4718);
-  transform-origin: 0 0;
+  height: 826px;
+  zoom: .6923;
 }
 
 .layer {
@@ -255,12 +258,12 @@
 .island {
   position: absolute;
   z-index: 3;
-  top: 8px;
+  top: 11px;
   left: 50%;
-  width: 56px;
-  height: 16px;
-  margin-left: -28px;
-  border-radius: 10px;
+  width: 84px;
+  height: 24px;
+  margin-left: -42px;
+  border-radius: 14px;
   background: #000;
 }
 
@@ -270,15 +273,52 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 52px;
+  height: 54px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 30px 0 44px;
+  padding: 6px 34px 0 44px;
   font: 600 16px/1 -apple-system, 'SF Pro Text', system-ui, sans-serif;
 }
 
+/* Team page list, as on /pay/group: one card, hairline separators. */
+.list {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 12px 16px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.row:last-child { border-bottom: none; }
+
+/* The tap: the row's pressed state, held for a beat. */
+.rowPicked::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--surface-3);
+  opacity: 0;
+}
+.rowPicked > * { position: relative; }
+
+.rowName {
+  flex: 1;
+  min-width: 0;
+  font: 600 16px/22px var(--font);
+}
+
 /* ── Screens ────────────────────────────────────────────────────────────── */
+.groupLayer { opacity: 0; }
 .payLayer { opacity: 1; }
 .successLayer { opacity: 0; }
 .lockLayer {
@@ -289,7 +329,7 @@
 }
 
 .lockTime {
-  margin-top: 92px;
+  margin-top: 96px;
   text-align: center;
   color: #fff;
   font: 600 92px/1 -apple-system, 'SF Pro Display', system-ui, sans-serif;
@@ -300,13 +340,13 @@
   position: absolute;
   left: 12px;
   right: 12px;
-  top: 236px;
+  top: 240px;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
   border-radius: 24px;
-  background: rgba(250, 247, 249, .92);
+  background: rgba(250, 247, 249, .94);
   box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
   opacity: 0;
 }
@@ -339,82 +379,99 @@
 
 /* ── Motion ─────────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
-  .phone        { animation: hs-phone 10s infinite; }
-  .phoneShadow  { animation: hs-shadow 10s infinite; }
-  .lockLayer    { animation: hs-lock 10s infinite; }
-  .banner       { animation: hs-banner 10s infinite; }
-  .payLayer     { animation: hs-pay 10s infinite; }
-  .payBtn       { animation: hs-press 10s infinite; }
-  .successLayer { animation: hs-success 10s infinite; }
-  .check        { animation: hs-check 10s infinite; }
+  .phone            { animation: hs-phone 13s infinite; }
+  .phoneShadow      { animation: hs-shadow 13s infinite; }
+  .lockLayer        { animation: hs-lock 13s infinite; }
+  .banner           { animation: hs-banner 13s infinite; }
+  .groupLayer       { animation: hs-group 13s infinite; }
+  .rowPicked::before { animation: hs-tap 13s infinite; }
+  .payLayer         { animation: hs-pay 13s infinite; }
+  .payBtn           { animation: hs-press 13s infinite; }
+  .successLayer     { animation: hs-success 13s infinite; }
+  .check            { animation: hs-check 13s infinite; }
 
-  .stage[data-paused] * { animation-play-state: paused; }
+  .stage[data-paused] *,
+  .stage[data-paused] *::before { animation-play-state: paused; }
 }
 
 @keyframes hs-phone {
-  0%, 10% {
+  0%, 6% {
     transform: none;
     animation-timing-function: cubic-bezier(.65, 0, .35, 1);
   }
-  24% {
+  17% {
     transform: translate(var(--dx), var(--dy)) rotate(-10deg) scale(var(--near));
     animation-timing-function: ease-out;
   }
-  26% { transform: translate(var(--dx), var(--dy)) rotate(-10deg) scale(calc(var(--near) - .015)); }
-  31% {
+  19% { transform: translate(var(--dx), var(--dy)) rotate(-10deg) scale(calc(var(--near) - .012)); }
+  24% {
     transform: translate(var(--dx), var(--dy)) rotate(-10deg) scale(var(--near));
     animation-timing-function: cubic-bezier(.22, 1, .36, 1);
   }
-  42%, 100% { transform: none; }
+  33%, 100% { transform: none; }
 }
 
 /* Closer to the plaque, the shadow tightens under the phone. */
 @keyframes hs-shadow {
-  0%, 10% {
-    transform: translate(14px, 26px);
-    opacity: .5;
+  0%, 6% {
+    transform: translate(16px, 30px);
+    opacity: .55;
     animation-timing-function: cubic-bezier(.65, 0, .35, 1);
   }
-  24%, 31% {
+  17%, 24% {
     transform: translate(calc(var(--dx) + 5px), calc(var(--dy) + 8px)) rotate(-10deg) scale(calc(var(--near) - .02));
-    opacity: .75;
+    opacity: .8;
     animation-timing-function: cubic-bezier(.22, 1, .36, 1);
   }
-  42%, 100% { transform: translate(14px, 26px); opacity: .5; }
+  33%, 100% { transform: translate(16px, 30px); opacity: .55; }
 }
 
 @keyframes hs-lock {
-  0%, 33% { opacity: 1; }
-  37%, 91% { opacity: 0; }
-  96%, 100% { opacity: 1; }
+  0%, 26% { opacity: 1; }
+  30%, 90% { opacity: 0; }
+  95%, 100% { opacity: 1; }
 }
 
 @keyframes hs-banner {
-  0%, 25% { opacity: 0; transform: translateY(-36px) scale(.96); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  29%, 34% { opacity: 1; transform: none; }
-  38%, 100% { opacity: 0; transform: translateY(-36px) scale(.96); }
+  0%, 18% { opacity: 0; transform: translateY(-36px) scale(.96); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+  22%, 27% { opacity: 1; transform: none; }
+  31%, 100% { opacity: 0; transform: translateY(-36px) scale(.96); }
 }
 
-/* The page opens from below, as Safari brings it in. */
+/* The page opens from below, as Safari brings it in; then the tip page is
+   pushed over it from the right, the way a link navigates. */
+@keyframes hs-group {
+  0%, 26% { opacity: 0; transform: translateY(48px); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+  32%, 42% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+  47% { opacity: 1; transform: translateX(-30%); }
+  48%, 100% { opacity: 0; transform: translateX(-30%); }
+}
+
+@keyframes hs-tap {
+  0%, 38% { opacity: 0; }
+  39.5%, 43% { opacity: 1; }
+  47%, 100% { opacity: 0; }
+}
+
 @keyframes hs-pay {
-  0%, 33% { opacity: 0; transform: translateY(48px); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  40%, 56% { opacity: 1; transform: none; }
-  60%, 100% { opacity: 0; transform: none; }
+  0%, 42% { opacity: 1; transform: translateX(100%); animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+  47%, 60% { opacity: 1; transform: none; }
+  64%, 100% { opacity: 0; transform: none; }
 }
 
 @keyframes hs-press {
-  0%, 51% { transform: none; filter: none; }
-  53% { transform: scale(.97); filter: brightness(.82); }
-  56%, 100% { transform: none; filter: none; }
+  0%, 56% { transform: none; filter: none; }
+  58% { transform: scale(.97); filter: brightness(.82); }
+  60%, 100% { transform: none; filter: none; }
 }
 
 @keyframes hs-success {
-  0%, 56% { opacity: 0; transform: translateY(16px); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  61%, 90% { opacity: 1; transform: none; }
+  0%, 60% { opacity: 0; transform: translateY(16px); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+  65%, 90% { opacity: 1; transform: none; }
   95%, 100% { opacity: 0; transform: none; }
 }
 
 @keyframes hs-check {
-  0%, 60% { stroke-dashoffset: 30; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  66%, 100% { stroke-dashoffset: 0; }
+  0%, 63% { stroke-dashoffset: 30; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+  69%, 100% { stroke-dashoffset: 0; }
 }

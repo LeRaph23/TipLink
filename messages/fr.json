@@ -477,7 +477,7 @@
       "homeLabel": "Digitip, accueil"
     },
     "heroScene": {
-      "alt": "Un téléphone touche la plaque Digitip, la page de pourboire s'ouvre et le pourboire est envoyé en quelques secondes.",
+      "alt": "Un téléphone touche la plaque Digitip, le client choisit la personne à remercier et le pourboire est envoyé en quelques secondes.",
       "now": "maintenant",
       "nfcBanner": "Ouvrir digitip.app",
       "payButton": "Payer {amount}"

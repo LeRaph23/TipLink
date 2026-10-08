@@ -9,23 +9,33 @@ import { computeTipFee } from '@/lib/pricing/tip-fees';
 import { moneyFormatter } from '@/lib/money';
 import s from './HeroScene.module.css';
 
-// The hero's product shot: a phone taps the plaque, the tip page opens, a tip
-// goes through. One 10 s CSS timeline, transform and opacity only.
+// The hero's product shot: a phone taps the plaque, the team page opens, the
+// customer picks who to thank, and the tip goes through. One 13 s CSS
+// timeline, transform and opacity only.
 //
-// The phone's screen is not a picture of the tip page, it is the tip page: the
-// same components, rendered at a real phone's 390 px width and scaled down, so
-// it cannot drift from what a customer actually sees. The fee comes from the
-// same function the checkout charges with.
+// The phone's screen is not a picture of the tip pages, it is the tip pages:
+// the same components, laid out at a real phone's 390 px width and zoomed to
+// the screen, so they cannot drift from what a customer actually sees. `zoom`,
+// not a scale transform: the text is laid out and rasterised at its final size
+// and stays sharp. The fee comes from the function the checkout charges with.
 //
 // Without motion (prefers-reduced-motion, or before the CSS loads) the scene
 // rests on the tip page, which is the frame that says the most on its own.
 
-const STAFF = 'Marie Laurent';
 const PLACE = 'Salon Lumière — Paris 11e';
 const AMOUNTS = [2, 5, 10, 20];
 const TIP = 5;
-// Cropped from public/avatars/sienna.png: 7 KB instead of 900.
-const PHOTO = '/avatars/hero-staff.webp';
+// Cropped from public/avatars/*.png: 6 KB each instead of 800.
+const TEAM = [
+  { name: 'Léa Chen', photo: '/avatars/hero-lea.webp' },
+  { name: 'Marie Laurent', photo: '/avatars/hero-marie.webp' },
+  { name: 'Karim Diallo', photo: '/avatars/hero-karim.webp' },
+  { name: 'Antoine Garcia', photo: '/avatars/hero-antoine.webp' },
+];
+// The one the customer picks.
+const PICKED = 1;
+const STAFF = TEAM[PICKED].name;
+const PHOTO = TEAM[PICKED].photo;
 
 export function HeroScene() {
   const t = useTranslations('landing.heroScene');
@@ -68,6 +78,35 @@ export function HeroScene() {
               order and the accessibility tree: the label above says it all. */}
           <div className={s.screen} data-theme="light" inert>
             <div className={s.viewport}>
+              {/* Team page: who to thank */}
+              <div className={`${s.layer} ${s.groupLayer}`}>
+                <StatusBar />
+                <Band pb={48} logo={<Logo />}>
+                  <Headline>{tp('tipHeadline')}</Headline>
+                  <p style={{ font: '600 16px/24px var(--font)', color: 'var(--text-2)', marginTop: 4 }}>{PLACE}</p>
+                </Band>
+                <PayColumn>
+                  <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)', textAlign: 'center', margin: '12px 0 16px' }}>{tp('group.pickStaffSubtitle')}</p>
+                  <div className={s.list}>
+                    <div className={s.row}>
+                      <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent-muted)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <PayIcon name="heart" size={22} color="var(--brand)" />
+                      </span>
+                      <span className={s.rowName}>{tp('group.wholeTeam')}</span>
+                      <span style={{ color: 'var(--text-3)' }}><PayIcon name="chevron" size={20} /></span>
+                    </div>
+                    {TEAM.map((m, i) => (
+                      <div key={m.name} className={`${s.row} ${i === PICKED ? s.rowPicked : ''}`}>
+                        <Avatar src={m.photo} name={m.name} size={48} ring={0} />
+                        <span className={s.rowName}>{m.name}</span>
+                        <span style={{ color: 'var(--text-3)' }}><PayIcon name="chevron" size={20} /></span>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ textAlign: 'center', font: '500 12px/16px var(--font)', color: 'var(--text-3)', marginTop: 24 }}>{tp('group.poweredBy')}</p>
+                </PayColumn>
+              </div>
+
               {/* Tip page */}
               <div className={`${s.layer} ${s.payLayer}`}>
                 <StatusBar />
