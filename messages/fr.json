@@ -1467,7 +1467,6 @@
       "linked": "Fiche Google reliée",
       "change": "Changer",
       "unknownPlace": "Établissement",
-      "reviewCount": "{count} avis",
       "fieldLabel": "Lien d’avis Google",
       "fieldHint": "Avec Digitip Pro, le client voit un bouton pour laisser un avis Google juste après son pourboire. Pro est offert 30 jours à partir du premier pourboire, et votre lien est déjà enregistré.",
       "searchUnavailable": "La recherche Google ne répond pas pour le moment. Ce n'est pas grave, collez directement votre lien ci-dessous.",

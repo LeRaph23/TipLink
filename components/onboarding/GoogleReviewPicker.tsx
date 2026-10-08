@@ -24,8 +24,6 @@ interface Candidate {
   placeId: string;
   displayName: string | null;
   formattedAddress: string | null;
-  rating: number | null;
-  userRatingCount: number | null;
   reviewUrl: string;
   businessType: 'restaurant' | 'beauty' | null;
 }
@@ -42,7 +40,6 @@ interface Props {
   variant?: 'onboarding' | 'compact';
 }
 
-const star = '★';
 
 export function GoogleReviewPicker({
   name,
@@ -392,14 +389,6 @@ export function GoogleReviewPicker({
               {c.formattedAddress && (
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
                   {c.formattedAddress}
-                </div>
-              )}
-              {c.rating != null && (
-                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>
-                  <span style={{ color: '#f5a623' }}>{star}</span> {c.rating.toFixed(1)}
-                  {c.userRatingCount != null && (
-                    <span style={{ color: 'var(--text-3)' }}> · {t('reviewCount', { count: c.userRatingCount })}</span>
-                  )}
                 </div>
               )}
             </div>

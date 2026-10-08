@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { searchEstablishmentCandidates } from '@/lib/google-places';
+import { searchEstablishmentCandidates, GoogleBudgetExceeded } from '@/lib/google-places';
 
 export const runtime = 'nodejs';
 
@@ -32,6 +32,12 @@ export async function GET(req: Request) {
     const candidates = await searchEstablishmentCandidates({ name, address });
     return NextResponse.json({ candidates });
   } catch (err) {
+    // Out of today's budget: same answer as Google being down, the wizard
+    // falls back to pasting the review link by hand.
+    if (err instanceof GoogleBudgetExceeded) {
+      console.warn('[google-places]', err.message);
+      return NextResponse.json({ candidates: [], failed: true }, { status: 503 });
+    }
     // `failed` matters: an empty list because Google errored is not the same as
     // an empty list because the place isn't listed. Without the distinction the
     // UI tells the manager "no match, try another name" and sends them typing

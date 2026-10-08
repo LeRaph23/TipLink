@@ -7,6 +7,9 @@
 //
 // Docs: https://developers.google.com/maps/documentation/places/web-service/text-search
 
+import { spendGoogleCall, GoogleBudgetExceeded } from './google-budget';
+export { GoogleBudgetExceeded };
+
 const PLACES_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
 
 // Field mask for matching a prospect salon to its Google listing.
@@ -125,6 +128,7 @@ export async function findGooglePlaceForSalon(input: {
   if (!apiKey) throw new Error('GOOGLE_PLACES_API_KEY non configurée');
 
   async function runSearch(body: Record<string, unknown>): Promise<SearchTextResponse> {
+    await spendGoogleCall('salon_match');
     const res = await fetch(PLACES_SEARCH_URL, {
       method: 'POST',
       headers: {
@@ -206,8 +210,6 @@ export type GooglePlaceCandidate = {
   placeId: string;
   displayName: string | null;
   formattedAddress: string | null;
-  rating: number | null;
-  userRatingCount: number | null;
   reviewUrl: string;
   /** Our own trade split, guessed from Google's types. Null when unrecognised. */
   businessType: 'restaurant' | 'beauty' | null;
@@ -286,6 +288,7 @@ export async function searchEstablishmentCandidates(input: {
 
   const textQuery = [input.name, input.address].filter(Boolean).join(' ').trim();
   if (textQuery.length < 2) return [];
+  await spendGoogleCall('onboarding_search');
 
   const res = await fetch(PLACES_SEARCH_URL, {
     method: 'POST',
@@ -296,11 +299,11 @@ export async function searchEstablishmentCandidates(input: {
         'places.id',
         'places.displayName',
         'places.formattedAddress',
-        'places.rating',
-        'places.userRatingCount',
-        // Tells a business listing apart from a geocoded address — see
-        // isBusinessPlace. No billing consequence: rating and userRatingCount
-        // above already put this call in the higher tier.
+        // Tells a business listing apart from a geocoded address, see
+        // isBusinessPlace. Pro tier, like the two fields above. The rating and
+        // review count used to be asked for too, and they alone put every
+        // search in the Enterprise tier: a name and an address are enough for
+        // a manager to recognise their own listing.
         'places.types',
       ].join(','),
     },
@@ -325,8 +328,6 @@ export async function searchEstablishmentCandidates(input: {
       placeId: p.id,
       displayName: p.displayName?.text ?? null,
       formattedAddress: p.formattedAddress ?? null,
-      rating: p.rating ?? null,
-      userRatingCount: p.userRatingCount ?? null,
       reviewUrl: buildGoogleReviewUrl(p.id),
       businessType: inferBusinessType(p.types),
     }));
@@ -356,6 +357,7 @@ export async function getPlaceContactDetails(placeId: string): Promise<GooglePla
   if (!apiKey || !placeId) return null;
 
   try {
+    await spendGoogleCall('place_contact');
     const res = await fetch(
       `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?languageCode=fr`,
       {
@@ -433,6 +435,8 @@ export async function enrichSalonsViaGoogle(
     } catch (e) {
       results.set(s.id, null);
       if (!firstError) firstError = e instanceof Error ? e.message : String(e);
+      // Out of budget: every remaining salon would fail the same way.
+      if (e instanceof GoogleBudgetExceeded) break;
     }
     onProgress?.(i + 1, inputs.length);
   }

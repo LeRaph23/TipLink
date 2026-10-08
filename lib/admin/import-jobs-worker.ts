@@ -18,7 +18,7 @@ import {
   type OsmSalon,
   type OsmZone,
 } from '@/lib/osm-import';
-import { findGooglePlaceForSalon } from '@/lib/google-places';
+import { findGooglePlaceForSalon, GoogleBudgetExceeded } from '@/lib/google-places';
 import { pokeWorker, type ImportJobParams } from '@/lib/admin/import-jobs';
 import { departmentsForRegions } from '@/lib/admin/french-regions';
 
@@ -506,6 +506,18 @@ async function runEnrichGoogle(
         }
       } catch (e) {
         if (!firstError) firstError = e instanceof Error ? e.message : String(e);
+        // Out of today's Google budget: stop the job here, with its progress
+        // saved, instead of failing every remaining salon one by one.
+        if (e instanceof GoogleBudgetExceeded) {
+          await service.from('import_jobs').update({
+            done,
+            succeeded: matched,
+            failed_count: missing,
+            result: { ...result, matched, closed, missing, done, firstError, cursor: { zoneIndex, offset } } as Json,
+            last_heartbeat_at: new Date().toISOString(),
+          }).eq('id', jobId);
+          return { done: true, error: e.message };
+        }
         missing += 1;
       }
       offset += 1;

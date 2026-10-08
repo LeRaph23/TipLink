@@ -1467,7 +1467,6 @@
       "linked": "Google listing linked",
       "change": "Change",
       "unknownPlace": "Business",
-      "reviewCount": "{count} reviews",
       "fieldLabel": "Google review link",
       "fieldHint": "With Digitip Pro, customers see a button to leave a Google review right after tipping. Pro is free for 30 days from your first tip, and your link is already saved.",
       "searchUnavailable": "Google search isn't responding right now. No problem, just paste your link below.",
