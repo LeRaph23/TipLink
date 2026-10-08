@@ -27,6 +27,7 @@ const BuyModal = dynamic(
   { ssr: false },
 );
 import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
+import { HeroScene } from '@/components/landing/HeroScene';
 import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFlag';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
@@ -237,16 +238,9 @@ function HeroSection({ onOrderClick }: { onOrderClick: () => void }) {
           </div>
         </div>
 
-        {/* Right: product visual — hidden on mobile */}
-        <div className="fade-up land-hero-visual" style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: '160ms' }}>
-          <div style={{ position: 'relative', width: 300, height: 300 }}>
-            <div style={{ width: 300, height: 300, borderRadius: 24, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06)', position: 'relative' }}>
-              <Image src="/products/duo-double.jpg" alt={t('ui.altPlaques')} fill sizes="300px" style={{ objectFit: 'cover' }} priority />
-            </div>
-            <div style={{ position: 'absolute', top: -12, right: 10, background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 10, padding: '6px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, fontWeight: 700, color: '#E57A97', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <BoltIcon size={12} color="#E57A97" /> {t('product.get3s')}
-            </div>
-          </div>
+        {/* Right: the product in use — a phone taps the plaque and tips. */}
+        <div className="fade-up" style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', animationDelay: '160ms' }}>
+          <HeroScene />
         </div>
       </div>
     </section>

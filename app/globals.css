@@ -371,8 +371,6 @@ input, select, textarea, button { font-family: var(--font); }
   /* Flex children default to min-width: auto and refused to shrink below
      their content: the page scrolled sideways at 308 px (UI/UX audit, UX-12). */
   .land-hero-inner > * { min-width: 0; max-width: 100%; }
-  /* Hero visual stays visible on mobile — scaled down so it fits narrow screens */
-  .land-hero-visual  { transform: scale(.8); transform-origin: top center; margin: 4px auto -64px !important; }
   .land-hero-btns    { flex-direction: column !important; }
   .land-hero-btn     { width: 100% !important; justify-content: center !important; text-align: center !important; box-sizing: border-box !important; }
   .land-stat-item    { border-right: none !important; border-bottom: 1px solid #e4e4ec; }
