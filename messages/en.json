@@ -473,9 +473,14 @@
       "bestPrice": "BEST PRICE",
       "heroBadgeTitle": "The customer chooses",
       "heroBadgeBody": "The tip goes to the right person",
-      "altPlaques": "Digitip epoxy NFC plaques",
       "altMockup": "Digitip: choosing who gets the tip",
       "homeLabel": "Digitip, home"
+    },
+    "heroScene": {
+      "alt": "A phone taps the Digitip plaque, the tip page opens and the tip is sent in a few seconds.",
+      "now": "now",
+      "nfcBanner": "Open digitip.app",
+      "payButton": "Pay {amount}"
     }
   },
   "pricing": {

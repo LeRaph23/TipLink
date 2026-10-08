@@ -473,9 +473,14 @@
       "bestPrice": "MEILLEUR PRIX",
       "heroBadgeTitle": "Le client choisit",
       "heroBadgeBody": "Le pourboire va à la bonne personne",
-      "altPlaques": "Plaques NFC en époxy Digitip",
       "altMockup": "Digitip : choisir à qui va le pourboire",
       "homeLabel": "Digitip, accueil"
+    },
+    "heroScene": {
+      "alt": "Un téléphone touche la plaque Digitip, la page de pourboire s'ouvre et le pourboire est envoyé en quelques secondes.",
+      "now": "maintenant",
+      "nfcBanner": "Ouvrir digitip.app",
+      "payButton": "Payer {amount}"
     }
   },
   "pricing": {
