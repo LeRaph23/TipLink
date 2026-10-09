@@ -33,7 +33,6 @@ export const BASE_CLIENT_NAMESPACES = [
   'imageUpload',
   'join',
   'onboarding',
-  'order',
   'pay',
 ] as const;
 

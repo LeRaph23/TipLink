@@ -11,12 +11,21 @@ import {
   useElements,
   useStripe,
 } from '@stripe/react-stripe-js';
+import type { BuyerGroup } from '@/lib/billing/buyer-group';
 
 type Pack = 'solo' | 'duo';
+
+/** The signed-in buyer: their email, and their business when they own one. */
+export type CheckoutAccount = {
+  email: string;
+  name: string | null;
+  shipping: BuyerGroup['shipping'];
+};
 
 interface Props {
   pack: Pack;
   locale: string;
+  account?: CheckoutAccount | null;
 }
 
 // Switzerland ships too: an export, invoiced without French VAT (Swiss import
@@ -47,7 +56,7 @@ type CachedIntent = { key: string; data: IntentData } | { key: string; error: st
 // VAT breakdown returned by /api/billing/pack-tax (all cents).
 type Tax = { ht: number; tax: number; total: number; ratePct: number | null; country: string };
 
-export function PackCheckout({ pack, locale }: Props) {
+export function PackCheckout({ pack, locale, account = null }: Props) {
   const t = useTranslations('checkout');
   const [reloadKey, setReloadKey] = useState(0);
   const [cached, setCached] = useState<CachedIntent | null>(null);
@@ -155,6 +164,7 @@ export function PackCheckout({ pack, locale }: Props) {
         discountAmount={data.discountAmount}
         promoCode={data.promoCode}
         clientSecret={data.clientSecret}
+        account={account}
       />
     </Elements>
   );
@@ -168,6 +178,7 @@ interface InnerProps {
   discountAmount: number;
   promoCode: string | null;
   clientSecret: string;
+  account: CheckoutAccount | null;
 }
 
 function InnerCheckout({
@@ -178,13 +189,14 @@ function InnerCheckout({
   discountAmount: initialDiscount,
   promoCode: initialPromo,
   clientSecret,
+  account,
 }: InnerProps) {
   const t = useTranslations('checkout');
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(account?.email ?? '');
   const [promoInput, setPromoInput] = useState(initialPromo ?? '');
   // Applying a code updates the intent this form already holds (see
   // /api/billing/pack-promo): the form, and everything typed in it, stays.
@@ -264,6 +276,16 @@ function InnerCheckout({
     [fetchTax]
   );
 
+  // A prefilled address is priced straight away rather than waiting for the
+  // buyer to touch it (the key check makes a later change event a no-op).
+  const prefilledCountry = account?.shipping?.country;
+  const prefilledPostal = account?.shipping?.postal_code;
+  useEffect(() => {
+    if (prefilledCountry) {
+      onAddressChange({ complete: true, value: { address: { country: prefilledCountry, postal_code: prefilledPostal } } });
+    }
+  }, [prefilledCountry, prefilledPostal, onAddressChange]);
+
   // Wallet flow (Apple/Google Pay) — recompute when the customer picks an
   // address in the payment sheet, and feed the updated lines back to Stripe.
   type ShippingChange = {
@@ -307,7 +329,8 @@ function InnerCheckout({
   async function handleConfirm(event?: ExpressConfirmEvent) {
     if (!stripe || !elements) return;
     const expressEmail = event?.billingDetails?.email ?? null;
-    const finalEmail = (expressEmail ?? email).trim();
+    // Signed in, the order is the account's whatever the wallet holds.
+    const finalEmail = (account?.email ?? expressEmail ?? email).trim();
     if (!finalEmail) {
       setError(t('errEmailRequired'));
       return;
@@ -421,30 +444,44 @@ function InnerCheckout({
         </div>
       </div>
 
-      {/* Contact email */}
-      <div>
-        <label
-          htmlFor="checkout-email"
-          style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}
-        >
-          {t('emailLabel')}
-        </label>
-        <input
-          id="checkout-email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('emailPlaceholder')}
-          required
-          style={{
-            width: '100%', padding: '12px', borderRadius: 10,
-            border: '1px solid #e6e6f0', fontSize: 14, color: '#0f1020',
-            background: '#fff', outline: 'none',
-            fontFamily: 'inherit', boxSizing: 'border-box',
-          }}
-        />
-      </div>
+      {/* Contact email — signed in, the account's own */}
+      {account ? (
+        <div style={{
+          padding: '12px 14px', borderRadius: 10,
+          background: '#fafafa', border: '1px solid #e6e6f0',
+          fontSize: 13, color: '#3a3b4f', lineHeight: 1.5,
+        }}>
+          {account.name && (
+            <div style={{ fontWeight: 700, color: '#0f1020' }}>{account.name}</div>
+          )}
+          <div>{t('accountEmail', { email: account.email })}</div>
+          {account.name && <div style={{ color: '#6b6d85' }}>{t('accountOrder')}</div>}
+        </div>
+      ) : (
+        <div>
+          <label
+            htmlFor="checkout-email"
+            style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}
+          >
+            {t('emailLabel')}
+          </label>
+          <input
+            id="checkout-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('emailPlaceholder')}
+            required
+            style={{
+              width: '100%', padding: '12px', borderRadius: 10,
+              border: '1px solid #e6e6f0', fontSize: 14, color: '#0f1020',
+              background: '#fff', outline: 'none',
+              fontFamily: 'inherit', boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      )}
 
       {/* Shipping address — drives the VAT calculation */}
       <div>
@@ -459,7 +496,19 @@ function InnerCheckout({
             // IP. Near the border (Mulhouse, Basel) that is Switzerland: a
             // French buyer typed a French address under "Suisse" and was
             // shown, and charged, an export price with no VAT.
-            defaultValues: { address: { country: 'FR' } },
+            // A returning customer gets the address of their last order.
+            defaultValues: account?.shipping
+              ? {
+                  name: account.shipping.name ?? account.name ?? '',
+                  address: {
+                    line1: account.shipping.line1,
+                    line2: account.shipping.line2 ?? undefined,
+                    city: account.shipping.city,
+                    postal_code: account.shipping.postal_code,
+                    country: account.shipping.country,
+                  },
+                }
+              : { address: { country: 'FR' } },
             fields: { phone: 'always' },
             validation: { phone: { required: 'auto' } },
           }}

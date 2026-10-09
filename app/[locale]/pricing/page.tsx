@@ -197,7 +197,7 @@ export default async function PricingPage({
                   </ul>
 
                   <Link
-                    href={`/order/${id}`}
+                    href={`/checkout?pack=${id}`}
                     style={{
                       display: 'block', textAlign: 'center',
                       padding: '14px 20px', borderRadius: 12, textDecoration: 'none',
