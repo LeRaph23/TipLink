@@ -650,9 +650,7 @@
     "reviewBody": "Leave a Google review, it takes 10 seconds.",
     "reviewButton": "Leave a Google review →",
     "demo": {
-      "badge": "Demo mode",
-      "banner": "Demo: no real payment",
-      "payButton": "Pay {amount} (demo)"
+      "payButton": "Pay {amount}"
     },
     "maxAmount": "Maximum amount {max}",
     "successTip": "Tip",

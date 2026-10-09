@@ -650,9 +650,7 @@
     "reviewBody": "Laissez un avis Google, ça prend 10 secondes.",
     "reviewButton": "Laisser un avis Google →",
     "demo": {
-      "badge": "Mode démo",
-      "banner": "Démo : aucun vrai paiement",
-      "payButton": "Payer {amount} (démo)"
+      "payButton": "Payer {amount}"
     },
     "maxAmount": "Montant maximum {max}",
     "successTip": "Pourboire",

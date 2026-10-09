@@ -7,7 +7,7 @@ import { ReviewInvite } from '@/components/pay/ReviewInvite';
 import { ComplimentForm } from '@/components/pay/ComplimentForm';
 import { effectivePlan } from '@/lib/billing/entitlements';
 import {
-  Band, BandBody, DemoBadge, Logo, PayColumn, PayMain, PayTitle, StatusDot, btnProps,
+  Band, BandBody, Logo, PayColumn, PayMain, PayTitle, StatusDot, btnProps,
 } from '@/components/pay/ui';
 
 export const dynamic = 'force-dynamic';
@@ -320,7 +320,6 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   return (
     <PayMain pb={32}>
       <Band tone={succeeded ? 'brand' : 'neutral'} pb={48} logo={<Logo />}>
-        {isDemo && <DemoBadge>🧪 {t('demo.badge')}</DemoBadge>}
         {succeeded ? (
           <StatusDot tone="success" icon="check" />
         ) : status === 'processing' ? (
