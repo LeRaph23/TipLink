@@ -30,7 +30,11 @@ function writeConsent(value: AdConsent) {
 function trackRoute(path: string, checkoutSeen: Set<string>) {
   trackPixel('PageView');
   const solution = path.match(/^\/solutions\/([\w-]+)$/);
-  if (solution) {
+  if (path === '/') {
+    // The homepage is where the ads land: without this, a campaign optimised
+    // for content views would have nothing to learn from.
+    trackPixel('ViewContent', { content_name: 'home' });
+  } else if (solution) {
     trackPixel('ViewContent', { content_name: solution[1], content_category: 'solution' });
   } else if (path === '/pricing') {
     trackPixel('ViewContent', { content_name: 'pricing' });
@@ -39,7 +43,15 @@ function trackRoute(path: string, checkoutSeen: Set<string>) {
     // is not a second person starting a checkout.
     if (!checkoutSeen.has('checkout')) {
       checkoutSeen.add('checkout');
-      trackPixel('InitiateCheckout');
+      const pack = path.startsWith('/order/')
+        ? path.slice('/order/'.length)
+        : new URLSearchParams(window.location.search).get('pack');
+      trackPixel(
+        'InitiateCheckout',
+        pack === 'solo' || pack === 'duo'
+          ? { content_ids: [pack], content_type: 'product', num_items: 1 }
+          : undefined,
+      );
     }
   }
 }

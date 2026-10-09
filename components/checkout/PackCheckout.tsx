@@ -12,6 +12,7 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import type { BuyerGroup } from '@/lib/billing/buyer-group';
+import { trackPixel } from '@/lib/meta/pixel';
 
 type Pack = 'solo' | 'duo';
 
@@ -195,6 +196,8 @@ function InnerCheckout({
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
+  // One AddPaymentInfo per checkout, however many times a declined card is retried.
+  const paymentInfoSent = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState(account?.email ?? '');
   const [promoInput, setPromoInput] = useState(initialPromo ?? '');
@@ -341,6 +344,15 @@ function InnerCheckout({
     }
     setError(null);
     setIsLoading(true);
+    if (!paymentInfoSent.current) {
+      paymentInfoSent.current = true;
+      trackPixel('AddPaymentInfo', {
+        content_ids: [pack],
+        content_type: 'product',
+        value: tax.total / 100,
+        currency: 'EUR',
+      });
+    }
     try {
       await fetch('/api/billing/attach-pi-email', {
         method: 'POST',

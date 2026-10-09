@@ -81,7 +81,13 @@ export function trackPixelWhenReady(
   else pending.push([event, params, eventId]);
 }
 
-export type PixelEvent = 'PageView' | 'ViewContent' | 'InitiateCheckout' | 'Purchase';
+export type PixelEvent =
+  | 'PageView'
+  | 'ViewContent'
+  | 'AddToCart'
+  | 'InitiateCheckout'
+  | 'AddPaymentInfo'
+  | 'Purchase';
 
 /**
  * `eventId` must match the one the server sends through the Conversions API

@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import type { PackPricing } from '@/lib/stripe/pricing';
 import { formatPriceCents, htSuffix } from '@/lib/format-price';
+import { trackPixel } from '@/lib/meta/pixel';
 
 type Pack = 'solo' | 'duo';
 
@@ -73,6 +74,20 @@ export function BuyModal({ pack: initialPack, onClose, pricing }: Props) {
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus?.();
     };
+  }, []);
+
+  // Opening the cart is the first sign of intent on the landing page, between
+  // a visit and a checkout. A no-op until the visitor accepted ad cookies.
+  useEffect(() => {
+    const p = pricing?.[initialPack];
+    trackPixel(
+      'AddToCart',
+      p
+        ? { content_ids: [initialPack], content_type: 'product', value: p.unitAmount / 100, currency: p.currency.toUpperCase() }
+        : { content_ids: [initialPack], content_type: 'product' },
+    );
+    // Once per opening, not again when the pricing arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleCheckout() {
