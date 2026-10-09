@@ -2,7 +2,10 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { PackCheckout } from '@/components/checkout/PackCheckout';
+import { PackCheckout, type CheckoutAccount } from '@/components/checkout/PackCheckout';
+import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
+import { findBuyerGroup } from '@/lib/billing/buyer-group';
 import { getPackPricing } from '@/lib/stripe/pricing';
 import { buildPageMetadata } from '@/lib/seo';
 import type { PackId } from '@/lib/env';
@@ -62,6 +65,16 @@ export default async function CheckoutPage({
 
   // Pricing comes from Stripe (single source of truth). Visual assets stay local.
   const pricing = await getPackPricing(pack);
+
+  // Signed in, the same page, already filled in: the account's email and,
+  // for a business owner, the last delivery address. The order then joins
+  // their business (see create-pack-intent).
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  let account: CheckoutAccount | null = null;
+  if (user?.email) {
+    const buyer = await findBuyerGroup(createServiceClient(), user.id);
+    account = { email: user.email, name: buyer?.legalName ?? null, shipping: buyer?.shipping ?? null };
+  }
   const visual = PACK_VISUAL[pack];
   const formattedPrice = formatPrice(pricing.unitAmount, pricing.currency, locale);
   // The French price incl. VAT, shown from the start: 69 € HT turning into
@@ -246,7 +259,7 @@ export default async function CheckoutPage({
             border: '1px solid #e6e6f0',
             boxShadow: '0 1px 2px rgba(15,16,32,0.04)',
           }}>
-            <PackCheckout pack={pack} locale={locale} />
+            <PackCheckout pack={pack} locale={locale} account={account} />
           </main>
         </div>
       </div>

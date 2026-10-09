@@ -223,7 +223,7 @@ export default async function BillingPage({
           {/* Secondary, deliberately. Two filled accent buttons on one screen
               is two things claiming to be the next step, and neither of them
               is why anyone opened this page. */}
-          <Link className="btn-ghost" href="/order/solo" style={{
+          <Link className="btn-ghost" href="/checkout?pack=solo" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '9px 16px', borderRadius: 10, textDecoration: 'none',
             background: 'var(--surface-2)', border: '1px solid var(--border)',

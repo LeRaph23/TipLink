@@ -52,7 +52,9 @@
     "errAddressRequired": "Enter the delivery address so we can work out VAT.",
     "errPaymentFailed": "The payment didn't go through.",
     "errPromoApply": "The code won't apply right now. Try again.",
-    "ttcFrance": "{price} incl. VAT in France"
+    "ttcFrance": "{price} incl. VAT in France",
+    "accountOrder": "This order goes to your account",
+    "accountEmail": "Signed in as {email}"
   },
   "metadata": {
     "title": "Digitip: cashless tips via NFC | digitip.app",
@@ -577,84 +579,6 @@
     "changeEmail": "Use another address",
     "errorInvalidCode": "That code isn't right, or it's expired. Ask for a new one.",
     "errorNoAccount": "No account with this address, check the spelling. If you just ordered a pack, your space opens with the “Set up my space” button in the confirmation email."
-  },
-  "order": {
-    "exit": "Exit",
-    "exitConfirm": "Leave the order? What you've filled in will be cleared.",
-    "continue": "Continue",
-    "back": "Back",
-    "payNow": "Pay now",
-    "payAmount": "Pay {amount}",
-    "redirecting": "Taking you to payment…",
-    "stepOf": "Step {current} of {total}",
-    "selectedPack": "{pack} pack chosen",
-    "steps": {
-      "pack": "Pack",
-      "shipping": "Shipping",
-      "billing": "Billing",
-      "review": "Review"
-    },
-    "pack": {
-      "title": "Your pack",
-      "subtitle": "You can still change it. Every pack comes with plaques already programmed and access to the dashboard.",
-      "quantity": "{count, plural, one {# plaque} other {# plaques}}",
-      "oneTime": "Paid once",
-      "switchPack": "Switch pack"
-    },
-    "shipping": {
-      "title": "Where should we send your plaques?",
-      "subtitle": "Shipped for free within 3 working days to 13 European countries, Switzerland included. They arrive programmed, ready to put up.",
-      "recipient": "Recipient",
-      "recipientPlaceholder": "Full name or business"
-    },
-    "billing": {
-      "title": "The invoice",
-      "subtitle": "We need this for a proper invoice. You can change it later from your dashboard.",
-      "vatAutoReverse": "With a valid EU VAT number, no VAT is charged (reverse charge)."
-    },
-    "review": {
-      "title": "All good",
-      "subtitle": "Check your order, then go to payment with Stripe.",
-      "orderSummary": "Your order",
-      "hardware": "Plaques (paid once)",
-      "commission": "Fee on tips",
-      "commissionValue": "0%, the customer pays",
-      "shippingTo": "Shipping to",
-      "billedTo": "Billed to",
-      "account": "Account",
-      "today": "Due today",
-      "taxNotice": "Stripe works out VAT at the next step, based on your country.",
-      "securedBy": "Secured by Stripe",
-      "edit": "Edit",
-      "promoCodeLabel": "Promo code (optional)",
-      "promoCodePlaceholder": "Your code",
-      "promoCodeHint": "The code comes off at payment.",
-      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
-    },
-    "summary": {
-      "title": "Your order",
-      "pack": "Pack {pack}",
-      "hardware": "Plaques",
-      "commission": "Fee on tips",
-      "commissionValue": "0%, the customer pays",
-      "shipping": "Shipping",
-      "free": "Free",
-      "total": "Total today",
-      "totalToday": "Total today",
-      "ttcHint": "that is {amount} incl. VAT in France (20%). The exact VAT for your country is calculated at payment.",
-      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
-    },
-    "errors": {
-      "shipping_invalid": "Enter the full shipping address: street, postal code and city.",
-      "legal_name_required": "Enter the company name.",
-      "vat_invalid": "This VAT number is not in the right format. It starts with the country code, for example FR12345678901. Leave it empty if you don't have one.",
-      "billing_invalid": "Enter the full billing address: street, postal code and city.",
-      "promo_invalid": "That promo code doesn't work or has expired. Fix it or remove it to carry on.",
-      "checkout_failed": "The payment didn't go through. Try again in a moment.",
-      "admin_account": "You're signed in with an admin account, which can't place orders. Sign out to order for a customer.",
-      "shipping_postal_invalid": "This postal code does not match the selected country (in France: 5 digits, for example 75009).",
-      "billing_postal_invalid": "The billing postal code does not match the selected country."
-    }
   },
   "pay": {
     "tipFor": "A tip for",
