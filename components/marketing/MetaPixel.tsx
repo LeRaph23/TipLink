@@ -97,17 +97,21 @@ export function MetaPixel({ pixelId }: { pixelId: string }) {
   const visible = forcedOpen || (consent === null && onMarketingPage);
   if (!visible) return null;
 
+  // Same size, same colour: the CNIL wants refusing to be exactly as easy and
+  // as visible as accepting, so neither button is styled as the default.
   const button = {
-    flex: 1,
-    padding: '10px 14px',
+    flex: '1 1 0',
+    minWidth: 0,
+    height: 44,
+    padding: '0 16px',
     borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 700,
+    fontSize: 14.5,
+    fontWeight: 600,
     cursor: 'pointer',
     fontFamily: 'inherit',
-    border: '1px solid var(--border, #e4e4ec)',
-    background: 'var(--surface, #fff)',
-    color: 'var(--text, #111118)',
+    border: 'none',
+    background: 'var(--text, #171213)',
+    color: 'var(--bg, #fff)',
   } as const;
 
   return (
@@ -117,23 +121,26 @@ export function MetaPixel({ pixelId }: { pixelId: string }) {
       aria-label={t('manage')}
       style={{
         position: 'fixed',
-        left: 16,
-        right: 16,
-        bottom: 'calc(16px + env(safe-area-inset-bottom))',
+        left: 12,
+        right: 12,
+        bottom: 'calc(12px + env(safe-area-inset-bottom))',
         zIndex: 1000,
-        maxWidth: 520,
+        maxWidth: 480,
         margin: '0 auto',
-        padding: 16,
-        borderRadius: 14,
+        padding: '18px 18px 16px',
+        borderRadius: 16,
         background: 'var(--surface, #fff)',
-        color: 'var(--text, #111118)',
+        color: 'var(--text, #171213)',
         border: '1px solid var(--border, #e4e4ec)',
-        boxShadow: '0 12px 40px rgba(17, 17, 24, 0.18)',
+        boxShadow: '0 16px 48px rgba(17, 17, 24, 0.16)',
       }}
     >
-      <p style={{ fontSize: 13.5, lineHeight: 1.55, margin: '0 0 12px' }}>
+      <p style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3, margin: '0 0 6px' }}>
+        {t('title')}
+      </p>
+      <p style={{ fontSize: 13.5, lineHeight: 1.5, margin: '0 0 14px', color: 'var(--text-2, #5a5355)' }}>
         {t('text')}{' '}
-        <Link href="/privacy" style={{ color: 'inherit', textDecoration: 'underline' }}>
+        <Link href="/privacy" style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2 }}>
           {t('learnMore')}
         </Link>
       </p>

@@ -1449,10 +1449,11 @@
     }
   },
   "consent": {
-    "text": "We use a Meta cookie to see whether our ads work. It's only set if you accept it.",
+    "title": "Your cookie preferences",
+    "text": "With your consent, we use an advertising measurement cookie (Meta) to assess how well our campaigns perform. You can change your choice at any time.",
     "accept": "Accept",
     "refuse": "Decline",
-    "learnMore": "Learn more",
+    "learnMore": "Privacy policy",
     "manage": "Manage cookies"
   }
 }
