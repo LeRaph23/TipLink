@@ -1449,10 +1449,11 @@
     }
   },
   "consent": {
-    "text": "On utilise un cookie Meta pour savoir si nos publicités marchent. Il n'est posé que si vous l'acceptez.",
+    "title": "Vos préférences de cookies",
+    "text": "Avec votre accord, nous utilisons un cookie de mesure publicitaire (Meta) pour évaluer l'efficacité de nos campagnes. Vous pouvez modifier votre choix à tout moment.",
     "accept": "Accepter",
     "refuse": "Refuser",
-    "learnMore": "En savoir plus",
+    "learnMore": "Politique de confidentialité",
     "manage": "Gérer les cookies"
   }
 }
