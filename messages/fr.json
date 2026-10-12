@@ -445,7 +445,7 @@
       "row1detail": "Le pourboire choisi par le client, en entier. On ne prend rien dessus.",
       "row2label": "Stripe (paiement sécurisé)",
       "row2amount": "0,41 €",
-      "row2detail": "0,25 € fixes par paiement + 1,5 % du montant. Ce sont les frais bancaires, on ne peut pas y couper, et c'est Digitip qui les paie à Stripe.",
+      "row2detail": "0,25 € fixes par paiement + 1,5 % du montant, pour une carte européenne standard. Ce sont les frais bancaires, on ne peut pas y couper, et c'est Digitip qui les paie à Stripe.",
       "row3label": "Digitip",
       "row3amount": "0,34 €",
       "row3detail": "Pour l'hébergement, le support, et pour continuer à améliorer le service.",
