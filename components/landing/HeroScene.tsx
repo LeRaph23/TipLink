@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { QRCodeSVG } from 'qrcode.react';
+import Image from 'next/image';
 import { Avatar, Band, Headline, Logo, PayColumn, PayIcon, PayTitle, Secured, btnProps } from '@/components/pay/ui';
 import { AmountTiles, TipSummary } from '@/components/payment/tip-ui';
 import { computeTipFee } from '@/lib/pricing/tip-fees';
@@ -10,8 +10,12 @@ import { moneyFormatter } from '@/lib/money';
 import s from './HeroScene.module.css';
 
 // The hero's product shot: a phone taps the plaque, the team page opens, the
-// customer picks who to thank, and the tip goes through. One 13 s CSS
+// customer picks who to thank, and the tip goes through. One 14 s CSS
 // timeline, transform and opacity only.
+//
+// The plaque is the product photo (public/products/solo-3d.jpg), cut out of
+// its white background and rectified to face the camera: it is the first
+// image of the site, so it has to be the real object, not a drawing of it.
 //
 // The phone's screen is not a picture of the tip pages, it is the tip pages:
 // the same components, laid out at a real phone's 390 px width and zoomed to
@@ -65,8 +69,14 @@ export function HeroScene() {
   return (
     <div ref={ref} className={s.frame} role="img" aria-label={t('alt')}>
       <div className={s.stage} data-paused={paused || undefined}>
-        <Plaque />
+        <div className={s.plaque}>
+          <div className={s.plaqueEdge} />
+          <Image src="/products/plaque-front.webp" alt="" width={640} height={640} sizes="280px" priority className={s.plaqueImg} />
+        </div>
 
+        {/* Two movers so the phone travels on a curve: X and Y keep their own
+            easing, as a hand does. */}
+        <div className={s.phoneTrack}>
         <div className={s.phoneShadow} />
         <div className={s.phone}>
           <span className={`${s.side} ${s.sideAction}`} />
@@ -79,7 +89,7 @@ export function HeroScene() {
           <div className={s.screen} data-theme="light" inert>
             <div className={s.viewport}>
               {/* Team page: who to thank */}
-              <div className={`${s.layer} ${s.groupLayer}`}>
+              <div className={`${s.layer} ${s.web} ${s.groupLayer}`}>
                 <StatusBar />
                 <Band pb={48} logo={<Logo />}>
                   <Headline>{tp('tipHeadline')}</Headline>
@@ -105,10 +115,11 @@ export function HeroScene() {
                   </div>
                   <p style={{ textAlign: 'center', font: '500 12px/16px var(--font)', color: 'var(--text-3)', marginTop: 24 }}>{tp('group.poweredBy')}</p>
                 </PayColumn>
+                <SafariBar />
               </div>
 
               {/* Tip page */}
-              <div className={`${s.layer} ${s.payLayer}`}>
+              <div className={`${s.layer} ${s.web} ${s.payLayer}`}>
                 <StatusBar />
                 <Band logo={<Logo />}>
                   <Headline>{tp('tipHeadline')}</Headline>
@@ -135,10 +146,11 @@ export function HeroScene() {
                   </div>
                   <Secured>{tp('secured')}</Secured>
                 </PayColumn>
+                <SafariBar />
               </div>
 
               {/* Receipt */}
-              <div className={`${s.layer} ${s.successLayer}`}>
+              <div className={`${s.layer} ${s.web} ${s.successLayer}`}>
                 <StatusBar />
                 <Band pb={48} logo={<Logo />}>
                   <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto 16px', background: 'var(--success-bg)', color: 'var(--success)', display: 'grid', placeItems: 'center' }}>
@@ -164,12 +176,17 @@ export function HeroScene() {
                     ))}
                   </div>
                 </PayColumn>
+                <SafariBar />
               </div>
 
               {/* Lock screen, with the system's NFC banner */}
               <div className={`${s.layer} ${s.lockLayer}`}>
                 <StatusBar light />
+                <div className={s.lockDate}>{t('lockDate')}</div>
                 <div className={s.lockTime}>9:41</div>
+                <span className={`${s.lockButton} ${s.lockButtonLeft}`}><LockGlyph name="torch" /></span>
+                <span className={`${s.lockButton} ${s.lockButtonRight}`}><LockGlyph name="camera" /></span>
+                <span className={s.homeBar} />
                 <div className={s.banner}>
                   <span className={s.bannerIcon}><PayIcon name="heart" size={22} color="#fff" /></span>
                   <span style={{ flex: 1, minWidth: 0 }}>
@@ -181,9 +198,16 @@ export function HeroScene() {
                   </span>
                 </div>
               </div>
+
+              {/* Where the finger lands, as a screen recording shows touches. */}
+              <span className={`${s.touch} ${s.touchBanner}`} />
+              <span className={`${s.touch} ${s.touchRow}`} />
+              <span className={`${s.touch} ${s.touchPay}`} />
             </div>
+            <span className={s.glass} />
             <span className={s.island} />
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -204,49 +228,24 @@ function StatusBar({ light = false }: { light?: boolean }) {
   );
 }
 
-// The plaque, drawn rather than photographed, so it shares the phone's light
-// and flat projection: the product shot is one scene, not two pictures stacked.
-// Its artwork follows the printed plaque (public/products/solo-3d.jpg), which
-// is French whatever the page's language, as the object itself is.
-function Plaque() {
+// Safari's address bar, floating at the bottom as on iOS 26.
+function SafariBar() {
   return (
-    <div className={s.plaque} aria-hidden="true">
-      <div className={s.plaqueEdge} />
-      <div className={s.plaqueFace}>
-        <div className={s.plaqueField}>
-          <svg className={s.plaqueHeart} viewBox="0 0 24 22" aria-hidden="true">
-            <path d="M12 20.5S2 14.4 2 7.6C2 4.5 4.4 2 7.3 2c2 0 3.7 1.1 4.7 2.8C13 3.1 14.7 2 16.7 2 19.6 2 22 4.5 22 7.6c0 6.8-10 12.9-10 12.9z" fill="none" stroke="#fff" strokeWidth="1.1" strokeLinejoin="round" />
-          </svg>
-          <p className={s.plaqueTitle}>ENVIE DE <b>DIRE MERCI</b> ?</p>
-          <p className={s.plaqueSub}>LAISSEZ UN <b>POURBOIRE</b> EN UN <b>CLIN D’OEIL</b></p>
-        </div>
-        <svg className={s.plaqueWave} viewBox="0 0 280 40" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0 22 C 70 4, 150 4, 200 20 S 262 36, 280 30 L280 40 L0 40 Z" fill="rgba(255,255,255,.55)" />
-          <path d="M0 26 C 70 8, 150 8, 200 24 S 262 40, 280 34 L280 40 L0 40 Z" fill="#fff" />
-        </svg>
-        <div className={s.plaqueLower}>
-          <p className={s.plaqueCta}><b>APPROCHEZ</b> VOTRE TÉLÉPHONE</p>
-          <div className={s.plaqueRow}>
-            <svg className={s.plaqueNfc} viewBox="0 0 92 54" aria-hidden="true">
-              <g fill="none" stroke="#141414" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M50 8.5C46 6.3 40.8 5 35 5 18.4 5 5 15.3 5 28s13.4 23 30 23c5.8 0 11-1.3 15-3.5" />
-                <path d="M19 21.5c1.6 2 2.5 4 2.5 6.5s-.9 4.5-2.5 6.5M25 17.5c2.6 3 4 6.5 4 10.5s-1.4 7.5-4 10.5M31 13.5c3.5 4 5.5 9 5.5 14.5S34.5 38.5 31 42.5" />
-                <rect x="54" y="4" width="22" height="38" rx="4" />
-                <path d="M62 8h6" />
-                <path d="M54 26c-3 0-5 2-5 4.5s2 4.5 5 4.5M76 30l8 6.5c2 1.6 2.4 4.4.8 6.4L80 49" />
-              </g>
-              <text x="65" y="27" textAnchor="middle" fontSize="8.5" fontWeight="800" fontFamily="var(--font-poppins), sans-serif" fill="#141414">NFC</text>
-            </svg>
-            <div className={s.plaqueQr}>
-              <span>OU</span>
-              <b>SCANNEZ-MOI</b>
-              <span className={s.plaqueQrCode}><QRCodeSVG value="https://digitip.app" size={44} level="L" marginSize={0} /></span>
-            </div>
-          </div>
-          <p className={s.plaqueFoot}>propulsé par <b>Digitip.app</b></p>
-        </div>
-        <div className={s.plaqueGloss} />
-      </div>
+    <div className={s.safari}>
+      <PayIcon name="lock" size={14} />
+      <span>digitip.app</span>
+      <span className={s.homeBar} style={{ bottom: -22 }} />
     </div>
+  );
+}
+
+function LockGlyph({ name }: { name: 'torch' | 'camera' }) {
+  const p = { fill: 'none', stroke: '#fff', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      {name === 'torch'
+        ? <><path d="M8 3h8v4l-2 3v11h-4V10L8 7z" {...p} /><path d="M12 13v2" {...p} /></>
+        : <><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" {...p} /><circle cx="12" cy="13" r="3.5" {...p} /></>}
+    </svg>
   );
 }

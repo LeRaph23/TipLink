@@ -474,7 +474,8 @@
       "alt": "Un téléphone touche la plaque Digitip, le client choisit la personne à remercier et le pourboire est envoyé en quelques secondes.",
       "now": "maintenant",
       "nfcBanner": "Ouvrir digitip.app",
-      "payButton": "Payer {amount}"
+      "payButton": "Payer {amount}",
+      "lockDate": "lundi 12 octobre"
     }
   },
   "pricing": {
