@@ -32,11 +32,15 @@
 @media (min-width: 768px) and (max-width: 1180px) {
   .frame { zoom: .82; }
 }
+/* 580 px wide: zoomed to fit the phone width less the page's side padding. */
 @media (max-width: 767px) {
-  .frame { zoom: .68; }
+  .frame { zoom: .62; }
 }
 @media (max-width: 380px) {
-  .frame { zoom: .6; }
+  .frame { zoom: .55; }
+}
+@media (max-width: 340px) {
+  .frame { zoom: .48; }
 }
 
 .stage {
