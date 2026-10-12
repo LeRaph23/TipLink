@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
   const { data: tx } = await service
     .from('transactions')
-    .select('id, establishment_id, staff_id, status, created_at, establishments(group_id, groups(plan, pro_trial_ends_at))')
+    .select('id, establishment_id, staff_id, status, created_at, establishments(group_id, groups(plan, pro_trial_ends_at, pro_included))')
     .eq('id', parsed.data.transactionId)
     .maybeSingle();
 
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
   // The form is only rendered for Pro groups; this is the same check made
   // where it can be trusted.
-  const group = (tx.establishments as { groups?: { plan?: string | null; pro_trial_ends_at?: string | null } | null } | null)?.groups;
+  const group = (tx.establishments as { groups?: { plan?: string | null; pro_trial_ends_at?: string | null; pro_included?: boolean | null } | null } | null)?.groups;
   if (effectivePlan(group) !== 'pro') return ok;
 
   const { error } = await service.from('tip_compliments').insert({

@@ -56,7 +56,7 @@ export default async function ComplimentsPage({
     }
   }
   const { data: group } = groupId
-    ? await service.from('groups').select('plan, pro_trial_ends_at').eq('id', groupId).maybeSingle()
+    ? await service.from('groups').select('plan, pro_trial_ends_at, pro_included').eq('id', groupId).maybeSingle()
     : { data: null };
   const isPro = effectivePlan(group) === 'pro';
 

@@ -23,16 +23,17 @@ export type Plan = 'free' | 'pro';
 type Service = ReturnType<typeof createServiceClient>;
 
 /**
- * Whether a group's row grants Pro right now: a subscription the webhooks
- * recorded, or a cardless trial that has not run out. The same condition the
- * SQL functions apply (00088), kept in one place on this side too.
+ * Whether a group's row grants Pro right now: included at no charge (00093),
+ * a subscription the webhooks recorded, or a cardless trial that has not run
+ * out. The same condition the SQL functions apply, kept in one place on this
+ * side too.
  */
 export function effectivePlan(
-  row: { plan?: string | null; pro_trial_ends_at?: string | null } | null | undefined,
+  row: { plan?: string | null; pro_trial_ends_at?: string | null; pro_included?: boolean | null } | null | undefined,
   now: Date = new Date(),
 ): Plan {
   if (!row) return 'free';
-  if (row.plan === 'pro') return 'pro';
+  if (row.pro_included || row.plan === 'pro') return 'pro';
   const ends = row.pro_trial_ends_at ? new Date(row.pro_trial_ends_at).getTime() : NaN;
   return Number.isFinite(ends) && ends > now.getTime() ? 'pro' : 'free';
 }
@@ -49,7 +50,7 @@ export function effectivePlan(
 export async function getPlan(service: Service, groupId: string): Promise<Plan> {
   const { data } = await service
     .from('groups')
-    .select('plan, pro_trial_ends_at')
+    .select('plan, pro_trial_ends_at, pro_included')
     .eq('id', groupId)
     .is('deleted_at', null)
     .maybeSingle();

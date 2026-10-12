@@ -399,6 +399,9 @@ async function runFreeTrialEndingWarnings(service: Db, dryRun: boolean): Promise
     .not('pro_trial_ends_at', 'is', null)
     .gt('pro_trial_ends_at', now.toISOString())
     .eq('plan', 'free')
+    // Trials started before Pro was included for everyone: Pro does not
+    // switch off for them, so there is nothing to warn about.
+    .eq('pro_included', false)
     .is('deleted_at', null)
     .limit(LIMIT);
 

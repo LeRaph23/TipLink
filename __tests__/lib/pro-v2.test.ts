@@ -16,6 +16,11 @@ describe('effectivePlan', () => {
     expect(effectivePlan({ plan: 'free', pro_trial_ends_at: '2026-10-20T00:00:00Z' }, now)).toBe('pro');
     expect(effectivePlan({ plan: 'free', pro_trial_ends_at: '2026-10-01T00:00:00Z' }, now)).toBe('free');
   });
+  it('grants Pro to a group it is included for, whatever the plan or trial', () => {
+    expect(effectivePlan({ plan: 'free', pro_trial_ends_at: null, pro_included: true }, now)).toBe('pro');
+    expect(effectivePlan({ plan: 'free', pro_trial_ends_at: '2026-10-01T00:00:00Z', pro_included: true }, now)).toBe('pro');
+    expect(effectivePlan({ plan: 'free', pro_trial_ends_at: null, pro_included: false }, now)).toBe('free');
+  });
   it('is free with no row or an unreadable date', () => {
     expect(effectivePlan(null, now)).toBe('free');
     expect(effectivePlan({ plan: 'free', pro_trial_ends_at: 'soon' }, now)).toBe('free');

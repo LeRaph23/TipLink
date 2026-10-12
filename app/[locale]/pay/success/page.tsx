@@ -136,10 +136,10 @@ async function groupHasPro(staffId: string | null, establishmentId: string | nul
     if (!estId) return false;
     const { data } = await service
       .from('establishments')
-      .select('groups(plan, pro_trial_ends_at)')
+      .select('groups(plan, pro_trial_ends_at, pro_included)')
       .eq('id', estId)
       .maybeSingle();
-    const group = (data as { groups?: { plan?: string | null; pro_trial_ends_at?: string | null } | null } | null)?.groups;
+    const group = (data as { groups?: { plan?: string | null; pro_trial_ends_at?: string | null; pro_included?: boolean | null } | null } | null)?.groups;
     return effectivePlan(group) === 'pro';
   } catch {
     // A thank-you page that fails over a promotional extra is the wrong trade.

@@ -17,8 +17,8 @@ type Service = ReturnType<typeof createServiceClient>;
  * work on their own customers first, and the card comes at the end, with the
  * month's figures beside the button.
  *
- * Eligible only when the group has never had a trial of either kind and has
- * no subscription. The conditions live in the UPDATE itself, so two tips
+ * Eligible only when the group has never had a trial of either kind, has no
+ * subscription, and does not have Pro included (00093). The conditions live in the UPDATE itself, so two tips
  * landing at once cannot both start one, and a webhook replay is a no-op.
  *
  * Never throws: it runs inside the payment webhook, and a trial that fails to
@@ -64,6 +64,9 @@ export async function startFreeTrial(
     } as never)
     .eq('id', groupId)
     .eq('plan', 'free')
+    // A group with Pro included has nothing to try, and a trial would only
+    // bring an "ends in three days" email about a feature that never ends.
+    .eq('pro_included', false)
     .is('pro_trial_started_at', null)
     .is('trial_ends_at', null)
     .is('stripe_subscription_id', null)
