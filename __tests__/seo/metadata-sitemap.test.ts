@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPageMetadata } from '@/lib/seo/metadata';
+import { buildPageMetadata, clipDescription } from '@/lib/seo/metadata';
 import { BASE_URL } from '@/lib/seo/base';
 import { robotsDisallow, NOINDEX_PREFIXES } from '@/lib/seo/routes';
 import sitemap from '@/app/sitemap';
@@ -128,5 +128,20 @@ describe('robots', () => {
 
   it('derives its disallow list from the shared registry', () => {
     expect(disallow).toEqual(robotsDisallow());
+  });
+});
+
+describe('clipDescription', () => {
+  it('leaves short text alone', () => {
+    expect(clipDescription('Court.')).toBe('Court.');
+  });
+
+  it('cuts on a word boundary and stays under the limit', () => {
+    const long = "Les présentes Conditions Générales de Vente régissent toute commande de produits et services passée sur digitip.app. En validant une commande, l'acheteur accepte sans réserve.";
+    const out = clipDescription(long);
+    expect(out.length).toBeLessThanOrEqual(155);
+    expect(out.endsWith('…')).toBe(true);
+    expect(long.startsWith(out.slice(0, -1))).toBe(true);
+    expect(long.charAt(out.length - 1)).toMatch(/[\s,.]/);
   });
 });

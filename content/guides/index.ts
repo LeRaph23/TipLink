@@ -110,7 +110,7 @@ export const GUIDES: GuideMeta[] = [
       "Le cash a disparu, le pourboire avec. Les trois solutions techniques, leurs coûts réels, et comment choisir selon votre métier.",
     datePublished: '2026-07-27',
     dateModified: '2026-07-27',
-    related: ['exoneration-pourboires-2026', 'declarer-les-pourboires'],
+    related: ['pourboire-tpe', 'exoneration-pourboires-2026', 'declarer-les-pourboires'],
     faq: [
       {
         question: 'Faut-il une application pour le client ?',
@@ -142,6 +142,55 @@ export const GUIDES: GuideMeta[] = [
       {
         label: "L'Hôtellerie Restauration : comment passer au pourboire dématérialisé",
         url: 'https://www.lhotellerie-restauration.fr/actualite/comment-passer-au-pourboire-dematerialise',
+        verifiedOn: '2026-07-27',
+      },
+    ],
+  },
+  {
+    // Written for the queries Search Console shows reaching the site with no
+    // page to answer them: "pourboire tpe", "pourboire sur tpe".
+    slug: 'pourboire-tpe',
+    title: 'Pourboire sur TPE : comment l\'activer, et ses limites',
+    description:
+      "Activer le pourboire sur votre terminal de paiement : réglages, reversement obligatoire à l'équipe, frais bancaires, et quand une plaque NFC fait mieux.",
+    h1: 'Le pourboire sur le terminal de paiement',
+    cardTitle: 'Pourboire sur TPE',
+    cardSummary:
+      "Votre terminal sait sans doute déjà proposer un pourboire. Ce que ça implique pour vous, ce que ça coûte, et quand ce n'est pas le bon outil.",
+    datePublished: '2026-10-12',
+    dateModified: '2026-10-12',
+    related: ['pourboire-dematerialise', 'declarer-les-pourboires', 'exoneration-pourboires-2026'],
+    faq: [
+      {
+        question: 'Comment activer le pourboire sur mon TPE ?',
+        answer:
+          "Dans les réglages du terminal ou de son application, généralement sous « Pourboire ». Vous choisissez ensuite les propositions affichées : pourcentages, montants fixes, saisie libre ou arrondi. Si l'option n'apparaît pas, votre fournisseur doit parfois l'activer de son côté.",
+      },
+      {
+        question: "Le pourboire payé sur le TPE appartient-il à l'établissement ?",
+        answer:
+          "Non. Il est encaissé sur le compte de l'établissement, mais l'article L3244-1 du Code du travail impose de le reverser intégralement au personnel en contact avec la clientèle. Il faut l'isoler en comptabilité et tenir un registre des reversements.",
+      },
+      {
+        question: 'Les frais bancaires s\'appliquent-ils au pourboire ?',
+        answer:
+          "En général oui : la commission de votre contrat porte sur le montant débité, pourboire compris. Comme le pourboire doit être reversé en entier, cette part de commission reste à votre charge.",
+      },
+      {
+        question: 'Un pourboire payé par carte sur le TPE est-il exonéré ?',
+        answer:
+          "Oui, dans les mêmes conditions qu'en espèces : versé volontairement par le client, à des salariés en contact avec la clientèle payés jusqu'à 1,6 SMIC, jusqu'au 31 décembre 2028. Le service ajouté d'office à la note n'est pas concerné.",
+      },
+    ],
+    sources: [
+      {
+        label: 'Stripe : pourboire par carte bancaire, guide pour les professionnels',
+        url: 'https://stripe.com/fr/resources/more/tips-on-bank-card-france',
+        verifiedOn: '2026-10-12',
+      },
+      {
+        label: 'Service-Public Entreprendre : prolongation de l\'exonération des pourboires',
+        url: 'https://entreprendre.service-public.gouv.fr/actualites/A18726',
         verifiedOn: '2026-07-27',
       },
     ],

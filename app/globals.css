@@ -581,6 +581,9 @@ textarea:focus-visible,
   margin: 0 0 18px;
   padding-left: 22px;
 }
+/* Tailwind's preflight strips list markers. */
+.prose-article > ul { list-style: disc; }
+.prose-article > ol { list-style: decimal; }
 .prose-article li {
   margin-bottom: 8px;
 }

@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { pageAlternates } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
 import { Icon, type IconName } from '@/components/ambassadeur/icons';
 import { RecruitmentLandingForm } from './RecruitmentLandingForm';
 
@@ -15,18 +15,16 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  return {
-    title: 'Programme Ambassadeurs Digitip · Activité déclarée, 35-45 € par vente',
+  // Title and description were 79 and 334 characters: Google cut both, and
+  // the hand-built openGraph block had no image and no og:url.
+  return buildPageMetadata({
+    locale,
+    path: '/devenir-ambassadeur',
+    title: 'Devenir ambassadeur Digitip : 35 à 45 € par vente',
     description:
-      "Programme officiel d'ambassadeurs Digitip : une activité en micro-entreprise, encadrée et déclarée, ouverte aux étudiants, salariés, demandeurs d'emploi, indépendants et retraités actifs. Vous présentez nos SmartTags NFC à des commerces de proximité et touchez 35 à 45 € par vente. Pas de stock, pas d'avance, paiement Stripe Connect.",
-    alternates: pageAlternates(locale, '/devenir-ambassadeur', ['fr']),
-    openGraph: {
-      title: 'Programme Ambassadeurs Digitip',
-      description: 'Activité déclarée, ouverte à tous les profils · 35 à 45 € par vente · Candidature en 2 minutes.',
-      locale: 'fr_FR',
-      type: 'website',
-    },
-  };
+      "Activité déclarée en micro-entreprise, ouverte à tous : présentez nos plaques NFC de pourboire aux commerces et touchez 35 à 45 € par vente. Sans stock.",
+    locales: ['fr'],
+  });
 }
 
 type Perk = { icon: IconName; label: string; sub: string };

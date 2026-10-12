@@ -3,6 +3,6 @@
 // sitemap.ts and robots.ts, which must stay free of JSX/React. Import it
 // directly from '@/lib/seo/JsonLd'.
 export { BASE_URL, pageAlternates } from './base';
-export { buildPageMetadata, type BuildPageMetadataInput } from './metadata';
+export { buildPageMetadata, clipDescription, type BuildPageMetadataInput } from './metadata';
 export * from './json-ld';
 export { PUBLIC_PATHS, NOINDEX_PREFIXES, robotsDisallow, type PublicPath } from './routes';

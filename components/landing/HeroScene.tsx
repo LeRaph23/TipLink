@@ -129,7 +129,7 @@ export function HeroScene() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: -56, position: 'relative' }}>
                     <Avatar src={PHOTO} name={STAFF} size={80} />
                     <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-2)', marginTop: 12 }}>{tp('tipFor')}</p>
-                    <PayTitle>{STAFF}</PayTitle>
+                    <PayTitle as="p">{STAFF}</PayTitle>
                     <p style={{ font: '400 14px/20px var(--font)', color: 'var(--text-3)', marginTop: 2 }}>{PLACE}</p>
                   </div>
                   <AmountTiles amounts={AMOUNTS} isActive={a => a === TIP} onPick={() => {}} format={a => fmt.format(a)} label={tp('tipFor')} />
@@ -158,7 +158,7 @@ export function HeroScene() {
                       <path className={s.check} d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
-                  <PayTitle>{tp('success')}</PayTitle>
+                  <PayTitle as="p">{tp('success')}</PayTitle>
                   <p style={{ font: '400 16px/24px var(--font)', color: 'var(--text-2)', marginTop: 8 }}>{tp('successBodyNamed', { name: STAFF })}</p>
                 </Band>
                 <PayColumn>

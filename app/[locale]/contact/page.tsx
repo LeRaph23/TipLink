@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { pageAlternates } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
 import { ContactForm } from './ContactForm';
 
 export async function generateMetadata({
@@ -12,11 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'contact' });
-  return {
+  return buildPageMetadata({
+    locale,
+    path: '/contact',
     title: t('title'),
     description: t('subtitle'),
-    alternates: pageAlternates(locale, '/contact'),
-  };
+  });
 }
 
 export default async function ContactPage({

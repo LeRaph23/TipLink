@@ -756,6 +756,19 @@ function DoubleGuaranteeSection() {
 }
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
+// Mirrors content/solutions (kept in step by __tests__/seo/internal-links.test.ts).
+// Not imported from there: that module carries every page's FAQ copy, and this
+// is a client component.
+const FOOTER_TRADES = [
+  { slug: 'restaurant', label: 'Restaurant' },
+  { slug: 'bar', label: 'Bar' },
+  { slug: 'cafe', label: 'Café' },
+  { slug: 'coiffeur', label: 'Salon de coiffure' },
+  { slug: 'barbier', label: 'Barbershop' },
+  { slug: 'tatoueur', label: 'Tatoueur' },
+  { slug: 'guide-touristique', label: 'Guide touristique' },
+] as const;
+
 function FooterSection() {
   const t = useTranslations('landing');
   const tc = useTranslations('common');
@@ -802,6 +815,15 @@ function FooterSection() {
               // These pages exist in French only: from /en they were 404s
               // (seventh QA run), so they always point at the French page.
               <Link key={l.href} href={l.href} locale="fr" className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</Link>
+            ))}
+          </div>
+          {/* One link per trade page. The hub alone left the deeper pages
+              (tatoueur, barbier, guide touristique) two clicks from the
+              homepage with a single inbound link each. */}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.solutions')}</div>
+            {FOOTER_TRADES.map((l) => (
+              <Link key={l.slug} href={`/solutions/${l.slug}`} locale="fr" className="land-footer-link" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginBottom: 9, transition: 'color 150ms' }}>{l.label}</Link>
             ))}
           </div>
           <div>

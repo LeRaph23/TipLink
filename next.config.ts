@@ -76,6 +76,18 @@ const nextConfig: NextConfig = {
       // instead of letting them 404.
       { source: '/:locale(fr|en)/comparatif/:path*', destination: '/:locale', permanent: true },
       { source: '/comparatif/:path*', destination: '/', permanent: true },
+      // Legal pages used to live under /legal/. Search Console still reports
+      // /fr/legal/terms, /en/legal/terms and /fr/legal/privacy as 404s.
+      {
+        source: '/:locale(fr|en)/legal/:page(terms|privacy|cgv|mentions-legales)',
+        destination: '/:locale/:page',
+        permanent: true,
+      },
+      // Tutorial videos are referenced by extensionless base path in the
+      // serialized props (/tutos/activer-plaque → .mp4/.webm/-poster.jpg), and
+      // Googlebot picks those strings up as URLs. The proxy then sent them to
+      // /fr/tutos/…, a 404. The page that actually shows them is /fr/aide.
+      { source: '/tutos/:slug([a-z0-9-]+)', destination: '/fr/aide', permanent: true },
     ];
   },
   async headers() {
@@ -83,6 +95,17 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: securityHeaders,
+      },
+      {
+        // Font files and the web manifest showed up in Search Console under
+        // "Crawled, currently not indexed". They are not pages; say so rather
+        // than block them in robots.txt, since Google needs the fonts to render.
+        source: '/_next/static/media/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex' }],
+      },
+      {
+        source: '/manifest.webmanifest',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex' }],
       },
       {
         // Stripe's Connect components render in an iframe on their own origin,

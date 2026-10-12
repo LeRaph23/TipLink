@@ -13,12 +13,13 @@ import { SOLUTIONS } from '@/content/solutions';
 // type-sharding makes the indexation rate readable per template.
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
   const staticEntries = PUBLIC_PATHS.flatMap(({ path, priority, changeFrequency, locales }) =>
     locales.map((locale) => ({
       url: `${BASE_URL}/${locale}${path}`,
-      lastModified: now,
+      // No lastModified on static pages. It used to be `new Date()`, i.e. the
+      // build time, so every deploy claimed all thirty pages had just changed.
+      // Google ignores <lastmod> site-wide once it learns it is unreliable,
+      // which would also discard the real dates on guides and solutions below.
       changeFrequency,
       priority,
       alternates: {

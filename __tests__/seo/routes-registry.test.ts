@@ -73,7 +73,10 @@ describe('route registry', () => {
       const route = routeOf(file);
       if (route === '' || !publicPaths.has(route)) continue;
       const src = readFileSync(file, 'utf8');
-      if (!src.includes('buildPageMetadata(') && !src.includes('pageAlternates(')) {
+      // buildPageMetadata, not a bare pageAlternates: /pricing, /contact and
+      // /login set only a canonical and so inherited the layout's og:url,
+      // advertising the homepage URL on every share.
+      if (!src.includes('buildPageMetadata(')) {
         missing.push(route);
       }
     }
