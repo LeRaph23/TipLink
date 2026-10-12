@@ -17,8 +17,10 @@ type Props = {
  * hundred pixels wide, and tapping one only restarted the loop it was already
  * playing, so the video could not actually be watched.
  *
- * The preview only plays while it is on screen, so three of them side by side
- * do not all download and decode at once.
+ * With a mouse the preview only plays while the pointer is over it: three
+ * screens moving side by side at once is too much, and the visitor would not
+ * know where to look. Touch screens have no hover, and there the tiles stack,
+ * so the preview plays while it is on screen, one at a time.
  */
 export function TutorialVideo({ src, label }: Props) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -30,9 +32,26 @@ export function TutorialVideo({ src, label }: Props) {
     if (!video) return;
     // React sets `muted` as a property only, which autoplay policies ignore.
     video.muted = true;
+    if (open) { video.pause(); return; }
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      const play = () => void video.play().catch(() => {});
+      const pause = () => video.pause();
+      const tile = video.parentElement!;
+      tile.addEventListener('mouseenter', play);
+      tile.addEventListener('mouseleave', pause);
+      tile.addEventListener('focus', play);
+      tile.addEventListener('blur', pause);
+      return () => {
+        tile.removeEventListener('mouseenter', play);
+        tile.removeEventListener('mouseleave', pause);
+        tile.removeEventListener('focus', play);
+        tile.removeEventListener('blur', pause);
+        video.pause();
+      };
+    }
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !open) void video.play().catch(() => {});
+        if (entry.isIntersecting) void video.play().catch(() => {});
         else video.pause();
       },
       { threshold: 0.5 },
@@ -56,7 +75,7 @@ export function TutorialVideo({ src, label }: Props) {
           ref={ref}
           poster={`${src}-poster.jpg`}
           aria-hidden
-          muted loop playsInline preload="none"
+          muted loop playsInline preload="metadata"
           style={{ display: 'block', width: '100%', aspectRatio: '4 / 5', objectFit: 'cover', background: '#fdf9fa', pointerEvents: 'none' }}
         >
           {/* MP4 first (lighter); WebM for browsers without H.264. */}
