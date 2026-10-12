@@ -9,9 +9,6 @@
     "plates": "{count, plural, one {# plaque époxy NFC} other {# plaques époxy NFC}}",
     "altSolo": "Plaque époxy NFC Digitip Solo",
     "altDuo": "Pack Duo, 2 plaques époxy NFC Digitip",
-    "trustWarranty": "Garantie matériel à vie",
-    "trustDelivery": "Livraison offerte, expédiée sous 3 jours ouvrés",
-    "trustRefund": "Remboursée si renvoyée sous 14 jours",
     "orPayByCard": "Ou payer par carte",
     "emailLabel": "E-mail",
     "emailPlaceholder": "email@exemple.com",
@@ -49,8 +46,11 @@
     "ttcFrance": "{price} TTC en France",
     "accountOrder": "Commande rattachée à votre compte",
     "accountEmail": "Connecté en tant que {email}",
-    "packChoice": "Choix du pack",
-    "plaquesShort": "{count, plural, one {# plaque} other {# plaques}}"
+    "switchToDuo": "Deux comptoirs ou deux salles ?",
+    "switchToDuoLink": "Pack Duo, {price} HT",
+    "switchToSolo": "Une seule plaque suffit ?",
+    "switchToSoloLink": "Pack Solo, {price} HT",
+    "trustLine": "Livraison offerte, expédiée sous 3 jours ouvrés. Garantie à vie. Remboursée si renvoyée sous 14 jours."
   },
   "metadata": {
     "title": "Digitip - Pourboires par CB via NFC | digitip.app",

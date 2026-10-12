@@ -9,9 +9,6 @@
     "plates": "{count, plural, one {# NFC epoxy plaque} other {# NFC epoxy plaques}}",
     "altSolo": "Digitip Solo NFC epoxy plaque",
     "altDuo": "Duo pack, 2 Digitip NFC epoxy plaques",
-    "trustWarranty": "Lifetime hardware warranty",
-    "trustDelivery": "Free delivery, shipped within 3 working days",
-    "trustRefund": "Refunded if sent back within 14 days",
     "orPayByCard": "Or pay by card",
     "emailLabel": "Email",
     "emailPlaceholder": "email@example.com",
@@ -49,8 +46,11 @@
     "ttcFrance": "{price} incl. VAT in France",
     "accountOrder": "This order goes to your account",
     "accountEmail": "Signed in as {email}",
-    "packChoice": "Pack choice",
-    "plaquesShort": "{count, plural, one {# plaque} other {# plaques}}"
+    "switchToDuo": "Two counters or two rooms?",
+    "switchToDuoLink": "Duo pack, {price} excl. VAT",
+    "switchToSolo": "Only need one plaque?",
+    "switchToSoloLink": "Solo pack, {price} excl. VAT",
+    "trustLine": "Free delivery, shipped within 3 working days. Lifetime warranty. Refunded if sent back within 14 days."
   },
   "metadata": {
     "title": "Digitip: cashless tips via NFC | digitip.app",

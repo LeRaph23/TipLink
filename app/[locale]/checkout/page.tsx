@@ -67,6 +67,7 @@ export default async function CheckoutPage({
   // Both packs, for the Solo/Duo toggle; cached, so no extra Stripe round trip.
   const allPricing = await getAllPackPricing();
   const pricing = allPricing[pack];
+  const otherPack: PackId = pack === 'solo' ? 'duo' : 'solo';
 
   // Signed in, the same page, already filled in: the account's email and,
   // for a business owner, the last delivery address. The order then joins
@@ -148,90 +149,59 @@ export default async function CheckoutPage({
           <aside className="checkout-aside" style={{
             background: '#fff', borderRadius: 20, padding: 20,
             border: '1px solid #e6e6f0',
-            boxShadow: '0 1px 2px rgba(15,16,32,0.04)',
             position: 'sticky', top: 24,
           }}>
-            {/* Pack choice: a plain two-way toggle instead of an upsell link,
-                so switching reads as picking an option, not as an extra step. */}
-            <nav aria-label={t('packChoice')} style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4,
-              padding: 4, borderRadius: 12, background: '#f2f2f7', marginBottom: 18,
-            }}>
-              {(['solo', 'duo'] as const).map((p) => {
-                const active = p === pack;
-                return (
-                  <Link
-                    key={p}
-                    href={`/checkout?pack=${p}`}
-                    replace
-                    aria-current={active ? 'page' : undefined}
-                    style={{
-                      padding: '8px 10px', borderRadius: 9, textAlign: 'center',
-                      textDecoration: 'none', lineHeight: 1.25,
-                      background: active ? '#fff' : 'transparent',
-                      boxShadow: active ? '0 1px 3px rgba(15,16,32,0.12)' : 'none',
-                    }}
-                  >
-                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 800, color: active ? '#0f1020' : '#6b6d85' }}>
-                      {p === 'solo' ? 'Solo' : 'Duo'}
-                    </span>
-                    <span style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#6b6d85' }}>
-                      {t('plaquesShort', { count: allPricing[p].quantity })}
-                    </span>
-                  </Link>
-                );
-              })}
-            </nav>
-
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{
-                width: 64, height: 64, borderRadius: 12, overflow: 'hidden',
+                width: 56, height: 56, borderRadius: 10, overflow: 'hidden',
                 position: 'relative', background: '#ede9fe', flexShrink: 0,
               }}>
-                <Image src={visual.img} alt={t(visual.altKey)} fill sizes="64px" style={{ objectFit: 'cover' }} />
+                <Image src={visual.img} alt={t(visual.altKey)} fill sizes="56px" style={{ objectFit: 'cover' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#0f1020', lineHeight: 1.3 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#0f1020' }}>
+                  {pack === 'solo' ? 'Digitip Solo' : 'Digitip Duo'}
+                </div>
+                <div style={{ fontSize: 13, color: '#6b6d85', marginTop: 2 }}>
                   {t('plates', { count: pricing.quantity })}
                 </div>
-                <div style={{ fontSize: 12.5, color: '#6b6d85', marginTop: 2 }}>
-                  {t('ttcFrance', { price: formattedTtcFr })}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
-                  {formattedPrice}
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#a0a0b8', marginLeft: 4 }}>HT</span>
-                </div>
-                {formattedList && (
-                  <div style={{ fontSize: 12, marginTop: 2, whiteSpace: 'nowrap' }}>
-                    <span style={{ color: '#a0a0b8', textDecoration: 'line-through' }}>{formattedList}</span>
-                    {pricing.savingsPercent != null && (
-                      <span style={{ marginLeft: 6, fontWeight: 800, color: '#16a34a' }}>
-                        −{pricing.savingsPercent}%
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Trust: short, one neutral icon, no repeat of what the page
-                header and the legal line under the pay button already say. */}
-            <ul style={{
-              listStyle: 'none', padding: 0, margin: '18px 0 0',
-              paddingTop: 16, borderTop: '1px solid #f0f0f5',
-              display: 'flex', flexDirection: 'column', gap: 8,
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12,
+              marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0f0f5',
             }}>
-              {(['trustDelivery', 'trustWarranty', 'trustRefund'] as const).map((key) => (
-                <li key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#3a3b4f', lineHeight: 1.4 }}>
-                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, marginTop: 2 }}>
-                    <path d="M5 12.5l4.5 4.5L19 7.5" />
-                  </svg>
-                  {t(key)}
-                </li>
-              ))}
-            </ul>
+              <span style={{ fontSize: 13, color: '#6b6d85' }}>
+                {t('ttcFrance', { price: formattedTtcFr })}
+              </span>
+              <span style={{ fontSize: 17, fontWeight: 800, color: '#0f1020', whiteSpace: 'nowrap' }}>
+                {formattedList && (
+                  <s style={{ fontSize: 14, fontWeight: 400, color: '#a0a0b8', marginRight: 8 }}>{formattedList}</s>
+                )}
+                {formattedPrice} HT
+              </span>
+            </div>
+
+            <p style={{ fontSize: 13, color: '#6b6d85', margin: '16px 0 0', lineHeight: 1.5 }}>
+              {t(pack === 'solo' ? 'switchToDuo' : 'switchToSolo')}{' '}
+              <Link
+                href={`/checkout?pack=${otherPack}`}
+                replace
+                style={{ color: '#0f1020', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3 }}
+              >
+                {t(pack === 'solo' ? 'switchToDuoLink' : 'switchToSoloLink', {
+                  price: formatPrice(allPricing[otherPack].unitAmount, allPricing[otherPack].currency, locale),
+                })}
+              </Link>
+            </p>
+
+            <p style={{
+              fontSize: 13, color: '#6b6d85', lineHeight: 1.6,
+              margin: '16px 0 0', paddingTop: 16, borderTop: '1px solid #f0f0f5',
+            }}>
+              {t('trustLine')}
+            </p>
           </aside>
 
           {/* Right: Stripe Elements */}
