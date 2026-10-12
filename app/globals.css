@@ -471,14 +471,17 @@ input, select, textarea, button { font-family: var(--font); }
   .dash-scroll-x > table { min-width: 100%; }
 
   /* Catch-all: every <table> inside the dashboard becomes
-     horizontally-scrollable on mobile instead of getting cramped */
-  .dash-main-pad table {
-    display: block;
-    overflow-x: auto;
-    overflow-y: hidden;
+     horizontally-scrollable on mobile instead of getting cramped. The scroll
+     lives on the table's parent, not the table: `display: block` on a table
+     wraps its rows in an anonymous table sized to its content, so a narrow
+     table stopped filling its card. !important beats the cards' inline
+     `overflow: hidden`, which would otherwise clip the wide ones. */
+  .dash-main-pad :has(> table) {
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
+  }
+  .dash-main-pad table {
     white-space: nowrap;
-    max-width: 100%;
   }
   .dash-main-pad table th,
   .dash-main-pad table td {
