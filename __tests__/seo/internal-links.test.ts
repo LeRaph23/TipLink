@@ -23,6 +23,14 @@ describe('internal linking', () => {
     }
   });
 
+  it('links every trade page from the footer', async () => {
+    const { SOLUTIONS } = await import('@/content/solutions');
+    const footer = read('components', 'landing', 'LandingPage.tsx');
+    for (const s of SOLUTIONS) {
+      expect(footer, `footer must link /solutions/${s.slug}`).toContain(`slug: '${s.slug}'`);
+    }
+  });
+
   it('cross-links the content types instead of leaving islands', () => {
     const pairs: [string[], string[]][] = [
       [['app', '[locale]', 'guides', '[slug]', 'page.tsx'], ['/solutions']],

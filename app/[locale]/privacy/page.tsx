@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { LegalPage } from '@/components/legal/LegalPage';
-import { buildPageMetadata } from '@/lib/seo';
+import { buildPageMetadata, clipDescription } from '@/lib/seo';
 import { publicEnv } from '@/lib/env';
 import { CookieSettingsLink } from '@/components/marketing/MetaPixel';
 
@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return buildPageMetadata({
     locale,
     path: '/privacy',
-    title: `${t('title')} · Digitip`,
-    description: t('intro').slice(0, 155),
+    title: t('title'),
+    description: clipDescription(t('intro')),
   });
 }
 

@@ -152,11 +152,16 @@ export function PayMain({ children, pb = 40 }: { children: ReactNode; pb?: numbe
   return <main style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: pb }}>{children}</main>;
 }
 
-export function PayTitle({ children }: { children: ReactNode }) {
+/**
+ * `as="p"` for the landing hero, which renders a mock tip page inside a phone:
+ * as an h1 there it gave the homepage three h1s, two of them a fictional
+ * waiter's name and a thank-you line.
+ */
+export function PayTitle({ children, as: Tag = 'h1' }: { children: ReactNode; as?: 'h1' | 'p' }) {
   return (
-    <h1 style={{ font: '600 24px/30px var(--font-display)', letterSpacing: '-0.01em', color: 'var(--text)', textWrap: 'balance', overflowWrap: 'anywhere' }}>
+    <Tag style={{ font: '600 24px/30px var(--font-display)', letterSpacing: '-0.01em', color: 'var(--text)', textWrap: 'balance', overflowWrap: 'anywhere' }}>
       {children}
-    </h1>
+    </Tag>
   );
 }
 

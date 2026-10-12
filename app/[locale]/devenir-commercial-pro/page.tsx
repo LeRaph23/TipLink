@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { pageAlternates } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
 import { Icon, type IconName } from '@/components/ambassadeur/icons';
 import { CommercialRecruitmentForm } from './CommercialRecruitmentForm';
 
@@ -13,18 +13,15 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  return {
-    title: 'Programme Commerciaux Pros Digitip · 50 à 65 € par vente · VRP, agents commerciaux, indépendants',
+  // The title was 106 characters, the description 241: both truncated.
+  return buildPageMetadata({
+    locale,
+    path: '/devenir-commercial-pro',
+    title: 'Commerciaux indépendants, VRP : 50 à 65 € par vente',
     description:
-      "Programme partenaire B2B Digitip à destination des commerciaux indépendants, VRP exclusifs ou multicarte, et agents commerciaux. 50 € par pack Solo, 65 € par pack Duo. Contrat d'apporteur d'affaires, facturation B2B, paiement Stripe Connect.",
-    alternates: pageAlternates(locale, '/devenir-commercial-pro', ['fr']),
-    openGraph: {
-      title: 'Programme Commerciaux Pros Digitip',
-      description: 'Barème B2B · 50 € Solo / 65 € Duo · Contrat d\'apporteur d\'affaires · Paiement Stripe Connect.',
-      locale: 'fr_FR',
-      type: 'website',
-    },
-  };
+      "Programme apporteur d'affaires Digitip pour commerciaux indépendants, VRP et agents : 50 € par pack Solo, 65 € par Duo, facturation B2B, paiement Stripe.",
+    locales: ['fr'],
+  });
 }
 
 type Perk = { icon: IconName; label: string; sub: string };

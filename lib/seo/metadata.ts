@@ -20,6 +20,18 @@ export type BuildPageMetadataInput = {
 };
 
 /**
+ * Shortens body copy to a meta description without cutting a word in half.
+ * Google truncates around 155-160 characters anyway; a description that ends
+ * mid-word ("…l'ache") reads as broken in the snippet.
+ */
+export function clipDescription(text: string, max = 155): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.–-]+$/, '')}…`;
+}
+
+/**
  * The single sanctioned way to build page metadata.
  *
  * Every indexable page needs a canonical, hreflang alternates, Open Graph and

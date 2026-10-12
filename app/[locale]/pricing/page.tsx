@@ -9,7 +9,7 @@ import { PACKS, type PackId } from '@/lib/env';
 import { htSuffix } from '@/lib/format-price';
 import { createClient } from '@/lib/supabase/server';
 import { getAllPackPricing } from '@/lib/stripe/pricing';
-import { pageAlternates } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
 import { Icon } from '@/components/ambassadeur/icons';
 
 export async function generateMetadata({
@@ -19,11 +19,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'pricing' });
-  return {
+  return buildPageMetadata({
+    locale,
+    path: '/pricing',
     title: t('title'),
     description: t('subtitle'),
-    alternates: pageAlternates(locale, '/pricing'),
-  };
+  });
 }
 
 function Check() {

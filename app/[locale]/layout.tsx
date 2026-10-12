@@ -129,21 +129,24 @@ export async function generateMetadata({
       locale: locale === 'fr' ? 'fr_FR' : 'en_US',
       alternateLocale: routing.locales.filter((l) => l !== locale).map((l) => (l === 'fr' ? 'fr_FR' : 'en_US')),
       type: 'website',
+      // The real 1200x630 card. This used to be /icon.jpg, a 2000x2000
+      // square declared as 1200x630, which any page without its own
+      // buildPageMetadata call inherited.
       images: [
         {
-          url: '/icon.jpg',
+          url: '/opengraph-image.png',
           width: 1200,
           height: 630,
           alt: 'Digitip, pourboires par CB via NFC',
         },
       ],
     },
+    // No `creator`: it named an @digitip account that is not ours.
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/icon.jpg'],
-      creator: '@digitip',
+      images: ['/opengraph-image.png'],
     },
     robots: {
       index: true,
