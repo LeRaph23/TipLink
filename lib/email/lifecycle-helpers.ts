@@ -52,3 +52,33 @@ export function weekLabel(start: Date, end: Date, locale: string): string {
   const last = new Date(end.getTime() - 1);
   return en ? `of ${fmt.format(start)} to ${fmt.format(last)}` : `du ${fmt.format(start)} au ${fmt.format(last)}`;
 }
+
+export type NudgeOrder = { status: string; shipped_at: string | null };
+
+/**
+ * Which onboarding reminder a group not yet set up is due, if any.
+ *
+ * A group that has paid for a plaque is counted from the day it shipped, not
+ * from sign-up: online buyers get a group at checkout, so counting from there
+ * sent both reminders before the plaque had even left (found in production,
+ * September 2026). Until it ships there is nothing to remind them of, and the
+ * shipping email already carries the setup link.
+ */
+export function onboardingNudgeDue(
+  groupCreatedAt: string,
+  orders: NudgeOrder[],
+  now: number,
+): { step: 1 | 2; hasPlaque: boolean } | null {
+  const paid = orders.filter((o) => o.status !== 'pending_payment' && o.status !== 'canceled');
+  let anchor = new Date(groupCreatedAt).getTime();
+  if (paid.length > 0) {
+    const shipped = paid
+      .map((o) => (o.shipped_at ? new Date(o.shipped_at).getTime() : NaN))
+      .filter((t) => !Number.isNaN(t));
+    if (shipped.length === 0) return null;
+    anchor = Math.min(...shipped);
+  }
+  const ageDays = (now - anchor) / DAY;
+  if (ageDays < 2 || ageDays > 30) return null;
+  return { step: ageDays >= 6 ? 2 : 1, hasPlaque: paid.length > 0 };
+}

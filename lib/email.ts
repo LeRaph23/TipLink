@@ -484,22 +484,36 @@ export async function sendOrderDelivered(opts: {
   pack: string;
   quantity: number;
   orderId: string;
-  dashboardUrl?: string;
+  dashboardUrl?: string | null;
+  /** The customer has no account yet: dashboardUrl is then the signed setup link. */
+  setupRequired?: boolean;
   locale?: string;
 }): Promise<void> {
-  const { to, quantity, orderId, dashboardUrl } = opts;
+  const { to, quantity, orderId, dashboardUrl, setupRequired = false } = opts;
   const lang = emailLang(opts.locale);
   const plural = quantity > 1;
 
-  await deliverQuietly({
+  // Thrown, not swallowed: the admin action reports to the admin whether the
+  // customer was actually told.
+  await deliver({
     to,
     subject: pick(lang, plural ? 'Vos plaques sont livrées' : 'Votre plaque est livrée', plural ? 'Your plaques have been delivered' : 'Your plaque has been delivered'),
     html: layout({
       lang,
-      preheader: pick(lang, 'Trois gestes pour vos premiers pourboires.', 'Three steps to your first tips.'),
+      preheader: setupRequired
+        ? pick(lang, 'Une dernière étape avant vos premiers pourboires.', 'One last step before your first tips.')
+        : pick(lang, 'Trois gestes pour vos premiers pourboires.', 'Three steps to your first tips.'),
       body: [
         block.title(pick(lang, 'Le colis est arrivé', 'Your parcel has arrived')),
-        block.p(pick(lang, 'Pour recevoir vos premiers pourboires :', 'To get your first tips:')),
+        ...(setupRequired && dashboardUrl
+          ? [
+              block.p(pick(lang,
+                `${block.strong('Votre compte n’est pas encore créé.')} Sans lui, ${plural ? 'les plaques ne peuvent' : 'la plaque ne peut'} pas recevoir de pourboires. Quelques minutes suffisent : votre établissement, le compte qui recevra les pourboires, votre équipe.`,
+                `${block.strong('Your account is not set up yet.')} Without it, the ${plural ? 'plaques' : 'plaque'} cannot take tips. It takes a few minutes: your business, the account that will receive the tips, your team.`)),
+              block.button(pick(lang, plural ? 'Activer mes plaques' : 'Activer ma plaque', plural ? 'Activate my plaques' : 'Activate my plaque'), dashboardUrl),
+              block.p(pick(lang, 'Ensuite :', 'Then:')),
+            ]
+          : [block.p(pick(lang, 'Pour recevoir vos premiers pourboires :', 'To get your first tips:'))]),
         block.list([
           pick(lang,
             'Posez la plaque là où le client la voit au moment de payer : près de la caisse, ou sur les tables.',
@@ -511,7 +525,7 @@ export async function sendOrderDelivered(opts: {
             'Prévenez l’équipe. Une phrase suffit : « Si vous voulez laisser un pourboire, c’est ici. »',
             'Tell your team. One sentence is enough: “If you’d like to leave a tip, it’s here.”'),
         ], true),
-        ...(dashboardUrl ? [block.button(pick(lang, 'Ouvrir mon tableau de bord', 'Open my dashboard'), dashboardUrl)] : []),
+        ...(dashboardUrl && !setupRequired ? [block.button(pick(lang, 'Ouvrir mon tableau de bord', 'Open my dashboard'), dashboardUrl)] : []),
         block.small(`${pick(lang, 'Commande', 'Order')} ${block.mono(shortRef(orderId))}. ${replyHint(lang)}`),
       ],
     }),
@@ -1273,29 +1287,47 @@ async function lifecycleSend(m: { to: string; subject: string; html: string }): 
 /** Group admin, sign-up started but not finished (day 2, then day 6, then never again). */
 export async function sendGroupOnboardingNudge(opts: {
   to: string; firstName: string; setupUrl: string; step: 1 | 2; unsubscribeUrl?: string | null; locale?: string;
+  /** Bought a plaque that has shipped: talk about activating it, not about a sign-up. */
+  hasPlaque?: boolean;
 }): Promise<{ id: string | null }> {
-  const { to, firstName, setupUrl, step, unsubscribeUrl } = opts;
+  const { to, firstName, setupUrl, step, unsubscribeUrl, hasPlaque = false } = opts;
   const lang = emailLang(opts.locale);
   const first = step === 1;
+  const subject = hasPlaque
+    ? pick(lang,
+        first ? 'Votre plaque Digitip n’est pas encore activée' : 'Dernier rappel : activez votre plaque Digitip',
+        first ? 'Your Digitip plaque isn’t activated yet' : 'Last reminder: activate your Digitip plaque')
+    : pick(lang,
+        first ? 'Votre inscription Digitip n’est pas terminée' : 'Dernier rappel : votre inscription Digitip',
+        first ? 'Your Digitip sign-up isn’t finished' : 'Last reminder: your Digitip sign-up');
+  const text = hasPlaque
+    ? pick(lang,
+        first
+          ? 'Votre plaque est en route ou déjà chez vous, mais votre compte n’est pas encore créé. Sans lui, elle ne peut pas recevoir de pourboires. Il reste quelques minutes : votre établissement, le compte qui recevra les pourboires, votre équipe.'
+          : 'Votre plaque n’est toujours pas activée, et vos clients ne peuvent donc pas encore laisser de pourboire. C’est notre dernier rappel à ce sujet. Si la plaque n’est jamais arrivée, dites-le-nous en répondant à cet e-mail.',
+        first
+          ? 'Your plaque is on its way or already with you, but your account isn’t set up yet. Without it, the plaque cannot take tips. A few minutes are left: your business, the account that will receive the tips, your team.'
+          : 'Your plaque still isn’t activated, so your customers cannot leave tips yet. This is our last reminder about it. If the plaque never arrived, tell us by replying to this email.')
+    : pick(lang,
+        first
+          ? 'Vous avez commencé à créer votre espace Digitip sans le terminer. Il reste quelques minutes : votre établissement, le compte qui recevra les pourboires, votre équipe. Tant que ce n’est pas fait, vos clients ne peuvent pas laisser de pourboire.'
+          : 'Votre espace Digitip n’est toujours pas terminé, et vos clients ne peuvent donc pas encore laisser de pourboire. C’est notre dernier rappel à ce sujet.',
+        first
+          ? 'You started setting up Digitip but didn’t finish. A few minutes are left: your business, the account that will receive the tips, your team. Until it’s done, your customers cannot leave a tip.'
+          : 'Your Digitip account still isn’t finished, so your customers cannot leave tips yet. This is our last reminder about it.');
   return lifecycleSend({
     to,
-    subject: pick(lang,
-      first ? 'Votre inscription Digitip n’est pas terminée' : 'Dernier rappel : votre inscription Digitip',
-      first ? 'Your Digitip sign-up isn’t finished' : 'Last reminder: your Digitip sign-up'),
+    subject,
     html: layout({
       lang,
       preheader: pick(lang, 'Tant qu’elle ne l’est pas, la plaque ne peut pas recevoir de pourboires.', 'Until it is, the plaque cannot take tips.'),
       footer: lifecycleFooter(lang, unsubscribeUrl),
       body: [
         block.p(hello(lang, firstName)),
-        block.p(pick(lang,
-          first
-            ? 'Vous avez commencé à créer votre espace Digitip sans le terminer. Il reste quelques minutes : votre établissement, le compte qui recevra les pourboires, votre équipe. Tant que ce n’est pas fait, vos clients ne peuvent pas laisser de pourboire.'
-            : 'Votre espace Digitip n’est toujours pas terminé, et vos clients ne peuvent donc pas encore laisser de pourboire. C’est notre dernier rappel à ce sujet.',
-          first
-            ? 'You started setting up Digitip but didn’t finish. A few minutes are left: your business, the account that will receive the tips, your team. Until it’s done, your customers cannot leave a tip.'
-            : 'Your Digitip account still isn’t finished, so your customers cannot leave tips yet. This is our last reminder about it.')),
-        block.button(pick(lang, 'Terminer mon inscription', 'Finish signing up'), setupUrl),
+        block.p(text),
+        block.button(
+          hasPlaque ? pick(lang, 'Activer ma plaque', 'Activate my plaque') : pick(lang, 'Terminer mon inscription', 'Finish signing up'),
+          setupUrl),
         block.small(pick(lang,
           'Bloqué à une étape ? Répondez à cet e-mail en nous disant laquelle, on vous aide.',
           'Stuck on a step? Reply and tell us which one, we will help.')),

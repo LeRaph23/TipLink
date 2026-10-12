@@ -220,8 +220,9 @@ export function OrderFulfillment({
               if (!window.confirm('Marquer la commande comme livrée ? Le client reçoit l’email de livraison.')) return;
               startTransition(async () => {
                 const res = await markOrderDelivered(orderId);
+                // Delivered even when the email failed: refresh either way.
                 if (!res.ok) flash(res.error);
-                else router.refresh();
+                router.refresh();
               });
             }}
           >

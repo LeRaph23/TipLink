@@ -350,35 +350,46 @@ export async function markOrderDelivered(orderId: string): Promise<Result<null>>
   const auth = await assertSuperAdmin();
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  const { data: order } = await auth.supabase
-    .from('smarttag_orders')
-    .select('id, group_id, pack, quantity')
-    .eq('id', orderId)
-    .single();
-
-  const { error } = await auth.supabase
+  // Only the call that actually moves a shipped order to "delivered" sends the
+  // email, as for markOrderShipped: a double click or a second tab stops here.
+  const { data: delivered, error } = await auth.supabase
     .from('smarttag_orders')
     .update({ status: 'delivered', delivered_at: new Date().toISOString() })
-    .eq('id', orderId);
+    .eq('id', orderId)
+    .eq('status', 'shipped')
+    .select('id, pack, quantity')
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+  if (!delivered) return { ok: false, error: 'Commande pas au statut « expédiée » : aucun email envoyé.' };
 
   revalidatePath('/dashboard/admin/orders');
   revalidatePath(`/dashboard/admin/orders/${orderId}`);
   revalidatePath('/dashboard/billing');
   await logAdminAction('orders.mark_delivered', { orderId });
 
-  if (order) {
-    getGroupAdminEmail(order.group_id).then((contact) => {
-      if (!contact) return;
-      sendOrderDelivered({
-        to: contact.email,
-        pack: order.pack,
-        quantity: order.quantity,
-        orderId: order.id,
-        locale: contact.locale,
-      }).catch(() => {});
-    }).catch(() => {});
+  // resolveOrderRecipient, not the group admin alone: a buyer who has not set
+  // up his account has no group admin yet, and used to get no email at all.
+  // Awaited for the same reason as in markOrderShipped.
+  try {
+    const recipient = await resolveOrderRecipient(orderId);
+    if (!recipient) throw new Error('aucune adresse email trouvée pour ce client');
+    await sendOrderDelivered({
+      to: recipient.email,
+      pack: delivered.pack,
+      quantity: delivered.quantity,
+      orderId: delivered.id,
+      locale: recipient.locale,
+      dashboardUrl: recipient.onboardingUrl,
+      setupRequired: recipient.setupRequired,
+    });
+  } catch (e) {
+    console.error('[orders] delivery email failed', { orderId, e });
+    const msg = e instanceof Error ? e.message : 'erreur inconnue';
+    return {
+      ok: false,
+      error: `Commande marquée livrée, mais l'email n'est pas parti (${msg}). Utilise « Renvoyer l'email livraison ».`,
+    };
   }
 
   return { ok: true, data: null };
@@ -456,15 +467,17 @@ export async function cancelOrder(
   // 3. optional customer email.
   if (options?.sendEmail !== false) {
     const recipient = await resolveOrderRecipient(orderId);
+    // Awaited: on Vercel a fire-and-forget send can be dropped once the action
+    // returns. A failed email does not undo the cancellation.
     if (recipient) {
-      sendOrderCanceled({
+      await sendOrderCanceled({
         to: recipient.email,
         pack: order.pack,
         quantity: order.quantity,
         orderId: order.id,
         reason,
         locale: recipient.locale,
-      }).catch(() => {});
+      }).catch((e) => console.error('[orders] cancellation email failed', { orderId, e }));
     }
   }
 
@@ -532,6 +545,8 @@ export async function resendOrderEmail(
         quantity: order.quantity,
         orderId: order.id,
         locale: recipient.locale,
+        dashboardUrl: recipient.onboardingUrl,
+        setupRequired: recipient.setupRequired,
       });
     } else if (kind === 'canceled') {
       await sendOrderCanceled({

@@ -15,7 +15,7 @@ import {
   isoWeekBucket,
   sendHistory,
 } from '@/lib/email/lifecycle';
-import { lastParisWeek, weekLabel } from '@/lib/email/lifecycle-helpers';
+import { lastParisWeek, weekLabel, onboardingNudgeDue, type NudgeOrder } from '@/lib/email/lifecycle-helpers';
 import {
   sendGroupOnboardingNudge,
   sendInviteTeamNudge,
@@ -46,21 +46,50 @@ const newTally = (): Tally => ({ considered: 0, sent: 0, skipped: 0, failed: 0 }
 type Db = SupabaseClient;
 
 // ─── Group admin: onboarding not completed (day 2, then day 6, then never) ───
+// Days are counted from sign-up, or for a buyer from the day the plaque shipped
+// (see onboardingNudgeDue).
 async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<Tally> {
   const t = newTally();
   const now = Date.now();
+  // 90 days back, not 30: a buyer whose plaque shipped late is still due.
   const { data: groups } = await service
     .from('groups')
     .select('id, created_at')
     .is('onboarding_completed_at', null)
     .is('deleted_at', null)
     .lt('created_at', new Date(now - 2 * DAY).toISOString())
-    .gt('created_at', new Date(now - 30 * DAY).toISOString())
+    .gt('created_at', new Date(now - 90 * DAY).toISOString())
     .limit(LIMIT);
 
-  if (dryRun) { t.considered = (groups ?? []).length; return t; }
+  const groupIds = (groups ?? []).map((g) => g.id as string);
+  const ordersByGroup = new Map<string, NudgeOrder[]>();
+  if (groupIds.length > 0) {
+    const { data: orders, error } = await service
+      .from('smarttag_orders')
+      .select('group_id, status, shipped_at')
+      .in('group_id', groupIds);
+    // Without the orders a buyer would be nudged before his plaque ships, so
+    // skip the sequence for this run rather than guess.
+    if (error) {
+      console.error('[lifecycle] group onboarding nudges: orders lookup failed', error);
+      t.failed++;
+      return t;
+    }
+    for (const o of (orders ?? []) as Array<NudgeOrder & { group_id: string }>) {
+      const arr = ordersByGroup.get(o.group_id) ?? [];
+      arr.push({ status: o.status, shipped_at: o.shipped_at });
+      ordersByGroup.set(o.group_id, arr);
+    }
+  }
 
-  for (const g of groups ?? []) {
+  const due = (groups ?? []).flatMap((g) => {
+    const d = onboardingNudgeDue(g.created_at, ordersByGroup.get(g.id) ?? [], now);
+    return d ? [{ id: g.id as string, ...d }] : [];
+  });
+
+  if (dryRun) { t.considered = due.length; return t; }
+
+  for (const g of due) {
     t.considered++;
     try {
       // Previously gated on the group having a paid smarttag_orders row, which
@@ -72,8 +101,7 @@ async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<T
       const recipient = await resolveGroupAdmin(service, g.id);
       if (!recipient) { t.skipped++; continue; }
 
-      const ageDays = (now - new Date(g.created_at).getTime()) / DAY;
-      const step: 1 | 2 = ageDays >= 6 ? 2 : 1;
+      const { step, hasPlaque } = g;
       const setupUrl =
         `${getBaseUrl()}/onboarding?group=${g.id}` +
         `&token=${encodeURIComponent(signOnboardingToken(g.id, recipient.email))}` +
@@ -92,6 +120,7 @@ async function runGroupOnboardingNudges(service: Db, dryRun: boolean): Promise<T
           firstName: firstNameFrom(recipient.name),
           setupUrl,
           step,
+          hasPlaque,
           unsubscribeUrl: unsub,
         }),
       });
