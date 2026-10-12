@@ -253,9 +253,9 @@
     "hero": {
       "badge": "Garantie matériel à vie",
       "srBrand": "Digitip, les pourboires par carte sans contact, sur digitip.app.",
-      "h1a": "Le pourboire,",
-      "h1b": "même sans",
-      "h1c": "monnaie",
+      "h1a": "Le pourboire",
+      "h1b": "par carte bancaire,",
+      "h1c": "simplifié",
       "sub": "Vous posez la plaque où vous voulez. Le client approche son téléphone ou scanne le QR code, choisit un montant, et l'argent arrive sur le compte de l'établissement par Stripe. Il n'a rien à télécharger.",
       "social": "Vous payez la plaque une fois, les pourboires n'ont pas d'abonnement",
       "cta": "Commander maintenant",
