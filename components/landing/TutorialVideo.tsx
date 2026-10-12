@@ -69,12 +69,16 @@ export function TutorialVideo({ src, label, lead = false }: Props) {
         if (!lead) video.pause();
         window.dispatchEvent(new CustomEvent(HOVER_EVENT, { detail: null }));
       };
+      // Crossing the gap between two tiles reads as a leave then an enter, so
+      // the lead waits a moment before taking over again.
+      let resume: ReturnType<typeof setTimeout> | undefined;
       const onHover = (e: Event) => {
         const hovered = (e as CustomEvent<HTMLVideoElement | null>).detail;
         if (hovered === video) return;
+        clearTimeout(resume);
         other = hovered !== null;
         if (other) video.pause();
-        else if (lead) sync();
+        else if (lead) resume = setTimeout(sync, 400);
       };
       const io = lead
         ? new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }, { threshold: 0.5 })
@@ -87,6 +91,7 @@ export function TutorialVideo({ src, label, lead = false }: Props) {
       tile.addEventListener('blur', leave);
       window.addEventListener(HOVER_EVENT, onHover);
       return () => {
+        clearTimeout(resume);
         io?.disconnect();
         tile.removeEventListener('mouseenter', enter);
         tile.removeEventListener('mouseleave', leave);
