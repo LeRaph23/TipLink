@@ -3,8 +3,8 @@
    14 s timeline, so the keyframe percentages below are one score:
 
      0–5 %    phone at rest, lock screen
-     5–17 %   phone reaches the plaque's NFC mark on a curve, tilting toward
-              it; it shrinks as it goes because the plaque sits further back
+     5–17 %   phone reaches the plaque's NFC mark on a curve, leaning toward
+              it; a little smaller as it goes, the plaque sitting further back
      18 %     contact
      19–23 %  the system's NFC banner drops in
      24–27 %  the banner is tapped
@@ -22,8 +22,8 @@
 
 .frame {
   position: relative;
-  width: 560px;
-  height: 620px;
+  width: 580px;
+  height: 640px;
   flex-shrink: 0;
 }
 
@@ -41,9 +41,9 @@
 
 .stage {
   /* Where the phone goes to touch the plaque, from its resting place. */
-  --dx: -305px;
-  --dy: 150px;
-  --near: .5;
+  --dx: -318px;
+  --dy: 89px;
+  --near: .74;
   position: absolute;
   inset: 0;
 }
@@ -52,17 +52,28 @@
 .plaque {
   position: absolute;
   left: 0;
-  top: 112px;
-  width: 262px;
-  height: 291px;
+  top: 40px;
+  width: 280px;
+  height: 280px;
+}
+
+/* The acrylic block's thickness, seen past the face, and its shadow. */
+.plaqueEdge {
+  position: absolute;
+  inset: 0;
+  transform: translate(4px, 6px);
+  border-radius: 22px;
+  background: linear-gradient(135deg, #f4f1f6 0%, #d9d3e2 60%, #c9c1d4 100%);
+  box-shadow:
+    0 34px 60px -24px rgba(74, 30, 84, .4),
+    0 10px 22px -10px rgba(20, 10, 30, .22);
 }
 
 .plaqueImg {
+  position: relative;
   display: block;
   width: 100%;
   height: auto;
-  /* The render has no floor: give it one, soft and wide like the phone's. */
-  filter: drop-shadow(0 26px 30px rgba(70, 30, 80, .22)) drop-shadow(0 6px 10px rgba(30, 10, 40, .12));
 }
 
 /* ── Phone ──────────────────────────────────────────────────────────────── */
@@ -73,11 +84,12 @@
   pointer-events: none;
 }
 
+/* Rests a little lower than the plaque: held in front of it, nearer. */
 .phone,
 .phoneShadow {
   position: absolute;
-  left: 262px;
-  top: 16px;
+  left: 290px;
+  top: 30px;
   width: 286px;
   height: 588px;
   border-radius: 50px;
@@ -141,6 +153,8 @@
   width: 390px;
   height: 826px;
   zoom: .6923;
+  /* What shows between two pages is the page colour, never the black glass. */
+  background: #fdf9fa;
 }
 
 .layer {
@@ -148,6 +162,13 @@
   inset: 0;
   overflow: hidden;
   background: var(--bg);
+}
+
+/* Safari lays the page out below the status bar and tints that strip with
+   the page's top colour. */
+.web {
+  padding-top: 54px;
+  background: linear-gradient(var(--brand-field) 0 60px, var(--bg) 60px);
 }
 
 .island {
@@ -257,8 +278,8 @@
   opacity: 0;
 }
 .touchBanner { left: 200px; top: 298px; }
-.touchRow    { left: 210px; top: 405px; }
-.touchPay    { left: 205px; top: 558px; }
+.touchRow    { left: 210px; top: 459px; }
+.touchPay    { left: 205px; top: 612px; }
 
 /* ── Screens ────────────────────────────────────────────────────────────── */
 .groupLayer { opacity: 0; transform-origin: 50% 300px; }
@@ -364,7 +385,7 @@
 /* Sideways: leaves early on the way in, arrives late on the way back. */
 @keyframes hs-track {
   0%, 5% { transform: none; animation-timing-function: cubic-bezier(.42, 0, .18, 1); }
-  17%, 24% { transform: translateX(var(--dx)); animation-timing-function: cubic-bezier(.5, 0, .2, 1); }
+  17%, 24% { transform: translateX(var(--dx)); animation-timing-function: cubic-bezier(.45, 0, .2, 1); }
   35%, 100% { transform: none; }
 }
 
@@ -376,13 +397,13 @@
     animation-timing-function: cubic-bezier(.6, 0, .3, 1);
   }
   17% {
-    transform: translateY(var(--dy)) rotate(-9deg) rotateY(14deg) rotateX(5deg) scale(var(--near));
+    transform: translateY(var(--dy)) rotate(-10deg) rotateX(12deg) rotateY(6deg) scale(var(--near));
     animation-timing-function: cubic-bezier(.3, 0, .3, 1);
   }
-  18.2% { transform: translateY(calc(var(--dy) + 3px)) rotate(-9deg) rotateY(14deg) rotateX(5deg) scale(calc(var(--near) - .01)); }
+  18.2% { transform: translateY(calc(var(--dy) + 3px)) rotate(-10deg) rotateX(12deg) rotateY(6deg) scale(calc(var(--near) - .01)); }
   19.5%, 24% {
-    transform: translateY(var(--dy)) rotate(-9deg) rotateY(14deg) rotateX(5deg) scale(var(--near));
-    animation-timing-function: cubic-bezier(.2, .6, .2, 1);
+    transform: translateY(var(--dy)) rotate(-10deg) rotateX(12deg) rotateY(6deg) scale(var(--near));
+    animation-timing-function: cubic-bezier(.32, .72, 0, 1);
   }
   34%, 100% { transform: none; }
 }
@@ -395,7 +416,7 @@
     animation-timing-function: cubic-bezier(.6, 0, .3, 1);
   }
   17%, 24% {
-    transform: translate(6px, calc(var(--dy) + 10px)) rotate(-9deg) scale(calc(var(--near) - .03));
+    transform: translate(6px, calc(var(--dy) + 10px)) rotate(-10deg) scale(calc(var(--near) - .03));
     opacity: .85;
     animation-timing-function: cubic-bezier(.2, .6, .2, 1);
   }
@@ -403,8 +424,8 @@
 }
 
 @keyframes hs-lock {
-  0%, 27% { opacity: 1; animation-timing-function: ease-out; }
-  31%, 91% { opacity: 0; }
+  0%, 26.8% { opacity: 1; animation-timing-function: ease-out; }
+  28.3%, 91% { opacity: 0; }
   95.5%, 100% { opacity: 1; }
 }
 
@@ -418,8 +439,9 @@
 /* Opens out of the banner, as an app does on iOS; then the tip page is pushed
    over it from the right, the way a link navigates. */
 @keyframes hs-group {
-  0%, 26.5% { opacity: 0; transform: scale(.86); animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
-  31.5%, 43% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  0%, 26.5% { opacity: 0; transform: scale(.86); animation-timing-function: cubic-bezier(.32, .72, 0, 1); }
+  27.8% { opacity: 1; }
+  31.5%, 43% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(.32, .72, 0, 1); }
   48% { opacity: 1; transform: translateX(-30%); }
   48.5%, 100% { opacity: 0; transform: translateX(-30%); }
 }
@@ -431,9 +453,9 @@
 }
 
 @keyframes hs-pay {
-  0%, 43% { opacity: 1; transform: translateX(100%); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
-  48%, 60% { opacity: 1; transform: none; }
-  63.5%, 100% { opacity: 0; transform: none; }
+  0%, 43% { opacity: 1; transform: translateX(100%); animation-timing-function: cubic-bezier(.32, .72, 0, 1); }
+  48%, 59.3% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  60.5%, 100% { opacity: 0; transform: none; }
 }
 
 @keyframes hs-press {
@@ -443,13 +465,13 @@
 }
 
 @keyframes hs-success {
-  0%, 59.5% { opacity: 0; transform: translateY(16px); animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
-  64%, 90% { opacity: 1; transform: none; }
+  0%, 60.3% { opacity: 0; transform: translateY(14px); animation-timing-function: cubic-bezier(.32, .72, 0, 1); }
+  63.5%, 90% { opacity: 1; transform: none; }
   95%, 100% { opacity: 0; transform: none; }
 }
 
 @keyframes hs-check {
-  0%, 62% { stroke-dashoffset: 30; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+  0%, 61.5% { stroke-dashoffset: 30; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
   68%, 100% { stroke-dashoffset: 0; }
 }
 

@@ -13,9 +13,9 @@ import s from './HeroScene.module.css';
 // customer picks who to thank, and the tip goes through. One 14 s CSS
 // timeline, transform and opacity only.
 //
-// The plaque is the product photo (public/products/solo-3d.jpg, cut out of
-// its white background): it is the first image of the site, so it has to be
-// the real object, not a drawing of it.
+// The plaque is the product photo (public/products/solo-3d.jpg), cut out of
+// its white background and rectified to face the camera: it is the first
+// image of the site, so it has to be the real object, not a drawing of it.
 //
 // The phone's screen is not a picture of the tip pages, it is the tip pages:
 // the same components, laid out at a real phone's 390 px width and zoomed to
@@ -70,7 +70,8 @@ export function HeroScene() {
     <div ref={ref} className={s.frame} role="img" aria-label={t('alt')}>
       <div className={s.stage} data-paused={paused || undefined}>
         <div className={s.plaque}>
-          <Image src="/products/plaque-hero.webp" alt="" width={640} height={711} sizes="262px" priority className={s.plaqueImg} />
+          <div className={s.plaqueEdge} />
+          <Image src="/products/plaque-front.webp" alt="" width={640} height={640} sizes="280px" priority className={s.plaqueImg} />
         </div>
 
         {/* Two movers so the phone travels on a curve: X and Y keep their own
@@ -88,7 +89,7 @@ export function HeroScene() {
           <div className={s.screen} data-theme="light" inert>
             <div className={s.viewport}>
               {/* Team page: who to thank */}
-              <div className={`${s.layer} ${s.groupLayer}`}>
+              <div className={`${s.layer} ${s.web} ${s.groupLayer}`}>
                 <StatusBar />
                 <Band pb={48} logo={<Logo />}>
                   <Headline>{tp('tipHeadline')}</Headline>
@@ -118,7 +119,7 @@ export function HeroScene() {
               </div>
 
               {/* Tip page */}
-              <div className={`${s.layer} ${s.payLayer}`}>
+              <div className={`${s.layer} ${s.web} ${s.payLayer}`}>
                 <StatusBar />
                 <Band logo={<Logo />}>
                   <Headline>{tp('tipHeadline')}</Headline>
@@ -149,7 +150,7 @@ export function HeroScene() {
               </div>
 
               {/* Receipt */}
-              <div className={`${s.layer} ${s.successLayer}`}>
+              <div className={`${s.layer} ${s.web} ${s.successLayer}`}>
                 <StatusBar />
                 <Band pb={48} logo={<Logo />}>
                   <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto 16px', background: 'var(--success-bg)', color: 'var(--success)', display: 'grid', placeItems: 'center' }}>
