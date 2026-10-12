@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { loadStripe, type Stripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import {
@@ -13,8 +13,8 @@ import {
 } from '@stripe/react-stripe-js';
 import type { BuyerGroup } from '@/lib/billing/buyer-group';
 import { trackPixel } from '@/lib/meta/pixel';
-
-type Pack = 'solo' | 'duo';
+import { SHIPPING_COUNTRIES, isShippingCountry, type ShippingCountry } from '@/lib/billing/shipping-countries';
+import { CheckoutFooter, CheckoutShell, OrderSummary, SC, type Pack, type SummaryProduct } from './OrderSummary';
 
 /** The signed-in buyer: their email, and their business when they own one. */
 export type CheckoutAccount = {
@@ -27,13 +27,12 @@ interface Props {
   pack: Pack;
   locale: string;
   account?: CheckoutAccount | null;
+  product: SummaryProduct;
+  /** Country from the visitor's IP, if known. */
+  ipCountry?: string | null;
 }
 
-// Switzerland ships too: an export, invoiced without French VAT (Swiss import
-// VAT and any duties are the buyer's, see CGV section 5).
-const ALLOWED_SHIPPING_COUNTRIES: Array<
-  'FR' | 'BE' | 'IE' | 'ES' | 'DE' | 'IT' | 'NL' | 'LU' | 'PT' | 'AT' | 'FI' | 'GR' | 'CH'
-> = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR', 'CH'];
+const ALLOWED_SHIPPING_COUNTRIES = [...SHIPPING_COUNTRIES];
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -57,7 +56,7 @@ type CachedIntent = { key: string; data: IntentData } | { key: string; error: st
 // VAT breakdown returned by /api/billing/pack-tax (all cents).
 type Tax = { ht: number; tax: number; total: number; ratePct: number | null; country: string };
 
-export function PackCheckout({ pack, locale, account = null }: Props) {
+export function PackCheckout({ pack, locale, account = null, product, ipCountry = null }: Props) {
   const t = useTranslations('checkout');
   const [reloadKey, setReloadKey] = useState(0);
   const [cached, setCached] = useState<CachedIntent | null>(null);
@@ -117,24 +116,32 @@ export function PackCheckout({ pack, locale, account = null }: Props) {
   // Treat any cached result for a stale key as "still loading".
   const isCurrent = cached?.key === requestKey;
   if (!isCurrent) {
-    return <CheckoutSkeleton />;
+    return (
+      <CheckoutShell
+        summary={<OrderSummary product={product} locale={locale} taxLoading />}
+        form={<CheckoutSkeleton />}
+        footer={<CheckoutFooter />}
+      />
+    );
   }
 
   if ('error' in cached) {
     return (
-      <div style={{ padding: 20, borderRadius: 14, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 14 }}>
+      <CheckoutShell summary={<OrderSummary product={product} locale={locale} />} footer={<CheckoutFooter />} form={
+      <div style={{ fontSize: 14, color: '#df1b41' }}>
         {cached.error}
         <button
           onClick={() => setReloadKey((k) => k + 1)}
           style={{
-            display: 'block', marginTop: 10, padding: '8px 12px', borderRadius: 8,
-            background: '#fff', border: '1px solid #fecaca', color: '#dc2626',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            display: 'block', marginTop: 12, padding: '8px 12px', borderRadius: 6,
+            background: SC.fill, border: 'none', color: SC.text,
+            fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
           {t('retry')}
         </button>
       </div>
+      } />
     );
   }
 
@@ -144,13 +151,10 @@ export function PackCheckout({ pack, locale, account = null }: Props) {
     appearance: {
       theme: 'stripe',
       variables: {
-        colorPrimary: '#E57A97',
-        colorBackground: '#ffffff',
-        colorText: '#0f1020',
-        colorDanger: '#dc2626',
-        borderRadius: '12px',
-        fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
-        spacingUnit: '4px',
+        colorPrimary: SC.brand,
+        colorText: '#1a1a1a',
+        borderRadius: '6px',
+        fontFamily: SC.font,
       },
     },
   };
@@ -166,6 +170,8 @@ export function PackCheckout({ pack, locale, account = null }: Props) {
         promoCode={data.promoCode}
         clientSecret={data.clientSecret}
         account={account}
+        product={product}
+        defaultCountry={defaultCountry(account, ipCountry)}
       />
     </Elements>
   );
@@ -180,6 +186,23 @@ interface InnerProps {
   promoCode: string | null;
   clientSecret: string;
   account: CheckoutAccount | null;
+  product: SummaryProduct;
+  defaultCountry: ShippingCountry;
+}
+
+// The country the form opens on, and that VAT is first priced for: the
+// account's last delivery address, else the visitor's location, else France.
+// Switzerland is never picked from the IP: near the border (Mulhouse, Basel)
+// the IP says CH for French buyers, who then typed a French address under
+// "Suisse" and were charged an export price with no VAT. A Swiss buyer picks
+// it in the address form, and the VAT follows.
+function defaultCountry(account: CheckoutAccount | null, ipCountry: string | null): ShippingCountry {
+  const pick = (c: string | null | undefined) => {
+    const up = c?.toUpperCase();
+    return isShippingCountry(up) ? up : undefined;
+  };
+  const fromIp = pick(ipCountry);
+  return pick(account?.shipping?.country) ?? (fromIp && fromIp !== 'CH' ? fromIp : 'FR');
 }
 
 function InnerCheckout({
@@ -191,6 +214,8 @@ function InnerCheckout({
   promoCode: initialPromo,
   clientSecret,
   account,
+  product,
+  defaultCountry: initialCountry,
 }: InnerProps) {
   const t = useTranslations('checkout');
   const stripe = useStripe();
@@ -206,6 +231,7 @@ function InnerCheckout({
   const [promo, setPromo] = useState({ code: initialPromo, discount: initialDiscount, amount: initialAmount });
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoBusy, setPromoBusy] = useState(false);
+  const [promoOpen, setPromoOpen] = useState(!!initialPromo);
   const promoCode = promo.code;
   const discountAmount = promo.discount;
   const amount = promo.amount;
@@ -217,15 +243,23 @@ function InnerCheckout({
   const [taxLoading, setTaxLoading] = useState(false);
   const taxKeyRef = useRef<string>('');
 
-  const fmt = useMemo(
-    () =>
-      new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 2,
-      }),
-    [locale]
-  );
+  // What the summary shows until the full address is priced: the rate Stripe
+  // Tax gives the delivery country (the visitor's, then whatever the address
+  // form says), from a per-country cache (/api/billing/vat-rate). Changing
+  // the country refreshes it at once; it never sets what is charged.
+  const [previewCountry, setPreviewCountry] = useState<string>(initialCountry);
+  const [preview, setPreview] = useState<{ country: string; ratePct: number } | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    fetch(`/api/billing/vat-rate?country=${encodeURIComponent(previewCountry)}`, { signal: ac.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { country?: string; ratePercent?: number | null } | null) => {
+        if (ac.signal.aborted) return;
+        setPreview(d?.country && d.ratePercent != null ? { country: d.country, ratePct: d.ratePercent } : null);
+      })
+      .catch(() => { if (!ac.signal.aborted) setPreview(null); });
+    return () => ac.abort();
+  }, [previewCountry]);
 
   // Calls /api/billing/pack-tax, which recomputes VAT and updates the PI amount.
   const fetchTax = useCallback(
@@ -242,21 +276,24 @@ function InnerCheckout({
     [clientSecret]
   );
 
-  // Card flow — recompute when the shipping country/postcode changes.
+  // Card flow. Any change of country updates the preview straight away; the
+  // billed Stripe Tax calculation (which also sets the intent's amount) runs
+  // only once the address is complete, then again if its country or postcode
+  // changes. It used to run on every keystroke of the postcode.
   type AddressChange = {
     complete: boolean;
     value: { address: { country?: string; postal_code?: string } };
   };
-  const onAddressChange = useCallback(
-    (event: AddressChange) => {
-      const addr = event.value?.address;
-      if (!addr?.country) return;
-      const key = `${addr.country}|${addr.postal_code ?? ''}`;
+  // The billed Stripe Tax calculation for a complete address; also sets the
+  // intent's amount (see /api/billing/pack-tax).
+  const priceAddress = useCallback(
+    (country: string, postalCode?: string) => {
+      const key = `${country}|${postalCode ?? ''}`;
       if (key === taxKeyRef.current) return;
       taxKeyRef.current = key;
       setTaxLoading(true);
       setError(null);
-      fetchTax(addr.country, addr.postal_code)
+      fetchTax(country, postalCode)
         .then(setTax)
         .catch((err: unknown) => {
           // Swallowed before. With `canPay = !!tax`, a failed VAT lookup left
@@ -279,15 +316,34 @@ function InnerCheckout({
     [fetchTax]
   );
 
+  const onAddressChange = useCallback(
+    (event: AddressChange) => {
+      const addr = event.value?.address;
+      if (!addr?.country) return;
+      const country = addr.country.toUpperCase();
+      setPreviewCountry(country);
+      // A figure priced for another country no longer describes this order.
+      setTax((prev) => {
+        if (prev && prev.country !== country) {
+          taxKeyRef.current = '';
+          return null;
+        }
+        return prev;
+      });
+      if (event.complete) priceAddress(country, addr.postal_code);
+    },
+    [priceAddress]
+  );
+
   // A prefilled address is priced straight away rather than waiting for the
   // buyer to touch it (the key check makes a later change event a no-op).
   const prefilledCountry = account?.shipping?.country;
   const prefilledPostal = account?.shipping?.postal_code;
   useEffect(() => {
     if (prefilledCountry) {
-      onAddressChange({ complete: true, value: { address: { country: prefilledCountry, postal_code: prefilledPostal } } });
+      priceAddress(prefilledCountry.toUpperCase(), prefilledPostal);
     }
-  }, [prefilledCountry, prefilledPostal, onAddressChange]);
+  }, [prefilledCountry, prefilledPostal, priceAddress]);
 
   // Wallet flow (Apple/Google Pay) — recompute when the customer picks an
   // address in the payment sheet, and feed the updated lines back to Stripe.
@@ -418,96 +474,118 @@ function InnerCheckout({
   }
 
   const isPromoApplied = !!promoCode && promoCode === promoInput.trim().toUpperCase();
-  const displayTotal = tax ? tax.total : amount;
   const canPay = !!tax && !taxLoading;
+  const payDisabled = !stripe || !elements || isLoading || !canPay;
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      {error && (
-        <div style={{
-          padding: '12px 14px', borderRadius: 10, background: '#fef2f2',
-          border: '1px solid #fecaca', color: '#dc2626', fontSize: 13,
-        }}>
-          {error}
-        </div>
-      )}
+  const field: React.CSSProperties = {
+    width: '100%', padding: '10px 12px', borderRadius: 6,
+    border: '1px solid #e0e0e0', fontSize: 16, color: '#1a1a1a',
+    background: '#fff', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+    boxShadow: '0 1px 1px rgba(0,0,0,0.03), 0 3px 6px rgba(0,0,0,0.02)',
+  };
+  const heading: React.CSSProperties = { fontSize: 16, fontWeight: 500, margin: '0 0 12px' };
 
+  const promoSlot = promoOpen ? (
+    <div>
+      <div style={{ position: 'relative' }}>
+        <input
+          value={promoInput}
+          autoFocus={!initialPromo}
+          onChange={(e) => setPromoInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleApplyPromo(); } }}
+          placeholder={t('promoPlaceholder')}
+          aria-label={t('promoLabel')}
+          style={{ ...field, fontSize: 14, paddingRight: 90, textTransform: 'uppercase' }}
+        />
+        <button
+          type="button"
+          onClick={() => { void handleApplyPromo(); }}
+          disabled={isLoading || promoBusy || isPromoApplied || !promoInput.trim()}
+          style={{
+            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+            padding: '4px 8px', border: 'none', background: 'none', fontFamily: 'inherit',
+            fontSize: 14, fontWeight: 500, color: SC.brand, cursor: 'pointer',
+            opacity: isLoading || promoBusy || isPromoApplied || !promoInput.trim() ? 0.5 : 1,
+          }}
+        >
+          {isPromoApplied ? t('promoApplied') : t('promoApply')}
+        </button>
+      </div>
+      {promoError && <p style={{ margin: '6px 0 0', fontSize: 13, color: '#df1b41' }}>{promoError}</p>}
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setPromoOpen(true)}
+      style={{
+        padding: '8px 12px', borderRadius: 6, border: 'none', background: SC.fill,
+        color: SC.text, fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
+      }}
+    >
+      {t('promoAdd')}
+    </button>
+  );
+
+  const form = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       {/* Express checkout (Apple/Google Pay/Link) */}
       <div>
         <ExpressCheckoutElement
           onConfirm={handleConfirm}
           onShippingAddressChange={onShippingAddressChange}
           options={{
-            buttonHeight: 48,
+            buttonHeight: 44,
             buttonType: { applePay: 'buy', googlePay: 'buy' },
             buttonTheme: { applePay: 'black', googlePay: 'black' },
-            layout: { maxColumns: 2, maxRows: 1 },
+            layout: { maxColumns: 1, maxRows: 2 },
             emailRequired: true,
             shippingAddressRequired: true,
             allowedShippingCountries: [...ALLOWED_SHIPPING_COUNTRIES],
           }}
         />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 0' }}>
-          <div style={{ flex: 1, height: 1, background: '#e6e6f0' }} />
-          <span style={{ fontSize: 11, color: '#6b6d85', fontWeight: 600, letterSpacing: '0.04em' }}>
-            {t('orPayByCard')}
-          </span>
-          <div style={{ flex: 1, height: 1, background: '#e6e6f0' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24 }}>
+          <div style={{ flex: 1, height: 1, background: SC.line }} />
+          <span style={{ fontSize: 14, color: SC.text2 }}>{t('orPayByCard')}</span>
+          <div style={{ flex: 1, height: 1, background: SC.line }} />
         </div>
       </div>
 
       {/* Contact email — signed in, the account's own */}
-      {account ? (
-        <div style={{
-          padding: '12px 14px', borderRadius: 10,
-          background: '#fafafa', border: '1px solid #e6e6f0',
-          fontSize: 13, color: '#3a3b4f', lineHeight: 1.5,
-        }}>
-          {account.name && (
-            <div style={{ fontWeight: 700, color: '#0f1020' }}>{account.name}</div>
-          )}
-          <div>{t('accountEmail', { email: account.email })}</div>
-          {account.name && <div style={{ color: '#6b6d85' }}>{t('accountOrder')}</div>}
-        </div>
-      ) : (
-        <div>
-          <label
-            htmlFor="checkout-email"
-            style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}
-          >
-            {t('emailLabel')}
-          </label>
-          <input
-            id="checkout-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t('emailPlaceholder')}
-            required
-            style={{
-              width: '100%', padding: '12px', borderRadius: 10,
-              border: '1px solid #e6e6f0', fontSize: 14, color: '#0f1020',
-              background: '#fff', outline: 'none',
-              fontFamily: 'inherit', boxSizing: 'border-box',
-            }}
-          />
-        </div>
-      )}
+      <section>
+        <h2 style={heading}>{t('contactHeading')}</h2>
+        {account ? (
+          <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+            {account.name && <div style={{ fontWeight: 500 }}>{account.name}</div>}
+            <div style={{ color: SC.text2 }}>{t('accountEmail', { email: account.email })}</div>
+            {account.name && <div style={{ color: SC.text2 }}>{t('accountOrder')}</div>}
+          </div>
+        ) : (
+          <>
+            <label htmlFor="checkout-email" style={{ display: 'block', fontSize: 13, fontWeight: 500, color: SC.text2, marginBottom: 4 }}>
+              {t('emailLabel')}
+            </label>
+            <input
+              id="checkout-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('emailPlaceholder')}
+              required
+              style={field}
+            />
+          </>
+        )}
+      </section>
 
       {/* Shipping address — drives the VAT calculation */}
-      <div>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}>
-          {t('shippingLabel')}
-        </label>
+      <section>
+        <h2 style={heading}>{t('shippingLabel')}</h2>
         <AddressElement
           options={{
             mode: 'shipping',
             allowedCountries: ALLOWED_SHIPPING_COUNTRIES,
-            // Without a default, Stripe picks the country from the visitor's
-            // IP. Near the border (Mulhouse, Basel) that is Switzerland: a
-            // French buyer typed a French address under "Suisse" and was
-            // shown, and charged, an export price with no VAT.
+            // Never left to Stripe's own IP guess: see defaultCountry.
             // A returning customer gets the address of their last order.
             defaultValues: account?.shipping
               ? {
@@ -520,149 +598,72 @@ function InnerCheckout({
                     country: account.shipping.country,
                   },
                 }
-              : { address: { country: 'FR' } },
+              : { address: { country: initialCountry } },
             fields: { phone: 'always' },
             validation: { phone: { required: 'auto' } },
           }}
           onChange={onAddressChange}
         />
-      </div>
+      </section>
 
       {/* Payment element */}
+      <section>
+        <h2 style={heading}>{t('paymentLabel')}</h2>
+        <PaymentElement options={{ layout: { type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: false } }} />
+      </section>
+
       <div>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a3b4f', marginBottom: 6 }}>
-          {t('paymentLabel')}
-        </label>
-        <PaymentElement options={{ layout: 'tabs' }} />
+        {error && (
+          <p role="alert" style={{ margin: '0 0 12px', fontSize: 14, color: '#df1b41' }}>{error}</p>
+        )}
+        <button
+          type="button"
+          onClick={() => { void handleConfirm(); }}
+          disabled={payDisabled}
+          style={{
+            width: '100%', height: 44, borderRadius: 6, border: 'none',
+            background: SC.brand, color: '#fff', fontFamily: 'inherit',
+            fontSize: 16, fontWeight: 600,
+            // Processing keeps the full colour; only a button that cannot be
+            // pressed yet fades (UI/UX audit, UX-03, UX-20).
+            opacity: payDisabled && !isLoading ? 0.5 : 1,
+            cursor: isLoading ? 'progress' : payDisabled ? 'not-allowed' : 'pointer',
+            boxShadow: 'inset 0 0 0 1px rgba(50,50,93,0.1), 0 2px 5px 0 rgba(50,50,93,0.1), 0 1px 1px 0 rgba(0,0,0,0.07)',
+          }}
+        >
+          {isLoading
+            ? t('btnProcessing')
+            : taxLoading
+              ? t('btnCalculatingVat')
+              : tax
+                ? t('btnPay')
+                : t('btnNeedAddress')}
+        </button>
+        <p style={{ fontSize: 12, color: SC.text2, textAlign: 'center', lineHeight: 1.5, margin: '12px 0 0' }}>
+          {t('legal')}
+        </p>
       </div>
-
-      {/* Promo code */}
-      <div style={{ borderTop: '1px dashed #e6e6f0', paddingTop: 14 }}>
-        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6b6d85', marginBottom: 6 }}>
-          {t('promoLabel')}
-        </label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            value={promoInput}
-            onChange={(e) => setPromoInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleApplyPromo(); } }}
-            placeholder={t('promoPlaceholder')}
-            style={{
-              flex: 1, padding: '10px 12px', borderRadius: 10,
-              border: '1px solid #e6e6f0', fontSize: 14, color: '#0f1020',
-              background: '#fafafa', outline: 'none', textTransform: 'uppercase',
-              fontFamily: 'inherit',
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => { void handleApplyPromo(); }}
-            disabled={isLoading || promoBusy}
-            style={{
-              padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
-              background: isPromoApplied ? '#0ea36b' : '#fff',
-              border: `1px solid ${isPromoApplied ? '#0ea36b' : '#E57A97'}`,
-              color: isPromoApplied ? '#fff' : '#E57A97',
-              fontSize: 13, fontWeight: 700,
-            }}
-          >
-            {isPromoApplied ? t('promoApplied') : t('promoApply')}
-          </button>
-        </div>
-        {promoError && (
-          <p style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>{promoError}</p>
-        )}
-        {promoCode && (
-          <p style={{ marginTop: 6, fontSize: 12, color: '#0ea36b', fontWeight: 600 }}>
-            Économie de {fmt.format(discountAmount / 100)} grâce au code « {promoCode} »
-          </p>
-        )}
-      </div>
-
-      {/* Totals — prices are HT, VAT is added per the shipping country */}
-      <div style={{
-        background: '#FEF1F4', border: '1px solid #FBDAE3', borderRadius: 14,
-        padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6,
-      }}>
-        <Row label={t('rowSubtotal')} value={fmt.format(baseAmount / 100)} />
-        {discountAmount > 0 && (
-          <Row label={t('rowDiscount')} value={`- ${fmt.format(discountAmount / 100)}`} accent="#0ea36b" />
-        )}
-        <Row
-          label={tax?.ratePct != null ? t('rowVatWithRate', { rate: tax.ratePct }) : t('rowVat')}
-          value={tax ? fmt.format(tax.tax / 100) : (taxLoading ? t('vatCalculating') : t('vatPerAddress'))}
-          muted={!tax}
-        />
-        <Row label={t('rowShipping')} value={t('shippingFree')} muted />
-        <div style={{ height: 1, background: '#FBDAE3', margin: '4px 0' }} />
-        <Row label={t('rowTotal')} value={tax ? fmt.format(tax.total / 100) : '—'} bold />
-        {tax?.country === 'CH' && (
-          <p style={{ fontSize: 11.5, color: '#6b6d85', lineHeight: 1.45, margin: '4px 0 0' }}>
-            {t('exportNoteCH')}
-          </p>
-        )}
-      </div>
-
-      {/* Pay button */}
-      <button
-        type="button"
-        onClick={() => { void handleConfirm(); }}
-        disabled={!stripe || !elements || isLoading || !canPay}
-        style={{
-          width: '100%', padding: '16px', borderRadius: 14, border: 'none',
-          // Processing keeps the full colour; only a button that cannot be
-          // pressed yet greys out, and readably (UI/UX audit, UX-03, UX-20).
-          background: isLoading ? '#C2456A' : !stripe || !elements || !canPay ? '#ECECF1' : '#C2456A',
-          color: !isLoading && (!stripe || !elements || !canPay) ? '#8A8A99' : '#fff',
-          fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em',
-          cursor: isLoading ? 'progress' : !stripe || !elements || !canPay ? 'not-allowed' : 'pointer',
-          boxShadow: !stripe || !elements || isLoading || !canPay ? 'none' : '0 6px 24px rgba(194,69,106,0.3)',
-          transition: 'background 130ms, color 130ms, box-shadow 130ms',
-        }}
-      >
-        {isLoading
-          ? t('btnProcessing')
-          : taxLoading
-            ? t('btnCalculatingVat')
-            : tax
-              ? t('btnPay', { amount: fmt.format(displayTotal / 100) })
-              : t('btnNeedAddress')}
-      </button>
-
-      <p style={{ fontSize: 11, color: '#6b6d85', textAlign: 'center', lineHeight: 1.5, margin: 0 }}>
-        {t('legal')}{' '}
-        {pack === 'duo' ? t('packNoteDuo') : t('packNoteSolo')}
-      </p>
     </div>
   );
-}
 
-function Row({
-  label,
-  value,
-  bold,
-  muted,
-  accent,
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-  muted?: boolean;
-  accent?: string;
-}) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: bold ? 15 : 13, color: muted ? '#6b6d85' : '#3a3b4f', fontWeight: bold ? 800 : 500 }}>
-        {label}
-      </span>
-      <span style={{
-        fontSize: bold ? 19 : 14, fontWeight: bold ? 900 : 600,
-        color: accent ?? '#0f1020',
-        letterSpacing: bold ? '-0.02em' : 'normal',
-      }}>
-        {value}
-      </span>
-    </div>
+    <CheckoutShell
+      summary={
+        <OrderSummary
+          // The server's figure, so the subtotal matches what the intent holds.
+          product={baseAmount ? { ...product, unitAmount: baseAmount } : product}
+          locale={locale}
+          discount={discountAmount}
+          promoCode={promoCode}
+          tax={tax}
+          preview={preview}
+          taxLoading={taxLoading}
+          promoSlot={promoSlot}
+        />
+      }
+      form={form}
+      footer={<CheckoutFooter />}
+    />
   );
 }
 
@@ -671,7 +672,7 @@ function CheckoutSkeleton() {
     background: 'linear-gradient(90deg, #f1f1f4 0%, #e8e8ed 50%, #f1f1f4 100%)',
     backgroundSize: '200% 100%',
     animation: 'packSweep 1.4s ease-in-out infinite',
-    borderRadius: 10,
+    borderRadius: 6,
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
