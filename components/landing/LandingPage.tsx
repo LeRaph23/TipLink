@@ -426,7 +426,7 @@ function HowItWorksSection() {
               {withVideos ? (
                 <div>
                   <div style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid #e4e4ec', boxShadow: '0 18px 40px -24px rgba(114,38,62,0.35)', marginBottom: 18 }}>
-                    <TutorialVideo src={TUTORIALS[i]} label={t('howItWorks.videoLabel', { title: s.title })} />
+                    <TutorialVideo src={TUTORIALS[i]} label={t('howItWorks.videoLabel', { title: s.title })} lead={i === 0} />
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Étape {s.n}</div>
                   <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 8 }}>{s.title}</h3>
@@ -687,12 +687,12 @@ function PricingTransparencySection() {
         <Reveal delay={60}>
           <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, overflow: 'hidden' }}>
             {rows.map((row, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', gap: 16, borderBottom: i < rows.length - 1 ? '1px solid #f0f0f5' : 'none', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', gap: 16, borderBottom: i < rows.length - 1 ? '1px solid #f0f0f5' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 auto', minWidth: 0 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: row.color, flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#111118' }}>{row.label}</div>
-                    <div style={{ fontSize: 13, color: '#74748a', marginTop: 2 }}>{row.detail}</div>
+                    <div style={{ fontSize: 13, color: '#74748a', marginTop: 2, lineHeight: 1.5 }}>{row.detail}</div>
                   </div>
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 900, color: row.color, letterSpacing: '-0.03em', flexShrink: 0 }}>{row.amount}</div>
@@ -815,8 +815,8 @@ function FooterSection() {
                 : <Link key={l.href} href={l.href} className="land-footer-link" style={style}>{l.label}</Link>;
             })}
           </div>
-          {/* Content hubs. Without these the guides, trade pages and
-              comparisons are orphans: reachable only from the sitemap, so they
+          {/* Content hubs. Without these the guides and trade
+              pages are orphans: reachable only from the sitemap, so they
               receive no internal link equity and get crawled far less often.
               Internal links from the homepage are the cheapest ranking factor
               available and the easiest one to forget. */}
@@ -826,7 +826,6 @@ function FooterSection() {
               { label: t('footer.help'),        href: '/aide' },
               { label: t('footer.guides'),      href: '/guides' },
               { label: t('footer.solutions'),   href: '/solutions' },
-              { label: t('footer.comparatifs'), href: '/comparatif' },
               { label: t('footer.about'),       href: '/a-propos' },
             ].map((l) => (
               // These pages exist in French only: from /en they were 404s
@@ -848,14 +847,9 @@ function FooterSection() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.payment')}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {['VISA', 'MC', 'AMEX', 'Apple Pay', 'Google Pay', 'CB'].map((p) => (
+              {['VISA', 'MC', 'AMEX', 'Apple Pay', 'Google Pay', 'CB', 'Stripe'].map((p) => (
                 <span key={p} style={{ padding: '5px 9px', borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.02em' }}>{p}</span>
               ))}
-              <span style={{ padding: '5px 9px', borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', display: 'inline-flex', alignItems: 'center' }}>
-                <svg width="34" height="14" viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Stripe">
-                  <path d="M8.656 9.682c0-.638.524-1.25 1.56-1.25 1.387 0 2.812.444 4.2 1.138V5.608C12.874 4.94 11.304 4.67 9.734 4.67 5.978 4.67 3.5 6.748 3.5 9.876c0 4.89 6.738 4.114 6.738 6.222 0 .75-.654 1.25-1.75 1.25-1.512 0-3.448-.624-4.978-1.472v3.988c1.694.734 3.406 1.046 4.978 1.046 3.842 0 6.496-1.902 6.496-5.08-.016-5.28-6.328-4.348-6.328-6.148zM24.25 4.67c-2.52 0-4.13 1.194-4.13 3.188V20.91h4.354V8.888h2.618V5.07h-2.618V2h-4.354v2.67h4.13zM32.5 6.53l-.27-1.46h-3.904v15.84h4.354V10.26c1.028-1.346 2.772-1.1 3.318-.908V5.07c-.564-.208-2.618-.556-3.498 1.46zM37.5 20.91h4.354V5.07H37.5v15.84zM37.5 3.62h4.354V0H37.5v3.62zM48.736 4.67c-4.424 0-7.018 3.72-7.018 8.22 0 4.582 2.642 8.12 7.234 8.12 2.076 0 3.654-.57 4.806-1.53v-3.47c-1.06.832-2.316 1.336-3.836 1.336-1.96 0-3.178-1.032-3.506-2.658h8.184c.024-.278.04-.556.04-.846-.008-4.668-2.31-7.172-5.904-7.172zm-2.388 6.504c.272-1.668 1.32-2.7 2.604-2.7 1.26 0 2.228.986 2.42 2.7h-5.024z" fill="rgba(255,255,255,0.5)"/>
-                </svg>
-              </span>
             </div>
           </div>
         </div>

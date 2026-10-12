@@ -20,7 +20,7 @@ export function parseConsent(raw: string | null | undefined): AdConsent | null {
 // purchase funnel behind them. Never on the tipping page a customer reaches by
 // tapping a tag, nor on the dashboards: a cookie banner there would be noise
 // between a customer and a tip, for a tracker that has no business there.
-const MARKETING_PREFIXES = ['/solutions', '/pricing', '/checkout', '/order', '/guides', '/comparatif'];
+const MARKETING_PREFIXES = ['/solutions', '/pricing', '/checkout', '/order', '/guides'];
 
 /** `path` is locale-less: `/`, `/solutions/tatoueur`, `/order/solo`. */
 export function isMarketingPath(path: string): boolean {
