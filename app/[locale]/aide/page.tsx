@@ -4,7 +4,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { JsonLd } from '@/lib/seo/JsonLd';
-import { BASE_URL, buildPageMetadata, breadcrumbList, faqPage, jsonLdGraph, webPage } from '@/lib/seo';
+import { BASE_URL, buildPageMetadata, breadcrumbList, faqPage, jsonLdGraph, videoObject, webPage } from '@/lib/seo';
 import { HELP_CONTACT, HELP_ENTRIES } from '@/content/aide';
 import { HelpCenter } from '@/components/help/HelpCenter';
 import { TutorialVideo } from '@/components/landing/TutorialVideo';
@@ -19,11 +19,23 @@ const TITLE = 'Aide Digitip : plaque, Stripe, équipe, code email';
 const DESCRIPTION =
   "Bloqué à une étape ? Activation de la plaque, NFC, code par email, vérification Stripe, invitation de l'équipe : toutes les réponses, étape par étape.";
 
+// uploadDate is when the files were added to public/tutos; duration is the
+// real length of each .mp4. Both feed the VideoObject markup below.
 const TUTORIALS = [
-  { src: '/tutos/activer-plaque', title: 'Activer ma plaque' },
-  { src: '/tutos/activer-paiements', title: 'Activer les paiements' },
-  { src: '/tutos/ajouter-equipe', title: 'Ajouter mon équipe' },
+  {
+    src: '/tutos/activer-plaque', title: 'Activer ma plaque', duration: 'PT23S',
+    description: 'Activer une plaque Digitip à sa réception : la scanner, relier sa fiche Google et confirmer son e-mail. L’espace est créé.',
+  },
+  {
+    src: '/tutos/activer-paiements', title: 'Activer les paiements', duration: 'PT15S',
+    description: 'Activer les paiements Digitip : une vérification Stripe à faire une seule fois, environ 2 minutes.',
+  },
+  {
+    src: '/tutos/ajouter-equipe', title: 'Ajouter mon équipe', duration: 'PT24S',
+    description: 'Ajouter son équipe sur Digitip : un lien envoyé par SMS, chacun crée son profil avec son prénom et une photo.',
+  },
 ];
+const TUTORIALS_UPLOADED = '2026-10-02';
 
 export async function generateMetadata({
   params,
@@ -49,6 +61,13 @@ export default async function HelpPage({ params }: { params: Promise<{ locale: s
       { name: 'Accueil', url: `${BASE_URL}/fr` },
       { name: 'Aide', url },
     ]),
+    ...TUTORIALS.map((v) => videoObject({
+      name: `Tuto Digitip : ${v.title}`,
+      description: v.description,
+      src: v.src,
+      uploadDate: TUTORIALS_UPLOADED,
+      duration: v.duration,
+    })),
     faqPage(HELP_ENTRIES.map((e) => ({
       question: e.question,
       answer: e.steps ? `${e.answer} ${e.steps.map((s, i) => `${i + 1}. ${s}`).join(' ')}` : e.answer,

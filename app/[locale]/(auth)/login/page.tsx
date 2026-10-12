@@ -18,6 +18,7 @@ export async function generateMetadata({
     path: '/login',
     title: t('loginTitle'),
     description: t('loginSubtitle'),
+    noindex: true,
   });
 }
 

@@ -37,7 +37,6 @@ export const PUBLIC_PATHS: PublicPath[] = [
   { path: '/devenir-ambassadeur', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },
   { path: '/devenir-commercial-pro', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },
   { path: '/a-propos', priority: 0.5, changeFrequency: 'yearly', locales: ['fr'] },
-  { path: '/login', priority: 0.4, changeFrequency: 'yearly', locales: routing.locales },
   { path: '/cgv', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
   { path: '/terms', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
   { path: '/privacy', priority: 0.2, changeFrequency: 'yearly', locales: routing.locales },
@@ -64,6 +63,10 @@ export const NOINDEX_PREFIXES: readonly string[] = [
   '/pro',
   '/auth',
   '/signup',
+  // A sign-in form has nothing to rank for. Google had already filed /fr/login
+  // under "Crawled, currently not indexed", and listing it in the sitemap only
+  // lowered the share of submitted URLs Google judged worth indexing.
+  '/login',
   '/lp',
   // Addressable error screen. proxy.ts redirects failed SmartTag scans to
   // /<locale>/not-found, so it is a real URL and must be classified here; an

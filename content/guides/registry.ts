@@ -8,4 +8,5 @@ export const GUIDE_BODIES: Record<string, () => Promise<{ default: ComponentType
   'exoneration-pourboires-2026': () => import('./body/exoneration-pourboires-2026'),
   'declarer-les-pourboires': () => import('./body/declarer-les-pourboires'),
   'pourboire-dematerialise': () => import('./body/pourboire-dematerialise'),
+  'pourboire-tpe': () => import('./body/pourboire-tpe'),
 };

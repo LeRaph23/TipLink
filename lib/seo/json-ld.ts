@@ -224,6 +224,36 @@ export function webPage(input: {
   };
 }
 
+export type VideoInput = {
+  name: string;
+  description: string;
+  /** Root-relative base path, as TutorialVideo takes it: `${src}.mp4`, `${src}-poster.jpg`. */
+  src: string;
+  /** ISO date. */
+  uploadDate: string;
+  /** ISO 8601 duration, e.g. PT23S. */
+  duration: string;
+};
+
+/**
+ * Makes the help-page tutorials eligible for video results, and gives Google
+ * the real file URLs instead of the extensionless base paths it was guessing
+ * from the page's serialized props.
+ */
+export function videoObject(v: VideoInput): JsonLdNode {
+  return {
+    '@type': 'VideoObject',
+    name: v.name,
+    description: v.description,
+    thumbnailUrl: `${BASE_URL}${v.src}-poster.jpg`,
+    contentUrl: `${BASE_URL}${v.src}.mp4`,
+    uploadDate: v.uploadDate,
+    duration: v.duration,
+    inLanguage: 'fr-FR',
+    publisher: { '@id': ORG_ID },
+  };
+}
+
 /**
  * Wrap nodes into a single @graph. One script per page with nodes cross-linked
  * by @id, rather than N sibling scripts — easier for validators to resolve and
