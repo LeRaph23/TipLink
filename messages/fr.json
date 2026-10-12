@@ -403,7 +403,7 @@
       "q6": "Il me faut un SIRET ou un statut particulier ?",
       "a6": "Pas pour commander les plaques. Pour recevoir les pourboires, l'établissement fait une vérification une seule fois dans Digitip (identité du gérant et coordonnées bancaires), parce que la loi contre le blanchiment l'impose. Vos employés n'ont aucun compte à créer : chaque pourboire est noté à leur nom et vous le reversez avec la paie.",
       "q7": "Comment Digitip gagne de l'argent ?",
-      "a7": "Sur les frais de service, payés par la personne qui laisse le pourboire, jamais sur le pourboire lui-même. Pour un pourboire de 10 €, le client paie 10,75 € : 0,25 € fixes plus 5 % du pourboire. Vous, vous touchez les 10 €. Sur les 75 centimes, environ 0,41 € va à Stripe (0,25 € fixes + 1,5 % du montant payé) et 0,34 € à Digitip, pour faire tourner et améliorer le service. Recevoir des pourboires ne vous coûte rien chaque mois. L'abonnement Digitip Pro, facultatif, ajoute l'invitation à laisser un avis Google et les petits mots des clients."
+      "a7": "Sur les frais de service, payés par la personne qui laisse le pourboire, jamais sur le pourboire lui-même. Pour un pourboire de 10 €, le client paie 10,75 € : 0,25 € fixes plus 5 % du pourboire. Vous, vous touchez les 10 €. Sur les 75 centimes, environ 0,41 € va à Stripe (0,25 € fixes + 1,5 % du montant payé) et 0,34 € à Digitip, pour faire tourner et améliorer le service. Recevoir des pourboires ne vous coûte rien chaque mois. L'invitation à laisser un avis Google et les petits mots des clients sont inclus."
     },
     "doubleGuarantee": {
       "g1title": "Une plaque solide",
@@ -468,7 +468,7 @@
         "title": "Là où ça compte",
         "body": "Pour apparaître dans les recherches autour de chez vous, des avis récents comptent plus que quelques vieux avis. Un peu chaque semaine, c'est ce qui marche le mieux."
       },
-      "proNote": "L'invitation à laisser un avis Google fait partie de Digitip Pro : 30 jours offerts, sans carte bancaire, qui démarrent à votre premier pourboire (ou plus tôt, si vous le lancez vous-même). La plaque et les pourboires, eux, n'ont pas d'abonnement."
+      "proNote": "L'invitation à laisser un avis Google est incluse, sans abonnement et sans frais en plus, comme le reste de la plateforme."
     },
     "ui": {
       "choosePack": "Choisir",
@@ -720,7 +720,7 @@
     },
     "billing": {
       "title": "Facturation",
-      "subtitle": "Vos commandes de plaques, vos factures et votre abonnement Digitip Pro.",
+      "subtitle": "Vos commandes de plaques et vos factures.",
       "commissionRate": "Frais de service",
       "commissionRateHint": "Ils s'ajoutent au pourboire et c'est le client qui les paie. On ne prend rien sur vos pourboires.",
       "tipsCollected30d": "Pourboires sur 30 jours",
@@ -1261,7 +1261,7 @@
       },
       "review": {
         "label": "Relier votre fiche Google",
-        "body": "Vous ne le faites qu'une fois. Avec Digitip Pro, vos clients verront un bouton pour laisser un avis juste après leur pourboire.",
+        "body": "Vous ne le faites qu'une fois. Vos clients verront ensuite un bouton pour laisser un avis juste après leur pourboire.",
         "cta": "Relier"
       },
       "firstTip": {
@@ -1271,8 +1271,8 @@
       }
     },
     "proImpact": {
-      "label": "Digitip Pro",
-      "titleMonth": "Digitip Pro ce mois-ci",
+      "label": "Avis Google et petits mots",
+      "titleMonth": "Avis et petits mots ce mois-ci",
       "titleTrial": "Votre essai Digitip Pro",
       "daysLeft": "{days, plural, one {encore # jour} other {encore # jours}}",
       "noLinkBody": "Votre fiche Google n'est pas encore reliée, donc vos clients ne voient pas le bouton pour laisser un avis.",
@@ -1409,7 +1409,7 @@
       "change": "Changer",
       "unknownPlace": "Établissement",
       "fieldLabel": "Lien d’avis Google",
-      "fieldHint": "Avec Digitip Pro, le client voit un bouton pour laisser un avis Google juste après son pourboire. Pro est offert 30 jours à partir du premier pourboire, et votre lien est déjà enregistré.",
+      "fieldHint": "Le client voit un bouton pour laisser un avis Google juste après son pourboire. C'est inclus, sans abonnement.",
       "searchUnavailable": "La recherche Google ne répond pas pour le moment. Ce n'est pas grave, collez directement votre lien ci-dessous.",
       "guide1": "Ouvrez votre fiche dans Google Maps ou Google Business Profile, avec le compte de l'établissement.",
       "guide2": "Appuyez sur « Demander des avis ». Google affiche un lien court qui ressemble à g.page/r/…/review.",

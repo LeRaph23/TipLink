@@ -403,7 +403,7 @@
       "q6": "Do I need a company number or a special status?",
       "a6": "Not to order plaques. To receive tips, the business goes through a one-time check in Digitip (the manager's identity and bank details), because anti-money-laundering law requires it. Your staff don't create any account: each tip is recorded in their name and you pay it with their wages.",
       "q7": "How does Digitip make money?",
-      "a7": "From the service fee, paid by the person leaving the tip, never from the tip itself. For a €10 tip the customer pays €10.75: €0.25 fixed plus 5% of the tip. You get the €10. Of the 75 cents, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount paid) and €0.34 to Digitip, to run and improve the service. Receiving tips costs you nothing each month. The optional Digitip Pro subscription adds the Google review invitation and customer notes."
+      "a7": "From the service fee, paid by the person leaving the tip, never from the tip itself. For a €10 tip the customer pays €10.75: €0.25 fixed plus 5% of the tip. You get the €10. Of the 75 cents, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount paid) and €0.34 to Digitip, to run and improve the service. Receiving tips costs you nothing each month. The Google review invitation and customer notes are included."
     },
     "doubleGuarantee": {
       "g1title": "A solid plaque",
@@ -468,7 +468,7 @@
         "title": "Where it counts",
         "body": "To show up in nearby searches, recent reviews count more than a few old ones. A few every week works best."
       },
-      "proNote": "The Google review invitation is part of Digitip Pro: 30 days free, no card needed, starting with your first tip (or earlier, if you start it yourself). The plaque and the tips have no subscription."
+      "proNote": "The Google review invitation is included, with no subscription and no extra cost, like the rest of the platform."
     },
     "ui": {
       "choosePack": "Choose",
@@ -720,7 +720,7 @@
     },
     "billing": {
       "title": "Billing",
-      "subtitle": "Your plaque orders, your invoices and your Digitip Pro subscription.",
+      "subtitle": "Your plaque orders and your invoices.",
       "commissionRate": "Service fee",
       "commissionRateHint": "It's added to the tip and the customer pays it. We take nothing from your tips.",
       "tipsCollected30d": "Tips over 30 days",
@@ -1261,7 +1261,7 @@
       },
       "review": {
         "label": "Link your Google listing",
-        "body": "You only do this once. With Digitip Pro, customers see a button to leave a review right after tipping.",
+        "body": "You only do this once. Customers then see a button to leave a review right after tipping.",
         "cta": "Link"
       },
       "firstTip": {
@@ -1271,8 +1271,8 @@
       }
     },
     "proImpact": {
-      "label": "Digitip Pro",
-      "titleMonth": "Digitip Pro this month",
+      "label": "Google reviews and notes",
+      "titleMonth": "Reviews and notes this month",
       "titleTrial": "Your Digitip Pro trial",
       "daysLeft": "{days, plural, one {# day left} other {# days left}}",
       "noLinkBody": "Your Google listing isn't linked yet, so customers don't see the button to leave a review.",
@@ -1409,7 +1409,7 @@
       "change": "Change",
       "unknownPlace": "Business",
       "fieldLabel": "Google review link",
-      "fieldHint": "With Digitip Pro, customers see a button to leave a Google review right after tipping. Pro is free for 30 days from your first tip, and your link is already saved.",
+      "fieldHint": "Customers see a button to leave a Google review right after tipping. It's included, with no subscription.",
       "searchUnavailable": "Google search isn't responding right now. No problem, just paste your link below.",
       "guide1": "Open your listing in Google Maps or Google Business Profile, signed in with the business account.",
       "guide2": "Tap “Ask for reviews”. Google shows a short link that looks like g.page/r/…/review.",

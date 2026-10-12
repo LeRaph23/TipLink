@@ -8,6 +8,7 @@ import { getBaseUrl, serverEnv } from '@/lib/env';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 import { TRIAL_DAYS, trialSpent, MIN_CARRYOVER_MS } from '@/lib/billing/trial';
+import { PRO_ON_SALE } from '@/lib/billing/pro-offer';
 
 export const runtime = 'nodejs';
 
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
   const { data: group } = await service
     .from('groups')
-    .select('id, name, stripe_customer_id, stripe_subscription_id, trial_ends_at, pro_trial_started_at, pro_trial_ends_at')
+    .select('id, name, stripe_customer_id, stripe_subscription_id, trial_ends_at, pro_trial_started_at, pro_trial_ends_at, pro_included')
     .eq('id', groupId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -85,6 +86,13 @@ export async function POST(request: NextRequest) {
         return_url: returnUrl,
       });
       return NextResponse.json({ url: portal.url, mode: 'portal' });
+    }
+
+    // New subscriptions only while Pro is on sale, and never for a group that
+    // already has it included (00093). The portal above stays open, so a
+    // subscriber from before can always cancel.
+    if (!PRO_ON_SALE || group.pro_included) {
+      return NextResponse.json({ error: 'pro_unavailable' }, { status: 503 });
     }
 
     let customerId = group.stripe_customer_id;

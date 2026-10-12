@@ -1352,6 +1352,7 @@ export type Database = {
           platform_fee_bps: number
           platform_fixed_fee_cents: number
           pro_trial_ends_at: string | null
+          pro_included: boolean
           pro_trial_started_at: string | null
           settings: Json
           shipping_address: Json | null
@@ -1378,6 +1379,7 @@ export type Database = {
           platform_fee_bps?: number
           platform_fixed_fee_cents?: number
           pro_trial_ends_at?: string | null
+          pro_included?: boolean
           pro_trial_started_at?: string | null
           settings?: Json
           shipping_address?: Json | null
@@ -1404,6 +1406,7 @@ export type Database = {
           platform_fee_bps?: number
           platform_fixed_fee_cents?: number
           pro_trial_ends_at?: string | null
+          pro_included?: boolean
           pro_trial_started_at?: string | null
           settings?: Json
           shipping_address?: Json | null

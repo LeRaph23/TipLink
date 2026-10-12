@@ -85,7 +85,7 @@ export default async function DashboardPage({
         const [{ data: group }, { data: ests }] = await Promise.all([
           service
             .from('groups')
-            .select('plan, settings, subscription_status, trial_ends_at, pro_trial_started_at, pro_trial_ends_at')
+            .select('plan, settings, subscription_status, trial_ends_at, pro_trial_started_at, pro_trial_ends_at, pro_included')
             .eq('id', adminGroupId)
             .maybeSingle(),
           service
