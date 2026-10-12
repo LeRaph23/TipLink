@@ -667,7 +667,7 @@ function InnerCheckout({
   );
 }
 
-function CheckoutSkeleton() {
+export function CheckoutSkeleton() {
   const block: React.CSSProperties = {
     background: 'linear-gradient(90deg, #f1f1f4 0%, #e8e8ed 50%, #f1f1f4 100%)',
     backgroundSize: '200% 100%',

@@ -2,30 +2,12 @@
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
+import { trackPixel } from '@/lib/meta/pixel';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
 import { TutorialVideo } from '@/components/landing/TutorialVideo';
-import dynamic from 'next/dynamic';
-
-/**
- * The order modal, fetched on demand.
- *
- * It is 247 lines and renders only behind `{cartPack && …}`, so every visitor
- * who never clicks "commander" was downloading a dialog they never see, inside
- * the landing page's own chunk. Deferring it costs nothing at the moment it is
- * wanted: a click tolerates the few dozen milliseconds a fetch takes, and the
- * modal itself is unchanged.
- *
- * Same pattern as the dashboard charts and the salon map. `ssr: false` because
- * it never mounts on first render, so there is nothing useful to produce on the
- * server.
- */
-const BuyModal = dynamic(
-  () => import('@/components/landing/BuyModal').then((m) => m.BuyModal),
-  { ssr: false },
-);
 import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
 import { HeroScene } from '@/components/landing/HeroScene';
 import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFlag';
@@ -860,32 +842,46 @@ function FooterSection() {
  */
 export function LandingPage({ pricing }: { pricing: PricingMap | null }) {
   const locale = useLocale();
-  const [cartPack, setCartPack] = useState<'solo' | 'duo' | null>(null);
-  const openCart = (pack: 'solo' | 'duo' = 'solo') => setCartPack(pack);
+  const router = useRouter();
+
+  // Every order button goes straight to the checkout. There used to be a
+  // "your order" modal in between, but all it offered was the Solo/Duo choice,
+  // which the checkout's quantity selector already gives: one click and one
+  // screen of friction for nothing. The generic buttons start on Solo.
+  const openCheckout = (pack: PackId = 'solo') => {
+    // The first sign of intent, between a visit and a checkout. A no-op until
+    // the visitor accepted ad cookies.
+    const p = pricing?.[pack];
+    trackPixel(
+      'AddToCart',
+      p
+        ? { content_ids: [pack], content_type: 'product', value: p.unitAmount / 100, currency: p.currency.toUpperCase() }
+        : { content_ids: [pack], content_type: 'product' },
+    );
+    router.push(`/checkout?pack=${pack}`);
+  };
 
 
   return (
     <div style={{ ...LIGHT, minHeight: '100vh', fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)' }}>
       <PromoBanner />
-      <Header onOrderClick={() => openCart()} />
-      <HeroSection onOrderClick={() => openCart()} />
+      <Header onOrderClick={() => openCheckout()} />
+      <HeroSection onOrderClick={() => openCheckout()} />
       <StatsStrip />
       <KeyAdvantagesSection />
-      <ProductSection onOrderClick={openCart} pricing={pricing} />
+      <ProductSection onOrderClick={openCheckout} pricing={pricing} />
       <HowItWorksSection />
       <GoogleReviewsSection />
       <ShippingSection />
       <GuaranteeSection />
-      <ProductGridSection onOrderClick={openCart} pricing={pricing} />
+      <ProductGridSection onOrderClick={openCheckout} pricing={pricing} />
       <TrustSection />
-      <FinalCTASection onOrderClick={() => openCart()} />
+      <FinalCTASection onOrderClick={() => openCheckout()} />
       <PricingTransparencySection />
       <FAQSection />
       <DoubleGuaranteeSection />
       <FooterSection />
-      <StickyMobileCTA onOrderClick={() => openCart()} />
-
-      {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} pricing={pricing} />}
+      <StickyMobileCTA onOrderClick={() => openCheckout()} />
     </div>
   );
 }
