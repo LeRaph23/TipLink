@@ -113,7 +113,6 @@ export default async function SolutionPage({ params }: Props) {
 
   relatedLinks.push(
     { label: "L'exonération des pourboires jusqu'en 2028", href: '/guides/exoneration-pourboires-2026' },
-    { label: 'Comparatifs des solutions', href: '/comparatif' },
   );
 
   return (

@@ -72,6 +72,10 @@ const nextConfig: NextConfig = {
       // be enumerated — this single alias covers the one route where it matters.
       // Permanent so the canonical stays /pricing and no duplicate is indexed.
       { source: '/fr/tarifs', destination: '/fr/pricing', permanent: true },
+      // The comparison pages were removed; send their indexed URLs home
+      // instead of letting them 404.
+      { source: '/:locale(fr|en)/comparatif/:path*', destination: '/:locale', permanent: true },
+      { source: '/comparatif/:path*', destination: '/', permanent: true },
     ];
   },
   async headers() {

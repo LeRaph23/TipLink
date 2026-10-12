@@ -13,7 +13,7 @@ import { join } from 'node:path';
 
 const read = (...p: string[]) => readFileSync(join(process.cwd(), ...p), 'utf8');
 
-const HUBS = ['/guides', '/solutions', '/comparatif'] as const;
+const HUBS = ['/guides', '/solutions'] as const;
 
 describe('internal linking', () => {
   it('links every content hub from the site footer', () => {
@@ -23,11 +23,10 @@ describe('internal linking', () => {
     }
   });
 
-  it('cross-links the three content types instead of leaving three islands', () => {
+  it('cross-links the content types instead of leaving islands', () => {
     const pairs: [string[], string[]][] = [
-      [['app', '[locale]', 'guides', '[slug]', 'page.tsx'], ['/solutions', '/comparatif']],
-      [['app', '[locale]', 'solutions', '[slug]', 'page.tsx'], ['/guides/', '/comparatif']],
-      [['app', '[locale]', 'comparatif', '[slug]', 'page.tsx'], ['/guides/', '/solutions']],
+      [['app', '[locale]', 'guides', '[slug]', 'page.tsx'], ['/solutions']],
+      [['app', '[locale]', 'solutions', '[slug]', 'page.tsx'], ['/guides/']],
     ];
     for (const [path, expected] of pairs) {
       const src = read(...path);
@@ -41,7 +40,6 @@ describe('internal linking', () => {
     for (const [dir, hub] of [
       ['guides', '/guides'],
       ['solutions', '/solutions'],
-      ['comparatif', '/comparatif'],
     ] as const) {
       const src = read('app', '[locale]', dir, '[slug]', 'page.tsx');
       expect(src).toContain(`hubHref="${hub}"`);

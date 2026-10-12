@@ -815,8 +815,8 @@ function FooterSection() {
                 : <Link key={l.href} href={l.href} className="land-footer-link" style={style}>{l.label}</Link>;
             })}
           </div>
-          {/* Content hubs. Without these the guides, trade pages and
-              comparisons are orphans: reachable only from the sitemap, so they
+          {/* Content hubs. Without these the guides and trade
+              pages are orphans: reachable only from the sitemap, so they
               receive no internal link equity and get crawled far less often.
               Internal links from the homepage are the cheapest ranking factor
               available and the easiest one to forget. */}
@@ -826,7 +826,6 @@ function FooterSection() {
               { label: t('footer.help'),        href: '/aide' },
               { label: t('footer.guides'),      href: '/guides' },
               { label: t('footer.solutions'),   href: '/solutions' },
-              { label: t('footer.comparatifs'), href: '/comparatif' },
               { label: t('footer.about'),       href: '/a-propos' },
             ].map((l) => (
               // These pages exist in French only: from /en they were 404s
