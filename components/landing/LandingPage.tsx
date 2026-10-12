@@ -426,7 +426,7 @@ function HowItWorksSection() {
               {withVideos ? (
                 <div>
                   <div style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid #e4e4ec', boxShadow: '0 18px 40px -24px rgba(114,38,62,0.35)', marginBottom: 18 }}>
-                    <TutorialVideo src={TUTORIALS[i]} label={t('howItWorks.videoLabel', { title: s.title })} />
+                    <TutorialVideo src={TUTORIALS[i]} label={t('howItWorks.videoLabel', { title: s.title })} lead={i === 0} />
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Étape {s.n}</div>
                   <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 8 }}>{s.title}</h3>
