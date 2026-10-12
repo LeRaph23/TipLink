@@ -7,7 +7,12 @@ type Props = {
   /** Base path without extension: `${src}.mp4`, `${src}.webm`, `${src}-poster.jpg`. */
   src: string;
   label: string;
+  /** With a mouse, play this one on its own while it is on screen, until another is hovered. */
+  lead?: boolean;
 };
+
+/** Fired when a preview is hovered (detail: its video) or left (detail: null). */
+const HOVER_EVENT = 'tutorial-preview-hover';
 
 /**
  * A short silent tutorial: a looping preview in the page, and the full video,
@@ -17,16 +22,18 @@ type Props = {
  * hundred pixels wide, and tapping one only restarted the loop it was already
  * playing, so the video could not actually be watched.
  *
- * With a mouse the preview only plays while the pointer is over it: three
- * screens moving side by side at once is too much, and the visitor would not
- * know where to look. Touch screens have no hover, and there the tiles stack,
+ * With a mouse a preview plays while the pointer is over it: three screens
+ * moving side by side at once is too much, and the visitor would not know
+ * where to look. So the section is not entirely still, the `lead` preview also
+ * plays on its own while on screen, and steps aside while another is hovered.
+ * Touch screens have no hover, and there the tiles stack,
  * so the preview plays while it is on screen, one at a time.
  *
  * A still preview does not look like a video, so a pill on it says so, with
  * its length. While the preview plays the pill shrinks to a corner button,
  * which opens it full size, so it does not hide the captions at the bottom.
  */
-export function TutorialVideo({ src, label }: Props) {
+export function TutorialVideo({ src, label, lead = false }: Props) {
   const ref = useRef<HTMLVideoElement>(null);
   const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -51,17 +58,41 @@ export function TutorialVideo({ src, label }: Props) {
     if (open) { video.pause(); return; }
     if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
       const play = () => void video.play().catch(() => {});
-      const pause = () => video.pause();
+      let inView = false;
+      let other = false; // another preview is hovered
+      const sync = () => { if (inView && !other) play(); else video.pause(); };
+      const enter = () => {
+        play();
+        window.dispatchEvent(new CustomEvent(HOVER_EVENT, { detail: video }));
+      };
+      const leave = () => {
+        if (!lead) video.pause();
+        window.dispatchEvent(new CustomEvent(HOVER_EVENT, { detail: null }));
+      };
+      const onHover = (e: Event) => {
+        const hovered = (e as CustomEvent<HTMLVideoElement | null>).detail;
+        if (hovered === video) return;
+        other = hovered !== null;
+        if (other) video.pause();
+        else if (lead) sync();
+      };
+      const io = lead
+        ? new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }, { threshold: 0.5 })
+        : null;
+      io?.observe(video);
       const tile = video.parentElement!;
-      tile.addEventListener('mouseenter', play);
-      tile.addEventListener('mouseleave', pause);
-      tile.addEventListener('focus', play);
-      tile.addEventListener('blur', pause);
+      tile.addEventListener('mouseenter', enter);
+      tile.addEventListener('mouseleave', leave);
+      tile.addEventListener('focus', enter);
+      tile.addEventListener('blur', leave);
+      window.addEventListener(HOVER_EVENT, onHover);
       return () => {
-        tile.removeEventListener('mouseenter', play);
-        tile.removeEventListener('mouseleave', pause);
-        tile.removeEventListener('focus', play);
-        tile.removeEventListener('blur', pause);
+        io?.disconnect();
+        tile.removeEventListener('mouseenter', enter);
+        tile.removeEventListener('mouseleave', leave);
+        tile.removeEventListener('focus', enter);
+        tile.removeEventListener('blur', leave);
+        window.removeEventListener(HOVER_EVENT, onHover);
         video.pause();
       };
     }
@@ -74,7 +105,7 @@ export function TutorialVideo({ src, label }: Props) {
     );
     io.observe(video);
     return () => io.disconnect();
-  }, [open]);
+  }, [open, lead]);
 
   return (
     <>
