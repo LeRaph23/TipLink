@@ -19,7 +19,6 @@
     "rowSubtotal": "Sous-total HT",
     "rowDiscount": "Remise",
     "rowVat": "TVA",
-    "rowVatWithRate": "TVA ({rate}%)",
     "rowShipping": "Livraison",
     "shippingFree": "Gratuite",
     "rowTotal": "Total dû",
@@ -47,7 +46,8 @@
     "contactHeading": "Coordonnées",
     "poweredBy": "Propulsé par",
     "footerTerms": "CGV",
-    "footerPrivacy": "Confidentialité"
+    "footerPrivacy": "Confidentialité",
+    "rowVatCountry": "TVA {country} ({rate} %)"
   },
   "metadata": {
     "title": "Digitip - Pourboires par CB via NFC | digitip.app",

@@ -19,7 +19,6 @@
     "rowSubtotal": "Subtotal excl. VAT",
     "rowDiscount": "Discount",
     "rowVat": "VAT",
-    "rowVatWithRate": "VAT ({rate}%)",
     "rowShipping": "Shipping",
     "shippingFree": "Free",
     "rowTotal": "Total due",
@@ -47,7 +46,8 @@
     "contactHeading": "Contact information",
     "poweredBy": "Powered by",
     "footerTerms": "Terms",
-    "footerPrivacy": "Privacy"
+    "footerPrivacy": "Privacy",
+    "rowVatCountry": "VAT {country} ({rate}%)"
   },
   "metadata": {
     "title": "Digitip: cashless tips via NFC | digitip.app",

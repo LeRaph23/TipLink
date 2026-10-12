@@ -27,13 +27,14 @@ interface Props {
   locale: string;
   account?: CheckoutAccount | null;
   product: SummaryProduct;
+  /** Country from the visitor's IP, if known. */
+  ipCountry?: string | null;
 }
 
 // Switzerland ships too: an export, invoiced without French VAT (Swiss import
 // VAT and any duties are the buyer's, see CGV section 5).
-const ALLOWED_SHIPPING_COUNTRIES: Array<
-  'FR' | 'BE' | 'IE' | 'ES' | 'DE' | 'IT' | 'NL' | 'LU' | 'PT' | 'AT' | 'FI' | 'GR' | 'CH'
-> = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR', 'CH'];
+type ShippingCountry = 'FR' | 'BE' | 'IE' | 'ES' | 'DE' | 'IT' | 'NL' | 'LU' | 'PT' | 'AT' | 'FI' | 'GR' | 'CH';
+const ALLOWED_SHIPPING_COUNTRIES: ShippingCountry[] = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR', 'CH'];
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -57,7 +58,7 @@ type CachedIntent = { key: string; data: IntentData } | { key: string; error: st
 // VAT breakdown returned by /api/billing/pack-tax (all cents).
 type Tax = { ht: number; tax: number; total: number; ratePct: number | null; country: string };
 
-export function PackCheckout({ pack, locale, account = null, product }: Props) {
+export function PackCheckout({ pack, locale, account = null, product, ipCountry = null }: Props) {
   const t = useTranslations('checkout');
   const [reloadKey, setReloadKey] = useState(0);
   const [cached, setCached] = useState<CachedIntent | null>(null);
@@ -116,14 +117,19 @@ export function PackCheckout({ pack, locale, account = null, product }: Props) {
 
   // Treat any cached result for a stale key as "still loading".
   const isCurrent = cached?.key === requestKey;
-  const summary = <OrderSummary product={product} locale={locale} />;
   if (!isCurrent) {
-    return <CheckoutShell summary={summary} form={<CheckoutSkeleton />} footer={<CheckoutFooter />} />;
+    return (
+      <CheckoutShell
+        summary={<OrderSummary product={product} locale={locale} taxLoading />}
+        form={<CheckoutSkeleton />}
+        footer={<CheckoutFooter />}
+      />
+    );
   }
 
   if ('error' in cached) {
     return (
-      <CheckoutShell summary={summary} footer={<CheckoutFooter />} form={
+      <CheckoutShell summary={<OrderSummary product={product} locale={locale} />} footer={<CheckoutFooter />} form={
       <div style={{ fontSize: 14, color: '#df1b41' }}>
         {cached.error}
         <button
@@ -167,6 +173,7 @@ export function PackCheckout({ pack, locale, account = null, product }: Props) {
         clientSecret={data.clientSecret}
         account={account}
         product={product}
+        defaultCountry={defaultCountry(account, ipCountry)}
       />
     </Elements>
   );
@@ -182,6 +189,22 @@ interface InnerProps {
   clientSecret: string;
   account: CheckoutAccount | null;
   product: SummaryProduct;
+  defaultCountry: ShippingCountry;
+}
+
+// The country the form opens on, and that VAT is first priced for: the
+// account's last delivery address, else the visitor's location, else France.
+// Switzerland is never picked from the IP: near the border (Mulhouse, Basel)
+// the IP says CH for French buyers, who then typed a French address under
+// "Suisse" and were charged an export price with no VAT. A Swiss buyer picks
+// it in the address form, and the VAT follows.
+function defaultCountry(account: CheckoutAccount | null, ipCountry: string | null): ShippingCountry {
+  const pick = (c: string | null | undefined) => {
+    const up = c?.toUpperCase();
+    return ALLOWED_SHIPPING_COUNTRIES.find((a) => a === up);
+  };
+  const fromIp = pick(ipCountry);
+  return pick(account?.shipping?.country) ?? (fromIp && fromIp !== 'CH' ? fromIp : 'FR');
 }
 
 function InnerCheckout({
@@ -194,6 +217,7 @@ function InnerCheckout({
   clientSecret,
   account,
   product,
+  defaultCountry: initialCountry,
 }: InnerProps) {
   const t = useTranslations('checkout');
   const stripe = useStripe();
@@ -273,15 +297,13 @@ function InnerCheckout({
     [fetchTax]
   );
 
-  // A prefilled address is priced straight away rather than waiting for the
-  // buyer to touch it (the key check makes a later change event a no-op).
-  const prefilledCountry = account?.shipping?.country;
+  // VAT is priced straight away for the country the form opens on, then
+  // again on every change of country or postcode in the address (the key
+  // check makes a change event that repeats it a no-op).
   const prefilledPostal = account?.shipping?.postal_code;
   useEffect(() => {
-    if (prefilledCountry) {
-      onAddressChange({ complete: true, value: { address: { country: prefilledCountry, postal_code: prefilledPostal } } });
-    }
-  }, [prefilledCountry, prefilledPostal, onAddressChange]);
+    onAddressChange({ complete: false, value: { address: { country: initialCountry, postal_code: prefilledPostal } } });
+  }, [initialCountry, prefilledPostal, onAddressChange]);
 
   // Wallet flow (Apple/Google Pay) — recompute when the customer picks an
   // address in the payment sheet, and feed the updated lines back to Stripe.
@@ -523,10 +545,7 @@ function InnerCheckout({
           options={{
             mode: 'shipping',
             allowedCountries: ALLOWED_SHIPPING_COUNTRIES,
-            // Without a default, Stripe picks the country from the visitor's
-            // IP. Near the border (Mulhouse, Basel) that is Switzerland: a
-            // French buyer typed a French address under "Suisse" and was
-            // shown, and charged, an export price with no VAT.
+            // Never left to Stripe's own IP guess: see defaultCountry.
             // A returning customer gets the address of their last order.
             defaultValues: account?.shipping
               ? {
@@ -539,7 +558,7 @@ function InnerCheckout({
                     country: account.shipping.country,
                   },
                 }
-              : { address: { country: 'FR' } },
+              : { address: { country: initialCountry } },
             fields: { phone: 'always' },
             validation: { phone: { required: 'auto' } },
           }}

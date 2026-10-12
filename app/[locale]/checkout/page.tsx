@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PackCheckout, type CheckoutAccount } from '@/components/checkout/PackCheckout';
@@ -66,12 +67,16 @@ export default async function CheckoutPage({
     account = { email: user.email, name: buyer?.legalName ?? null, shipping: buyer?.shipping ?? null };
   }
   const visual = PACK_VISUAL[pack];
+  // The visitor's country from Vercel's edge, to price VAT before an address
+  // is typed. PackCheckout only uses it when it is a country we ship to.
+  const ipCountry = (await headers()).get('x-vercel-ip-country');
 
   return (
     <PackCheckout
       pack={pack}
       locale={locale}
       account={account}
+      ipCountry={ipCountry}
       product={{
         pack,
         name: pack === 'solo' ? 'Digitip Solo' : 'Digitip Duo',

@@ -114,8 +114,10 @@ export function OrderSummary({
 
   // Until the address is priced, the French total: an HT figure on top that
   // later becomes a bigger charge reads like a hidden fee (UX-12).
-  const estimatedVat = Math.round((product.unitAmount - discount) * 0.2);
-  const total = tax ? tax.total : product.unitAmount - discount + estimatedVat;
+  // VAT comes from Stripe Tax for the delivery country (the visitor's, until
+  // an address says otherwise). Until it is in, the total stays blank rather
+  // than showing a guess.
+  const total = tax ? tax.total : null;
 
   return (
     <div>
@@ -131,7 +133,7 @@ export function OrderSummary({
       <div className="sc-hero">
         <div style={{ fontSize: 16, fontWeight: 500, color: SC.text2 }}>{t('payMerchant')}</div>
         <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
-          {fmt(total)}
+          {total != null ? fmt(total) : <span style={{ color: SC.text2 }}>{t('vatCalculating')}</span>}
         </div>
         <button
           type="button"
@@ -198,14 +200,21 @@ export function OrderSummary({
           {promoSlot && <div style={{ padding: '0 0 16px' }}>{promoSlot}</div>}
           <Row label={t('rowShipping')} value={t('shippingFree')} />
           <Row
-            label={tax ? (tax.ratePct != null ? t('rowVatWithRate', { rate: tax.ratePct }) : t('rowVat')) : t('rowVatWithRate', { rate: 20 })}
-            value={taxLoading ? t('vatCalculating') : fmt(tax ? tax.tax : estimatedVat)}
+            label={
+              tax && tax.ratePct != null
+                ? t('rowVatCountry', {
+                    country: new Intl.DisplayNames([locale], { type: 'region' }).of(tax.country) ?? tax.country,
+                    rate: tax.ratePct,
+                  })
+                : t('rowVat')
+            }
+            value={taxLoading ? t('vatCalculating') : tax ? fmt(tax.tax) : '—'}
             muted={!tax || taxLoading}
           />
           {tax?.country === 'CH' && (
             <p style={{ fontSize: 12, color: SC.text2, lineHeight: 1.5, margin: '0 0 12px' }}>{t('exportNoteCH')}</p>
           )}
-          <Row label={t('rowTotal')} value={fmt(total)} strong />
+          <Row label={t('rowTotal')} value={taxLoading ? t('vatCalculating') : total != null ? fmt(total) : '—'} strong />
         </div>
       </div>
     </div>
