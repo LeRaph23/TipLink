@@ -253,9 +253,9 @@
     "hero": {
       "badge": "Lifetime hardware guarantee",
       "srBrand": "Digitip, contactless card tips, at digitip.app.",
-      "h1a": "Tips,",
-      "h1b": "even without",
-      "h1c": "cash",
+      "h1a": "Card tips,",
+      "h1b": "made",
+      "h1c": "simple",
       "sub": "Put the plaque wherever you like. The customer holds up their phone or scans the QR code, picks an amount, and the money lands in the business account through Stripe. They don't download anything.",
       "social": "You pay for the plaque once, tips have no subscription",
       "cta": "Order now",
