@@ -1,16 +1,18 @@
 /* Hero scene: a phone taps the plaque, the team page opens, the customer
    picks who to thank, the tip goes through. Every moving part reads the same
-   13 s timeline, so the keyframe percentages below are one score:
+   14 s timeline, so the keyframe percentages below are one score:
 
-     0–6 %    phone at rest, lock screen
-     6–17 %   phone reaches the plaque's NFC mark; it shrinks as it goes
-              because the plaque sits further back than the resting phone
-     18–23 %  the system's NFC banner drops in
-     24–33 %  phone comes back up while the team page opens
-     38–42 %  a name is tapped
-     42–47 %  the tip page slides in over the team page
-     56–59 %  the pay button is pressed
-     60–65 %  the receipt replaces the tip page, the tick draws itself
+     0–5 %    phone at rest, lock screen
+     5–17 %   phone reaches the plaque's NFC mark on a curve, tilting toward
+              it; it shrinks as it goes because the plaque sits further back
+     18 %     contact
+     19–23 %  the system's NFC banner drops in
+     24–27 %  the banner is tapped
+     27–34 %  phone comes back up, the page opens out of the banner
+     40–44 %  a name is tapped
+     43–48 %  the tip page slides in over the team page
+     55–58 %  the pay button is tapped
+     59–64 %  the receipt replaces the tip page, the tick draws itself
      91–96 %  back to the lock screen
 
    Transform and opacity only, so the loop runs on the compositor. The phone
@@ -39,157 +41,38 @@
 
 .stage {
   /* Where the phone goes to touch the plaque, from its resting place. */
-  --dx: -328px;
-  --dy: 137px;
+  --dx: -305px;
+  --dy: 150px;
   --near: .5;
   position: absolute;
   inset: 0;
 }
 
 /* ── Plaque ─────────────────────────────────────────────────────────────── */
-/* Drawn at 284 px, the size its type was set for, then zoomed down. */
 .plaque {
   position: absolute;
   left: 0;
-  top: 180px;
-  width: 284px;
-  height: 284px;
-  zoom: .83;
+  top: 112px;
+  width: 262px;
+  height: 291px;
 }
 
-/* The acrylic block's thickness, seen past the face. */
-.plaqueEdge {
-  position: absolute;
-  inset: 0;
-  transform: translate(5px, 7px);
-  border-radius: 26px;
-  background: linear-gradient(135deg, #f3eff6 0%, #d6cfe0 100%);
-  box-shadow:
-    0 34px 60px -22px rgba(74, 30, 84, .38),
-    0 10px 22px -10px rgba(20, 10, 30, .22);
-}
-
-.plaqueFace {
-  position: absolute;
-  inset: 0;
-  border-radius: 26px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.plaqueField {
-  height: 63%;
-  padding-top: 24px;
-  text-align: center;
-  color: #fff;
-  background:
-    radial-gradient(90% 70% at 0% 0%, rgba(247, 196, 178, .9) 0%, transparent 62%),
-    radial-gradient(80% 70% at 4% 100%, rgba(232, 98, 128, .85) 0%, transparent 66%),
-    linear-gradient(118deg, #d98ba8 0%, #a95ba7 44%, #6c41b9 78%, #4b33b6 100%);
-}
-
-.plaqueHeart {
+.plaqueImg {
   display: block;
-  width: 52px;
-  height: 48px;
-  margin: 0 auto;
-}
-
-.plaqueTitle {
-  margin-top: 24px;
-  font: 500 15.5px/1 var(--font-jakarta), sans-serif;
-  letter-spacing: .01em;
-}
-.plaqueTitle b { font-weight: 800; }
-
-.plaqueSub {
-  margin-top: 9px;
-  font: 500 8.6px/1 var(--font-jakarta), sans-serif;
-  letter-spacing: .03em;
-  opacity: .94;
-}
-.plaqueSub b { font-weight: 800; }
-
-.plaqueWave {
-  position: absolute;
-  left: 0;
-  top: calc(63% - 30px);
   width: 100%;
-  height: 40px;
-}
-
-.plaqueLower {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(63% + 6px);
-  bottom: 0;
-  padding: 0 16px;
-  color: #141414;
-}
-
-.plaqueCta {
-  font: 500 9.6px/1 var(--font-jakarta), sans-serif;
-  letter-spacing: .01em;
-}
-.plaqueCta b { font-weight: 800; }
-
-.plaqueRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-top: 5px;
-}
-
-.plaqueNfc {
-  display: block;
-  width: 88px;
-  height: 52px;
-}
-
-.plaqueQr {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  margin-top: -14px;
-  font: 500 7px/1 var(--font-jakarta), sans-serif;
-}
-.plaqueQr b { font: 800 7.6px/1 var(--font-poppins), sans-serif; }
-
-.plaqueQrCode {
-  display: block;
-  margin-top: 2px;
-  padding: 3px;
-  border-radius: 4px;
-  background: #fff;
-  box-shadow: 0 0 0 1px #e6e6ea;
-  line-height: 0;
-}
-
-.plaqueFoot {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 7px;
-  text-align: center;
-  font: 500 6.6px/1 var(--font-jakarta), sans-serif;
-}
-.plaqueFoot b { font-weight: 800; }
-
-/* The light on the epoxy: one soft diagonal and a brighter top edge. */
-.plaqueGloss {
-  position: absolute;
-  inset: 0;
-  border-radius: 26px;
-  pointer-events: none;
-  background:
-    linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .2) 41%, transparent 52%),
-    linear-gradient(180deg, rgba(255, 255, 255, .16) 0%, transparent 26%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55), inset 0 1px 0 rgba(255, 255, 255, .8);
+  height: auto;
+  /* The render has no floor: give it one, soft and wide like the phone's. */
+  filter: drop-shadow(0 26px 30px rgba(70, 30, 80, .22)) drop-shadow(0 6px 10px rgba(30, 10, 40, .12));
 }
 
 /* ── Phone ──────────────────────────────────────────────────────────────── */
+.phoneTrack {
+  position: absolute;
+  inset: 0;
+  perspective: 1600px;
+  pointer-events: none;
+}
+
 .phone,
 .phoneShadow {
   position: absolute;
@@ -201,27 +84,30 @@
 }
 
 .phoneShadow {
-  background: rgba(46, 16, 40, .45);
-  filter: blur(28px);
+  background: rgba(46, 16, 40, .42);
+  filter: blur(30px);
   opacity: .55;
-  transform: translate(16px, 30px);
+  transform: translate(18px, 34px);
 }
 
 .phone {
   z-index: 2;
   padding: 8px;
-  background: linear-gradient(145deg, #3a3a40 0%, #17171a 46%, #2b2b30 100%);
+  background: linear-gradient(145deg, #4a4a52 0%, #1c1c20 18%, #121215 50%, #2a2a30 82%, #44444c 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, .14),
-    inset 0 0 0 3px #0d0d0f,
+    inset 0 0 0 1px rgba(255, 255, 255, .18),
+    inset 0 0 0 3px #0b0b0d,
+    inset 0 1px 1px 3px rgba(255, 255, 255, .06),
     0 1px 2px rgba(0, 0, 0, .3);
+  transform-origin: 50% 40%;
+  will-change: transform;
 }
 
 .side {
   position: absolute;
   width: 4px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #1d1d21, #45454c);
+  background: linear-gradient(90deg, #18181b, #4c4c54);
 }
 .sideAction  { left: -3px; top: 112px; height: 26px; }
 .sideVolUp   { left: -3px; top: 156px; height: 50px; }
@@ -236,6 +122,15 @@
   border-radius: 42px;
   background: #000;
   isolation: isolate;
+}
+
+/* The light on the glass: one wide, faint diagonal. */
+.glass {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(118deg, rgba(255, 255, 255, .13) 0%, rgba(255, 255, 255, .04) 30%, transparent 46%);
 }
 
 /* The pages at a real phone's width, zoomed to the screen: 270 / 390. */
@@ -257,7 +152,7 @@
 
 .island {
   position: absolute;
-  z-index: 3;
+  z-index: 5;
   top: 11px;
   left: 50%;
   width: 84px;
@@ -280,6 +175,38 @@
   padding: 6px 34px 0 44px;
   font: 600 16px/1 -apple-system, 'SF Pro Text', system-ui, sans-serif;
 }
+
+.safari {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 30px;
+  width: 300px;
+  height: 46px;
+  margin-left: -150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 23px;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .04), 0 6px 20px rgba(23, 18, 19, .12);
+  color: #171213;
+  font: 500 16px/1 -apple-system, system-ui, sans-serif;
+}
+
+.homeBar {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 8px;
+  width: 136px;
+  height: 5px;
+  margin-left: -68px;
+  border-radius: 3px;
+  background: #171213;
+}
+.lockLayer .homeBar { background: #fff; }
 
 /* Team page list, as on /pay/group: one card, hairline separators. */
 .list {
@@ -317,8 +244,24 @@
   font: 600 16px/22px var(--font);
 }
 
+/* A touch, as iOS draws it in a screen recording. */
+.touch {
+  position: absolute;
+  z-index: 6;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: rgba(40, 30, 35, .2);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .75), 0 1px 6px rgba(0, 0, 0, .15);
+  opacity: 0;
+}
+.touchBanner { left: 200px; top: 298px; }
+.touchRow    { left: 210px; top: 405px; }
+.touchPay    { left: 205px; top: 558px; }
+
 /* ── Screens ────────────────────────────────────────────────────────────── */
-.groupLayer { opacity: 0; }
+.groupLayer { opacity: 0; transform-origin: 50% 300px; }
 .payLayer { opacity: 1; }
 .successLayer { opacity: 0; }
 .lockLayer {
@@ -328,19 +271,39 @@
     linear-gradient(180deg, #241a2a 0%, #4a2a45 55%, #7a3d5e 100%);
 }
 
+.lockDate {
+  margin-top: 76px;
+  text-align: center;
+  color: rgba(255, 255, 255, .85);
+  font: 600 19px/1 -apple-system, 'SF Pro Display', system-ui, sans-serif;
+}
+
 .lockTime {
-  margin-top: 96px;
+  margin-top: 6px;
   text-align: center;
   color: #fff;
   font: 600 92px/1 -apple-system, 'SF Pro Display', system-ui, sans-serif;
   letter-spacing: -.02em;
 }
 
+.lockButton {
+  position: absolute;
+  bottom: 54px;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .16);
+}
+.lockButtonLeft  { left: 46px; }
+.lockButtonRight { right: 46px; }
+
 .banner {
   position: absolute;
   left: 12px;
   right: 12px;
-  top: 240px;
+  top: 262px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -379,99 +342,131 @@
 
 /* ── Motion ─────────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
-  .phone            { animation: hs-phone 13s infinite; }
-  .phoneShadow      { animation: hs-shadow 13s infinite; }
-  .lockLayer        { animation: hs-lock 13s infinite; }
-  .banner           { animation: hs-banner 13s infinite; }
-  .groupLayer       { animation: hs-group 13s infinite; }
-  .rowPicked::before { animation: hs-tap 13s infinite; }
-  .payLayer         { animation: hs-pay 13s infinite; }
-  .payBtn           { animation: hs-press 13s infinite; }
-  .successLayer     { animation: hs-success 13s infinite; }
-  .check            { animation: hs-check 13s infinite; }
+  .phoneTrack        { animation: hs-track 14s infinite; }
+  .phone             { animation: hs-phone 14s infinite; }
+  .phoneShadow       { animation: hs-shadow 14s infinite; }
+  .lockLayer         { animation: hs-lock 14s infinite; }
+  .banner            { animation: hs-banner 14s infinite; }
+  .groupLayer        { animation: hs-group 14s infinite; }
+  .rowPicked::before { animation: hs-row 14s infinite; }
+  .payLayer          { animation: hs-pay 14s infinite; }
+  .payBtn            { animation: hs-press 14s infinite; }
+  .successLayer      { animation: hs-success 14s infinite; }
+  .check             { animation: hs-check 14s infinite; }
+  .touchBanner       { animation: hs-touch-banner 14s infinite; }
+  .touchRow          { animation: hs-touch-row 14s infinite; }
+  .touchPay          { animation: hs-touch-pay 14s infinite; }
 
   .stage[data-paused] *,
   .stage[data-paused] *::before { animation-play-state: paused; }
 }
 
+/* Sideways: leaves early on the way in, arrives late on the way back. */
+@keyframes hs-track {
+  0%, 5% { transform: none; animation-timing-function: cubic-bezier(.42, 0, .18, 1); }
+  17%, 24% { transform: translateX(var(--dx)); animation-timing-function: cubic-bezier(.5, 0, .2, 1); }
+  35%, 100% { transform: none; }
+}
+
+/* Down, the tilt toward the plaque, and the depth. Lags the sideways move on
+   the way in and leads it on the way back, which bends the path. */
 @keyframes hs-phone {
-  0%, 6% {
+  0%, 5% {
     transform: none;
-    animation-timing-function: cubic-bezier(.65, 0, .35, 1);
+    animation-timing-function: cubic-bezier(.6, 0, .3, 1);
   }
   17% {
-    transform: translate(var(--dx), var(--dy)) rotate(-10deg) scale(var(--near));
-    animation-timing-function: ease-out;
+    transform: translateY(var(--dy)) rotate(-9deg) rotateY(14deg) rotateX(5deg) scale(var(--near));
+    animation-timing-function: cubic-bezier(.3, 0, .3, 1);
   }
-  19% { transform: translate(var(--dx), var(--dy)) rotate(-10deg) scale(calc(var(--near) - .012)); }
-  24% {
-    transform: translate(var(--dx), var(--dy)) rotate(-10deg) scale(var(--near));
-    animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+  18.2% { transform: translateY(calc(var(--dy) + 3px)) rotate(-9deg) rotateY(14deg) rotateX(5deg) scale(calc(var(--near) - .01)); }
+  19.5%, 24% {
+    transform: translateY(var(--dy)) rotate(-9deg) rotateY(14deg) rotateX(5deg) scale(var(--near));
+    animation-timing-function: cubic-bezier(.2, .6, .2, 1);
   }
-  33%, 100% { transform: none; }
+  34%, 100% { transform: none; }
 }
 
 /* Closer to the plaque, the shadow tightens under the phone. */
 @keyframes hs-shadow {
-  0%, 6% {
-    transform: translate(16px, 30px);
+  0%, 5% {
+    transform: translate(18px, 34px);
     opacity: .55;
-    animation-timing-function: cubic-bezier(.65, 0, .35, 1);
+    animation-timing-function: cubic-bezier(.6, 0, .3, 1);
   }
   17%, 24% {
-    transform: translate(calc(var(--dx) + 5px), calc(var(--dy) + 8px)) rotate(-10deg) scale(calc(var(--near) - .02));
-    opacity: .8;
-    animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+    transform: translate(6px, calc(var(--dy) + 10px)) rotate(-9deg) scale(calc(var(--near) - .03));
+    opacity: .85;
+    animation-timing-function: cubic-bezier(.2, .6, .2, 1);
   }
-  33%, 100% { transform: translate(16px, 30px); opacity: .55; }
+  34%, 100% { transform: translate(18px, 34px); opacity: .55; }
 }
 
 @keyframes hs-lock {
-  0%, 26% { opacity: 1; }
-  30%, 90% { opacity: 0; }
-  95%, 100% { opacity: 1; }
+  0%, 27% { opacity: 1; animation-timing-function: ease-out; }
+  31%, 91% { opacity: 0; }
+  95.5%, 100% { opacity: 1; }
 }
 
 @keyframes hs-banner {
-  0%, 18% { opacity: 0; transform: translateY(-36px) scale(.96); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  22%, 27% { opacity: 1; transform: none; }
-  31%, 100% { opacity: 0; transform: translateY(-36px) scale(.96); }
+  0%, 19% { opacity: 0; transform: translateY(-40px) scale(.95); animation-timing-function: cubic-bezier(.2, .9, .25, 1); }
+  22.5%, 25.5% { opacity: 1; transform: none; }
+  26.5% { opacity: 1; transform: scale(.97); }
+  29%, 100% { opacity: 0; transform: scale(1.04); }
 }
 
-/* The page opens from below, as Safari brings it in; then the tip page is
-   pushed over it from the right, the way a link navigates. */
+/* Opens out of the banner, as an app does on iOS; then the tip page is pushed
+   over it from the right, the way a link navigates. */
 @keyframes hs-group {
-  0%, 26% { opacity: 0; transform: translateY(48px); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  32%, 42% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
-  47% { opacity: 1; transform: translateX(-30%); }
-  48%, 100% { opacity: 0; transform: translateX(-30%); }
+  0%, 26.5% { opacity: 0; transform: scale(.86); animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+  31.5%, 43% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  48% { opacity: 1; transform: translateX(-30%); }
+  48.5%, 100% { opacity: 0; transform: translateX(-30%); }
 }
 
-@keyframes hs-tap {
-  0%, 38% { opacity: 0; }
-  39.5%, 43% { opacity: 1; }
+@keyframes hs-row {
+  0%, 40.5% { opacity: 0; }
+  41.5%, 44% { opacity: 1; }
   47%, 100% { opacity: 0; }
 }
 
 @keyframes hs-pay {
-  0%, 42% { opacity: 1; transform: translateX(100%); animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
-  47%, 60% { opacity: 1; transform: none; }
-  64%, 100% { opacity: 0; transform: none; }
+  0%, 43% { opacity: 1; transform: translateX(100%); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  48%, 60% { opacity: 1; transform: none; }
+  63.5%, 100% { opacity: 0; transform: none; }
 }
 
 @keyframes hs-press {
   0%, 56% { transform: none; filter: none; }
-  58% { transform: scale(.97); filter: brightness(.82); }
-  60%, 100% { transform: none; filter: none; }
+  57.5% { transform: scale(.97); filter: brightness(.84); }
+  59%, 100% { transform: none; filter: none; }
 }
 
 @keyframes hs-success {
-  0%, 60% { opacity: 0; transform: translateY(16px); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  65%, 90% { opacity: 1; transform: none; }
+  0%, 59.5% { opacity: 0; transform: translateY(16px); animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+  64%, 90% { opacity: 1; transform: none; }
   95%, 100% { opacity: 0; transform: none; }
 }
 
 @keyframes hs-check {
-  0%, 63% { stroke-dashoffset: 30; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  69%, 100% { stroke-dashoffset: 0; }
+  0%, 62% { stroke-dashoffset: 30; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+  68%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes hs-touch-banner {
+  0%, 24.5% { opacity: 0; transform: scale(.6); animation-timing-function: ease-out; }
+  25.5%, 26.5% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  28%, 100% { opacity: 0; transform: scale(1.15); }
+}
+
+@keyframes hs-touch-row {
+  0%, 40% { opacity: 0; transform: scale(.6); animation-timing-function: ease-out; }
+  41%, 43.5% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  45%, 100% { opacity: 0; transform: scale(1.15); }
+}
+
+@keyframes hs-touch-pay {
+  0%, 55.5% { opacity: 0; transform: scale(.6); animation-timing-function: ease-out; }
+  56.5%, 58.5% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  60%, 100% { opacity: 0; transform: scale(1.15); }
 }
