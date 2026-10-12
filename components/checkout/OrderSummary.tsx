@@ -92,6 +92,7 @@ export function OrderSummary({
   discount = 0,
   promoCode = null,
   tax = null,
+  preview = null,
   taxLoading = false,
   promoSlot = null,
 }: {
@@ -100,6 +101,8 @@ export function OrderSummary({
   discount?: number;
   promoCode?: string | null;
   tax?: SummaryTax | null;
+  /** Stripe Tax's rate for the delivery country, until the address is priced. */
+  preview?: { country: string; ratePct: number } | null;
   taxLoading?: boolean;
   promoSlot?: ReactNode;
 }) {
@@ -112,12 +115,20 @@ export function OrderSummary({
       currency: product.currency.toUpperCase(),
     }).format(cents / 100);
 
-  // Until the address is priced, the French total: an HT figure on top that
-  // later becomes a bigger charge reads like a hidden fee (UX-12).
-  // VAT comes from Stripe Tax for the delivery country (the visitor's, until
-  // an address says otherwise). Until it is in, the total stays blank rather
-  // than showing a guess.
-  const total = tax ? tax.total : null;
+  // VAT shown from the start (an HT figure that later turns into a bigger
+  // charge reads like a hidden fee, UX-12), always from Stripe Tax: the
+  // figure priced for the full address once there is one, before that the
+  // country's rate applied to the subtotal.
+  const ht = product.unitAmount - discount;
+  const vat: { country: string; ratePct: number | null; amount: number; total: number } | null = tax
+    ? { country: tax.country, ratePct: tax.ratePct, amount: tax.tax, total: tax.total }
+    : preview
+      ? (() => {
+          const amount = Math.round((ht * preview.ratePct) / 100);
+          return { country: preview.country, ratePct: preview.ratePct, amount, total: ht + amount };
+        })()
+      : null;
+  const total = vat?.total ?? null;
 
   return (
     <div>
@@ -201,20 +212,20 @@ export function OrderSummary({
           <Row label={t('rowShipping')} value={t('shippingFree')} />
           <Row
             label={
-              tax && tax.ratePct != null
+              vat && vat.ratePct != null
                 ? t('rowVatCountry', {
-                    country: new Intl.DisplayNames([locale], { type: 'region' }).of(tax.country) ?? tax.country,
-                    rate: tax.ratePct,
+                    country: new Intl.DisplayNames([locale], { type: 'region' }).of(vat.country) ?? vat.country,
+                    rate: vat.ratePct,
                   })
                 : t('rowVat')
             }
-            value={taxLoading ? t('vatCalculating') : tax ? fmt(tax.tax) : '—'}
-            muted={!tax || taxLoading}
+            value={taxLoading ? t('vatCalculating') : vat ? fmt(vat.amount) : t('vatCalculating')}
+            muted={!vat || taxLoading}
           />
-          {tax?.country === 'CH' && (
+          {vat?.country === 'CH' && (
             <p style={{ fontSize: 12, color: SC.text2, lineHeight: 1.5, margin: '0 0 12px' }}>{t('exportNoteCH')}</p>
           )}
-          <Row label={t('rowTotal')} value={taxLoading ? t('vatCalculating') : total != null ? fmt(total) : '—'} strong />
+          <Row label={t('rowTotal')} value={taxLoading || total == null ? t('vatCalculating') : fmt(total)} strong />
         </div>
       </div>
     </div>

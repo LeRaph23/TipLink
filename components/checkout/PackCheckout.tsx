@@ -13,6 +13,7 @@ import {
 } from '@stripe/react-stripe-js';
 import type { BuyerGroup } from '@/lib/billing/buyer-group';
 import { trackPixel } from '@/lib/meta/pixel';
+import { SHIPPING_COUNTRIES, isShippingCountry, type ShippingCountry } from '@/lib/billing/shipping-countries';
 import { CheckoutFooter, CheckoutShell, OrderSummary, SC, type Pack, type SummaryProduct } from './OrderSummary';
 
 /** The signed-in buyer: their email, and their business when they own one. */
@@ -31,10 +32,7 @@ interface Props {
   ipCountry?: string | null;
 }
 
-// Switzerland ships too: an export, invoiced without French VAT (Swiss import
-// VAT and any duties are the buyer's, see CGV section 5).
-type ShippingCountry = 'FR' | 'BE' | 'IE' | 'ES' | 'DE' | 'IT' | 'NL' | 'LU' | 'PT' | 'AT' | 'FI' | 'GR' | 'CH';
-const ALLOWED_SHIPPING_COUNTRIES: ShippingCountry[] = ['FR', 'BE', 'IE', 'ES', 'DE', 'IT', 'NL', 'LU', 'PT', 'AT', 'FI', 'GR', 'CH'];
+const ALLOWED_SHIPPING_COUNTRIES = [...SHIPPING_COUNTRIES];
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -201,7 +199,7 @@ interface InnerProps {
 function defaultCountry(account: CheckoutAccount | null, ipCountry: string | null): ShippingCountry {
   const pick = (c: string | null | undefined) => {
     const up = c?.toUpperCase();
-    return ALLOWED_SHIPPING_COUNTRIES.find((a) => a === up);
+    return isShippingCountry(up) ? up : undefined;
   };
   const fromIp = pick(ipCountry);
   return pick(account?.shipping?.country) ?? (fromIp && fromIp !== 'CH' ? fromIp : 'FR');
@@ -245,6 +243,24 @@ function InnerCheckout({
   const [taxLoading, setTaxLoading] = useState(false);
   const taxKeyRef = useRef<string>('');
 
+  // What the summary shows until the full address is priced: the rate Stripe
+  // Tax gives the delivery country (the visitor's, then whatever the address
+  // form says), from a per-country cache (/api/billing/vat-rate). Changing
+  // the country refreshes it at once; it never sets what is charged.
+  const [previewCountry, setPreviewCountry] = useState<string>(initialCountry);
+  const [preview, setPreview] = useState<{ country: string; ratePct: number } | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    fetch(`/api/billing/vat-rate?country=${encodeURIComponent(previewCountry)}`, { signal: ac.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { country?: string; ratePercent?: number | null } | null) => {
+        if (ac.signal.aborted) return;
+        setPreview(d?.country && d.ratePercent != null ? { country: d.country, ratePct: d.ratePercent } : null);
+      })
+      .catch(() => { if (!ac.signal.aborted) setPreview(null); });
+    return () => ac.abort();
+  }, [previewCountry]);
+
   // Calls /api/billing/pack-tax, which recomputes VAT and updates the PI amount.
   const fetchTax = useCallback(
     async (country: string, postalCode?: string | null): Promise<Tax> => {
@@ -260,21 +276,24 @@ function InnerCheckout({
     [clientSecret]
   );
 
-  // Card flow — recompute when the shipping country/postcode changes.
+  // Card flow. Any change of country updates the preview straight away; the
+  // billed Stripe Tax calculation (which also sets the intent's amount) runs
+  // only once the address is complete, then again if its country or postcode
+  // changes. It used to run on every keystroke of the postcode.
   type AddressChange = {
     complete: boolean;
     value: { address: { country?: string; postal_code?: string } };
   };
-  const onAddressChange = useCallback(
-    (event: AddressChange) => {
-      const addr = event.value?.address;
-      if (!addr?.country) return;
-      const key = `${addr.country}|${addr.postal_code ?? ''}`;
+  // The billed Stripe Tax calculation for a complete address; also sets the
+  // intent's amount (see /api/billing/pack-tax).
+  const priceAddress = useCallback(
+    (country: string, postalCode?: string) => {
+      const key = `${country}|${postalCode ?? ''}`;
       if (key === taxKeyRef.current) return;
       taxKeyRef.current = key;
       setTaxLoading(true);
       setError(null);
-      fetchTax(addr.country, addr.postal_code)
+      fetchTax(country, postalCode)
         .then(setTax)
         .catch((err: unknown) => {
           // Swallowed before. With `canPay = !!tax`, a failed VAT lookup left
@@ -297,13 +316,34 @@ function InnerCheckout({
     [fetchTax]
   );
 
-  // VAT is priced straight away for the country the form opens on, then
-  // again on every change of country or postcode in the address (the key
-  // check makes a change event that repeats it a no-op).
+  const onAddressChange = useCallback(
+    (event: AddressChange) => {
+      const addr = event.value?.address;
+      if (!addr?.country) return;
+      const country = addr.country.toUpperCase();
+      setPreviewCountry(country);
+      // A figure priced for another country no longer describes this order.
+      setTax((prev) => {
+        if (prev && prev.country !== country) {
+          taxKeyRef.current = '';
+          return null;
+        }
+        return prev;
+      });
+      if (event.complete) priceAddress(country, addr.postal_code);
+    },
+    [priceAddress]
+  );
+
+  // A prefilled address is priced straight away rather than waiting for the
+  // buyer to touch it (the key check makes a later change event a no-op).
+  const prefilledCountry = account?.shipping?.country;
   const prefilledPostal = account?.shipping?.postal_code;
   useEffect(() => {
-    onAddressChange({ complete: false, value: { address: { country: initialCountry, postal_code: prefilledPostal } } });
-  }, [initialCountry, prefilledPostal, onAddressChange]);
+    if (prefilledCountry) {
+      priceAddress(prefilledCountry.toUpperCase(), prefilledPostal);
+    }
+  }, [prefilledCountry, prefilledPostal, priceAddress]);
 
   // Wallet flow (Apple/Google Pay) — recompute when the customer picks an
   // address in the payment sheet, and feed the updated lines back to Stripe.
@@ -616,6 +656,7 @@ function InnerCheckout({
           discount={discountAmount}
           promoCode={promoCode}
           tax={tax}
+          preview={preview}
           taxLoading={taxLoading}
           promoSlot={promoSlot}
         />
