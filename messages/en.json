@@ -445,7 +445,7 @@
       "row1detail": "The tip the customer chose, in full. We take nothing from it.",
       "row2label": "Stripe (secure payment)",
       "row2amount": "€0.41",
-      "row2detail": "€0.25 fixed per payment + 1.5% of the amount. These are bank fees nobody can avoid, and Digitip pays them to Stripe.",
+      "row2detail": "€0.25 fixed per payment + 1.5% of the amount, for a standard European card. These are bank fees nobody can avoid, and Digitip pays them to Stripe.",
       "row3label": "Digitip",
       "row3amount": "€0.34",
       "row3detail": "For hosting, support, and to keep improving the service.",

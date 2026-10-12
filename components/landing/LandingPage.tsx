@@ -687,12 +687,12 @@ function PricingTransparencySection() {
         <Reveal delay={60}>
           <div style={{ background: '#fff', border: '1.5px solid #e4e4ec', borderRadius: 20, overflow: 'hidden' }}>
             {rows.map((row, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', gap: 16, borderBottom: i < rows.length - 1 ? '1px solid #f0f0f5' : 'none', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', gap: 16, borderBottom: i < rows.length - 1 ? '1px solid #f0f0f5' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 auto', minWidth: 0 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: row.color, flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#111118' }}>{row.label}</div>
-                    <div style={{ fontSize: 13, color: '#74748a', marginTop: 2 }}>{row.detail}</div>
+                    <div style={{ fontSize: 13, color: '#74748a', marginTop: 2, lineHeight: 1.5 }}>{row.detail}</div>
                   </div>
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 900, color: row.color, letterSpacing: '-0.03em', flexShrink: 0 }}>{row.amount}</div>
