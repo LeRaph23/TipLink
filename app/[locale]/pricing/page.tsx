@@ -113,7 +113,6 @@ export default async function PricingPage({
 
       {/* Hero */}
       <section style={{ background: '#fff', padding: 'clamp(48px,6vw,80px) clamp(16px,4vw,48px) clamp(32px,4vw,56px)', borderBottom: '1px solid #e4e4ec', textAlign: 'center' }}>
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>{t('kicker')}</div>
         <h1 style={{ fontSize: 'clamp(28px,4vw,52px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1.02, marginBottom: 18 }}>
           {t('title')}
         </h1>

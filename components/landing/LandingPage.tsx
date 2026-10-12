@@ -2,30 +2,12 @@
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
+import { trackPixel } from '@/lib/meta/pixel';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import Image from 'next/image';
 import { ProductCard } from '@/components/landing/ProductCard';
 import { TutorialVideo } from '@/components/landing/TutorialVideo';
-import dynamic from 'next/dynamic';
-
-/**
- * The order modal, fetched on demand.
- *
- * It is 247 lines and renders only behind `{cartPack && …}`, so every visitor
- * who never clicks "commander" was downloading a dialog they never see, inside
- * the landing page's own chunk. Deferring it costs nothing at the moment it is
- * wanted: a click tolerates the few dozen milliseconds a fetch takes, and the
- * modal itself is unchanged.
- *
- * Same pattern as the dashboard charts and the salon map. `ssr: false` because
- * it never mounts on first render, so there is nothing useful to produce on the
- * server.
- */
-const BuyModal = dynamic(
-  () => import('@/components/landing/BuyModal').then((m) => m.BuyModal),
-  { ssr: false },
-);
 import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA';
 import { HeroScene } from '@/components/landing/HeroScene';
 import { CountryFlag, SHIPPING_COUNTRIES } from '@/components/landing/CountryFlag';
@@ -283,7 +265,6 @@ function KeyAdvantagesSection() {
         {/* Left: copy */}
         <div style={{ flex: '1 1 320px', minWidth: 0 }}>
           <Reveal>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>{t('keyAdv.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(28px,3.8vw,46px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1.08, marginBottom: 18 }}>
               {t('keyAdv.split.title')}<br />
               <span style={{ color: '#E57A97' }}>{t('keyAdv.split.titleAccent')}</span>
@@ -332,9 +313,6 @@ function GoogleReviewsSection() {
     <section id="avis-google" style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal style={{ marginBottom: 44, maxWidth: 640 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 14 }}>
-            {t('reviews.kicker')}
-          </div>
           <h2 style={{ fontSize: 'clamp(28px,3.8vw,44px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1.08, marginBottom: 18 }}>
             {t('reviews.title')}<br />
             <span style={{ color: '#E57A97' }}>{t('reviews.titleAccent')}</span>
@@ -380,7 +358,6 @@ function ProductSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo' | 
         <Reveal style={{ marginBottom: 44 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>{t('product.kicker')}</div>
               <h2 style={{ fontSize: 'clamp(26px,3.5vw,40px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', lineHeight: 1 }}>{t('product.name')}</h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -415,7 +392,6 @@ function HowItWorksSection() {
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: withVideos ? 44 : 56 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('howItWorks.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('howItWorks.title')}</h2>
             <p style={{ fontSize: 15, color: '#74748a', marginTop: 12, maxWidth: 520, margin: '12px auto 0' }}>{t('howItWorks.sub')}</p>
           </div>
@@ -428,7 +404,7 @@ function HowItWorksSection() {
                   <div style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid #e4e4ec', boxShadow: '0 18px 40px -24px rgba(114,38,62,0.35)', marginBottom: 18 }}>
                     <TutorialVideo src={TUTORIALS[i]} label={t('howItWorks.videoLabel', { title: s.title })} lead={i === 0} />
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Étape {s.n}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#E57A97', marginBottom: 6 }}>Étape {s.n}</div>
                   <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 8 }}>{s.title}</h3>
                   <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.7 }}>{s.body}</p>
                 </div>
@@ -436,7 +412,7 @@ function HowItWorksSection() {
                 <div style={{ padding: '32px 28px', position: 'relative' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                     <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF1F4', border: '1.5px solid #FBDAE3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.icon}</div>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Step {s.n}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#E57A97' }}>Step {s.n}</div>
                   </div>
                   <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111118', letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
                   <p style={{ fontSize: 14, color: '#74748a', lineHeight: 1.75 }}>{s.body}</p>
@@ -471,7 +447,6 @@ function ShippingSection() {
     <section style={{ background: '#fff', padding: 'clamp(48px,5vw,70px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('shipping.kicker')}</div>
           <h2 style={{ fontSize: 'clamp(22px,2.8vw,34px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.03em' }}>{t('shipping.title')}</h2>
         </Reveal>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
@@ -530,7 +505,6 @@ function ProductGridSection({ onOrderClick, pricing }: { onOrderClick: (p: 'solo
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('grid.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('grid.title')}</h2>
             <p style={{ fontSize: 15, color: '#74748a', marginTop: 10 }}>{t('grid.sub')}</p>
           </div>
@@ -619,7 +593,6 @@ function TrustSection() {
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48, maxWidth: 660, marginInline: 'auto' }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('trust.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 14 }}>{t('trust.title')}</h2>
             <p style={{ fontSize: 15.5, color: '#74748a', lineHeight: 1.65 }}>{t('trust.sub')}</p>
           </div>
@@ -679,7 +652,6 @@ function PricingTransparencySection() {
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 44 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('pricing.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(24px,3vw,36px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 10 }}>{t('pricing.title')}</h2>
             <p style={{ fontSize: 15, color: '#74748a', lineHeight: 1.7 }}>{t('pricing.sub')}</p>
           </div>
@@ -728,7 +700,6 @@ function FAQSection() {
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>{t('faq.kicker')}</div>
             <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em' }}>{t('faq.title')}</h2>
           </div>
         </Reveal>
@@ -893,32 +864,46 @@ function FooterSection() {
  */
 export function LandingPage({ pricing }: { pricing: PricingMap | null }) {
   const locale = useLocale();
-  const [cartPack, setCartPack] = useState<'solo' | 'duo' | null>(null);
-  const openCart = (pack: 'solo' | 'duo' = 'solo') => setCartPack(pack);
+  const router = useRouter();
+
+  // Every order button goes straight to the checkout. There used to be a
+  // "your order" modal in between, but all it offered was the Solo/Duo choice,
+  // which the checkout's quantity selector already gives: one click and one
+  // screen of friction for nothing. The generic buttons start on Solo.
+  const openCheckout = (pack: PackId = 'solo') => {
+    // The first sign of intent, between a visit and a checkout. A no-op until
+    // the visitor accepted ad cookies.
+    const p = pricing?.[pack];
+    trackPixel(
+      'AddToCart',
+      p
+        ? { content_ids: [pack], content_type: 'product', value: p.unitAmount / 100, currency: p.currency.toUpperCase() }
+        : { content_ids: [pack], content_type: 'product' },
+    );
+    router.push(`/checkout?pack=${pack}`);
+  };
 
 
   return (
     <div style={{ ...LIGHT, minHeight: '100vh', fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)' }}>
       <PromoBanner />
-      <Header onOrderClick={() => openCart()} />
-      <HeroSection onOrderClick={() => openCart()} />
+      <Header onOrderClick={() => openCheckout()} />
+      <HeroSection onOrderClick={() => openCheckout()} />
       <StatsStrip />
       <KeyAdvantagesSection />
-      <ProductSection onOrderClick={openCart} pricing={pricing} />
+      <ProductSection onOrderClick={openCheckout} pricing={pricing} />
       <HowItWorksSection />
       <GoogleReviewsSection />
       <ShippingSection />
       <GuaranteeSection />
-      <ProductGridSection onOrderClick={openCart} pricing={pricing} />
+      <ProductGridSection onOrderClick={openCheckout} pricing={pricing} />
       <TrustSection />
-      <FinalCTASection onOrderClick={() => openCart()} />
+      <FinalCTASection onOrderClick={() => openCheckout()} />
       <PricingTransparencySection />
       <FAQSection />
       <DoubleGuaranteeSection />
       <FooterSection />
-      <StickyMobileCTA onOrderClick={() => openCart()} />
-
-      {cartPack && <BuyModal pack={cartPack} onClose={() => setCartPack(null)} pricing={pricing} />}
+      <StickyMobileCTA onOrderClick={() => openCheckout()} />
     </div>
   );
 }

@@ -195,15 +195,6 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
 ];
 
-const sectionLabel: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  color: 'var(--text-3)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.09em',
-  marginBottom: 14,
-};
-
 const sectionTitle: React.CSSProperties = {
   fontSize: 22,
   fontWeight: 800,
@@ -272,9 +263,6 @@ export default async function DevenirAmbassadeurPage({
 
         {/* Hero */}
         <section style={{ ...card, padding: '36px 28px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 12 }}>
-            Activité encadrée et déclarée · Ouverte à tous les profils
-          </div>
           <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.04em', lineHeight: 1.1, margin: '0 0 14px', fontFamily: 'var(--font-display)' }}>
             Rejoignez le programme officiel d&apos;ambassadeurs Digitip.
           </h1>
@@ -316,7 +304,6 @@ export default async function DevenirAmbassadeurPage({
 
         {/* How it works */}
         <section style={card}>
-          <div style={sectionLabel}>En pratique</div>
           <h2 style={sectionTitle}>Comment ça se passe</h2>
           <p style={sectionLead}>De la candidature à votre première commission, en quatre étapes.</p>
 
@@ -364,7 +351,6 @@ export default async function DevenirAmbassadeurPage({
 
         {/* Audience — explicit for school administrators */}
         <section style={card}>
-          <div style={sectionLabel}>À qui s&apos;adresse le programme</div>
           <h2 style={sectionTitle}>Pour qui ?</h2>
           <p style={sectionLead}>
             Aucun prérequis de diplôme ni d&apos;âge. Le programme convient aussi bien à un premier revenu
@@ -392,7 +378,6 @@ export default async function DevenirAmbassadeurPage({
 
         {/* Candidature form */}
         <section style={card} id="candidature">
-          <div style={sectionLabel}>Candidature</div>
           <h2 style={sectionTitle}>Postulez en 2 minutes.</h2>
           <p style={sectionLead}>
             On vous répond sous 48 h ouvrées. Vos informations ne sont partagées avec personne.
@@ -404,7 +389,6 @@ export default async function DevenirAmbassadeurPage({
 
         {/* Trust / legal framework */}
         <section style={card}>
-          <div style={sectionLabel}>Cadre légal et garanties</div>
           <h2 style={sectionTitle}>Le cadre</h2>
           <p style={sectionLead}>
             Tout est écrit noir sur blanc : le contrat d&apos;apporteur d&apos;affaires, la charte anti-fraude,
@@ -434,7 +418,6 @@ export default async function DevenirAmbassadeurPage({
 
         {/* FAQ */}
         <section style={card}>
-          <div style={sectionLabel}>Questions fréquentes</div>
           <h2 style={sectionTitle}>Tout ce que vous (ou vos proches) voudrez savoir.</h2>
           <p style={sectionLead}>
             Réponses détaillées sur le cadre légal, le cumul avec votre situation actuelle,
@@ -486,7 +469,7 @@ export default async function DevenirAmbassadeurPage({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <Icon name="share" size={18} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
               Établissements, missions locales, associations, France Travail
             </div>
           </div>

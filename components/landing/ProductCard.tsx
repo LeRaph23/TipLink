@@ -226,9 +226,6 @@ export function ProductCard({ onAddToCart, locale, pricing }: Props) {
 
       {/* Info panel */}
       <div>
-        <div style={{ marginBottom: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#E57A97', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('product.kicker')}</span>
-        </div>
         <h2 style={{ fontSize: 26, fontWeight: 900, color: '#0f1020', letterSpacing: '-0.03em', marginBottom: 10 }}>{t('product.name')}</h2>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>

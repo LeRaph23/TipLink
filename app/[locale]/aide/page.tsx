@@ -104,7 +104,7 @@ export default async function HelpPage({ params }: { params: Promise<{ locale: s
 
           <HelpCenter intro={
             <section aria-labelledby="tutos" style={{ marginBottom: 40 }}>
-              <h2 id="tutos" style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: 14 }}>
+              <h2 id="tutos" style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: 14 }}>
                 La mise en route en vidéo
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, maxWidth: 560 }}>

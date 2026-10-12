@@ -190,15 +190,6 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
 ];
 
-const sectionLabel: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  color: 'var(--text-3)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.09em',
-  marginBottom: 14,
-};
-
 const sectionTitle: React.CSSProperties = {
   fontSize: 22,
   fontWeight: 800,
@@ -305,8 +296,6 @@ export default async function DevenirCommercialProPage({
               border: '1px solid var(--border)',
               padding: '6px 12px',
               borderRadius: 4,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
             }}
           >
             B2B · Contrat formel
@@ -315,9 +304,6 @@ export default async function DevenirCommercialProPage({
 
         {/* Hero — ton institutionnel, sobriété B2B */}
         <section style={{ ...card, padding: '40px 32px', background: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
-            Programme partenaire B2B · Barème commerciaux professionnels
-          </div>
           <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.035em', lineHeight: 1.15, margin: '0 0 14px', fontFamily: 'var(--font-display)' }}>
             Le programme pour les commerciaux indépendants
           </h1>
@@ -368,7 +354,6 @@ export default async function DevenirCommercialProPage({
 
         {/* Différentiation programme */}
         <section style={card}>
-          <div style={sectionLabel}>Comparatif des deux programmes</div>
           <h2 style={sectionTitle}>Ambassadeurs · vs · Commerciaux Pros.</h2>
           <p style={sectionLead}>
             Le programme Ambassadeurs reste ouvert à tous. Celui-ci est réservé aux commerciaux professionnels,
@@ -404,7 +389,6 @@ export default async function DevenirCommercialProPage({
 
         {/* How it works */}
         <section style={card}>
-          <div style={sectionLabel}>Parcours d&apos;intégration</div>
           <h2 style={sectionTitle}>De la candidature au premier virement.</h2>
           <p style={sectionLead}>
             Quatre étapes, avec un contrat signé dès le départ.
@@ -454,7 +438,6 @@ export default async function DevenirCommercialProPage({
 
         {/* Audience */}
         <section style={card}>
-          <div style={sectionLabel}>À qui s&apos;adresse le programme</div>
           <h2 style={sectionTitle}>Pour les commerciaux professionnels</h2>
           <p style={sectionLead}>
             Vous êtes commercial, à temps plein ou à côté, avec un statut professionnel ?
@@ -484,7 +467,6 @@ export default async function DevenirCommercialProPage({
 
         {/* Candidature form */}
         <section style={{ ...card, scrollMarginTop: 24 }} id="candidature">
-          <div style={sectionLabel}>Candidature</div>
           <h2 style={sectionTitle}>Dossier de candidature commerciale.</h2>
           <p style={sectionLead}>
             Réservé aux structures déclarées. On vous répond sous 48 h ouvrées.
@@ -497,7 +479,6 @@ export default async function DevenirCommercialProPage({
 
         {/* Trust / contractual framework */}
         <section style={card}>
-          <div style={sectionLabel}>Cadre contractuel</div>
           <h2 style={sectionTitle}>Un cadre formel, transparent et conforme.</h2>
           <p style={sectionLead}>
             Tout ce à quoi chacun s&apos;engage est écrit et signé. Les paiements passent par Stripe,
@@ -527,7 +508,6 @@ export default async function DevenirCommercialProPage({
 
         {/* FAQ */}
         <section style={card}>
-          <div style={sectionLabel}>Questions fréquentes</div>
           <h2 style={sectionTitle}>Tout ce que les commerciaux pros nous demandent.</h2>
           <p style={sectionLead}>
             Si une question reste sans réponse, écrivez-nous directement à{' '}
