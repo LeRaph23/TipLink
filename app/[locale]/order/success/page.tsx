@@ -41,7 +41,8 @@ async function nextStep(intent: import('stripe').Stripe.PaymentIntent, cs: strin
     .eq('stripe_payment_intent_id', intent.id)
     .maybeSingle();
   const orderRef = order ? order.id.slice(0, 8).toUpperCase() : null;
-  if (intent.metadata?.source !== 'pack-express') return { kind: 'dashboard', orderRef };
+  // Ordered signed in (group_id set): their account already exists.
+  if (intent.metadata?.source !== 'pack-express' || intent.metadata?.group_id) return { kind: 'dashboard', orderRef };
   const email = intent.metadata?.customer_email?.trim() || intent.receipt_email || null;
   if (!order?.group_id || !email || !orderRef) return { kind: 'preparing' };
   const token = signOnboardingToken(order.group_id, email);

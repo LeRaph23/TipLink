@@ -97,7 +97,8 @@ describe('route registry', () => {
   it('marks transactional pages noindex in their metadata', () => {
     // robots.txt alone is not enough: a disallowed URL can still be indexed
     // from an inbound link, and Google cannot read a noindex it may not crawl.
-    for (const route of ['/checkout', '/order/[pack]']) {
+    // /order/[pack] only redirects to /checkout (noindex from its layout).
+    for (const route of ['/checkout']) {
       const file = pageFiles.find((f) => routeOf(f) === route);
       expect(file, `${route} should exist`).toBeTruthy();
       expect(readFileSync(file!, 'utf8')).toContain('noindex: true');

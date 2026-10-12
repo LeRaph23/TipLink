@@ -6,6 +6,7 @@ import { ProCard } from './ProCard';
 import { getProPricing } from '@/lib/billing/pro-pricing';
 import { deriveTrialState, trialSpent, type TrialState } from '@/lib/billing/trial';
 import { effectivePlan } from '@/lib/billing/entitlements';
+import { PRO_ON_SALE } from '@/lib/billing/pro-offer';
 import { getProImpact, monthStartParis } from '@/lib/billing/pro-impact';
 import { getReviewTeaser } from '@/lib/billing/review-teaser';
 import type { CardImpact } from './ProCard';
@@ -75,7 +76,7 @@ export default async function BillingPage({
     primaryGroupId
       ? service
           .from('groups')
-          .select('plan, subscription_status, trial_ends_at, subscription_cancel_at, pro_trial_started_at, pro_trial_ends_at')
+          .select('plan, subscription_status, trial_ends_at, subscription_cancel_at, pro_trial_started_at, pro_trial_ends_at, pro_included')
           .eq('id', primaryGroupId)
           .is('deleted_at', null)
           .maybeSingle()
@@ -116,6 +117,11 @@ export default async function BillingPage({
         hasReviewLink: rawImpact.hasReviewLink,
       }
     : null;
+
+  // Nothing to offer a group that has Pro included, nor anyone while Pro is
+  // not on sale. A subscriber from before still gets the card: it is where
+  // they manage or cancel.
+  const showProCard = Boolean(planRow?.subscription_status) || (PRO_ON_SALE && !planRow?.pro_included);
 
   return (
     <div>
@@ -223,7 +229,7 @@ export default async function BillingPage({
           {/* Secondary, deliberately. Two filled accent buttons on one screen
               is two things claiming to be the next step, and neither of them
               is why anyone opened this page. */}
-          <Link className="btn-ghost" href="/order/solo" style={{
+          <Link className="btn-ghost" href="/checkout?pack=solo" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '9px 16px', borderRadius: 10, textDecoration: 'none',
             background: 'var(--surface-2)', border: '1px solid var(--border)',
@@ -235,7 +241,7 @@ export default async function BillingPage({
         </Card>
       </section>
 
-      {primaryGroupId && (
+      {primaryGroupId && showProCard && (
         // `#pro` is where every upsell in the product lands: the section is
         // last on this page on purpose, so the link has to scroll to it.
         <section id="pro" style={{ scrollMarginTop: 24 }}>

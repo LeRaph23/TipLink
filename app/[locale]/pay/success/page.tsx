@@ -7,7 +7,7 @@ import { ReviewInvite } from '@/components/pay/ReviewInvite';
 import { ComplimentForm } from '@/components/pay/ComplimentForm';
 import { effectivePlan } from '@/lib/billing/entitlements';
 import {
-  Band, BandBody, DemoBadge, Logo, PayColumn, PayMain, PayTitle, StatusDot, btnProps,
+  Band, BandBody, Logo, PayColumn, PayMain, PayTitle, StatusDot, btnProps,
 } from '@/components/pay/ui';
 
 export const dynamic = 'force-dynamic';
@@ -136,10 +136,10 @@ async function groupHasPro(staffId: string | null, establishmentId: string | nul
     if (!estId) return false;
     const { data } = await service
       .from('establishments')
-      .select('groups(plan, pro_trial_ends_at)')
+      .select('groups(plan, pro_trial_ends_at, pro_included)')
       .eq('id', estId)
       .maybeSingle();
-    const group = (data as { groups?: { plan?: string | null; pro_trial_ends_at?: string | null } | null } | null)?.groups;
+    const group = (data as { groups?: { plan?: string | null; pro_trial_ends_at?: string | null; pro_included?: boolean | null } | null } | null)?.groups;
     return effectivePlan(group) === 'pro';
   } catch {
     // A thank-you page that fails over a promotional extra is the wrong trade.
@@ -320,7 +320,6 @@ export default async function PaySuccessPage({ params, searchParams }: Props) {
   return (
     <PayMain pb={32}>
       <Band tone={succeeded ? 'brand' : 'neutral'} pb={48} logo={<Logo />}>
-        {isDemo && <DemoBadge>🧪 {t('demo.badge')}</DemoBadge>}
         {succeeded ? (
           <StatusDot tone="success" icon="check" />
         ) : status === 'processing' ? (

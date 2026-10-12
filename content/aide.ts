@@ -13,8 +13,8 @@
 //   source_transaction                            → app/api/stripe/create-intent/route.ts
 // - every plan exports any month, and the         → app/api/statements/export.csv/route.ts
 //   statement is emailed on the 1st               → app/api/cron/monthly-statements/route.ts
-// - review invite and notes shown to Pro only    → supabase/migrations/00088_pro_reputation.sql
-// - cardless 30-day Pro trial from the first tip → lib/billing/free-trial.ts
+// - review invite and notes included for every group → supabase/migrations/00093_pro_included_at_launch.sql
+// - no Pro trial or offer while PRO_ON_SALE is false  → lib/billing/pro-offer.ts
 // - lifetime warranty = defects, not loss/damage → legal.cgv s7Body in messages/fr.json
 // - 10 € tip → 10,75 € charged                    → landing.pricing copy, lib/pricing/tip-fees.ts
 
@@ -342,8 +342,8 @@ export const HELP: HelpCategory[] = [
         id: 'avis-invisible',
         question: 'Mon lien Google est enregistré mais mes clients ne voient rien',
         answer:
-          "L'invitation à laisser un avis juste après le pourboire fait partie de Digitip Pro, offert 30 jours dès votre premier pourboire, sans carte. Après l'essai, le lien reste enregistré et l'invitation revient dès que Pro est réactivé. Les pourboires et les relevés, eux, fonctionnent sans abonnement.",
-        link: { label: 'Voir Digitip Pro', href: '/fr/dashboard/billing#pro' },
+          "L'invitation s'affiche sur la page qui suit le pourboire, dès que le lien est enregistré : elle est incluse, sans abonnement. Vérifiez que le lien enregistré est bien celui de votre fiche (bouton « Demander des avis » sur Google). Si vos clients ne voient toujours rien, écrivez-nous.",
+        link: { label: 'Mes établissements', href: '/fr/dashboard/establishments' },
       },
       {
         id: 'mots-des-clients',

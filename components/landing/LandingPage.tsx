@@ -878,7 +878,7 @@ function FooterSection() {
 export function LandingPage({ pricing }: { pricing: PricingMap | null }) {
   const locale = useLocale();
   const [cartPack, setCartPack] = useState<'solo' | 'duo' | null>(null);
-  const openCart = (pack: 'solo' | 'duo' = 'duo') => setCartPack(pack);
+  const openCart = (pack: 'solo' | 'duo' = 'solo') => setCartPack(pack);
 
 
   return (

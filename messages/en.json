@@ -52,7 +52,9 @@
     "errAddressRequired": "Enter the delivery address so we can work out VAT.",
     "errPaymentFailed": "The payment didn't go through.",
     "errPromoApply": "The code won't apply right now. Try again.",
-    "ttcFrance": "{price} incl. VAT in France"
+    "ttcFrance": "{price} incl. VAT in France",
+    "accountOrder": "This order goes to your account",
+    "accountEmail": "Signed in as {email}"
   },
   "metadata": {
     "title": "Digitip: cashless tips via NFC | digitip.app",
@@ -401,7 +403,7 @@
       "q6": "Do I need a company number or a special status?",
       "a6": "Not to order plaques. To receive tips, the business goes through a one-time check in Digitip (the manager's identity and bank details), because anti-money-laundering law requires it. Your staff don't create any account: each tip is recorded in their name and you pay it with their wages.",
       "q7": "How does Digitip make money?",
-      "a7": "From the service fee, paid by the person leaving the tip, never from the tip itself. For a €10 tip the customer pays €10.75: €0.25 fixed plus 5% of the tip. You get the €10. Of the 75 cents, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount paid) and €0.34 to Digitip, to run and improve the service. Receiving tips costs you nothing each month. The optional Digitip Pro subscription adds the Google review invitation and customer notes."
+      "a7": "From the service fee, paid by the person leaving the tip, never from the tip itself. For a €10 tip the customer pays €10.75: €0.25 fixed plus 5% of the tip. You get the €10. Of the 75 cents, about €0.41 goes to Stripe (€0.25 fixed + 1.5% of the amount paid) and €0.34 to Digitip, to run and improve the service. Receiving tips costs you nothing each month. The Google review invitation and customer notes are included."
     },
     "doubleGuarantee": {
       "g1title": "A solid plaque",
@@ -466,7 +468,7 @@
         "title": "Where it counts",
         "body": "To show up in nearby searches, recent reviews count more than a few old ones. A few every week works best."
       },
-      "proNote": "The Google review invitation is part of Digitip Pro: 30 days free, no card needed, starting with your first tip (or earlier, if you start it yourself). The plaque and the tips have no subscription."
+      "proNote": "The Google review invitation is included, with no subscription and no extra cost, like the rest of the platform."
     },
     "ui": {
       "choosePack": "Choose",
@@ -578,96 +580,6 @@
     "errorInvalidCode": "That code isn't right, or it's expired. Ask for a new one.",
     "errorNoAccount": "No account with this address, check the spelling. If you just ordered a pack, your space opens with the “Set up my space” button in the confirmation email."
   },
-  "order": {
-    "exit": "Exit",
-    "exitConfirm": "Leave the order? What you've filled in will be cleared.",
-    "continue": "Continue",
-    "back": "Back",
-    "payNow": "Pay now",
-    "payAmount": "Pay {amount}",
-    "redirecting": "Taking you to payment…",
-    "stepOf": "Step {current} of {total}",
-    "selectedPack": "{pack} pack chosen",
-    "steps": {
-      "pack": "Pack",
-      "shipping": "Shipping",
-      "billing": "Billing",
-      "account": "Account",
-      "review": "Review"
-    },
-    "pack": {
-      "title": "Your pack",
-      "subtitle": "You can still change it. Every pack comes with plaques already programmed and access to the dashboard.",
-      "quantity": "{count, plural, one {# plaque} other {# plaques}}",
-      "oneTime": "Paid once",
-      "switchPack": "Switch pack"
-    },
-    "shipping": {
-      "title": "Where should we send your plaques?",
-      "subtitle": "Shipped for free within 3 working days to 13 European countries, Switzerland included. They arrive programmed, ready to put up.",
-      "recipient": "Recipient",
-      "recipientPlaceholder": "Full name or business"
-    },
-    "billing": {
-      "title": "The invoice",
-      "subtitle": "We need this for a proper invoice. You can change it later from your dashboard.",
-      "vatAutoReverse": "With a valid EU VAT number, no VAT is charged (reverse charge)."
-    },
-    "account": {
-      "title": "Your account",
-      "subtitle": "Last step before paying. You'll use your account to run your team and your plaques.",
-      "already": "Already have an account?",
-      "signIn": "Sign in",
-      "codeHint": "We'll send a 6-digit code to confirm this address before payment.",
-      "verified": "Address confirmed."
-    },
-    "review": {
-      "title": "All good",
-      "subtitle": "Check your order, then go to payment with Stripe.",
-      "orderSummary": "Your order",
-      "hardware": "Plaques (paid once)",
-      "commission": "Fee on tips",
-      "commissionValue": "0%, the customer pays",
-      "shippingTo": "Shipping to",
-      "billedTo": "Billed to",
-      "account": "Account",
-      "today": "Due today",
-      "taxNotice": "Stripe works out VAT at the next step, based on your country.",
-      "securedBy": "Secured by Stripe",
-      "edit": "Edit",
-      "promoCodeLabel": "Promo code (optional)",
-      "promoCodePlaceholder": "Your code",
-      "promoCodeHint": "The code comes off at payment.",
-      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
-    },
-    "summary": {
-      "title": "Your order",
-      "pack": "Pack {pack}",
-      "hardware": "Plaques",
-      "commission": "Fee on tips",
-      "commissionValue": "0%, the customer pays",
-      "shipping": "Shipping",
-      "free": "Free",
-      "total": "Total today",
-      "totalToday": "Total today",
-      "ttcHint": "that is {amount} incl. VAT in France (20%). The exact VAT for your country is calculated at payment.",
-      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
-    },
-    "errors": {
-      "shipping_invalid": "Enter the full shipping address: street, postal code and city.",
-      "legal_name_required": "Enter the company name.",
-      "vat_invalid": "This VAT number is not in the right format. It starts with the country code, for example FR12345678901. Leave it empty if you don't have one.",
-      "billing_invalid": "Enter the full billing address: street, postal code and city.",
-      "full_name_required": "Enter your name.",
-      "email_invalid": "That email address isn't valid.",
-      "promo_invalid": "That promo code doesn't work or has expired. Fix it or remove it to carry on.",
-      "checkout_failed": "The payment didn't go through. Try again in a moment.",
-      "code_required": "First confirm your email with the code we sent.",
-      "admin_account": "You're signed in with an admin account, which can't place orders. Sign out to order for a customer.",
-      "shipping_postal_invalid": "This postal code does not match the selected country (in France: 5 digits, for example 75009).",
-      "billing_postal_invalid": "The billing postal code does not match the selected country."
-    }
-  },
   "pay": {
     "tipFor": "A tip for",
     "selectAmount": "Select an amount",
@@ -738,9 +650,7 @@
     "reviewBody": "Leave a Google review, it takes 10 seconds.",
     "reviewButton": "Leave a Google review →",
     "demo": {
-      "badge": "Demo mode",
-      "banner": "Demo: no real payment",
-      "payButton": "Pay {amount} (demo)"
+      "payButton": "Pay {amount}"
     },
     "maxAmount": "Maximum amount {max}",
     "successTip": "Tip",
@@ -810,7 +720,7 @@
     },
     "billing": {
       "title": "Billing",
-      "subtitle": "Your plaque orders, your invoices and your Digitip Pro subscription.",
+      "subtitle": "Your plaque orders and your invoices.",
       "commissionRate": "Service fee",
       "commissionRateHint": "It's added to the tip and the customer pays it. We take nothing from your tips.",
       "tipsCollected30d": "Tips over 30 days",
@@ -1351,7 +1261,7 @@
       },
       "review": {
         "label": "Link your Google listing",
-        "body": "You only do this once. With Digitip Pro, customers see a button to leave a review right after tipping.",
+        "body": "You only do this once. Customers then see a button to leave a review right after tipping.",
         "cta": "Link"
       },
       "firstTip": {
@@ -1361,8 +1271,8 @@
       }
     },
     "proImpact": {
-      "label": "Digitip Pro",
-      "titleMonth": "Digitip Pro this month",
+      "label": "Google reviews and notes",
+      "titleMonth": "Reviews and notes this month",
       "titleTrial": "Your Digitip Pro trial",
       "daysLeft": "{days, plural, one {# day left} other {# days left}}",
       "noLinkBody": "Your Google listing isn't linked yet, so customers don't see the button to leave a review.",
@@ -1499,7 +1409,7 @@
       "change": "Change",
       "unknownPlace": "Business",
       "fieldLabel": "Google review link",
-      "fieldHint": "With Digitip Pro, customers see a button to leave a Google review right after tipping. Pro is free for 30 days from your first tip, and your link is already saved.",
+      "fieldHint": "Customers see a button to leave a Google review right after tipping. It's included, with no subscription.",
       "searchUnavailable": "Google search isn't responding right now. No problem, just paste your link below.",
       "guide1": "Open your listing in Google Maps or Google Business Profile, signed in with the business account.",
       "guide2": "Tap “Ask for reviews”. Google shows a short link that looks like g.page/r/…/review.",
@@ -1539,10 +1449,11 @@
     }
   },
   "consent": {
-    "text": "We use a Meta cookie to see whether our ads work. It's only set if you accept it.",
+    "title": "Your cookie preferences",
+    "text": "With your consent, we use an advertising measurement cookie (Meta) to assess how well our campaigns perform. You can change your choice at any time.",
     "accept": "Accept",
     "refuse": "Decline",
-    "learnMore": "Learn more",
+    "learnMore": "Privacy policy",
     "manage": "Manage cookies"
   }
 }

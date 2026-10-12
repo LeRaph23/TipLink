@@ -5,7 +5,7 @@ import { effectivePlan } from '@/lib/billing/entitlements';
 import { getReviewTeaser } from '@/lib/billing/review-teaser';
 import { getProImpact, monthStartParis, type ProImpact as ProImpactData } from '@/lib/billing/pro-impact';
 import { DismissibleProUpsell } from '@/components/billing/DismissibleProUpsell';
-import { deriveTrialState } from '@/lib/billing/trial';
+import { deriveTrialState, type TrialState } from '@/lib/billing/trial';
 import { shouldShowProNudge } from '@/lib/dashboard/pro-nudge';
 import { Link } from '@/i18n/navigation';
 import { DigitipCard } from '@/components/dashboard/DigitipCard';
@@ -85,7 +85,7 @@ export default async function DashboardPage({
         const [{ data: group }, { data: ests }] = await Promise.all([
           service
             .from('groups')
-            .select('plan, settings, subscription_status, trial_ends_at, pro_trial_started_at, pro_trial_ends_at')
+            .select('plan, settings, subscription_status, trial_ends_at, pro_trial_started_at, pro_trial_ends_at, pro_included')
             .eq('id', adminGroupId)
             .maybeSingle(),
           service
@@ -101,12 +101,16 @@ export default async function DashboardPage({
           ? `/dashboard/establishments/${ests[0].id}`
           : '/dashboard/establishments';
 
-        const trial = deriveTrialState({
-          plan: group?.plan ?? null,
-          subscriptionStatus: group?.subscription_status ?? null,
-          trialEndsAt: group?.trial_ends_at ?? null,
-          freeTrialEndsAt: group?.pro_trial_ends_at ?? null,
-        });
+        // A group with Pro included is in no trial, even one started before
+        // it was included: nothing ends, so no countdown is shown.
+        const trial: TrialState = group?.pro_included
+          ? { state: 'none' }
+          : deriveTrialState({
+              plan: group?.plan ?? null,
+              subscriptionStatus: group?.subscription_status ?? null,
+              trialEndsAt: group?.trial_ends_at ?? null,
+              freeTrialEndsAt: group?.pro_trial_ends_at ?? null,
+            });
 
         if (effectivePlan(group) === 'pro') {
           // During the cardless trial the window is the trial itself: "since

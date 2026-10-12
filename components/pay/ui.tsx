@@ -238,14 +238,3 @@ export function PayError({ children }: { children: ReactNode }) {
     </p>
   );
 }
-
-export function DemoBadge({ children }: { children: ReactNode }) {
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', marginBottom: 16,
-      borderRadius: 999, background: 'var(--surface)', color: 'var(--text-2)', font: '600 12px/16px var(--font)',
-    }}>
-      {children}
-    </span>
-  );
-}

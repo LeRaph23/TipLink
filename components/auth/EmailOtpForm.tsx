@@ -56,6 +56,12 @@ export function EmailOtpForm({
   // rather than a button that fails when pressed.
   const [cooldown, setCooldown] = useState(0);
   const codeRef = useRef<HTMLInputElement>(null);
+  // Synchronous guard for verify(). `busy` is state, so two events landing in
+  // the same tick (iOS/Gmail one-time-code autofill fires more than one input
+  // event, a paste, a click on the button mid-request) both still read it as
+  // false. The first call spends the code, the second is told it is invalid,
+  // and the person sees "wrong code" a second before being signed in anyway.
+  const verifyingRef = useRef(false);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
@@ -84,10 +90,13 @@ export function EmailOtpForm({
 
   const verify = useCallback(
     async (value: string) => {
+      if (verifyingRef.current) return;
+      verifyingRef.current = true;
       setBusy(true);
       setError(null);
       const res = await verifyEmailCode(email, value);
       if (!res.ok) {
+        verifyingRef.current = false;
         setError(mapAuthError(res.message, t));
         setCode('');
         setBusy(false);
@@ -98,8 +107,12 @@ export function EmailOtpForm({
       // reset a no-op. It matters in the case where it does not: a caller whose
       // own follow-up fails leaves the widget mounted, and a permanently
       // disabled button would be a dead end on a screen that just succeeded.
-      await onVerified();
-      setBusy(false);
+      try {
+        await onVerified();
+      } finally {
+        verifyingRef.current = false;
+        setBusy(false);
+      }
     },
     [email, onVerified, t],
   );

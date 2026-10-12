@@ -110,7 +110,7 @@ const PACK_GALLERIES: Record<Pack, GalleryItem[]> = {
 export function ProductCard({ onAddToCart, locale, pricing }: Props) {
   const t = useTranslations('landing');
   const [activeImg, setActiveImg] = useState(0);
-  const [selectedPack, setSelectedPack] = useState<Pack>('duo');
+  const [selectedPack, setSelectedPack] = useState<Pack>('solo');
 
   // `locale` is pinned to fr for price formatting; the page language decides.
   const pageLocale = useLocale();

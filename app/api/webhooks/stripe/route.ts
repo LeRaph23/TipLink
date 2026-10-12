@@ -119,7 +119,13 @@ async function handleEvent(
       // ── Hardware pack express (embedded checkout on /checkout page) ──
       if (intent.metadata?.source === 'pack-express') {
         if (intent.status !== 'succeeded') break;
-        await handlePackExpressPaid(intent, supabase);
+        // Paid on /checkout while signed in as a business owner: the order
+        // belongs to that existing group (create-pack-intent set group_id).
+        if (intent.metadata.group_id) {
+          await handlePackOrderPaid(intent, supabase);
+        } else {
+          await handlePackExpressPaid(intent, supabase);
+        }
         break;
       }
 
@@ -1445,9 +1451,9 @@ business_type: 'beauty',
   }
 }
 
-// Handles a paid SmartTag pack order from the /order wizard (in-page Stripe
-// Elements). Unlike pack-express, the billing group already exists — the
-// PaymentIntent carries its id. Creates the order, invoice, tags and emails.
+// Handles a paid SmartTag pack order placed signed in (on /checkout, or by the
+// former /order wizard). Unlike pack-express, the billing group already
+// exists — the PaymentIntent carries its id. Creates the order, invoice, tags and emails.
 async function handlePackOrderPaid(
   intent: Stripe.PaymentIntent,
   supabase: ReturnType<typeof createServiceClient>
@@ -1477,8 +1483,27 @@ async function handlePackOrderPaid(
     : (intent.customer as Stripe.Customer | null)?.id ?? null;
   const shipping = intent.shipping ?? null;
 
-  // Invoice — customer already has a billing address, so automatic_tax breaks
-  // out the VAT. Best-effort: never throw out of the webhook.
+  // The address just paid for is the one the VAT was computed on: the
+  // invoice's automatic_tax reads it from the customer, whose stored address
+  // may be an older one.
+  if (customerId && shipping?.address?.country) {
+    try {
+      await stripe.customers.update(customerId, {
+        address: {
+          line1: shipping.address.line1 ?? undefined,
+          line2: shipping.address.line2 ?? undefined,
+          city: shipping.address.city ?? undefined,
+          postal_code: shipping.address.postal_code ?? undefined,
+          country: shipping.address.country,
+        },
+      });
+    } catch (err) {
+      console.error('[pack-order] customer address update failed', err);
+    }
+  }
+
+  // Invoice — automatic_tax breaks out the VAT from the customer's address.
+  // Best-effort: never throw out of the webhook.
   let invoiceId: string | null = null;
   let invoicePdfUrl: string | null = null;
   if (customerId) {

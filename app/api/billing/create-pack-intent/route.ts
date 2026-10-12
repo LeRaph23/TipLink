@@ -4,6 +4,8 @@ import { type PackId } from '@/lib/env';
 import { getPackPricing } from '@/lib/stripe/pricing';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase/service';
+import { createClient } from '@/lib/supabase/server';
+import { findBuyerGroup } from '@/lib/billing/buyer-group';
 import { isUpstreamUnavailable } from '@/lib/errors/upstream';
 import { provisionalPackTax } from '@/lib/stripe/tax';
 import { adContextMetadata } from '@/lib/marketing/ad-context';
@@ -66,13 +68,35 @@ export async function POST(request: NextRequest) {
     // before the buyer reaches a payable total in the normal flow.
     const provisional = provisionalPackTax(htAmount);
 
+    // Signed in as the owner of a business, the order joins it: same page,
+    // same steps, but the webhook files it under their group (and their
+    // Stripe customer) instead of creating a new one.
+    const { data: { user } } = await (await createClient()).auth.getUser();
+    const buyer = user ? await findBuyerGroup(supabase, user.id) : null;
+    let customerId: string | null = buyer?.stripeCustomerId ?? null;
+    if (buyer && !customerId) {
+      const customer = await stripe.customers.create(
+        {
+          email: user?.email ?? undefined,
+          name: buyer.legalName ?? undefined,
+          metadata: { group_id: buyer.id },
+          preferred_locales: [locale],
+        },
+        { idempotencyKey: `group-customer:${buyer.id}` },
+      );
+      customerId = customer.id;
+      await supabase.from('groups').update({ stripe_customer_id: customerId }).eq('id', buyer.id);
+    }
+
     const intent = await stripe.paymentIntents.create({
       amount: provisional.totalAmount,
       currency: pricing.currency,
       automatic_payment_methods: { enabled: true },
       description: pricing.productName,
+      ...(customerId ? { customer: customerId } : {}),
       metadata: {
         source: 'pack-express',
+        ...(buyer && user ? { group_id: buyer.id, user_id: user.id } : {}),
         pack,
         quantity: String(pricing.quantity),
         locale,

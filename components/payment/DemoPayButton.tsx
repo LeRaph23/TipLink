@@ -18,6 +18,8 @@ interface Props {
 // Replaces the Stripe checkout when an establishment is in demo mode: no charge,
 // no PaymentIntent, no DB write — just routes to the success screen so the full
 // experience (incl. the Google review prompt) can be shown in a sales demo.
+// Nothing on screen says "demo": prospects should see exactly what a customer
+// sees. The establishment's is_demo flag is what keeps it from charging.
 export function DemoPayButton({ kind, targetId, amount, tip, currency }: Props) {
   const router = useRouter();
   const locale = useLocale();
@@ -44,14 +46,6 @@ export function DemoPayButton({ kind, targetId, amount, tip, currency }: Props) 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        padding: '8px 12px', borderRadius: 'var(--radius-sm)',
-        background: 'var(--surface-2)', border: '1px dashed var(--border)',
-        color: 'var(--text-2)', font: '500 12px/16px var(--font)',
-      }}>
-        🧪 {t('demo.banner')}
-      </div>
       <PayButton onClick={pay} loading={going}>
         {going ? t('processingButton') : t('demo.payButton', { amount: fmt.format(amount / 100) })}
       </PayButton>

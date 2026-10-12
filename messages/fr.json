@@ -52,7 +52,9 @@
     "errAddressRequired": "Indiquez l'adresse de livraison pour qu'on calcule la TVA.",
     "errPaymentFailed": "Le paiement n'est pas passé.",
     "errPromoApply": "Le code ne passe pas pour le moment. Réessayez.",
-    "ttcFrance": "{price} TTC en France"
+    "ttcFrance": "{price} TTC en France",
+    "accountOrder": "Commande rattachée à votre compte",
+    "accountEmail": "Connecté en tant que {email}"
   },
   "metadata": {
     "title": "Digitip - Pourboires par CB via NFC | digitip.app",
@@ -401,7 +403,7 @@
       "q6": "Il me faut un SIRET ou un statut particulier ?",
       "a6": "Pas pour commander les plaques. Pour recevoir les pourboires, l'établissement fait une vérification une seule fois dans Digitip (identité du gérant et coordonnées bancaires), parce que la loi contre le blanchiment l'impose. Vos employés n'ont aucun compte à créer : chaque pourboire est noté à leur nom et vous le reversez avec la paie.",
       "q7": "Comment Digitip gagne de l'argent ?",
-      "a7": "Sur les frais de service, payés par la personne qui laisse le pourboire, jamais sur le pourboire lui-même. Pour un pourboire de 10 €, le client paie 10,75 € : 0,25 € fixes plus 5 % du pourboire. Vous, vous touchez les 10 €. Sur les 75 centimes, environ 0,41 € va à Stripe (0,25 € fixes + 1,5 % du montant payé) et 0,34 € à Digitip, pour faire tourner et améliorer le service. Recevoir des pourboires ne vous coûte rien chaque mois. L'abonnement Digitip Pro, facultatif, ajoute l'invitation à laisser un avis Google et les petits mots des clients."
+      "a7": "Sur les frais de service, payés par la personne qui laisse le pourboire, jamais sur le pourboire lui-même. Pour un pourboire de 10 €, le client paie 10,75 € : 0,25 € fixes plus 5 % du pourboire. Vous, vous touchez les 10 €. Sur les 75 centimes, environ 0,41 € va à Stripe (0,25 € fixes + 1,5 % du montant payé) et 0,34 € à Digitip, pour faire tourner et améliorer le service. Recevoir des pourboires ne vous coûte rien chaque mois. L'invitation à laisser un avis Google et les petits mots des clients sont inclus."
     },
     "doubleGuarantee": {
       "g1title": "Une plaque solide",
@@ -466,7 +468,7 @@
         "title": "Là où ça compte",
         "body": "Pour apparaître dans les recherches autour de chez vous, des avis récents comptent plus que quelques vieux avis. Un peu chaque semaine, c'est ce qui marche le mieux."
       },
-      "proNote": "L'invitation à laisser un avis Google fait partie de Digitip Pro : 30 jours offerts, sans carte bancaire, qui démarrent à votre premier pourboire (ou plus tôt, si vous le lancez vous-même). La plaque et les pourboires, eux, n'ont pas d'abonnement."
+      "proNote": "L'invitation à laisser un avis Google est incluse, sans abonnement et sans frais en plus, comme le reste de la plateforme."
     },
     "ui": {
       "choosePack": "Choisir",
@@ -578,96 +580,6 @@
     "errorInvalidCode": "Ce code n'est pas bon, ou il a expiré. Demandez-en un nouveau.",
     "errorNoAccount": "Aucun compte avec cette adresse, vérifiez l'orthographe. Si vous venez de commander un pack, votre espace s'active avec le bouton « Configurer mon espace » de l'e-mail de confirmation."
   },
-  "order": {
-    "exit": "Quitter",
-    "exitConfirm": "Quitter la commande ? Ce que vous avez rempli sera effacé.",
-    "continue": "Continuer",
-    "back": "Retour",
-    "payNow": "Payer maintenant",
-    "payAmount": "Payer {amount}",
-    "redirecting": "On vous emmène au paiement…",
-    "stepOf": "Étape {current} sur {total}",
-    "selectedPack": "Pack {pack} choisi",
-    "steps": {
-      "pack": "Pack",
-      "shipping": "Livraison",
-      "billing": "Facturation",
-      "account": "Compte",
-      "review": "Récapitulatif"
-    },
-    "pack": {
-      "title": "Votre pack",
-      "subtitle": "Vous pouvez encore en changer. Chaque pack comprend les plaques déjà programmées et l'accès au tableau de bord.",
-      "quantity": "{count, plural, one {# plaque} other {# plaques}}",
-      "oneTime": "Payé une fois",
-      "switchPack": "Changer de pack"
-    },
-    "shipping": {
-      "title": "Où livrer vos plaques ?",
-      "subtitle": "Expédiées gratuitement sous 3 jours ouvrés, dans 13 pays d'Europe, Suisse comprise. Elles arrivent programmées, prêtes à poser.",
-      "recipient": "Destinataire",
-      "recipientPlaceholder": "Nom complet ou établissement"
-    },
-    "billing": {
-      "title": "La facture",
-      "subtitle": "On en a besoin pour une facture en règle. Vous pourrez le changer plus tard depuis votre tableau de bord.",
-      "vatAutoReverse": "Avec un numéro de TVA européen valide, la TVA n'est pas facturée (autoliquidation)."
-    },
-    "account": {
-      "title": "Votre compte",
-      "subtitle": "Dernière étape avant de payer. Votre compte vous servira à gérer votre équipe et vos plaques.",
-      "already": "Vous avez déjà un compte ?",
-      "signIn": "Se connecter",
-      "codeHint": "On vous envoie un code à 6 chiffres pour confirmer cette adresse avant le paiement.",
-      "verified": "Adresse confirmée."
-    },
-    "review": {
-      "title": "Tout est bon",
-      "subtitle": "Vérifiez votre commande, puis passez au paiement par Stripe.",
-      "orderSummary": "Votre commande",
-      "hardware": "Plaques (payées une fois)",
-      "commission": "Frais sur pourboires",
-      "commissionValue": "0 %, c'est le client qui paie",
-      "shippingTo": "Livré à",
-      "billedTo": "Facturé à",
-      "account": "Compte",
-      "today": "À payer aujourd'hui",
-      "taxNotice": "La TVA est calculée par Stripe à l'étape suivante, selon votre pays.",
-      "securedBy": "Paiement sécurisé par Stripe",
-      "edit": "Modifier",
-      "promoCodeLabel": "Code promo (optionnel)",
-      "promoCodePlaceholder": "Votre code",
-      "promoCodeHint": "Le code sera déduit au moment du paiement.",
-      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
-    },
-    "summary": {
-      "title": "Votre commande",
-      "pack": "Pack {pack}",
-      "hardware": "Plaques",
-      "commission": "Frais sur pourboires",
-      "commissionValue": "0 %, c'est le client qui paie",
-      "shipping": "Livraison",
-      "free": "Offerte",
-      "total": "Total aujourd'hui",
-      "totalToday": "Total aujourd'hui",
-      "ttcHint": "soit {amount} TTC en France (TVA 20 %). La TVA exacte selon votre pays est calculée au paiement.",
-      "plaques": "{count, plural, one {# plaque} other {# plaques}}"
-    },
-    "errors": {
-      "shipping_invalid": "Indiquez l'adresse de livraison complète : rue, code postal et ville.",
-      "legal_name_required": "Indiquez la raison sociale.",
-      "vat_invalid": "Ce numéro de TVA n'a pas le bon format. Il commence par le code du pays, par exemple FR12345678901. Laissez le champ vide si vous n'en avez pas.",
-      "billing_invalid": "Indiquez l'adresse de facturation complète : rue, code postal et ville.",
-      "full_name_required": "Indiquez votre nom.",
-      "email_invalid": "Cette adresse e-mail n'est pas valide.",
-      "promo_invalid": "Ce code promo ne marche pas ou a expiré. Corrigez-le ou retirez-le pour continuer.",
-      "checkout_failed": "Le paiement n'est pas passé. Réessayez dans un instant.",
-      "code_required": "Confirmez d'abord votre e-mail avec le code reçu.",
-      "admin_account": "Vous êtes connecté avec un compte administrateur, qui ne peut pas commander. Déconnectez-vous pour commander pour un client.",
-      "shipping_postal_invalid": "Ce code postal ne correspond pas au pays choisi (en France : 5 chiffres, par exemple 75009).",
-      "billing_postal_invalid": "Le code postal de facturation ne correspond pas au pays choisi."
-    }
-  },
   "pay": {
     "tipFor": "Un pourboire pour",
     "selectAmount": "Choisissez un montant",
@@ -738,9 +650,7 @@
     "reviewBody": "Laissez un avis Google, ça prend 10 secondes.",
     "reviewButton": "Laisser un avis Google →",
     "demo": {
-      "badge": "Mode démo",
-      "banner": "Démo : aucun vrai paiement",
-      "payButton": "Payer {amount} (démo)"
+      "payButton": "Payer {amount}"
     },
     "maxAmount": "Montant maximum {max}",
     "successTip": "Pourboire",
@@ -810,7 +720,7 @@
     },
     "billing": {
       "title": "Facturation",
-      "subtitle": "Vos commandes de plaques, vos factures et votre abonnement Digitip Pro.",
+      "subtitle": "Vos commandes de plaques et vos factures.",
       "commissionRate": "Frais de service",
       "commissionRateHint": "Ils s'ajoutent au pourboire et c'est le client qui les paie. On ne prend rien sur vos pourboires.",
       "tipsCollected30d": "Pourboires sur 30 jours",
@@ -1351,7 +1261,7 @@
       },
       "review": {
         "label": "Relier votre fiche Google",
-        "body": "Vous ne le faites qu'une fois. Avec Digitip Pro, vos clients verront un bouton pour laisser un avis juste après leur pourboire.",
+        "body": "Vous ne le faites qu'une fois. Vos clients verront ensuite un bouton pour laisser un avis juste après leur pourboire.",
         "cta": "Relier"
       },
       "firstTip": {
@@ -1361,8 +1271,8 @@
       }
     },
     "proImpact": {
-      "label": "Digitip Pro",
-      "titleMonth": "Digitip Pro ce mois-ci",
+      "label": "Avis Google et petits mots",
+      "titleMonth": "Avis et petits mots ce mois-ci",
       "titleTrial": "Votre essai Digitip Pro",
       "daysLeft": "{days, plural, one {encore # jour} other {encore # jours}}",
       "noLinkBody": "Votre fiche Google n'est pas encore reliée, donc vos clients ne voient pas le bouton pour laisser un avis.",
@@ -1499,7 +1409,7 @@
       "change": "Changer",
       "unknownPlace": "Établissement",
       "fieldLabel": "Lien d’avis Google",
-      "fieldHint": "Avec Digitip Pro, le client voit un bouton pour laisser un avis Google juste après son pourboire. Pro est offert 30 jours à partir du premier pourboire, et votre lien est déjà enregistré.",
+      "fieldHint": "Le client voit un bouton pour laisser un avis Google juste après son pourboire. C'est inclus, sans abonnement.",
       "searchUnavailable": "La recherche Google ne répond pas pour le moment. Ce n'est pas grave, collez directement votre lien ci-dessous.",
       "guide1": "Ouvrez votre fiche dans Google Maps ou Google Business Profile, avec le compte de l'établissement.",
       "guide2": "Appuyez sur « Demander des avis ». Google affiche un lien court qui ressemble à g.page/r/…/review.",
@@ -1539,10 +1449,11 @@
     }
   },
   "consent": {
-    "text": "On utilise un cookie Meta pour savoir si nos publicités marchent. Il n'est posé que si vous l'acceptez.",
+    "title": "Vos préférences de cookies",
+    "text": "Avec votre accord, nous utilisons un cookie de mesure publicitaire (Meta) pour évaluer l'efficacité de nos campagnes. Vous pouvez modifier votre choix à tout moment.",
     "accept": "Accepter",
     "refuse": "Refuser",
-    "learnMore": "En savoir plus",
+    "learnMore": "Politique de confidentialité",
     "manage": "Gérer les cookies"
   }
 }
