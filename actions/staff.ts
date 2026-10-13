@@ -335,3 +335,34 @@ export async function regenerateTeamJoinLink(
   revalidatePath('/dashboard/staff');
   return { url };
 }
+
+/**
+ * Sets or clears an employee's matricule in the payroll software.
+ *
+ * Written through the user's own client: the staff_payroll_ids policy (00094)
+ * is what limits this to the people who manage the employee, and an employee
+ * cannot reach it for their own row.
+ */
+export async function updateStaffPayrollId(
+  staffId: string,
+  payrollId: string | null,
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return actionError('forbidden');
+
+  const value = payrollId?.trim() ?? '';
+  if (value.length > 32) return { error: 'Le matricule fait 32 caractères au plus.' };
+
+  const { error } = value
+    ? await supabase
+        .from('staff_payroll_ids')
+        .upsert({ staff_id: staffId, payroll_id: value, updated_at: new Date().toISOString() })
+    : await supabase.from('staff_payroll_ids').delete().eq('staff_id', staffId);
+
+  if (error) return actionError(classifyDbError(error), error, 'updateStaffPayrollId');
+
+  revalidatePath(`/dashboard/staff/${staffId}`);
+  revalidatePath('/dashboard/statements');
+  return { success: true };
+}

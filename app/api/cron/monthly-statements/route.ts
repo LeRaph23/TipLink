@@ -6,6 +6,8 @@ import {
   buildPayrollJournal,
   buildPayrollSummary,
   journalCsv,
+  normalizePayrollCode,
+  payrollImportCsv,
   monthPeriod,
   previousMonth,
   summaryCsv,
@@ -42,13 +44,13 @@ const MAX_PAGES = 100;
  */
 async function* eachGroup(
   service: ReturnType<typeof createServiceClient>,
-): AsyncGenerator<{ id: string; name: string | null; accountant_email?: string | null }> {
+): AsyncGenerator<{ id: string; name: string | null; accountant_email?: string | null; settings?: unknown }> {
   let cursor: string | null = null;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     let q = service
       .from('groups')
-      .select('id, name, accountant_email')
+      .select('id, name, accountant_email, settings')
       .is('deleted_at', null)
       .order('id', { ascending: true })
       .limit(PAGE_SIZE);
@@ -160,6 +162,10 @@ export async function POST(req: Request) {
         totalFormatted,
         summaryCsv: summaryCsv(dataset),
         journalCsv: journalCsv(journal),
+        // Only once matricules exist: without them the file would be a header.
+        importCsv: dataset.summary.some((r) => r.payrollId)
+          ? payrollImportCsv(dataset, normalizePayrollCode((group.settings as Record<string, unknown> | null)?.payroll_code))
+          : null,
         month,
         locale: 'fr',
       });

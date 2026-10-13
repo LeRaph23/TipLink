@@ -850,7 +850,11 @@
         "payoutPending": "Signing up",
         "payoutNotStarted": "Not signed up yet",
         "recentTips": "Recent tips",
-        "notFound": "We can't find this person."
+        "notFound": "We can't find this person.",
+        "payrollId": "Payroll number",
+        "payrollIdHint": "This person's employee number in your payroll software. It is how their tips are imported straight onto their payslip.",
+        "payrollIdSave": "Save number",
+        "payrollIdSaved": "Number saved."
       },
       "tipLink": "Your tip link",
       "tipLinkCopy": "Copy",
@@ -1181,7 +1185,15 @@
       "exportJournal": "Detailed journal",
       "autoBodyAccountant": "On the 1st of each month, we email last month's statement to you and to {email}.",
       "autoBodyNoAccountant": "On the 1st of each month, we email you last month's statement. Your accountant can get it too.",
-      "autoCta": "Add their address"
+      "autoCta": "Add their address",
+      "exportImport": "Payroll software file",
+      "importTitle": "Import into your payroll software",
+      "importBody": "The payroll software file has one line per person: employee number, pay item code, amount. That is the format Silae, Sage Paie and most French payroll packages import. The pay item code must match the tips pay item set up in your software: ask your accountant.",
+      "codeLabel": "Pay item code",
+      "codeSave": "Save",
+      "codeSaved": "Code saved.",
+      "missing": "{count, plural, one {# person has no employee number and will not be in the import file:} other {# people have no employee number and will not be in the import file:}}",
+      "missingCta": "add their number"
     },
     "payments": {
       "title": "Payment account",
@@ -1201,7 +1213,19 @@
       "legalIndividual": "A sole trader",
       "verifyLoadFailed": "The verification form won't load. Reload the page, or try again in a moment.",
       "verifyExited": "Finished the form? The page updates by itself as soon as Stripe confirms it.",
-      "verifyChecking": "Checking with Stripe…"
+      "verifyChecking": "Checking with Stripe…",
+      "scheduleTitle": "Payouts to your bank account",
+      "scheduleBody": "Stripe pays the tips received into the business bank account, as often as you choose here. You then pass them on to your team with payroll, using your monthly statements.",
+      "weekly": "Every week",
+      "monthly": "Every month",
+      "on": "on",
+      "lastDay": "last day of the month",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Schedule saved. It applies from the next payout.",
+      "unknownSchedule": "Your account has a payout schedule this form does not offer. Pick one to replace it.",
+      "hint": "One payout a month, at month end, leaves you a single amount to match against payroll. Weekly gets you the money sooner.",
+      "scheduleLoadFailed": "Could not read the current schedule from Stripe. You can still choose one."
     },
     "pro": {
       "ctaMonthly": "Go Pro",

@@ -10,6 +10,8 @@ export type PayrollPeriod = { start: string; end: string; label: string };
 export type PayrollSummaryRow = {
   staffId: string;
   name: string;
+  /** Matricule in the payroll software, when the manager entered one. */
+  payrollId: string | null;
   count: number;
   amountCents: number;
 };
@@ -81,6 +83,16 @@ export function previousMonth(now: Date = new Date()): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+/** Matricules the manager entered, keyed by staff id. */
+async function payrollIdsOf(service: Service, staffIds: string[]): Promise<Map<string, string>> {
+  if (staffIds.length === 0) return new Map();
+  const { data } = await service
+    .from('staff_payroll_ids')
+    .select('staff_id, payroll_id')
+    .in('staff_id', staffIds);
+  return new Map((data ?? []).map((r) => [r.staff_id, r.payroll_id]));
+}
+
 /** Every non-deleted staff member across a group's establishments. */
 async function staffOfGroup(service: Service, groupId: string): Promise<Map<string, string>> {
   const { data: ests } = await service
@@ -119,6 +131,7 @@ export async function buildPayrollSummary(
 ): Promise<PayrollDataset> {
   const byId = await staffOfGroup(service, groupId);
   const staffIds = [...byId.keys()];
+  const payrollIds = await payrollIdsOf(service, staffIds);
   const agg = new Map<string, PayrollSummaryRow>();
 
   if (staffIds.length > 0) {
@@ -138,6 +151,7 @@ export async function buildPayrollSummary(
         const r = agg.get(a.staff_id) ?? {
           staffId: a.staff_id,
           name: byId.get(a.staff_id) ?? '',
+          payrollId: payrollIds.get(a.staff_id) ?? null,
           count: 0,
           amountCents: 0,
         };
@@ -249,9 +263,51 @@ export function toCsv(header: string[], rows: Array<Array<string | number>>): st
 
 export function summaryCsv(data: PayrollDataset): string {
   return toCsv(
-    ['Employé', 'Période', 'Nombre de pourboires', 'Montant à verser (€)'],
-    data.summary.map((r) => [r.name, data.period.label, r.count, eur(r.amountCents)]),
+    ['Matricule', 'Employé', 'Période', 'Nombre de pourboires', 'Montant à verser (€)'],
+    data.summary.map((r) => [r.payrollId ?? '', r.name, data.period.label, r.count, eur(r.amountCents)]),
   );
+}
+
+// ── Payroll-software import ──────────────────────────────────────────────────
+
+/** Default pay-item code; the manager can change it to match their software. */
+export const DEFAULT_PAYROLL_CODE = 'POURBOIRE';
+
+/** What a pay-item code may look like: the payroll packages use short ASCII codes. */
+export const PAYROLL_CODE_RE = /^[A-Za-z0-9_.-]{1,20}$/;
+
+export function normalizePayrollCode(raw: unknown): string {
+  return typeof raw === 'string' && PAYROLL_CODE_RE.test(raw.trim()) ? raw.trim() : DEFAULT_PAYROLL_CODE;
+}
+
+/**
+ * The variable-pay import file: one line per employee, `Matricule;Rubrique;Montant`.
+ *
+ * That three-field shape (employee number, pay-item code, value; semicolon
+ * separated) is what Silae's variable-item import and Sage Paie's rubric import
+ * read, and what most other packages can map in their import wizard. The code
+ * must match a pay item set up in the software, hence the setting.
+ *
+ * Differences from the human-readable summary, all deliberate:
+ *  - no BOM: import parsers read it as part of the first header name;
+ *  - no name or period column: the import applies to the payroll period open
+ *    in the software, and extra columns break strict parsers;
+ *  - an employee without a matricule cannot be imported, so they are left out
+ *    here and listed by `missingPayrollIds` for the screen to warn about,
+ *    rather than vanishing silently.
+ */
+export function payrollImportCsv(data: PayrollDataset, code: string): string {
+  const lines = [['Matricule', 'Rubrique', 'Montant'].join(';')];
+  for (const r of data.summary) {
+    if (!r.payrollId || r.amountCents <= 0) continue;
+    lines.push([csvCell(r.payrollId), csvCell(code), eur(r.amountCents)].join(';'));
+  }
+  return lines.join('\r\n') + '\r\n';
+}
+
+/** Employees with tips this period but no matricule: they are not in the import file. */
+export function missingPayrollIds(data: PayrollDataset): PayrollSummaryRow[] {
+  return data.summary.filter((r) => !r.payrollId && r.amountCents > 0);
 }
 
 export function journalCsv(rows: PayrollJournalRow[]): string {

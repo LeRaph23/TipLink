@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/i18n/navigation';
 import { StaffDetailForm } from './StaffDetailForm';
+import { PayrollIdField } from './PayrollIdField';
 
 export default async function StaffDetailPage({
   params,
@@ -48,6 +49,13 @@ export default async function StaffDetailPage({
     currency: (a.transactions as { currency?: string } | null)?.currency ?? 'EUR',
     created_at: a.allocated_at ?? a.created_at,
   }));
+
+  // Managers-only table (00094): RLS returns nothing to anyone else.
+  const { data: payroll } = await supabase
+    .from('staff_payroll_ids')
+    .select('payroll_id')
+    .eq('staff_id', id)
+    .maybeSingle();
 
   const est = Array.isArray(staff.establishments) ? staff.establishments[0] : staff.establishments;
 
@@ -121,6 +129,8 @@ export default async function StaffDetailPage({
           inactive: t('inactive'),
         }}
       />
+
+      <PayrollIdField staffId={staff.id} initial={payroll?.payroll_id ?? null} />
 
       {recentTips.length > 0 && (
         <div style={{ marginTop: 28 }}>

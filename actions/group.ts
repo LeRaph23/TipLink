@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getManageScope, canManageGroup } from '@/lib/auth/ownership';
 import { makeUniqueEstablishmentSlug } from '@/lib/establishment-slug';
+import { PAYROLL_CODE_RE } from '@/lib/export/payroll';
 
 interface UpdateGroupInput {
   groupId: string;
@@ -16,6 +17,8 @@ interface UpdateGroupInput {
   vatNumber?: string | null;
   /** Second recipient of the monthly payroll statement (Pro). */
   accountantEmail?: string | null;
+  /** Pay-item code used in the payroll-software import file. */
+  payrollCode?: string;
 }
 
 export async function updateGroup(
@@ -48,8 +51,20 @@ export async function updateGroup(
     patch.accountant_email = email || null;
   }
 
+  // Both write into the settings JSON; start from what is stored so neither
+  // erases the other.
+  let settings: Record<string, unknown> = { ...((current?.settings as Record<string, unknown> | null) ?? {}) };
+
+  if (input.payrollCode !== undefined) {
+    const code = input.payrollCode.trim();
+    if (!PAYROLL_CODE_RE.test(code)) {
+      return { error: 'Code rubrique invalide : lettres, chiffres, tirets, 20 caractères au plus.' };
+    }
+    settings = { ...settings, payroll_code: code };
+    patch.settings = settings;
+  }
+
   if (input.tipThresholds !== undefined) {
-    const currentSettings = (current?.settings as Record<string, unknown> | null) ?? {};
     // Three or four amounts (new groups default to three), each shown once on
     // the tip page: a repeated amount would be a duplicate button.
     // At most the tip page's own ceiling: a 9 999 € button was accepted, then
@@ -60,7 +75,8 @@ export async function updateGroup(
     }
     if (new Set(valid).size !== valid.length) return { error: 'Chaque montant ne peut apparaître qu’une fois.' };
     const cleaned = valid;
-    patch.settings = { ...currentSettings, tip_thresholds: cleaned };
+    settings = { ...settings, tip_thresholds: cleaned };
+    patch.settings = settings;
   }
 
   if (Object.keys(patch).length === 0) return { success: true };
@@ -76,6 +92,7 @@ export async function updateGroup(
   if (!updated || updated.length === 0) return { error: 'Forbidden' };
 
   revalidatePath('/dashboard/settings');
+  revalidatePath('/dashboard/statements');
   return { success: true };
 }
 
