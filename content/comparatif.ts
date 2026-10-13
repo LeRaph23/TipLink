@@ -56,15 +56,13 @@ export type SourceKey = keyof typeof SOURCES;
 export type Competitor = {
   key: string;
   name: string;
-  /** One line on what the product is, in its own terms. */
-  kind: string;
   sources: SourceKey[];
 };
 
 export const COMPETITORS: Competitor[] = [
-  { key: 'onetip', name: 'Onetip', kind: 'Application de pourboire, forte en coiffure', sources: ['onetipPricing', 'onetipFaq'] },
-  { key: 'tipsi', name: 'Tipsi', kind: 'Application de pourboire installée sur le TPE', sources: ['tipsi'] },
-  { key: 'taptiiip', name: 'Tap Tiiip', kind: 'Pourboire par QR code', sources: ['taptiiip'] },
+  { key: 'onetip', name: 'Onetip', sources: ['onetipPricing', 'onetipFaq'] },
+  { key: 'tipsi', name: 'Tipsi', sources: ['tipsi'] },
+  { key: 'taptiiip', name: 'Tap Tiiip', sources: ['taptiiip'] },
 ];
 
 /** Cell of the big table. `tone` drives the colour, never the wording. */
@@ -134,15 +132,15 @@ export const ROWS: Row[] = [
   },
   {
     criterion: 'Où arrive l’argent',
-    why: 'Ce qui détermine votre travail administratif.',
+    why: 'Qui doit ouvrir un compte, et ce que vous avez à faire.',
     digitip: {
-      text: 'Sur le compte de l’établissement (Stripe), attribué à la personne choisie, avec un relevé mensuel par salarié pour la paie',
-      tone: 'neutral',
+      text: 'Sur le compte de l’établissement : vos salariés n’ont aucun compte à ouvrir. Chaque pourboire est attribué, relevé mensuel par salarié prêt pour la paie',
+      tone: 'good',
     },
     others: {
-      onetip: { text: 'Sur le compte Onetip du salarié, viré chaque lundi', tone: 'good' },
-      tipsi: { text: 'Sur un compte de cantonnement par salarié', tone: 'good' },
-      taptiiip: { text: 'Au bénéficiaire, frais déduits', tone: 'good' },
+      onetip: { text: 'Sur un compte Onetip au nom de chaque salarié, viré chaque lundi', tone: 'neutral' },
+      tipsi: { text: 'Sur un compte Tipsi au nom de chaque salarié', tone: 'neutral' },
+      taptiiip: { text: 'Au bénéficiaire, frais déduits', tone: 'neutral' },
     },
   },
 ];
@@ -226,7 +224,7 @@ export const FAQ: FaqEntry[] = [
   {
     question: 'Et Sunday ?',
     answer:
-      "Sunday est d'abord une solution de paiement de l'addition à table, intégrée à la caisse, qui propose le pourboire dans ce parcours. C'est un autre produit : si vous voulez refondre tout le paiement en salle, c'est une option sérieuse. Sunday ne publie pas de grille de commission sur les pourboires, nous ne l'avons donc pas mis dans le tableau.",
+      "Sunday est une solution de paiement de l'addition à table, qui propose le pourboire dans ce parcours. Elle ne publie pas de commission sur les pourboires : faute de chiffre vérifiable, nous ne l'avons pas mise dans le tableau.",
   },
   {
     question: 'Peut-on garder le pourboire sur le TPE et ajouter Digitip ?',

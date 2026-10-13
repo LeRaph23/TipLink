@@ -126,7 +126,9 @@ function TipBars() {
 }
 
 function CellView({ cell, highlight = false }: { cell: Cell; highlight?: boolean }) {
-  const t = TONE[cell.tone];
+  // Only Digitip's column gets the green tick; competitor cells stay plain,
+  // whatever their tone, so the table never reads as an ad for someone else.
+  const t = TONE[!highlight && cell.tone === 'good' ? 'neutral' : cell.tone];
   return (
     <td style={{
       padding: '14px 14px', verticalAlign: 'top', fontSize: 13.5, lineHeight: 1.5,
@@ -160,7 +162,6 @@ function ComparisonGrid() {
             {COMPETITORS.map((c) => (
               <th key={c.key} scope="col" style={{ textAlign: 'left', padding: '16px 14px', borderBottom: '1.5px solid var(--border-subtle)', minWidth: 128 }}>
                 <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text)' }}>{c.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 500 }}>{c.kind}</div>
               </th>
             ))}
           </tr>
@@ -353,27 +354,6 @@ export default async function WhyDigitipPage({ params }: { params: Promise<{ loc
             </div>
           </section>
 
-          {/* Honest section */}
-          <section style={{ marginBottom: 64 }}>
-            <SectionTitle
-              kicker="En toute honnêteté"
-              sub="Digitip ne convient pas à tout le monde. Voici les cas où une autre solution sera plus adaptée."
-            >
-              Quand choisir autre chose
-            </SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
-              {[
-                { title: 'Vous voulez que l’argent aille directement aux salariés', body: 'Avec Digitip, les pourboires arrivent sur le compte de l’établissement et vous les reversez avec la paie, relevé par salarié à l’appui. Onetip ou Tipsi versent directement à chaque salarié : plus de démarches pour eux, moins pour vous.' },
-                { title: 'Vous voulez refondre tout le paiement à table', body: 'Sunday fait payer l’addition par QR code à table, intégré à votre caisse, pourboire compris. C’est un autre produit, plus large, avec sa propre commission.' },
-                { title: 'Votre TPE propose déjà le pourboire et vous partagez tout en pot commun', body: 'L’activer ne coûte que la commission bancaire. Si le moment du choix au terminal ne vous gêne pas et que le suivi par personne ne vous sert à rien, commencez par là.' },
-              ].map((c) => (
-                <div key={c.title} style={card}>
-                  <h3 style={{ fontSize: 15.5, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8, lineHeight: 1.35 }}>{c.title}</h3>
-                  <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.65 }}>{c.body}</p>
-                </div>
-              ))}
-            </div>
-          </section>
 
           {/* FAQ */}
           <section style={{ marginBottom: 56, maxWidth: 780 }}>
