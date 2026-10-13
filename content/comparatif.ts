@@ -39,11 +39,6 @@ export const SOURCES = {
     url: 'https://www.taptiiip.com/pourboire-digital',
     verifiedOn: VERIFIED,
   },
-  tabl: {
-    label: 'Tabl : pourboire dématérialisé',
-    url: 'https://www.tabl.studio/pourboire-dematerialise',
-    verifiedOn: VERIFIED,
-  },
   sunday: {
     label: 'Sunday : versement des pourboires (centre d’aide)',
     url: 'https://intercom.help/sundayapp-help/fr/articles/10963750-comment-fonctionne-le-versement-des-pourboires-chez-sunday',
@@ -67,11 +62,9 @@ export type Competitor = {
 };
 
 export const COMPETITORS: Competitor[] = [
-  { key: 'tpe', name: 'Pourboire sur le TPE', kind: 'Option de votre terminal de paiement', sources: ['stripeTpe'] },
   { key: 'onetip', name: 'Onetip', kind: 'Application de pourboire, forte en coiffure', sources: ['onetipPricing', 'onetipFaq'] },
   { key: 'tipsi', name: 'Tipsi', kind: 'Application de pourboire installée sur le TPE', sources: ['tipsi'] },
   { key: 'taptiiip', name: 'Tap Tiiip', kind: 'Pourboire par QR code', sources: ['taptiiip'] },
-  { key: 'tabl', name: 'Tabl', kind: 'Pourboire par QR code ou support NFC', sources: ['tabl'] },
 ];
 
 /** Cell of the big table. `tone` drives the colour, never the wording. */
@@ -94,11 +87,9 @@ export const ROWS: Row[] = [
     why: 'Ce qui manque à votre équipe à l’arrivée.',
     digitip: { text: 'Rien. L’équipe reçoit 100 % du pourboire.', tone: 'good' },
     others: {
-      tpe: { text: 'Rien, mais vous devez le reverser en entier et la commission bancaire reste à votre charge', tone: 'neutral' },
       onetip: { text: '4 % + frais bancaires (jusqu’à 5 %)', tone: 'bad' },
       tipsi: { text: '8 % TTC (taux pouvant varier selon le contrat)', tone: 'bad' },
       taptiiip: { text: '5 % + 1,5 % + 0,25 €', tone: 'bad' },
-      tabl: { text: '6 %, prélevés au versement', tone: 'bad' },
     },
   },
   {
@@ -106,11 +97,9 @@ export const ROWS: Row[] = [
     why: 'Quelqu’un les paie toujours : la question est qui.',
     digitip: { text: 'Le client : 0,25 € + 5 %, affichés avant qu’il paie', tone: 'good' },
     others: {
-      tpe: { text: 'L’établissement', tone: 'bad' },
       onetip: { text: 'Le salarié qui reçoit le pourboire', tone: 'bad' },
       tipsi: { text: 'Le salarié qui reçoit le pourboire', tone: 'bad' },
       taptiiip: { text: 'Le bénéficiaire (déduits de son pourboire)', tone: 'bad' },
-      tabl: { text: 'Le bénéficiaire (déduits au versement)', tone: 'bad' },
     },
   },
   {
@@ -118,11 +107,9 @@ export const ROWS: Row[] = [
     why: 'Ce que vous payez même les mois creux.',
     digitip: { text: 'Aucun', tone: 'good' },
     others: {
-      tpe: { text: 'Celui de votre contrat monétique', tone: 'neutral' },
       onetip: { text: '5 €/mois par salarié ayant reçu des pourboires', tone: 'bad' },
       tipsi: { text: '2,99 €/an par salarié', tone: 'neutral' },
       taptiiip: { text: 'Abonnement établissement séparé (montant non publié)', tone: 'bad' },
-      tabl: NOT_PUBLISHED,
     },
   },
   {
@@ -130,11 +117,9 @@ export const ROWS: Row[] = [
     why: 'Des avis récents font remonter votre fiche dans Google Maps.',
     digitip: { text: 'Incluse, sans frais', tone: 'good' },
     others: {
-      tpe: { text: 'Non', tone: 'bad' },
       onetip: { text: 'Option à 4,50 € HT/mois', tone: 'neutral' },
       tipsi: NOT_PUBLISHED,
       taptiiip: { text: 'Oui, avec l’abonnement établissement', tone: 'neutral' },
-      tabl: NOT_PUBLISHED,
     },
   },
   {
@@ -142,11 +127,9 @@ export const ROWS: Row[] = [
     why: 'Ce qui est posé devant le client.',
     digitip: { text: 'Plaque en résine NFC + QR code, achetée une fois, garantie à vie', tone: 'good' },
     others: {
-      tpe: { text: 'Votre terminal, s’il propose l’option', tone: 'neutral' },
       onetip: { text: '2 tags NFC offerts ; tablette à 11 € HT/mois', tone: 'neutral' },
       tipsi: { text: 'Application installée sur votre TPE', tone: 'neutral' },
       taptiiip: { text: 'QR codes à imprimer', tone: 'neutral' },
-      tabl: { text: 'QR code à imprimer ou support NFC fourni', tone: 'neutral' },
     },
   },
   {
@@ -157,11 +140,9 @@ export const ROWS: Row[] = [
       tone: 'neutral',
     },
     others: {
-      tpe: { text: 'Sur le compte de l’établissement, mélangé à la recette', tone: 'bad' },
       onetip: { text: 'Sur le compte Onetip du salarié, viré chaque lundi', tone: 'good' },
       tipsi: { text: 'Sur un compte de cantonnement par salarié', tone: 'good' },
       taptiiip: { text: 'Au bénéficiaire, frais déduits', tone: 'good' },
-      tabl: { text: 'Cagnotte d’équipe, puis compte de chaque bénéficiaire', tone: 'good' },
     },
   },
 ];
@@ -187,16 +168,9 @@ export const TIP_CENTS = 1000;
 
 export const EXAMPLE: Example[] = [
   { key: 'digitip', name: 'Digitip', customerPays: 1075, team: 1000, recurring: 'Aucun abonnement' },
-  {
-    key: 'tpe', name: 'TPE', customerPays: 1000, team: 1000,
-    recurring: 'Commission bancaire sur le pourboire, à votre charge',
-    note: 'L’équipe touche 10 € à condition que vous reversiez tout, ce que la loi impose.',
-    source: 'stripeTpe',
-  },
   { key: 'onetip', name: 'Onetip', customerPays: 1000, team: 910, teamMax: 960, recurring: '+ 5 €/mois par salarié', source: 'onetipFaq' },
   { key: 'tipsi', name: 'Tipsi', customerPays: 1000, team: 920, recurring: '+ 2,99 €/an par salarié', source: 'tipsi' },
   { key: 'taptiiip', name: 'Tap Tiiip', customerPays: 1000, team: 910, recurring: '+ abonnement établissement', source: 'taptiiip' },
-  { key: 'tabl', name: 'Tabl', customerPays: 1000, team: 940, recurring: 'Abonnement non indiqué', source: 'tabl' },
 ];
 
 /** Digitip vs the terminal, the comparison most owners actually make. */

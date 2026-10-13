@@ -35,9 +35,8 @@ describe('comparison page data', () => {
     // Onetip: 4 % commission, plus bank fees of up to 5 %.
     expect(byKey.onetip.teamMax).toBe(TIP_CENTS * 0.96);
     expect(byKey.onetip.team).toBe(TIP_CENTS * 0.91);
-    // Tipsi: 8 %. Tabl: 6 %. Tap Tiiip: their own 10 € example, 9,10 €.
+    // Tipsi: 8 %. Tap Tiiip: their own 10 € example, 9,10 €.
     expect(byKey.tipsi.team).toBe(TIP_CENTS * 0.92);
-    expect(byKey.tabl.team).toBe(TIP_CENTS * 0.94);
     expect(byKey.taptiiip.team).toBe(910);
   });
 

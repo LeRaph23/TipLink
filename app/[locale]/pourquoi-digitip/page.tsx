@@ -30,7 +30,7 @@ export function generateStaticParams() {
 const PATH = '/pourquoi-digitip';
 const TITLE = 'Digitip ou les autres : comparatif du pourboire par carte';
 const DESCRIPTION =
-  "Digitip face au pourboire sur TPE, Onetip, Tipsi, Tap Tiiip et Tabl : ce qui est pris sur le pourboire, qui paie les frais, abonnement, avis Google.";
+  "Digitip face à Onetip, Tipsi, Tap Tiiip et au pourboire sur TPE : ce qui est pris sur le pourboire, qui paie les frais, l'abonnement, l'avis Google.";
 
 export async function generateMetadata({
   params,
@@ -146,7 +146,7 @@ function ComparisonGrid() {
     <div style={{ overflowX: 'auto', border: '1px solid var(--border-subtle)', borderRadius: 16, background: 'var(--surface)' }}>
       <table style={{ width: '100%', minWidth: 940, borderCollapse: 'separate', borderSpacing: 0 }}>
         <caption style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-          Comparatif Digitip, pourboire sur TPE et applications de pourboire
+          Comparatif Digitip et applications de pourboire
         </caption>
         <thead>
           <tr>
@@ -272,7 +272,7 @@ export default async function WhyDigitipPage({ params }: { params: Promise<{ loc
           <section style={{ marginBottom: 64 }}>
             <SectionTitle
               kicker="Sur un pourboire de 10 €"
-              sub={<>Le même pourboire de 10 €, d’une solution à l’autre. Ailleurs, les frais sont retirés du pourboire, sans que le client le voie. Chez Digitip, ils sont ajoutés et affichés au client : votre équipe reçoit exactement ce qu’il a voulu donner.</>}
+              sub={<>Le même pourboire de 10 €, d’une application à l’autre. Ailleurs, les frais sont retirés du pourboire, sans que le client le voie. Chez Digitip, ils sont ajoutés et affichés au client : votre équipe reçoit exactement ce qu’il a voulu donner.</>}
             >
               Ce qui arrive vraiment à votre équipe
             </SectionTitle>
@@ -297,7 +297,7 @@ export default async function WhyDigitipPage({ params }: { params: Promise<{ loc
               kicker="Le comparatif complet"
               sub="Faites défiler le tableau horizontalement sur mobile. Chaque colonne renvoie à la page de l’éditeur d’où viennent les chiffres."
             >
-              Digitip, le TPE et les applications de pourboire
+              Digitip et les applications de pourboire
             </SectionTitle>
             <ComparisonGrid />
           </section>
@@ -363,7 +363,7 @@ export default async function WhyDigitipPage({ params }: { params: Promise<{ loc
             </SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
               {[
-                { title: 'Vous voulez que l’argent aille directement aux salariés', body: 'Avec Digitip, les pourboires arrivent sur le compte de l’établissement et vous les reversez avec la paie, relevé par salarié à l’appui. Onetip, Tipsi ou Tabl versent directement à chaque salarié : plus de démarches pour eux, moins pour vous.' },
+                { title: 'Vous voulez que l’argent aille directement aux salariés', body: 'Avec Digitip, les pourboires arrivent sur le compte de l’établissement et vous les reversez avec la paie, relevé par salarié à l’appui. Onetip ou Tipsi versent directement à chaque salarié : plus de démarches pour eux, moins pour vous.' },
                 { title: 'Vous voulez refondre tout le paiement à table', body: 'Sunday fait payer l’addition par QR code à table, intégré à votre caisse, pourboire compris. C’est un autre produit, plus large, avec sa propre commission.' },
                 { title: 'Votre TPE propose déjà le pourboire et vous partagez tout en pot commun', body: 'L’activer ne coûte que la commission bancaire. Si le moment du choix au terminal ne vous gêne pas et que le suivi par personne ne vous sert à rien, commencez par là.' },
               ].map((c) => (
