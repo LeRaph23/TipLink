@@ -1193,7 +1193,7 @@
       "codeSave": "Enregistrer",
       "codeSaved": "Code enregistré.",
       "missing": "{count, plural, one {# personne n'a pas de matricule et ne sera pas dans le fichier d'import :} other {# personnes n'ont pas de matricule et ne seront pas dans le fichier d'import :}}",
-      "missingCta": "ajouter son matricule"
+      "missingCta": "{count, plural, one {ajouter son matricule} other {cliquez sur un prénom pour ajouter son matricule}}"
     },
     "payments": {
       "title": "Compte de paiement",
@@ -1225,7 +1225,9 @@
       "saved": "Fréquence enregistrée. Elle s'applique dès le prochain virement.",
       "unknownSchedule": "Votre compte a une fréquence de virement que ce formulaire ne propose pas. Choisissez-en une pour la remplacer.",
       "hint": "Un virement par mois, en fin de mois, vous laisse un seul montant à rapprocher de la paie. Un virement par semaine vous donne l'argent plus tôt.",
-      "scheduleLoadFailed": "Impossible de lire la fréquence actuelle auprès de Stripe. Vous pouvez quand même en choisir une."
+      "scheduleLoadFailed": "Impossible de lire la fréquence actuelle auprès de Stripe. Vous pouvez quand même en choisir une.",
+      "demoTitle": "Établissement de démonstration",
+      "demoBody": "Aucun compte Stripe réel n’est relié à cet établissement de démonstration. Sur un vrai compte, vous trouvez ici la fréquence des virements, la vérification de l’établissement, le compte bancaire et la liste des virements."
     },
     "pro": {
       "ctaMonthly": "Passer à Pro",

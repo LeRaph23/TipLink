@@ -58,9 +58,15 @@ export default async function PaymentsPage({
   // The payout schedule lives on the Stripe account, not in our database, so
   // the form always shows what Stripe will actually do. Only read once the
   // account has been through onboarding: before that there is nothing to pay.
+  // Demo establishments carry a made-up account id (acct_demo_…) that Stripe has
+  // never seen: every call failed, and the page showed "Stripe did not answer"
+  // and an unreadable payout schedule during sales demos. Say what it is
+  // instead, and make no Stripe call at all.
+  const isDemoAccount = !!est?.accountId?.startsWith('acct_demo_');
+
   let schedule: PayoutSchedule | null = null;
   let scheduleLoadFailed = false;
-  const showSchedule = !!est?.accountId && est.detailsSubmitted;
+  const showSchedule = !!est?.accountId && est.detailsSubmitted && !isDemoAccount;
   if (showSchedule) {
     try {
       const account = await stripe.accounts.retrieve(est.accountId!);
@@ -122,13 +128,22 @@ export default async function PaymentsPage({
             </div>
           )}
 
-          {showSchedule && <PayoutScheduleForm current={schedule} loadFailed={scheduleLoadFailed} />}
+          {isDemoAccount ? (
+            <div style={{ ...card, fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.65 }}>
+              <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{t('demoTitle')}</div>
+              {t('demoBody')}
+            </div>
+          ) : (
+            <>
+              {showSchedule && <PayoutScheduleForm current={schedule} loadFailed={scheduleLoadFailed} />}
 
-          <PaymentsPanel
-            establishmentId={est.establishmentId}
-            detailsSubmitted={est.detailsSubmitted}
-            hasAccount={est.hasAccount}
-          />
+              <PaymentsPanel
+                establishmentId={est.establishmentId}
+                detailsSubmitted={est.detailsSubmitted}
+                hasAccount={est.hasAccount}
+              />
+            </>
+          )}
         </>
       )}
     </div>
