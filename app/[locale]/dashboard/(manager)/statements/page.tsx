@@ -3,7 +3,15 @@ import { redirect } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { currentMonth, monthPeriod } from '@/lib/export/payroll';
+import {
+  DEFAULT_PAYROLL_CODE,
+  buildPayrollSummary,
+  currentMonth,
+  missingPayrollIds,
+  monthPeriod,
+  normalizePayrollCode,
+} from '@/lib/export/payroll';
+import { PayrollCodeForm } from './PayrollCodeForm';
 import { MonthPicker } from './MonthPicker';
 import { PageHeader } from '@/components/dashboard/ui';
 
@@ -65,48 +73,26 @@ export default async function StatementsPage({
       .format(new Date(`${ym}-01T00:00:00Z`));
   const fmt = new Intl.NumberFormat(intl, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
 
-  const rows: Row[] = [];
-  const accountantEmail = roleRow?.group_id
-    ? ((await createServiceClient()
-        .from('groups')
-        .select('accountant_email')
-        .eq('id', roleRow.group_id)
-        .maybeSingle()).data?.accountant_email ?? null)
-    : null;
+  let rows: Row[] = [];
+  let missing: { staffId: string; name: string }[] = [];
+  let accountantEmail: string | null = null;
+  let payrollCode = DEFAULT_PAYROLL_CODE;
   if (roleRow?.group_id) {
     const service = createServiceClient();
-    const { data: ests } = await service
-      .from('establishments').select('id').eq('group_id', roleRow.group_id).is('deleted_at', null);
-    const estIds = (ests ?? []).map((e) => e.id);
+    const { data: group } = await service
+      .from('groups')
+      .select('accountant_email, settings')
+      .eq('id', roleRow.group_id)
+      .maybeSingle();
+    accountantEmail = group?.accountant_email ?? null;
+    payrollCode = normalizePayrollCode((group?.settings as Record<string, unknown> | null)?.payroll_code);
 
-    if (estIds.length > 0) {
-      const { data: staff } = await service
-        .from('staff_profiles').select('id, full_name').in('establishment_id', estIds).is('deleted_at', null);
-      const byId = new Map((staff ?? []).map((s) => [s.id, s.full_name]));
-      const staffIds = [...byId.keys()];
-
-      if (staffIds.length > 0) {
-        // Statement figures = tips attributed to each employee in the month.
-        // The money itself reached the establishment's account at the same
-        // moment; this is the record of who earned it, for payroll.
-        const { data: allocated } = await service
-          .from('tip_allocations')
-          .select('amount, staff_id')
-          .in('staff_id', staffIds)
-          .eq('status', 'allocated')
-          .gte('allocated_at', start)
-          .lt('allocated_at', end);
-
-        const agg = new Map<string, Row>();
-        for (const a of (allocated ?? []) as Array<{ amount: number; staff_id: string }>) {
-          const r = agg.get(a.staff_id) ?? { staffId: a.staff_id, name: byId.get(a.staff_id) ?? '—', count: 0, amount: 0 };
-          r.count += 1;
-          r.amount += a.amount;
-          agg.set(a.staff_id, r);
-        }
-        rows.push(...[...agg.values()].sort((a, b) => b.amount - a.amount));
-      }
-    }
+    // The same builder as the CSV, so the screen and the files never disagree
+    // about a figure. It reads tip_allocations: the money reached the
+    // establishment's account in one lump, this is the record of who earned it.
+    const data = await buildPayrollSummary(service, roleRow.group_id, { start, end, label: month });
+    rows = data.summary.map((r) => ({ staffId: r.staffId, name: r.name || '—', count: r.count, amount: r.amountCents }));
+    missing = missingPayrollIds(data).map((r) => ({ staffId: r.staffId, name: r.name || '—' }));
   }
 
   const totals = rows.reduce((acc, r) => ({ count: acc.count + r.count, amount: acc.amount + r.amount }), { count: 0, amount: 0 });
@@ -148,7 +134,37 @@ export default async function StatementsPage({
         >
           {t('exportJournal')}
         </a>
+        <a
+          className="btn-ghost"
+          href={`/api/statements/export.csv?month=${month}&scope=import`}
+          style={{ ...actionBase, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}
+        >
+          {t('exportImport')}
+        </a>
       </div>
+
+      {/* The payroll-software file only works with a matricule per person and
+          the code of the tips pay item in that software; both are set here or
+          one click away, and anyone the file would leave out is named. */}
+      {roleRow?.group_id && (
+        <div style={{ ...card, padding: '14px 16px', marginBottom: 14 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{t('importTitle')}</div>
+          <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 12 }}>{t('importBody')}</p>
+          <PayrollCodeForm groupId={roleRow.group_id} initial={payrollCode} />
+          {missing.length > 0 && (
+            <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--warning)', lineHeight: 1.6 }}>
+              {t('missing', { count: missing.length })}{' '}
+              {missing.map((m, i) => (
+                <span key={m.staffId}>
+                  {i > 0 && ', '}
+                  <Link href={`/dashboard/staff/${m.staffId}`} style={{ color: 'var(--text)', fontWeight: 600 }}>{m.name}</Link>
+                </span>
+              ))}
+              {' '}({t('missingCta')})
+            </div>
+          )}
+        </div>
+      )}
 
       {/* What used to be the Pro pitch on this page is now a plain fact about
           the free plan, with the one setting it depends on. A manager who has

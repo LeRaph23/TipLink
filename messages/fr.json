@@ -850,7 +850,11 @@
         "payoutPending": "En cours d'inscription",
         "payoutNotStarted": "Pas encore inscrit",
         "recentTips": "Derniers pourboires",
-        "notFound": "On ne trouve pas cette personne."
+        "notFound": "On ne trouve pas cette personne.",
+        "payrollId": "Matricule de paie",
+        "payrollIdHint": "Le numéro de cette personne dans votre logiciel de paie. Il sert à importer ses pourboires directement sur sa fiche de paie.",
+        "payrollIdSave": "Enregistrer le matricule",
+        "payrollIdSaved": "Matricule enregistré."
       },
       "tipLink": "Votre lien de pourboire",
       "tipLinkCopy": "Copier",
@@ -1181,7 +1185,15 @@
       "exportJournal": "Journal détaillé",
       "autoBodyAccountant": "Le 1er de chaque mois, on envoie le relevé du mois précédent à vous et à {email}.",
       "autoBodyNoAccountant": "Le 1er de chaque mois, on vous envoie le relevé du mois précédent par e-mail. Votre comptable peut le recevoir aussi.",
-      "autoCta": "Ajouter son adresse"
+      "autoCta": "Ajouter son adresse",
+      "exportImport": "Fichier logiciel de paie",
+      "importTitle": "Import dans votre logiciel de paie",
+      "importBody": "Le fichier « logiciel de paie » contient une ligne par personne : matricule, code rubrique, montant. C'est le format que Silae, Sage Paie et la plupart des logiciels de paie importent. Le code rubrique doit être celui de la rubrique « pourboires » créée dans votre logiciel : demandez-le à votre comptable.",
+      "codeLabel": "Code rubrique",
+      "codeSave": "Enregistrer",
+      "codeSaved": "Code enregistré.",
+      "missing": "{count, plural, one {# personne n'a pas de matricule et ne sera pas dans le fichier d'import :} other {# personnes n'ont pas de matricule et ne seront pas dans le fichier d'import :}}",
+      "missingCta": "ajouter son matricule"
     },
     "payments": {
       "title": "Compte de paiement",
@@ -1201,7 +1213,19 @@
       "legalIndividual": "Une entreprise individuelle ou une micro-entreprise",
       "verifyLoadFailed": "Le formulaire de vérification ne s'affiche pas. Rechargez la page, ou réessayez dans quelques instants.",
       "verifyExited": "Vous avez fini le formulaire ? La page se mettra à jour toute seule dès que Stripe nous le confirme.",
-      "verifyChecking": "On vérifie auprès de Stripe…"
+      "verifyChecking": "On vérifie auprès de Stripe…",
+      "scheduleTitle": "Virements sur votre compte bancaire",
+      "scheduleBody": "Stripe vire les pourboires reçus sur le compte bancaire de l'établissement, à la fréquence choisie ici. Vous les reversez ensuite à votre équipe avec la paie, à partir de vos relevés mensuels.",
+      "weekly": "Chaque semaine",
+      "monthly": "Chaque mois",
+      "on": "le",
+      "lastDay": "dernier jour du mois",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Fréquence enregistrée. Elle s'applique dès le prochain virement.",
+      "unknownSchedule": "Votre compte a une fréquence de virement que ce formulaire ne propose pas. Choisissez-en une pour la remplacer.",
+      "hint": "Un virement par mois, en fin de mois, vous laisse un seul montant à rapprocher de la paie. Un virement par semaine vous donne l'argent plus tôt.",
+      "scheduleLoadFailed": "Impossible de lire la fréquence actuelle auprès de Stripe. Vous pouvez quand même en choisir une."
     },
     "pro": {
       "ctaMonthly": "Passer à Pro",

@@ -1727,6 +1727,8 @@ export async function sendMonthlyStatement(opts: {
   totalFormatted: string;
   summaryCsv: string;
   journalCsv: string;
+  /** The payroll-software import file, when at least one employee has a matricule. */
+  importCsv?: string | null;
   month: string;
   locale: 'fr' | 'en';
 }): Promise<void> {
@@ -1736,7 +1738,11 @@ export async function sendMonthlyStatement(opts: {
   const attachments: Attachment[] = [
     { filename: `releve-pourboires-${month}.csv`, content: Buffer.from(opts.summaryCsv, 'utf8') },
     { filename: `journal-pourboires-${month}.csv`, content: Buffer.from(opts.journalCsv, 'utf8') },
+    ...(opts.importCsv
+      ? [{ filename: `import-paie-pourboires-${month}.csv`, content: Buffer.from(opts.importCsv, 'utf8') }]
+      : []),
   ];
+  const fileCount = attachments.length;
 
   for (const recipient of to) {
     const isAccountant = !!accountantEmail && recipient.toLowerCase() === accountantEmail.toLowerCase();
@@ -1746,7 +1752,9 @@ export async function sendMonthlyStatement(opts: {
       attachments,
       html: layout({
         lang,
-        preheader: pick(lang, `${totalFormatted} pour ${people}. Deux fichiers joints.`, `${totalFormatted} for ${people}. Two files attached.`),
+        preheader: pick(lang,
+          `${totalFormatted} pour ${people}. ${fileCount === 3 ? 'Trois' : 'Deux'} fichiers joints.`,
+          `${totalFormatted} for ${people}. ${fileCount === 3 ? 'Three' : 'Two'} files attached.`),
         body: [
           block.p(pick(lang, 'Bonjour,', 'Hello,')),
           ...(isAccountant
@@ -1757,7 +1765,9 @@ export async function sendMonthlyStatement(opts: {
           block.p(pick(lang,
             `En ${esc(monthLabel)}, ${block.strong(est)} a reçu ${block.strong(totalFormatted)} de pourboires, attribués à ${people}.`,
             `In ${esc(monthLabel)}, ${block.strong(est)} received ${block.strong(totalFormatted)} in tips, attributed to ${people}.`)),
-          block.p(pick(lang, 'Deux fichiers sont joints :', 'Two files are attached:')),
+          block.p(pick(lang,
+            `${fileCount === 3 ? 'Trois' : 'Deux'} fichiers sont joints :`,
+            `${fileCount === 3 ? 'Three' : 'Two'} files are attached:`)),
           block.list([
             pick(lang,
               `${block.mono(`releve-pourboires-${month}.csv`)} : le total par personne, à reporter sur la paie ;`,
@@ -1765,6 +1775,11 @@ export async function sendMonthlyStatement(opts: {
             pick(lang,
               `${block.mono(`journal-pourboires-${month}.csv`)} : chaque pourboire, pour le rapprochement avec le relevé bancaire.`,
               `${block.mono(`journal-pourboires-${month}.csv`)}: every tip, to reconcile with the bank statement.`),
+            ...(opts.importCsv
+              ? [pick(lang,
+                  `${block.mono(`import-paie-pourboires-${month}.csv`)} : matricule, rubrique et montant, à importer dans le logiciel de paie (Silae, Sage Paie…).`,
+                  `${block.mono(`import-paie-pourboires-${month}.csv`)}: employee number, pay item and amount, to import into the payroll software.`)]
+              : []),
           ]),
           block.small(pick(lang,
             'Ce relevé part le 1er de chaque mois. Le responsable de l’établissement peut changer son destinataire dans ses réglages Digitip.',

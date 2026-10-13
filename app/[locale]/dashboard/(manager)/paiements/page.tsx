@@ -3,7 +3,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PaymentsPanel } from './PaymentsPanel';
+import { PayoutScheduleForm } from './PayoutScheduleForm';
 import { getEstablishmentPayability } from '@/lib/stripe/establishment-account';
+import { stripe } from '@/lib/stripe/client';
+import { fromStripeSchedule, type PayoutSchedule } from '@/lib/stripe/payout-schedule';
 import { PageHeader } from '@/components/dashboard/ui';
 
 export const dynamic = 'force-dynamic';
@@ -51,6 +54,22 @@ export default async function PaymentsPage({
   // whether this establishment can be paid.
   const est = await getEstablishmentPayability(createServiceClient(), roleRow.group_id);
   const ready = est?.state === 'ready';
+
+  // The payout schedule lives on the Stripe account, not in our database, so
+  // the form always shows what Stripe will actually do. Only read once the
+  // account has been through onboarding: before that there is nothing to pay.
+  let schedule: PayoutSchedule | null = null;
+  let scheduleLoadFailed = false;
+  const showSchedule = !!est?.accountId && est.detailsSubmitted;
+  if (showSchedule) {
+    try {
+      const account = await stripe.accounts.retrieve(est.accountId!);
+      schedule = fromStripeSchedule(account.settings?.payouts?.schedule);
+    } catch (err) {
+      console.error('[paiements] could not read payout schedule', err);
+      scheduleLoadFailed = true;
+    }
+  }
 
   // Three situations, three sentences. Collapsing them into ready/not-ready is
   // what made this page unable to say whether the manager had something to do.
@@ -102,6 +121,8 @@ export default async function PaymentsPage({
               {t.rich('verifyIntro', { b: (c) => <strong style={{ color: 'var(--text-2)' }}>{c}</strong> })}
             </div>
           )}
+
+          {showSchedule && <PayoutScheduleForm current={schedule} loadFailed={scheduleLoadFailed} />}
 
           <PaymentsPanel
             establishmentId={est.establishmentId}

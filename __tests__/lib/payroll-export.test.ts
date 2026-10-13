@@ -15,6 +15,11 @@ import {
   currentMonth,
   summaryCsv,
   toCsv,
+  payrollImportCsv,
+  missingPayrollIds,
+  normalizePayrollCode,
+  DEFAULT_PAYROLL_CODE,
+  type PayrollDataset,
 } from '@/lib/export/payroll';
 
 describe('csvCell', () => {
@@ -52,17 +57,17 @@ describe('summaryCsv', () => {
     const csv = summaryCsv({
       period: { start: '', end: '', label: '2026-07' },
       summary: [
-        { staffId: 's1', name: 'Marie Dupont', count: 12, amountCents: 4530 },
-        { staffId: 's2', name: 'Léa, Martin', count: 3, amountCents: 900 },
+        { staffId: 's1', name: 'Marie Dupont', payrollId: '00042', count: 12, amountCents: 4530 },
+        { staffId: 's2', name: 'Léa, Martin', payrollId: null, count: 3, amountCents: 900 },
       ],
       totals: { count: 15, amountCents: 5430 },
     });
 
     const lines = csv.replace('﻿', '').trim().split('\r\n');
     // French Excel: semicolons and decimal commas.
-    expect(lines[0]).toBe('Employé;Période;Nombre de pourboires;Montant à verser (€)');
-    expect(lines[1]).toBe('Marie Dupont;2026-07;12;45,30');
-    expect(lines[2]).toBe('Léa, Martin;2026-07;3;9,00');
+    expect(lines[0]).toBe('Matricule;Employé;Période;Nombre de pourboires;Montant à verser (€)');
+    expect(lines[1]).toBe('00042;Marie Dupont;2026-07;12;45,30');
+    expect(lines[2]).toBe(';Léa, Martin;2026-07;3;9,00');
   });
 
   it('renders a header even with nothing to report', () => {
@@ -125,5 +130,38 @@ describe('period helpers', () => {
   it('rolls back across a year boundary', () => {
     expect(previousMonth(new Date('2026-01-15T00:00:00Z'))).toBe('2025-12');
     expect(previousMonth(new Date('2026-08-03T00:00:00Z'))).toBe('2026-07');
+  });
+});
+
+describe('payroll software import file', () => {
+  const data: PayrollDataset = {
+    period: { start: '', end: '', label: '2026-09' },
+    summary: [
+      { staffId: 's1', name: 'Marie Dupont', payrollId: '00042', count: 12, amountCents: 4530 },
+      { staffId: 's2', name: 'Léa Martin', payrollId: null, count: 3, amountCents: 900 },
+      { staffId: 's3', name: 'Karim', payrollId: 'K-7', count: 1, amountCents: 1000 },
+    ],
+    totals: { count: 16, amountCents: 6430 },
+  };
+
+  it('writes matricule;rubrique;montant, one line per employee, no BOM', () => {
+    const csv = payrollImportCsv(data, 'PBR01');
+    expect(csv.charCodeAt(0)).not.toBe(0xfeff);
+    expect(csv.trim().split('\r\n')).toEqual([
+      'Matricule;Rubrique;Montant',
+      '00042;PBR01;45,30',
+      'K-7;PBR01;10,00',
+    ]);
+  });
+
+  it('names whoever the file leaves out for lack of a matricule', () => {
+    expect(missingPayrollIds(data).map((r) => r.name)).toEqual(['Léa Martin']);
+  });
+
+  it('falls back to the default code for anything malformed', () => {
+    expect(normalizePayrollCode('  PBR01 ')).toBe('PBR01');
+    expect(normalizePayrollCode('=cmd|calc')).toBe(DEFAULT_PAYROLL_CODE);
+    expect(normalizePayrollCode('')).toBe(DEFAULT_PAYROLL_CODE);
+    expect(normalizePayrollCode(undefined)).toBe(DEFAULT_PAYROLL_CODE);
   });
 });

@@ -2117,6 +2117,32 @@ export type Database = {
           },
         ]
       }
+      staff_payroll_ids: {
+        Row: {
+          payroll_id: string
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          payroll_id: string
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          payroll_id?: string
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_payroll_ids_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_profiles: {
         Row: {
           avatar_url: string | null
