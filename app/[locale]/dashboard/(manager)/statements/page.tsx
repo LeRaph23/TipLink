@@ -160,7 +160,7 @@ export default async function StatementsPage({
                   <Link href={`/dashboard/staff/${m.staffId}`} style={{ color: 'var(--text)', fontWeight: 600 }}>{m.name}</Link>
                 </span>
               ))}
-              {' '}({t('missingCta')})
+              {' '}({t('missingCta', { count: missing.length })})
             </div>
           )}
         </div>

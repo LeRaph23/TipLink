@@ -1193,7 +1193,7 @@
       "codeSave": "Save",
       "codeSaved": "Code saved.",
       "missing": "{count, plural, one {# person has no employee number and will not be in the import file:} other {# people have no employee number and will not be in the import file:}}",
-      "missingCta": "add their number"
+      "missingCta": "{count, plural, one {add their payroll number} other {click a name to add their payroll number}}"
     },
     "payments": {
       "title": "Payment account",
@@ -1225,7 +1225,9 @@
       "saved": "Schedule saved. It applies from the next payout.",
       "unknownSchedule": "Your account has a payout schedule this form does not offer. Pick one to replace it.",
       "hint": "One payout a month, at month end, leaves you a single amount to match against payroll. Weekly gets you the money sooner.",
-      "scheduleLoadFailed": "Could not read the current schedule from Stripe. You can still choose one."
+      "scheduleLoadFailed": "Could not read the current schedule from Stripe. You can still choose one.",
+      "demoTitle": "Demo establishment",
+      "demoBody": "No real Stripe account is linked to this demo establishment. On a real account, this page shows the payout schedule, the business verification, the bank account and the list of payouts."
     },
     "pro": {
       "ctaMonthly": "Go Pro",
