@@ -33,6 +33,8 @@ export const PUBLIC_PATHS: PublicPath[] = [
   { path: '/aide', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },
   { path: '/guides', priority: 0.7, changeFrequency: 'weekly', locales: ['fr'] },
   { path: '/solutions', priority: 0.7, changeFrequency: 'weekly', locales: ['fr'] },
+  // Comparison with the terminal and the tipping apps: closest to a purchase.
+  { path: '/pourquoi-digitip', priority: 0.8, changeFrequency: 'monthly', locales: ['fr'] },
   // FR-only landing pages — the /en variants call notFound().
   { path: '/devenir-ambassadeur', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },
   { path: '/devenir-commercial-pro', priority: 0.6, changeFrequency: 'monthly', locales: ['fr'] },

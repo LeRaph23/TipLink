@@ -418,7 +418,8 @@
       "legal": "Legal",
       "payment": "Accepted payments",
       "copyright": "© 2026 YUZU LABS SAS · Digitip · All rights reserved",
-      "help": "Help centre"
+      "help": "Help centre",
+      "compare": "Why Digitip"
     },
     "keyAdv": {
       "kicker": "The little extra",
@@ -476,6 +477,32 @@
       "nfcBanner": "Open digitip.app",
       "payButton": "Pay {amount}",
       "lockDate": "Monday 12 October"
+    },
+    "compare": {
+      "kicker": "Comparison",
+      "title": "Digitip versus the alternatives",
+      "sub": "The same €10 tip, and what happens to it depending on the tool.",
+      "colDigitip": "Digitip",
+      "colApps": "Tipping apps",
+      "colTpe": "Tip on the card terminal",
+      "r1": "Taken from the tip",
+      "r1d": "Nothing",
+      "r1a": "4 to 9%",
+      "r1t": "Nothing, but you pay the card fee",
+      "r2": "Who pays the fees",
+      "r2d": "The customer, shown before paying",
+      "r2a": "Your staff",
+      "r2t": "You",
+      "r3": "Subscription",
+      "r3d": "None",
+      "r3a": "Up to €5 a month per employee",
+      "r3t": "Your terminal contract",
+      "r4": "Google review after the tip",
+      "r4d": "Included",
+      "r4a": "Paid option, or not offered",
+      "r4t": "No",
+      "note": "Tipping apps: Onetip, Tipsi and Tap Tiiip, from their public pricing as of 13 October 2026.",
+      "cta": "See the full comparison (in French)"
     }
   },
   "pricing": {

@@ -118,8 +118,8 @@ export function ArticleLayout({
           </h2>
           <p style={{ fontSize: 14.5, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 16 }}>
             Digitip est une plaque NFC à poser sur le comptoir. Le client approche son
-            téléphone, choisit un montant, et la somme part sur le compte bancaire du
-            bénéficiaire. Achat unique, sans abonnement.
+            téléphone, choisit à qui et combien, et la somme arrive sur le compte de
+            l&apos;établissement. Achat unique, sans abonnement.
           </p>
           <Link href="/pricing" style={{
             display: 'inline-block', padding: '11px 22px', borderRadius: 10,
