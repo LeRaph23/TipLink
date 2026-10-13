@@ -682,6 +682,68 @@ function PricingTransparencySection() {
   );
 }
 
+// ─── Comparison teaser ────────────────────────────────────────────────────────
+// The short version of /fr/pourquoi-digitip. Figures come from the sourced
+// table in content/comparatif.ts; keep the two in step when a competitor's
+// pricing changes.
+function CompareSection() {
+  const t = useTranslations('landing');
+  const rows = (['r1', 'r2', 'r3', 'r4'] as const).map((r) => ({
+    label: t(`compare.${r}`),
+    digitip: t(`compare.${r}d`),
+    apps: t(`compare.${r}a`),
+    tpe: t(`compare.${r}t`),
+  }));
+  const head = { fontSize: 12.5, fontWeight: 800, padding: '14px 16px', textAlign: 'left' as const };
+  const cell = { fontSize: 14, padding: '14px 16px', lineHeight: 1.45, verticalAlign: 'top' as const, borderTop: '1px solid #f0f0f5' };
+  return (
+    <section id="comparatif" style={{ background: '#fff', padding: 'clamp(60px,7vw,90px) clamp(16px,4vw,48px)', borderBottom: '1px solid #e4e4ec' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 36 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#E57A97', marginBottom: 10 }}>{t('compare.kicker')}</div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 900, color: '#111118', letterSpacing: '-0.04em', marginBottom: 10 }}>{t('compare.title')}</h2>
+            <p style={{ fontSize: 15.5, color: '#74748a', lineHeight: 1.65 }}>{t('compare.sub')}</p>
+          </div>
+        </Reveal>
+        <Reveal delay={60}>
+          <div style={{ overflowX: 'auto', border: '1.5px solid #e4e4ec', borderRadius: 18 }}>
+            <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th scope="col" style={{ ...head, color: '#74748a' }} />
+                  <th scope="col" style={{ ...head, color: '#E57A97', background: '#FEF6F8', fontSize: 15 }}>{t('compare.colDigitip')}</th>
+                  <th scope="col" style={{ ...head, color: '#3a3b4f' }}>{t('compare.colApps')}</th>
+                  <th scope="col" style={{ ...head, color: '#3a3b4f' }}>{t('compare.colTpe')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.label}>
+                    <th scope="row" style={{ ...cell, fontWeight: 750, color: '#111118', textAlign: 'left' }}>{r.label}</th>
+                    <td style={{ ...cell, background: '#FEF6F8', color: '#166534', fontWeight: 750 }}>✓ {r.digitip}</td>
+                    <td style={{ ...cell, color: '#3a3b4f' }}>{r.apps}</td>
+                    <td style={{ ...cell, color: '#3a3b4f' }}>{r.tpe}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Reveal>
+        <Reveal delay={100}>
+          <div style={{ textAlign: 'center', marginTop: 18 }}>
+            <p style={{ fontSize: 12.5, color: '#9a9aae', lineHeight: 1.6, marginBottom: 16 }}>{t('compare.note')}</p>
+            {/* The full page is French only, like the rest of the content. */}
+            <Link href="/pourquoi-digitip" locale="fr" style={{ display: 'inline-block', padding: '12px 22px', borderRadius: 11, border: '1.5px solid #e4e4ec', background: '#fff', color: '#3a3b4f', fontSize: 14.5, fontWeight: 700, textDecoration: 'none' }}>
+              {t('compare.cta')} →
+            </Link>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 function FAQSection() {
   const t = useTranslations('landing');
@@ -807,6 +869,7 @@ function FooterSection() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>{t('footer.resources')}</div>
             {[
+              { label: t('footer.compare'),     href: '/pourquoi-digitip' },
               { label: t('footer.help'),        href: '/aide' },
               { label: t('footer.guides'),      href: '/guides' },
               { label: t('footer.solutions'),   href: '/solutions' },
@@ -900,6 +963,7 @@ export function LandingPage({ pricing }: { pricing: PricingMap | null }) {
       <TrustSection />
       <FinalCTASection onOrderClick={() => openCheckout()} />
       <PricingTransparencySection />
+      <CompareSection />
       <FAQSection />
       <DoubleGuaranteeSection />
       <FooterSection />

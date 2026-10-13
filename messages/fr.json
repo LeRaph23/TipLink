@@ -418,7 +418,8 @@
       "legal": "Légal",
       "payment": "Paiements acceptés",
       "copyright": "© 2026 YUZU LABS SAS · Digitip · Tous droits réservés",
-      "help": "Centre d'aide"
+      "help": "Centre d'aide",
+      "compare": "Pourquoi Digitip"
     },
     "keyAdv": {
       "kicker": "Le petit plus",
@@ -476,6 +477,32 @@
       "nfcBanner": "Ouvrir digitip.app",
       "payButton": "Payer {amount}",
       "lockDate": "lundi 12 octobre"
+    },
+    "compare": {
+      "kicker": "Comparatif",
+      "title": "Digitip face aux autres solutions",
+      "sub": "Le même pourboire de 10 €, et ce qu'il devient selon l'outil.",
+      "colDigitip": "Digitip",
+      "colApps": "Applis de pourboire",
+      "colTpe": "Pourboire sur TPE",
+      "r1": "Pris sur le pourboire",
+      "r1d": "Rien",
+      "r1a": "4 à 9 %",
+      "r1t": "Rien, mais commission bancaire à votre charge",
+      "r2": "Qui paie les frais",
+      "r2d": "Le client, affichés avant paiement",
+      "r2a": "Votre équipe",
+      "r2t": "Vous",
+      "r3": "Abonnement",
+      "r3d": "Aucun",
+      "r3a": "Jusqu'à 5 € par mois et par salarié",
+      "r3t": "Celui de votre contrat",
+      "r4": "Avis Google après le pourboire",
+      "r4d": "Inclus",
+      "r4a": "En option payante, ou absent",
+      "r4t": "Non",
+      "note": "Applis de pourboire : Onetip, Tipsi, Tap Tiiip et Tabl, d'après leurs tarifs publics relevés le 13 octobre 2026.",
+      "cta": "Voir le comparatif complet"
     }
   },
   "pricing": {
