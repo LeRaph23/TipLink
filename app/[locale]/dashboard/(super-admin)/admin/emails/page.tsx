@@ -1,6 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { DirectEmailComposer } from './DirectEmailComposer';
 
 // Read-only super-admin view of the automated (lifecycle) email system.
 // The lifecycle_email_log table is not in the generated DB types — use a
@@ -72,6 +73,13 @@ export default async function AdminEmailsPage({ params }: { params: Promise<{ lo
     sb.from('staff_profiles').select('id', { count: 'exact', head: true }).not('lifecycle_emails_opt_out_at', 'is', null),
   ]);
 
+  // The action refuses anyone else anyway; this keeps the form off their screen.
+  const { data: { user } } = await sb.auth.getUser();
+  const { data: myRoles } = user
+    ? await sb.from('user_roles').select('role').eq('user_id', user.id)
+    : { data: [] };
+  const isSuperAdmin = ((myRoles ?? []) as { role: string }[]).some((r) => r.role === 'super_admin');
+
   const totalSent = rows.filter((r) => r.status === 'sent').length;
   const totalFailed = rows.filter((r) => r.status === 'failed').length;
 
@@ -103,6 +111,8 @@ export default async function AdminEmailsPage({ params }: { params: Promise<{ lo
           Suivi des relances d&apos;onboarding, d&apos;activation et de rétention. {rows.length} derniers envois.
         </p>
       </div>
+
+      {isSuperAdmin && <DirectEmailComposer />}
 
       <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', marginBottom: 20 }}>
         <Kpi label="Envoyés (récents)" value={String(totalSent)} sub={`sur ${rows.length} entrées`} />
