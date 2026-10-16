@@ -68,8 +68,29 @@ jobs:
       # `supabase start` applies supabase/migrations against a real Postgres,
       # so this step also proves the migrations apply cleanly from scratch —
       # the check that would have caught two files sharing the 00043 prefix.
+      #
+      # Images come from ghcr.io rather than the CLI's default public.ecr.aws:
+      # ECR rate-limits anonymous pulls, and one run lost the whole job to
+      # "toomanyrequests: Data limit exceeded" before a single test ran
+      # (Docker Hub answers 429 the same way). Supabase publishes the same
+      # images on GitHub's registry, which the runners reach without a limit.
+      # Only the services the migrations and RLS tests touch are started
+      # (postgres, auth, PostgREST, kong, storage for the bucket migrations,
+      # realtime, which the CLI needs to initialise). The retry rides out a
+      # brief registry hiccup.
       - name: Start Supabase
-        run: npx supabase start
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+        run: |
+          for attempt in 1 2 3; do
+            npx supabase start \
+              -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,postgres-meta,supavisor \
+              && exit 0
+            echo "::warning::supabase start failed (attempt $attempt), retrying"
+            npx supabase stop --no-backup || true
+            sleep $((attempt * 45))
+          done
+          exit 1
 
       # __tests__/rls/*.test.ts skip themselves unless both keys are present.
       # Exporting them here is the whole point of this job: without it the 30
