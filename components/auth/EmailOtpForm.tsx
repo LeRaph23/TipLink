@@ -62,6 +62,14 @@ export function EmailOtpForm({
   // false. The first call spends the code, the second is told it is invalid,
   // and the person sees "wrong code" a second before being signed in anyway.
   const verifyingRef = useRef(false);
+  // Set once the code has been exchanged for a session. A code is single-use,
+  // so from then on the widget must never send it again. The ref above does
+  // not cover this: it is released as soon as onVerified() returns, and the
+  // login caller's router.push() returns at once while the dashboard is still
+  // loading. The field still holds six digits and the button is enabled again,
+  // so pressing "Valider" after the auto-submit (or a late autofill event)
+  // re-sent the spent code and flashed "wrong code" just before the redirect.
+  const sessionReadyRef = useRef(false);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
@@ -74,6 +82,8 @@ export function EmailOtpForm({
   const send = useCallback(async () => {
     setBusy(true);
     setError(null);
+    // A new code is a new sign-in, which has to be verified on its own.
+    sessionReadyRef.current = false;
     const res = await requestEmailCode(email, { shouldCreateUser, fullName });
     setBusy(false);
     if (!res.ok) {
@@ -94,19 +104,23 @@ export function EmailOtpForm({
       verifyingRef.current = true;
       setBusy(true);
       setError(null);
-      const res = await verifyEmailCode(email, value);
-      if (!res.ok) {
-        verifyingRef.current = false;
-        setError(mapAuthError(res.message, t));
-        setCode('');
-        setBusy(false);
-        codeRef.current?.focus();
-        return;
+      if (!sessionReadyRef.current) {
+        const res = await verifyEmailCode(email, value);
+        if (!res.ok) {
+          verifyingRef.current = false;
+          setError(mapAuthError(res.message, t));
+          setCode('');
+          setBusy(false);
+          codeRef.current?.focus();
+          return;
+        }
+        sessionReadyRef.current = true;
       }
       // The caller usually navigates or unmounts from here, which makes this
       // reset a no-op. It matters in the case where it does not: a caller whose
       // own follow-up fails leaves the widget mounted, and a permanently
       // disabled button would be a dead end on a screen that just succeeded.
+      // Pressing it again retries onVerified() alone, on the session we have.
       try {
         await onVerified();
       } finally {
