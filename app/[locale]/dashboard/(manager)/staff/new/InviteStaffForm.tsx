@@ -17,6 +17,7 @@ interface Labels {
   send: string;
   sending: string;
   sentTemplate: string;
+  notSentTemplate: string;
   errorGeneric: string;
 }
 
@@ -70,6 +71,12 @@ export function InviteStaffForm({
       });
       if ('error' in res) {
         setError(res.error || labels.errorGeneric);
+      } else if (!res.invited) {
+        // The profile exists but no email left. Saying "sent" here is how a
+        // salon owner waited on a colleague who had never been invited.
+        setError(labels.notSentTemplate.replace('{email}', email).replace('{name}', fullName.trim()));
+        // Leave the form: submitting again would create a second profile.
+        setTimeout(() => router.push('/dashboard/staff'), 6000);
       } else {
         setSuccess(labels.sentTemplate.replace('{email}', email));
         setTimeout(() => router.push('/dashboard/staff'), 1500);

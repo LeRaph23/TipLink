@@ -50,6 +50,7 @@ export default async function NewStaffPage({
           send: t('new.send'),
           sending: t('new.sending'),
           sentTemplate: t.raw('new.sent') as string,
+          notSentTemplate: t.raw('new.notSent') as string,
           errorGeneric: t('new.errorGeneric'),
         }}
       />

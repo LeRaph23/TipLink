@@ -832,6 +832,7 @@
         "send": "Envoyer l'invitation",
         "sending": "Envoi…",
         "sent": "Invitation envoyée à {email}.",
+        "notSent": "{name} est ajouté à l'équipe, mais l'invitation n'a pas pu partir vers {email}. Depuis la page Équipe, renseignez à nouveau son adresse ou partagez-lui le lien d'équipe.",
         "errorGeneric": "L'invitation n'est pas partie. Réessayez.",
         "back": "Retour à l'équipe"
       },

@@ -832,6 +832,7 @@
         "send": "Send invite",
         "sending": "Sending…",
         "sent": "Invite sent to {email}.",
+        "notSent": "{name} is on the team, but the invite could not be sent to {email}. From the Team page, enter their address again or share the team link with them.",
         "errorGeneric": "The invitation didn't send. Try again.",
         "back": "Back to team"
       },
