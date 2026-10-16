@@ -31,6 +31,31 @@ export type ProvisionResult =
   // only display it. The localized `error` stays the thing shown either way.
   | { error: string; code?: 'smart_tag_taken' };
 
+type Service = ReturnType<typeof createServiceClient>;
+
+// Grants group_admin and returns the error, if any. A plain insert, not an
+// upsert: user_roles is unique on COALESCE expressions (migration 00001),
+// which no onConflict column list can name, so upsert() fails every time with
+// 42P10. The express flow did exactly that, ignored the error, and left a
+// paying customer with an account attached to nothing. Already holding the
+// role (23505) is what we wanted, so it counts as success.
+async function grantGroupAdmin(service: Service, userId: string, groupId: string) {
+  const { error } = await service
+    .from('user_roles')
+    .insert({ user_id: userId, role: 'group_admin', group_id: groupId });
+  if (error && error.code !== '23505') return error;
+  return null;
+}
+
+async function groupHasAdmin(service: Service, groupId: string): Promise<boolean> {
+  const { count } = await service
+    .from('user_roles')
+    .select('id', { count: 'exact', head: true })
+    .eq('group_id', groupId)
+    .eq('role', 'group_admin');
+  return (count ?? 0) > 0;
+}
+
 // Shared review-link fields collected by the onboarding wizard's Google step.
 const GoogleReviewFields = {
   googlePlaceId: z.string().max(300).optional(),
@@ -252,7 +277,27 @@ export async function completeExpressOnboarding(
     .maybeSingle();
 
   if (!group) return actionError('notFound');
-  if (group.onboarding_completed_at) return actionError('duplicate');
+
+  if (group.onboarding_completed_at) {
+    // A finished group normally has its admin, and the link is spent. One
+    // that finished without any (the grant used to fail silently, see
+    // grantGroupAdmin) would otherwise lock its owner out for good: the
+    // dashboard finds no salon and this link answers "already done". The
+    // token and its email were checked above, so hand them the group.
+    if (await groupHasAdmin(service, groupId)) return actionError('duplicate');
+    const { data: doneEst } = await service
+      .from('establishments')
+      .select('id')
+      .eq('group_id', groupId)
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle();
+    if (!doneEst) return actionError('notFound');
+    const grantErr = await grantGroupAdmin(service, user.id, groupId);
+    if (grantErr) return actionError('unknown', grantErr, 'completeExpressOnboarding.recoverRole');
+    revalidatePath('/dashboard');
+    return { success: true, establishmentId: doneEst.id, onboardingToken: token };
+  }
 
   // Get the establishment created by the webhook
   const { data: est } = await service
@@ -280,11 +325,10 @@ export async function completeExpressOnboarding(
     .update({ name: establishmentName })
     .eq('id', groupId);
 
-  // Link user as group_admin
-  await service.from('user_roles').upsert(
-    { user_id: user.id, role: 'group_admin', group_id: groupId },
-    { onConflict: 'user_id,role,group_id' }
-  );
+  // Link user as group_admin. Without this row the account sees no salon, so a
+  // failure has to stop the wizard here rather than let it reach "done".
+  const roleErr = await grantGroupAdmin(service, user.id, groupId);
+  if (roleErr) return actionError('unknown', roleErr, 'completeExpressOnboarding.role');
 
   // Update auth user display name. Use the admin API when we don't have a
   // session (e.g. email confirmation still pending) so this always works.
@@ -419,11 +463,8 @@ export async function completeNfcOnboarding(
   }
 
   // Create group_admin role for the new user
-  await service.from('user_roles').insert({
-    user_id: user.id,
-    role: 'group_admin',
-    group_id: group.id,
-  });
+  const roleErr = await grantGroupAdmin(service, user.id, group.id);
+  if (roleErr) return actionError('unknown', roleErr, 'completeNfcOnboarding.role');
 
   // Update user display name via admin API (works without active session)
   await service.auth.admin.updateUserById(user.id, { user_metadata: { full_name: adminFullName } });
@@ -480,6 +521,13 @@ export async function finalizeOnboarding(
 
   const access = await authorizeEstablishmentAccess(service, establishmentId, token);
   if (!access.ok) return actionError(access.status === 404 ? 'notFound' : 'forbidden');
+
+  // The token flows authorise this call without a role, so nothing upstream
+  // guarantees one exists. Closing the wizard on a group nobody administers
+  // strands its owner: they are told it is done and then see no salon.
+  if (!(await groupHasAdmin(service, access.groupId))) {
+    return actionError('unknown', `group ${access.groupId} has no group_admin`, 'finalizeOnboarding.noAdmin');
+  }
 
   const { data: est } = await service
     .from('establishments')

@@ -109,7 +109,10 @@ export async function importColdEmailProspects(
 
       const { error } = await service
         .from('cold_email_prospects')
-        .upsert(row, { onConflict: 'siret', ignoreDuplicates: true });
+        // The unique key is (siret, target_program) since 00060; naming siret
+        // alone matches no constraint and rejects every row with 42P10. Rows
+        // here take the column default, 'ambassador'.
+        .upsert(row, { onConflict: 'siret,target_program', ignoreDuplicates: true });
 
       if (error) { errors.push(`Ligne ${i + 1} : ${error.message}`); skipped++; }
       else { inserted++; }
