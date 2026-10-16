@@ -582,6 +582,40 @@ export async function sendOrderCustomNote(opts: {
   });
 }
 
+/**
+ * A free-text email from the Digitip team to any address: a customer's
+ * colleague, a prospect, anyone who is not the customer of an order. Sent from
+ * and answered at contact@, so the reply lands in the inbox the team reads.
+ * Throws when the send is refused: the caller tells the admin it failed.
+ */
+export const DIRECT_FROM = 'Digitip <contact@digitip.app>';
+
+export async function sendDirectEmail(opts: {
+  to: string;
+  subject: string;
+  bodyText: string;
+  locale?: string;
+  attachments?: { filename: string; content: Buffer }[];
+}): Promise<{ id: string | null }> {
+  const lang = emailLang(opts.locale);
+  const paragraphs = opts.bodyText
+    .split(/\n{2,}/)
+    .map((para) => block.p(linkify(esc(para)).replace(/\n/g, '<br>')));
+  return deliver({
+    from: DIRECT_FROM,
+    replyTo: REPLY_TO,
+    to: opts.to,
+    subject: opts.subject,
+    attachments: opts.attachments ?? [],
+    html: layout({ lang, preheader: opts.bodyText.slice(0, 120), body: paragraphs }),
+  });
+}
+
+/** Makes the bare URLs of an already-escaped text clickable. */
+function linkify(escaped: string): string {
+  return escaped.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)»]/g, (url) => block.link(url, url));
+}
+
 /** La Poste / Colissimo numbers are printed with spaces; the tracker wants them bare. */
 export function normalizeTrackingNumber(raw: string | null | undefined): string | null {
   const n = (raw ?? '').replace(/[\s-]+/g, '').toUpperCase();
