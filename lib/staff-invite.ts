@@ -74,10 +74,12 @@ export async function sendStaffInviteLink(
     // Link the auth user to the profile and pre-create their role so
     // onboarding works the moment they accept the invite.
     await service.from('staff_profiles').update({ user_id: userId }).eq('id', staffProfileId);
+    // Both staff and manager roles must carry the establishment
+    // (user_roles_scope_check); a null here made every staff pre-grant fail.
     await service.from('user_roles').insert({
       user_id: userId,
       role,
-      establishment_id: role === 'manager' ? establishmentId : null,
+      establishment_id: establishmentId,
     });
 
     if (!hashedToken) return { invited: false, linked: true };
