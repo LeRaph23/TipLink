@@ -236,6 +236,17 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Local stack only: the hosted project's templates live in the dashboard. Both
+# need {{ .Token }} (see lib/auth/otp.ts); without it the CLI's default sends a
+# link alone, and the e2e login, which reads the code from Mailpit, cannot run.
+[auth.email.template.magic_link]
+subject = "Votre code de connexion"
+content_path = "./supabase/templates/code.html"
+
+[auth.email.template.confirmation]
+subject = "Votre code de connexion"
+content_path = "./supabase/templates/code.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
